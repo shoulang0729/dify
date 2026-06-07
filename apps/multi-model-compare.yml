@@ -1,17 +1,19 @@
+# マルチモデル比較チャット (8モデル + RAG)
+# ⚠️ LLM は OpenRouter(OpenAI-Compatible) 経由を想定。
+#   インポート前に Settings → Model Provider で OpenAI-Compatible を追加
+#   (Base URL https://openrouter.ai/api/v1 / OpenRouter キー)、下記8モデルを
+#   1個ずつ登録してください。スラッグは openrouter.ai/models の正確な表記をコピペ
+#   (手入力ミス=非互換)。インポート後、各LLMノードの model は UI で選び直すのが確実です。
+# ⚠️ dataset_ids はインスタンス固有。別環境へ移行したら貼り替えること。
+---
 app:
-  description: 同じ質問を5つのLLMに同時に投げて、回答を並べて比較できるチャットボット。ナレッジ検索(RAG)の結果を全モデルが共有して回答します。
-  icon: 🧪
-  icon_background: '#E0F2FE'
+  description: 同じ質問を8個のLLMに同時に投げて、回答を並べて比較できるチャットボット。ナレッジ検索(RAG)の結果を全モデルが共有して回答します。
+  icon: "\U0001F9EA"
+  icon_background: "#E0F2FE"
   icon_type: emoji
   mode: advanced-chat
-  name: マルチモデル比較チャット (5モデル + RAG)
+  name: マルチモデル比較チャット (8モデル + RAG)
   use_icon_as_answer_icon: false
-# ⚠️ LLM は OpenRouter(OpenAI-Compatible) 経由を想定。
-#    インポート前に Dify の Settings → Model Provider で「OpenAI-Compatible」を追加し、
-#      Base URL: https://openrouter.ai/api/v1 / API Key: <OpenRouter のキー>
-#    を設定。さらに、下の5モデル(claude-3.5-sonnet / gpt-4o / gemini-2.0-flash /
-#    llama-3.3-70b / deepseek-chat)を「モデル追加」で1個ずつ登録してください。
-#    インポート後、各 LLM ノードの model は UI で選び直すのが確実です(非互換マーク対策)。
 dependencies: []
 kind: app
 version: 0.6.0
@@ -21,12 +23,12 @@ workflow:
   features:
     file_upload:
       allowed_file_extensions:
-      - .JPG
-      - .JPEG
-      - .PNG
-      - .GIF
-      - .WEBP
-      - .SVG
+      - ".JPG"
+      - ".JPEG"
+      - ".PNG"
+      - ".GIF"
+      - ".WEBP"
+      - ".SVG"
       allowed_file_types:
       - image
       allowed_file_upload_methods:
@@ -51,7 +53,7 @@ workflow:
         - local_file
         - remote_url
       number_limits: 3
-    opening_statement: 質問すると、5つのLLMが同時に答えて結果を並べて表示します。気になる質問をどうぞ。
+    opening_statement: 質問すると、8個のLLMが同時に答えて結果を並べて表示します。気になる質問をどうぞ。
     retriever_resource:
       enabled: true
     sensitive_word_avoidance:
@@ -125,48 +127,102 @@ workflow:
       targetHandle: target
       type: custom
     - data:
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1711528915811-1750000000006
+      source: '1711528915811'
+      sourceHandle: source
+      target: '1750000000006'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1711528915811-1750000000007
+      source: '1711528915811'
+      sourceHandle: source
+      target: '1750000000007'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1711528915811-1750000000008
+      source: '1711528915811'
+      sourceHandle: source
+      target: '1750000000008'
+      targetHandle: target
+      type: custom
+    - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000001-1750000000009
+      id: 1750000000001-1750000000099
       source: '1750000000001'
       sourceHandle: source
-      target: '1750000000009'
+      target: '1750000000099'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000002-1750000000009
+      id: 1750000000002-1750000000099
       source: '1750000000002'
       sourceHandle: source
-      target: '1750000000009'
+      target: '1750000000099'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000003-1750000000009
+      id: 1750000000003-1750000000099
       source: '1750000000003'
       sourceHandle: source
-      target: '1750000000009'
+      target: '1750000000099'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000004-1750000000009
+      id: 1750000000004-1750000000099
       source: '1750000000004'
       sourceHandle: source
-      target: '1750000000009'
+      target: '1750000000099'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000005-1750000000009
+      id: 1750000000005-1750000000099
       source: '1750000000005'
       sourceHandle: source
-      target: '1750000000009'
+      target: '1750000000099'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: 1750000000006-1750000000099
+      source: '1750000000006'
+      sourceHandle: source
+      target: '1750000000099'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: 1750000000007-1750000000099
+      source: '1750000000007'
+      sourceHandle: source
+      target: '1750000000099'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: 1750000000008-1750000000099
+      source: '1750000000008'
+      sourceHandle: source
+      target: '1750000000099'
       targetHandle: target
       type: custom
     nodes:
@@ -191,7 +247,6 @@ workflow:
       width: 242
     - data:
         dataset_ids:
-        # ⚠️ この dataset_id は現インスタンス固有。別環境へ移行したら、移行先のナレッジ ID に貼り替えること。
         - 6n3lSRo9tftA1CLKsSPvYkEXDDkyYzgSw6T6YaqJ5gUP2ITBGDXaCZDDLJE2sE2V
         desc: ユーザーの質問に関連するテキストをナレッジから検索し、全モデルで共有する
         query_variable_selector:
@@ -248,7 +303,7 @@ workflow:
             temperature: 0.7
             top_p: 1
           mode: chat
-          name: anthropic/claude-3.5-sonnet
+          name: anthropic/claude-sonnet-4.6
           provider: openrouter
         prompt_template:
         - id: 11111111-0001-0001-0001-000000000001
@@ -264,7 +319,7 @@ workflow:
             - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
         selected: false
         structured_output_enabled: false
-        title: LLM① Claude 3.5 Sonnet
+        title: 01. Claude Sonnet 4.6
         type: llm
         variables: []
         vision:
@@ -273,10 +328,66 @@ workflow:
       id: '1750000000001'
       position:
         x: 645.5
-        y: 2300.0
+        y: 2000.0
       positionAbsolute:
         x: 645.5
-        y: 2300.0
+        y: 2000.0
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1711528915811'
+          - result
+        desc: ''
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 10
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 2048
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: anthropic/claude-opus-4.8
+          provider: openrouter
+        prompt_template:
+        - id: 11111111-0002-0002-0002-000000000002
+          role: system
+          text: |-
+            あなたは親切で丁寧な日本語アシスタントです。
+            以下の <context></context> タグ内の情報を、あなたの学習済み知識として使って回答してください。
+            <context>
+            {{#context#}}
+            </context>
+            回答のルール:
+            - 必ず日本語で、丁寧語(です・ます調)で答えてください。
+            - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
+        selected: false
+        structured_output_enabled: false
+        title: 02. Claude Opus 4.8
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 148
+      id: '1750000000002'
+      position:
+        x: 645.5
+        y: 2180.0
+      positionAbsolute:
+        x: 645.5
+        y: 2180.0
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -307,62 +418,6 @@ workflow:
           name: openai/gpt-4o
           provider: openrouter
         prompt_template:
-        - id: 11111111-0002-0002-0002-000000000002
-          role: system
-          text: |-
-            あなたは親切で丁寧な日本語アシスタントです。
-            以下の <context></context> タグ内の情報を、あなたの学習済み知識として使って回答してください。
-            <context>
-            {{#context#}}
-            </context>
-            回答のルール:
-            - 必ず日本語で、丁寧語(です・ます調)で答えてください。
-            - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
-        selected: false
-        structured_output_enabled: false
-        title: LLM② GPT-4o
-        type: llm
-        variables: []
-        vision:
-          enabled: false
-      height: 148
-      id: '1750000000002'
-      position:
-        x: 645.5
-        y: 2480.0
-      positionAbsolute:
-        x: 645.5
-        y: 2480.0
-      selected: false
-      sourcePosition: right
-      targetPosition: left
-      type: custom
-      width: 242
-    - data:
-        context:
-          enabled: true
-          variable_selector:
-          - '1711528915811'
-          - result
-        desc: ''
-        memory:
-          role_prefix:
-            assistant: ''
-            user: ''
-          window:
-            enabled: true
-            size: 10
-        model:
-          completion_params:
-            frequency_penalty: 0
-            max_tokens: 2048
-            presence_penalty: 0
-            temperature: 0.7
-            top_p: 1
-          mode: chat
-          name: google/gemini-2.0-flash-exp
-          provider: openrouter
-        prompt_template:
         - id: 11111111-0003-0003-0003-000000000003
           role: system
           text: |-
@@ -376,7 +431,7 @@ workflow:
             - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
         selected: false
         structured_output_enabled: false
-        title: LLM③ Gemini 2.0 Flash
+        title: 03. GPT-4o
         type: llm
         variables: []
         vision:
@@ -385,10 +440,10 @@ workflow:
       id: '1750000000003'
       position:
         x: 645.5
-        y: 2660.0
+        y: 2360.0
       positionAbsolute:
         x: 645.5
-        y: 2660.0
+        y: 2360.0
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -416,7 +471,7 @@ workflow:
             temperature: 0.7
             top_p: 1
           mode: chat
-          name: meta-llama/llama-3.3-70b-instruct
+          name: google/gemini-3.5-flash
           provider: openrouter
         prompt_template:
         - id: 11111111-0004-0004-0004-000000000004
@@ -432,7 +487,7 @@ workflow:
             - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
         selected: false
         structured_output_enabled: false
-        title: LLM④ Llama 3.3 70B
+        title: 04. Gemini 3.5 Flash
         type: llm
         variables: []
         vision:
@@ -441,10 +496,10 @@ workflow:
       id: '1750000000004'
       position:
         x: 645.5
-        y: 2840.0
+        y: 2540.0
       positionAbsolute:
         x: 645.5
-        y: 2840.0
+        y: 2540.0
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -472,7 +527,7 @@ workflow:
             temperature: 0.7
             top_p: 1
           mode: chat
-          name: deepseek/deepseek-chat
+          name: deepseek/deepseek-v4-flash
           provider: openrouter
         prompt_template:
         - id: 11111111-0005-0005-0005-000000000005
@@ -488,7 +543,7 @@ workflow:
             - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
         selected: false
         structured_output_enabled: false
-        title: LLM⑤ DeepSeek Chat
+        title: 05. DeepSeek V4 Flash
         type: llm
         variables: []
         vision:
@@ -497,67 +552,211 @@ workflow:
       id: '1750000000005'
       position:
         x: 645.5
-        y: 3020.0
+        y: 2720.0
       positionAbsolute:
         x: 645.5
-        y: 3020.0
+        y: 2720.0
       selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
       width: 242
     - data:
-        answer: '## 🟦 ① Claude 3.5 Sonnet
-
-          {{#1750000000001.text#}}
-
-
-          ---
-
-          ## 🟩 ② GPT-4o
-
-          {{#1750000000002.text#}}
-
-
-          ---
-
-          ## 🟨 ③ Gemini 2.0 Flash
-
-          {{#1750000000003.text#}}
-
-
-          ---
-
-          ## 🟧 ④ Llama 3.3 70B
-
-          {{#1750000000004.text#}}
-
-
-          ---
-
-          ## 🟥 ⑤ DeepSeek Chat
-
-          {{#1750000000005.text#}}'
+        context:
+          enabled: true
+          variable_selector:
+          - '1711528915811'
+          - result
         desc: ''
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 10
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 2048
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: x-ai/grok-4
+          provider: openrouter
+        prompt_template:
+        - id: 11111111-0006-0006-0006-000000000006
+          role: system
+          text: |-
+            あなたは親切で丁寧な日本語アシスタントです。
+            以下の <context></context> タグ内の情報を、あなたの学習済み知識として使って回答してください。
+            <context>
+            {{#context#}}
+            </context>
+            回答のルール:
+            - 必ず日本語で、丁寧語(です・ます調)で答えてください。
+            - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
         selected: false
-        title: Answer (5モデル比較)
-        type: answer
+        structured_output_enabled: false
+        title: 06. Grok 4
+        type: llm
         variables: []
-      height: 200
-      id: '1750000000009'
+        vision:
+          enabled: false
+      height: 148
+      id: '1750000000006'
       position:
-        x: 950.0
-        y: 2634.5
+        x: 645.5
+        y: 2900.0
       positionAbsolute:
-        x: 950.0
-        y: 2634.5
+        x: 645.5
+        y: 2900.0
       selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
       width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1711528915811'
+          - result
+        desc: ''
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 10
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 2048
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: qwen/qwen3-max
+          provider: openrouter
+        prompt_template:
+        - id: 11111111-0007-0007-0007-000000000007
+          role: system
+          text: |-
+            あなたは親切で丁寧な日本語アシスタントです。
+            以下の <context></context> タグ内の情報を、あなたの学習済み知識として使って回答してください。
+            <context>
+            {{#context#}}
+            </context>
+            回答のルール:
+            - 必ず日本語で、丁寧語(です・ます調)で答えてください。
+            - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
+        selected: false
+        structured_output_enabled: false
+        title: 07. Qwen3 Max
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 148
+      id: '1750000000007'
+      position:
+        x: 645.5
+        y: 3080.0
+      positionAbsolute:
+        x: 645.5
+        y: 3080.0
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1711528915811'
+          - result
+        desc: ''
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 10
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 2048
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: meta-llama/llama-4-maverick
+          provider: openrouter
+        prompt_template:
+        - id: 11111111-0008-0008-0008-000000000008
+          role: system
+          text: |-
+            あなたは親切で丁寧な日本語アシスタントです。
+            以下の <context></context> タグ内の情報を、あなたの学習済み知識として使って回答してください。
+            <context>
+            {{#context#}}
+            </context>
+            回答のルール:
+            - 必ず日本語で、丁寧語(です・ます調)で答えてください。
+            - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
+        selected: false
+        structured_output_enabled: false
+        title: '08. Llama 4 Maverick'
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 148
+      id: '1750000000008'
+      position:
+        x: 645.5
+        y: 3260.0
+      positionAbsolute:
+        x: 645.5
+        y: 3260.0
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: "## \U0001F535 01. Claude Sonnet 4.6\n{{#1750000000001.text#}}\n\n---\n\n##
+          \U0001F7E6 02. Claude Opus 4.8\n{{#1750000000002.text#}}\n\n---\n\n## \U0001F7E9
+          03. GPT-4o\n{{#1750000000003.text#}}\n\n---\n\n## \U0001F7E8 04. Gemini
+          3.5 Flash\n{{#1750000000004.text#}}\n\n---\n\n## \U0001F7E5 05. DeepSeek
+          V4 Flash\n{{#1750000000005.text#}}\n\n---\n\n## ⬛ 06. Grok 4\n{{#1750000000006.text#}}\n\n---\n\n##
+          \U0001F7EA 07. Qwen3 Max\n{{#1750000000007.text#}}\n\n---\n\n## \U0001F7E7
+          08. Llama 4 Maverick\n{{#1750000000008.text#}}"
+        desc: ''
+        selected: false
+        title: Answer (8モデル比較)
+        type: answer
+        variables: []
+      height: 400
+      id: '1750000000099'
+      position:
+        x: 1000.0
+        y: 2634.5
+      positionAbsolute:
+        x: 1000.0
+        y: 2634.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 300
     viewport:
-      x: -61.09603445348455
-      y: -2333.301785945089
-      zoom: 0.6
+      x: -61.0
+      y: -2333.3
+      zoom: 0.5
   rag_pipeline_variables: []
