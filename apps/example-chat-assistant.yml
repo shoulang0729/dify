@@ -1,0 +1,37 @@
+# Example Chat Assistant — 最小構成のスターター DSL
+#
+# ⚠️ version は要確認:
+#   DSL のスキーマは Dify のバージョンに紐づきます。古い version 値だと
+#   インポート時に警告が出ることがあります。実際に運用している Dify から
+#   一度 Export DSL を行い、その `version` 値に合わせて更新してください。
+#   （雛形が用意できたら、本ファイルではなくその Export 済み DSL を雛形に
+#    することを推奨します。詳細は CLAUDE.md を参照。）
+version: "0.1.5"  # TODO: 運用中の Dify の Export DSL に合わせて要確認
+kind: app
+app:
+  name: Example Chat Assistant
+  description: Anthropic モデルを使う最小構成のチャットアシスタント（スターター）。
+  mode: chat
+  icon: "🤖"
+  icon_background: "#FFEAD5"
+model_config:
+  # ⚠️ API キーは DSL に含まれません。インポート後に各環境で
+  #    プロバイダー(anthropic)と API キーを設定し直してください。
+  model:
+    provider: anthropic
+    name: claude-opus-4-8
+    mode: chat
+    completion_params:
+      temperature: 0.7
+      max_tokens: 1024
+  pre_prompt: |
+    あなたは親切で簡潔なアシスタントです。ユーザーの質問に日本語で答えてください。
+  user_input_form: []
+  opening_statement: "こんにちは！何かお手伝いできることはありますか？"
+  suggested_questions: []
+  more_like_this:
+    enabled: false
+  speech_to_text:
+    enabled: false
+  retriever_resource:
+    enabled: false
