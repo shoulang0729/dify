@@ -1,0 +1,241 @@
+app:
+  description: 日本語ユーザー向けの知識ベース検索チャットボット。社内ドキュメントやFAQをナレッジに登録すると、その内容をもとに丁寧な日本語で回答します。
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  mode: advanced-chat
+  name: 知識リトリーバル + チャットボット
+  use_icon_as_answer_icon: false
+# ⚠️ LLM は OpenRouter(OpenAI-Compatible) を使う想定に変更しています。
+#    インポート前に Dify の Settings → Model Provider で「OpenAI-Compatible」を追加し、
+#      Base URL: https://openrouter.ai/api/v1
+#      API Key : <OpenRouter の API キー>
+#    を設定してください。インポート後、各ノードの model.provider / model.name は
+#    UI で選び直すのが確実です(provider 文字列は登録方法で変わるため)。
+dependencies: []
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - remote_url
+      - local_file
+      enabled: true
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 50
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: こんにちは！ご質問をどうぞ。ナレッジに登録された情報をもとにお答えします。
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: true
+    suggested_questions:
+    - 使い方を教えてください
+    - どんな質問に答えられますか？
+    - ナレッジには何が登録されていますか？
+    suggested_questions_after_answer:
+      enabled: true
+    text_to_speech:
+      enabled: true
+      language: ja-JP
+      voice: ''
+  graph:
+    edges:
+    - data:
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: 1711528914102-1711528915811
+      source: '1711528914102'
+      sourceHandle: source
+      target: '1711528915811'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1711528915811-1711528917469
+      source: '1711528915811'
+      sourceHandle: source
+      target: '1711528917469'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: 1711528917469-1711528919501
+      source: '1711528917469'
+      sourceHandle: source
+      target: '1711528919501'
+      targetHandle: target
+      type: custom
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Start
+        type: start
+        variables: []
+      height: 73
+      id: '1711528914102'
+      position:
+        x: 79.5
+        y: 2634.5
+      positionAbsolute:
+        x: 79.5
+        y: 2634.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        dataset_ids:
+        # ⚠️ この dataset_id は現インスタンス固有。別環境へ移行したら、移行先のナレッジ ID に貼り替えること。
+        - 6n3lSRo9tftA1CLKsSPvYkEXDDkyYzgSw6T6YaqJ5gUP2ITBGDXaCZDDLJE2sE2V
+        desc: Allows you to query text content related to user questions from the
+          Knowledge
+        query_variable_selector:
+        - '1711528914102'
+        - sys.query
+        retrieval_mode: single
+        selected: false
+        single_retrieval_config:
+          model:
+            completion_params:
+              frequency_penalty: 0
+              max_tokens: 512
+              presence_penalty: 0
+              temperature: 0
+              top_p: 1
+            mode: chat
+            # 検索用は安価で十分。OpenRouter 経由のモデル ID 例。UI で選び直し可。
+            name: openai/gpt-4o-mini
+            provider: openrouter
+        title: Knowledge Retrieval
+        type: knowledge-retrieval
+      dragging: false
+      height: 112
+      id: '1711528915811'
+      position:
+        x: 362.5
+        y: 2634.5
+      positionAbsolute:
+        x: 362.5
+        y: 2634.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: Invoking large language models to answer questions or process natural
+          language
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 10
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 2048
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          # メイン回答用。日本語品質重視。UI で他モデルに変更可。
+          name: anthropic/claude-3.5-sonnet
+          provider: openrouter
+        prompt_template:
+        - id: a533bc0a-ced6-461c-9840-74e874f3a9dd
+          role: system
+          text: |-
+            あなたは親切で丁寧な日本語アシスタントです。
+            以下の <context></context> タグ内の情報を、あなたの学習済み知識として使って回答してください。
+            <context>
+            {{#context#}}
+            </context>
+            回答のルール:
+            - 必ず日本語で、丁寧語(です・ます調)で答えてください。
+            - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
+            - 確信が持てないときや質問があいまいなときは、確認の質問を返してください。
+            - context から情報を得たことは、わざわざ明示しないでください。
+        selected: true
+        structured_output_enabled: false
+        title: LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 148
+      id: '1711528917469'
+      position:
+        x: 645.5
+        y: 2634.5
+      positionAbsolute:
+        x: 645.5
+        y: 2634.5
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: '{{#1711528917469.text#}}'
+        desc: ''
+        selected: false
+        title: Answer
+        type: answer
+        variables: []
+      height: 103
+      id: '1711528919501'
+      position:
+        x: 928.5
+        y: 2634.5
+      positionAbsolute:
+        x: 928.5
+        y: 2634.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: -61.09603445348455
+      y: -2333.301785945089
+      zoom: 0.9777733718943388
+  rag_pipeline_variables: []
