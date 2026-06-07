@@ -156,73 +156,73 @@ workflow:
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000001-1750000000099
+      id: 1750000000001-1750000100001
       source: '1750000000001'
       sourceHandle: source
-      target: '1750000000099'
+      target: '1750000100001'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000002-1750000000099
+      id: 1750000000002-1750000100002
       source: '1750000000002'
       sourceHandle: source
-      target: '1750000000099'
+      target: '1750000100002'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000003-1750000000099
+      id: 1750000000003-1750000100003
       source: '1750000000003'
       sourceHandle: source
-      target: '1750000000099'
+      target: '1750000100003'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000004-1750000000099
+      id: 1750000000004-1750000100004
       source: '1750000000004'
       sourceHandle: source
-      target: '1750000000099'
+      target: '1750000100004'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000005-1750000000099
+      id: 1750000000005-1750000100005
       source: '1750000000005'
       sourceHandle: source
-      target: '1750000000099'
+      target: '1750000100005'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000006-1750000000099
+      id: 1750000000006-1750000100006
       source: '1750000000006'
       sourceHandle: source
-      target: '1750000000099'
+      target: '1750000100006'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000007-1750000000099
+      id: 1750000000007-1750000100007
       source: '1750000000007'
       sourceHandle: source
-      target: '1750000000099'
+      target: '1750000100007'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000008-1750000000099
+      id: 1750000000008-1750000100008
       source: '1750000000008'
       sourceHandle: source
-      target: '1750000000099'
+      target: '1750000100008'
       targetHandle: target
       type: custom
     nodes:
@@ -298,7 +298,7 @@ workflow:
         model:
           completion_params:
             frequency_penalty: 0
-            max_tokens: 2048
+            max_tokens: 4096
             presence_penalty: 0
             temperature: 0.7
             top_p: 1
@@ -354,7 +354,7 @@ workflow:
         model:
           completion_params:
             frequency_penalty: 0
-            max_tokens: 2048
+            max_tokens: 4096
             presence_penalty: 0
             temperature: 0.7
             top_p: 1
@@ -410,7 +410,7 @@ workflow:
         model:
           completion_params:
             frequency_penalty: 0
-            max_tokens: 2048
+            max_tokens: 4096
             presence_penalty: 0
             temperature: 0.7
             top_p: 1
@@ -466,7 +466,7 @@ workflow:
         model:
           completion_params:
             frequency_penalty: 0
-            max_tokens: 2048
+            max_tokens: 4096
             presence_penalty: 0
             temperature: 0.7
             top_p: 1
@@ -522,7 +522,7 @@ workflow:
         model:
           completion_params:
             frequency_penalty: 0
-            max_tokens: 2048
+            max_tokens: 4096
             presence_penalty: 0
             temperature: 0.7
             top_p: 1
@@ -578,7 +578,7 @@ workflow:
         model:
           completion_params:
             frequency_penalty: 0
-            max_tokens: 2048
+            max_tokens: 4096
             presence_penalty: 0
             temperature: 0.7
             top_p: 1
@@ -634,7 +634,7 @@ workflow:
         model:
           completion_params:
             frequency_penalty: 0
-            max_tokens: 2048
+            max_tokens: 4096
             presence_penalty: 0
             temperature: 0.7
             top_p: 1
@@ -690,7 +690,7 @@ workflow:
         model:
           completion_params:
             frequency_penalty: 0
-            max_tokens: 2048
+            max_tokens: 4096
             presence_penalty: 0
             temperature: 0.7
             top_p: 1
@@ -730,31 +730,169 @@ workflow:
       type: custom
       width: 242
     - data:
-        answer: "## \U0001F535 01. Claude Sonnet 4.6\n{{#1750000000001.text#}}\n\n---\n\n##
-          \U0001F7E6 02. Claude Opus 4.8\n{{#1750000000002.text#}}\n\n---\n\n## \U0001F7E9
-          03. GPT-4o\n{{#1750000000003.text#}}\n\n---\n\n## \U0001F7E8 04. Gemini
-          3.5 Flash\n{{#1750000000004.text#}}\n\n---\n\n## \U0001F7E5 05. DeepSeek
-          V4 Flash\n{{#1750000000005.text#}}\n\n---\n\n## ⬛ 06. Grok 4\n{{#1750000000006.text#}}\n\n---\n\n##
-          \U0001F7EA 07. Qwen3 Max\n{{#1750000000007.text#}}\n\n---\n\n## \U0001F7E7
-          08. Llama 4 Maverick\n{{#1750000000008.text#}}"
+        answer: "## \U0001F535 01. Claude Sonnet 4.6\n{{#1750000000001.text#}}\n\n---\n"
         desc: ''
         selected: false
-        title: Answer (8モデル比較)
+        title: Answer 01
         type: answer
         variables: []
-      height: 400
-      id: '1750000000099'
+      height: 120
+      id: '1750000100001'
       position:
         x: 1000.0
-        y: 2634.5
+        y: 2000.0
       positionAbsolute:
         x: 1000.0
-        y: 2634.5
+        y: 2000.0
       selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
-      width: 300
+      width: 320
+    - data:
+        answer: "## \U0001F7E6 02. Claude Opus 4.8\n{{#1750000000002.text#}}\n\n---\n"
+        desc: ''
+        selected: false
+        title: Answer 02
+        type: answer
+        variables: []
+      height: 120
+      id: '1750000100002'
+      position:
+        x: 1000.0
+        y: 2180.0
+      positionAbsolute:
+        x: 1000.0
+        y: 2180.0
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 320
+    - data:
+        answer: "## \U0001F7E9 03. GPT-4o\n{{#1750000000003.text#}}\n\n---\n"
+        desc: ''
+        selected: false
+        title: Answer 03
+        type: answer
+        variables: []
+      height: 120
+      id: '1750000100003'
+      position:
+        x: 1000.0
+        y: 2360.0
+      positionAbsolute:
+        x: 1000.0
+        y: 2360.0
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 320
+    - data:
+        answer: "## \U0001F7E8 04. Gemini 3.5 Flash\n{{#1750000000004.text#}}\n\n---\n"
+        desc: ''
+        selected: false
+        title: Answer 04
+        type: answer
+        variables: []
+      height: 120
+      id: '1750000100004'
+      position:
+        x: 1000.0
+        y: 2540.0
+      positionAbsolute:
+        x: 1000.0
+        y: 2540.0
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 320
+    - data:
+        answer: "## \U0001F7E5 05. DeepSeek V4 Flash\n{{#1750000000005.text#}}\n\n---\n"
+        desc: ''
+        selected: false
+        title: Answer 05
+        type: answer
+        variables: []
+      height: 120
+      id: '1750000100005'
+      position:
+        x: 1000.0
+        y: 2720.0
+      positionAbsolute:
+        x: 1000.0
+        y: 2720.0
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 320
+    - data:
+        answer: |
+          ## ⬛ 06. Grok 4
+          {{#1750000000006.text#}}
+
+          ---
+        desc: ''
+        selected: false
+        title: Answer 06
+        type: answer
+        variables: []
+      height: 120
+      id: '1750000100006'
+      position:
+        x: 1000.0
+        y: 2900.0
+      positionAbsolute:
+        x: 1000.0
+        y: 2900.0
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 320
+    - data:
+        answer: "## \U0001F7EA 07. Qwen3 Max\n{{#1750000000007.text#}}\n\n---\n"
+        desc: ''
+        selected: false
+        title: Answer 07
+        type: answer
+        variables: []
+      height: 120
+      id: '1750000100007'
+      position:
+        x: 1000.0
+        y: 3080.0
+      positionAbsolute:
+        x: 1000.0
+        y: 3080.0
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 320
+    - data:
+        answer: "## \U0001F7E7 08. Llama 4 Maverick\n{{#1750000000008.text#}}\n\n---\n"
+        desc: ''
+        selected: false
+        title: Answer 08
+        type: answer
+        variables: []
+      height: 120
+      id: '1750000100008'
+      position:
+        x: 1000.0
+        y: 3260.0
+      positionAbsolute:
+        x: 1000.0
+        y: 3260.0
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 320
     viewport:
       x: -61.0
       y: -2333.3
