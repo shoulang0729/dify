@@ -84,10 +84,10 @@ workflow:
     - data:
         sourceType: knowledge-retrieval
         targetType: llm
-      id: 1711528915811-1750000000001
+      id: 1711528915811-1750000000004
       source: '1711528915811'
       sourceHandle: source
-      target: '1750000000001'
+      target: '1750000000004'
       targetHandle: target
       type: custom
     - data:
@@ -97,15 +97,6 @@ workflow:
       source: '1711528915811'
       sourceHandle: source
       target: '1750000000003'
-      targetHandle: target
-      type: custom
-    - data:
-        sourceType: knowledge-retrieval
-        targetType: llm
-      id: 1711528915811-1750000000004
-      source: '1711528915811'
-      sourceHandle: source
-      target: '1750000000004'
       targetHandle: target
       type: custom
     - data:
@@ -127,10 +118,19 @@ workflow:
       targetHandle: target
       type: custom
     - data:
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1711528915811-1750000000001
+      source: '1711528915811'
+      sourceHandle: source
+      target: '1750000000001'
+      targetHandle: target
+      type: custom
+    - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000001-1750000000099
-      source: '1750000000001'
+      id: 1750000000004-1750000000099
+      source: '1750000000004'
       sourceHandle: source
       target: '1750000000099'
       targetHandle: target
@@ -140,15 +140,6 @@ workflow:
         targetType: answer
       id: 1750000000003-1750000000099
       source: '1750000000003'
-      sourceHandle: source
-      target: '1750000000099'
-      targetHandle: target
-      type: custom
-    - data:
-        sourceType: llm
-        targetType: answer
-      id: 1750000000004-1750000000099
-      source: '1750000000004'
       sourceHandle: source
       target: '1750000000099'
       targetHandle: target
@@ -167,6 +158,15 @@ workflow:
         targetType: answer
       id: 1750000000007-1750000000099
       source: '1750000000007'
+      sourceHandle: source
+      target: '1750000000099'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: 1750000000001-1750000000099
+      source: '1750000000001'
       sourceHandle: source
       target: '1750000000099'
       targetHandle: target
@@ -249,7 +249,7 @@ workflow:
             temperature: 0.7
             top_p: 1
           mode: chat
-          name: anthropic/claude-sonnet-4.6
+          name: google/gemini-2.5-flash
           provider: openrouter
         prompt_template:
         - id: 11111111-0001-0001-0001-000000000001
@@ -265,13 +265,13 @@ workflow:
             - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
         selected: false
         structured_output_enabled: false
-        title: 01. Claude Sonnet 4.6
+        title: 01. Gemini 2.5 Flash
         type: llm
         variables: []
         vision:
           enabled: false
       height: 148
-      id: '1750000000001'
+      id: '1750000000004'
       position:
         x: 645.5
         y: 2000.0
@@ -361,7 +361,7 @@ workflow:
             temperature: 0.7
             top_p: 1
           mode: chat
-          name: google/gemini-2.5-flash
+          name: deepseek/deepseek-v4-flash
           provider: openrouter
         prompt_template:
         - id: 11111111-0003-0003-0003-000000000003
@@ -377,63 +377,7 @@ workflow:
             - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
         selected: false
         structured_output_enabled: false
-        title: 03. Gemini 2.5 Flash
-        type: llm
-        variables: []
-        vision:
-          enabled: false
-      height: 148
-      id: '1750000000004'
-      position:
-        x: 645.5
-        y: 2360.0
-      positionAbsolute:
-        x: 645.5
-        y: 2360.0
-      selected: false
-      sourcePosition: right
-      targetPosition: left
-      type: custom
-      width: 242
-    - data:
-        context:
-          enabled: true
-          variable_selector:
-          - '1711528915811'
-          - result
-        desc: ''
-        memory:
-          role_prefix:
-            assistant: ''
-            user: ''
-          window:
-            enabled: true
-            size: 10
-        model:
-          completion_params:
-            frequency_penalty: 0
-            max_tokens: 4096
-            presence_penalty: 0
-            temperature: 0.7
-            top_p: 1
-          mode: chat
-          name: deepseek/deepseek-v4-flash
-          provider: openrouter
-        prompt_template:
-        - id: 11111111-0004-0004-0004-000000000004
-          role: system
-          text: |-
-            あなたは親切で丁寧な日本語アシスタントです。
-            以下の <context></context> タグ内の情報を、あなたの学習済み知識として使って回答してください。
-            <context>
-            {{#context#}}
-            </context>
-            回答のルール:
-            - 必ず日本語で、丁寧語(です・ます調)で答えてください。
-            - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
-        selected: false
-        structured_output_enabled: false
-        title: 04. DeepSeek V4 Flash
+        title: 03. DeepSeek V4 Flash
         type: llm
         variables: []
         vision:
@@ -442,10 +386,10 @@ workflow:
       id: '1750000000005'
       position:
         x: 645.5
-        y: 2540.0
+        y: 2360.0
       positionAbsolute:
         x: 645.5
-        y: 2540.0
+        y: 2360.0
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -476,6 +420,62 @@ workflow:
           name: qwen/qwen3-max
           provider: openrouter
         prompt_template:
+        - id: 11111111-0004-0004-0004-000000000004
+          role: system
+          text: |-
+            あなたは親切で丁寧な日本語アシスタントです。
+            以下の <context></context> タグ内の情報を、あなたの学習済み知識として使って回答してください。
+            <context>
+            {{#context#}}
+            </context>
+            回答のルール:
+            - 必ず日本語で、丁寧語(です・ます調)で答えてください。
+            - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
+        selected: false
+        structured_output_enabled: false
+        title: 04. Qwen3 Max
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 148
+      id: '1750000000007'
+      position:
+        x: 645.5
+        y: 2540.0
+      positionAbsolute:
+        x: 645.5
+        y: 2540.0
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1711528915811'
+          - result
+        desc: ''
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 10
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 4096
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: anthropic/claude-sonnet-4.6
+          provider: openrouter
+        prompt_template:
         - id: 11111111-0005-0005-0005-000000000005
           role: system
           text: |-
@@ -489,13 +489,13 @@ workflow:
             - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
         selected: false
         structured_output_enabled: false
-        title: 05. Qwen3 Max
+        title: 05. Claude Sonnet 4.6
         type: llm
         variables: []
         vision:
           enabled: false
       height: 148
-      id: '1750000000007'
+      id: '1750000000001'
       position:
         x: 645.5
         y: 2720.0
@@ -508,11 +508,11 @@ workflow:
       type: custom
       width: 242
     - data:
-        answer: "## \U0001F535 01. Claude Sonnet 4.6\n{{#1750000000001.text#}}\n\n---\n\n##
-          \U0001F7E9 02. GPT-4o\n{{#1750000000003.text#}}\n\n---\n\n## \U0001F7E8
-          03. Gemini 2.5 Flash\n{{#1750000000004.text#}}\n\n---\n\n## \U0001F7E5 04.
-          DeepSeek V4 Flash\n{{#1750000000005.text#}}\n\n---\n\n## \U0001F7EA 05.
-          Qwen3 Max\n{{#1750000000007.text#}}"
+        answer: "## \U0001F7E8 01. Gemini 2.5 Flash\n{{#1750000000004.text#}}\n\n---\n\n##
+          \U0001F7E9 02. GPT-4o\n{{#1750000000003.text#}}\n\n---\n\n## \U0001F7E5
+          03. DeepSeek V4 Flash\n{{#1750000000005.text#}}\n\n---\n\n## \U0001F7EA
+          04. Qwen3 Max\n{{#1750000000007.text#}}\n\n---\n\n## \U0001F535 05. Claude
+          Sonnet 4.6\n{{#1750000000001.text#}}"
         desc: ''
         selected: false
         title: Answer (5モデルまとめ)
