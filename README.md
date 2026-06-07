@@ -46,6 +46,27 @@ https://raw.githubusercontent.com/<owner>/<repo>/<branch>/apps/example-chat-assi
 - 使用するモデル（プロバイダー・モデル名）の選択
 - そのプロバイダーの API キーの登録
 
+## 運用フロー（v1 = ソロ運用）
+
+ひとり運用の間は「**いつでも元に戻せる履歴**」を最優先にします。
+main へ直接コミットせず、すべて作業ブランチ → PR → **squash マージ** → ブランチ削除、
+の流れに統一します。これを 1 コマンドで実行するスクリプトを用意しています。
+
+```bash
+# ブランチ作成→commit→push→PR作成→squashマージ→ブランチ削除→main最新化 を一括実行
+scripts/ship.sh "feat: add customer-support app DSL"
+
+# 直前の変更を打ち消して元に戻す（履歴は残す revert 方式）
+scripts/rollback.sh
+```
+
+- 前提: `git` と GitHub CLI（`gh auth login` 済み）。
+- 1 PR = 1 squash コミットなので、`rollback.sh` で 1 コミット戻すだけで復旧できます。
+- 詳細・手動手順は [`CLAUDE.md`](./CLAUDE.md) の「Git 運用フロー」を参照。
+
+> **v2（セルフホスト＋コラボ運用）になったらルールを変更します**
+> （PR レビュー必須・直接 push 禁止・revert も PR 経由など）。それまでは本フローで運用します。
+
 ## GitHub への push / clone コマンド例
 
 ### clone する
