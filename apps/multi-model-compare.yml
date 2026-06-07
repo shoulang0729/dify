@@ -359,7 +359,7 @@ workflow:
             temperature: 0.7
             top_p: 1
           mode: chat
-          name: anthropic/claude-opus-4.8
+          name: anthropic/claude-opus-4.6
           provider: openrouter
         prompt_template:
         - id: 11111111-0002-0002-0002-000000000002
@@ -375,7 +375,7 @@ workflow:
             - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
         selected: false
         structured_output_enabled: false
-        title: 02. Claude Opus 4.8
+        title: 02. Claude Opus 4.6
         type: llm
         variables: []
         vision:
@@ -471,7 +471,7 @@ workflow:
             temperature: 0.7
             top_p: 1
           mode: chat
-          name: google/gemini-3.5-flash
+          name: google/gemini-2.5-flash
           provider: openrouter
         prompt_template:
         - id: 11111111-0004-0004-0004-000000000004
@@ -487,7 +487,7 @@ workflow:
             - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
         selected: false
         structured_output_enabled: false
-        title: 04. Gemini 3.5 Flash
+        title: 04. Gemini 2.5 Flash
         type: llm
         variables: []
         vision:
@@ -583,7 +583,7 @@ workflow:
             temperature: 0.7
             top_p: 1
           mode: chat
-          name: x-ai/grok-4
+          name: x-ai/grok-4.3
           provider: openrouter
         prompt_template:
         - id: 11111111-0006-0006-0006-000000000006
@@ -599,7 +599,7 @@ workflow:
             - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
         selected: false
         structured_output_enabled: false
-        title: 06. Grok 4
+        title: 06. Grok 4.3
         type: llm
         variables: []
         vision:
@@ -695,7 +695,7 @@ workflow:
             temperature: 0.7
             top_p: 1
           mode: chat
-          name: meta-llama/llama-4-maverick
+          name: meta-llama/llama-3.2-11b-vision-instruct
           provider: openrouter
         prompt_template:
         - id: 11111111-0008-0008-0008-000000000008
@@ -711,7 +711,7 @@ workflow:
             - context に答えが見つからない場合は、わからない旨を正直に伝えてください。推測で答えないこと。
         selected: false
         structured_output_enabled: false
-        title: '08. Llama 4 Maverick'
+        title: '08. Llama 3.2 11B'
         type: llm
         variables: []
         vision:
@@ -750,7 +750,7 @@ workflow:
       type: custom
       width: 320
     - data:
-        answer: "## \U0001F7E6 02. Claude Opus 4.8\n{{#1750000000002.text#}}\n\n---\n"
+        answer: "## \U0001F7E6 02. Claude Opus 4.6\n{{#1750000000002.text#}}\n\n---\n"
         desc: ''
         selected: false
         title: Answer 02
@@ -790,7 +790,7 @@ workflow:
       type: custom
       width: 320
     - data:
-        answer: "## \U0001F7E8 04. Gemini 3.5 Flash\n{{#1750000000004.text#}}\n\n---\n"
+        answer: "## \U0001F7E8 04. Gemini 2.5 Flash\n{{#1750000000004.text#}}\n\n---\n"
         desc: ''
         selected: false
         title: Answer 04
@@ -831,7 +831,7 @@ workflow:
       width: 320
     - data:
         answer: |
-          ## ⬛ 06. Grok 4
+          ## ⬛ 06. Grok 4.3
           {{#1750000000006.text#}}
 
           ---
@@ -874,7 +874,7 @@ workflow:
       type: custom
       width: 320
     - data:
-        answer: "## \U0001F7E7 08. Llama 4 Maverick\n{{#1750000000008.text#}}\n\n---\n"
+        answer: "## \U0001F7E7 08. Llama 3.2 11B\n{{#1750000000008.text#}}\n\n---\n"
         desc: ''
         selected: false
         title: Answer 08
