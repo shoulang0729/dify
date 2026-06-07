@@ -56,3 +56,24 @@ gh pr create --base main --fill     # PR 作成
 gh pr merge work/<topic> --squash --delete-branch
 git switch main && git pull origin main
 ```
+
+## 6. v2（セルフホスト＋コラボ）バックログ
+
+v2（香港セルフホストへ移行）になったら着手する候補。**v1 では手動運用のまま。**
+
+### Dify の Export / Import 自動化（git ⇄ Dify 同期）
+
+- **目的**: Web UI で手動 Export/Import している作業を自動化し、`apps/*.yml` と
+  Dify の状態を同期する。
+- **方式**: Dify の **Console API**（Web UI 内部API・非公式/未ドキュメント）を使う。
+  - 公式の **Service API**（アプリ実行用）では DSL の export/import は **不可**。
+  - 概念（実エンドポイントは導入バージョンで要確認）:
+    - export: `GET /console/api/apps/{app_id}/export`（要 console トークン）
+    - import: `POST /console/api/apps/imports`（`mode: yaml-content` で YAML を渡す）
+- **作るもの（案）**:
+  - `scripts/dify-pull.sh` … 全アプリの DSL を取得 → `apps/*.yml` に保存 → `ship.sh` でコミット。
+  - `scripts/dify-push.sh` … `apps/*.yml` を Console API で import（git → Dify 反映）。
+  - 余力があれば GitHub Actions で push 時に自動デプロイ。
+- **前提/注意**:
+  - セルフホストなら自インスタンスなので Console API も自由に使える（Cloud は規約面グレー＆壊れやすいので非推奨）。
+  - エンドポイント・認証は **移行先の Dify バージョンで必ず再確認** してから実装する。
