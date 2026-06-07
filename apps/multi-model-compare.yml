@@ -129,46 +129,46 @@ workflow:
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000001-1750000100001
+      id: 1750000000001-1750000000099
       source: '1750000000001'
       sourceHandle: source
-      target: '1750000100001'
+      target: '1750000000099'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000003-1750000100002
+      id: 1750000000003-1750000000099
       source: '1750000000003'
       sourceHandle: source
-      target: '1750000100002'
+      target: '1750000000099'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000004-1750000100003
+      id: 1750000000004-1750000000099
       source: '1750000000004'
       sourceHandle: source
-      target: '1750000100003'
+      target: '1750000000099'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000005-1750000100004
+      id: 1750000000005-1750000000099
       source: '1750000000005'
       sourceHandle: source
-      target: '1750000100004'
+      target: '1750000000099'
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: answer
-      id: 1750000000007-1750000100005
+      id: 1750000000007-1750000000099
       source: '1750000000007'
       sourceHandle: source
-      target: '1750000100005'
+      target: '1750000000099'
       targetHandle: target
       type: custom
     nodes:
@@ -508,105 +508,29 @@ workflow:
       type: custom
       width: 242
     - data:
-        answer: "## \U0001F535 01. Claude Sonnet 4.6\n{{#1750000000001.text#}}\n\n---\n"
+        answer: "## \U0001F535 01. Claude Sonnet 4.6\n{{#1750000000001.text#}}\n\n---\n\n##
+          \U0001F7E9 02. GPT-4o\n{{#1750000000003.text#}}\n\n---\n\n## \U0001F7E8
+          03. Gemini 2.5 Flash\n{{#1750000000004.text#}}\n\n---\n\n## \U0001F7E5 04.
+          DeepSeek V4 Flash\n{{#1750000000005.text#}}\n\n---\n\n## \U0001F7EA 05.
+          Qwen3 Max\n{{#1750000000007.text#}}"
         desc: ''
         selected: false
-        title: Answer 01
+        title: Answer (5モデルまとめ)
         type: answer
         variables: []
-      height: 120
-      id: '1750000100001'
+      height: 400
+      id: '1750000000099'
       position:
         x: 1000.0
-        y: 2000.0
+        y: 2634.5
       positionAbsolute:
         x: 1000.0
-        y: 2000.0
+        y: 2634.5
       selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
-      width: 320
-    - data:
-        answer: "## \U0001F7E9 02. GPT-4o\n{{#1750000000003.text#}}\n\n---\n"
-        desc: ''
-        selected: false
-        title: Answer 02
-        type: answer
-        variables: []
-      height: 120
-      id: '1750000100002'
-      position:
-        x: 1000.0
-        y: 2180.0
-      positionAbsolute:
-        x: 1000.0
-        y: 2180.0
-      selected: false
-      sourcePosition: right
-      targetPosition: left
-      type: custom
-      width: 320
-    - data:
-        answer: "## \U0001F7E8 03. Gemini 2.5 Flash\n{{#1750000000004.text#}}\n\n---\n"
-        desc: ''
-        selected: false
-        title: Answer 03
-        type: answer
-        variables: []
-      height: 120
-      id: '1750000100003'
-      position:
-        x: 1000.0
-        y: 2360.0
-      positionAbsolute:
-        x: 1000.0
-        y: 2360.0
-      selected: false
-      sourcePosition: right
-      targetPosition: left
-      type: custom
-      width: 320
-    - data:
-        answer: "## \U0001F7E5 04. DeepSeek V4 Flash\n{{#1750000000005.text#}}\n\n---\n"
-        desc: ''
-        selected: false
-        title: Answer 04
-        type: answer
-        variables: []
-      height: 120
-      id: '1750000100004'
-      position:
-        x: 1000.0
-        y: 2540.0
-      positionAbsolute:
-        x: 1000.0
-        y: 2540.0
-      selected: false
-      sourcePosition: right
-      targetPosition: left
-      type: custom
-      width: 320
-    - data:
-        answer: "## \U0001F7EA 05. Qwen3 Max\n{{#1750000000007.text#}}\n\n---\n"
-        desc: ''
-        selected: false
-        title: Answer 05
-        type: answer
-        variables: []
-      height: 120
-      id: '1750000100005'
-      position:
-        x: 1000.0
-        y: 2720.0
-      positionAbsolute:
-        x: 1000.0
-        y: 2720.0
-      selected: false
-      sourcePosition: right
-      targetPosition: left
-      type: custom
-      width: 320
+      width: 360
     viewport:
       x: -61.0
       y: -2333.3
