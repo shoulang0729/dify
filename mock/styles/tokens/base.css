@@ -1,0 +1,63 @@
+/* ============================================================
+   NTT DATA — Base element styles (foundation layer)
+   Applies brand typography & color defaults to raw elements.
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--leading-normal);
+  color: var(--text-body);
+  background: var(--surface-canvas);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  color: var(--text-heading);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  margin: 0 0 var(--space-4);
+  text-wrap: balance;
+}
+h1 { font-size: var(--text-h1); }
+h2 { font-size: var(--text-h2); }
+h3 { font-size: var(--text-h3); }
+
+p { margin: 0 0 var(--space-4); text-wrap: pretty; }
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+a:hover { color: var(--text-link-hover); text-decoration: underline; }
+
+/* Overline / eyebrow label convention */
+.ntt-overline {
+  font-family: var(--font-sans);
+  font-size: var(--text-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--ntt-future-blue);
+}
+
+/* Future Blue accent rule used under titles / section heads */
+.ntt-accent-rule {
+  width: 48px;
+  height: var(--border-accent);
+  background: var(--ntt-future-blue);
+  border: 0;
+  margin: var(--space-4) 0;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
+}

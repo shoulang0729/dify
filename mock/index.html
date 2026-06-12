@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIエージェントカタログ ／ AI智能体服务目录</title>
+<template id="__bundler_thumbnail" data-bg-color="#070F26">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect x="360" y="240" width="120" height="320" fill="#0071BC"/>
+    <rect x="510" y="240" width="330" height="90" fill="#FFFFFF" opacity="0.92"/>
+    <rect x="510" y="355" width="330" height="90" fill="#FFFFFF" opacity="0.55"/>
+    <rect x="510" y="470" width="330" height="90" fill="#FFFFFF" opacity="0.3"/>
+  </svg>
+</template>
+<link rel="stylesheet" href="styles/tokens/colors.css">
+<link rel="stylesheet" href="styles/tokens/typography.css">
+<link rel="stylesheet" href="styles/tokens/spacing.css">
+<link rel="stylesheet" href="styles/tokens/base.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: 'Meiryo UI', Meiryo, 'Yu Gothic UI', 'Hiragino Kaku Gothic ProN', Arial, sans-serif;
+    color: var(--text-body, #2E404D);
+    background: #FFFFFF;
+    overflow: hidden;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  .zh { font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; }
+
+  .app { height: 100vh; display: flex; flex-direction: column; }
+
+  /* ===== コンセプト確認用ツールバー ===== */
+  .mockbar {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 8px 20px; background: #EEF2F5; border-bottom: 1px solid #DDE3E8;
+  }
+  .mockbar .label { font-size: 11px; letter-spacing: 0.08em; color: #5A6B78; font-weight: 700; }
+  .mockbar .segwrap { display: flex; align-items: center; gap: 8px; }
+  .mockbar .seglabel { font-size: 11px; color: #5A6B78; }
+  .seg { display: flex; border: 1px solid #C9D2D9; }
+  .seg button { padding: 5px 12px; font-size: 11.5px; border: none; background: #FFFFFF; color: #5A6B78; }
+  .seg button.on { background: #0071BC; color: #FFFFFF; font-weight: 700; }
+
+  /* ===== ヘッダー ===== */
+  .hdr {
+    flex-shrink: 0; display: flex; align-items: center; gap: 20px;
+    padding: 0 24px; height: 64px; background: #FFFFFF; border-bottom: 1px solid #E3E8EC;
+  }
+  .hdr img { height: 24px; display: block; }
+  .hdr .vline { width: 1px; height: 28px; background: #E3E8EC; }
+  .hdr .t1 { font-size: 15px; font-weight: 700; color: #070F26; }
+  .hdr .t2 { font-size: 11px; color: #8A98A4; }
+  .hdr .right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .hdr .dept { font-size: 12.5px; color: #5A6B78; }
+  .hdr .avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: #0071BC; color: #FFFFFF;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+  }
+
+  .body { flex: 1; min-height: 0; display: flex; }
+
+  /* ===== 左ナビ共通 ===== */
+  nav.side { flex-shrink: 0; overflow-y: auto; border-right: 1px solid #E3E8EC; }
+  .nav-item {
+    display: flex; align-items: baseline; gap: 8px; width: 100%;
+    padding: 10px 20px; border: none; background: transparent; text-align: left;
+  }
+  .nav-item:hover { background: #F2F6F9; }
+  .nav-item.on { background: #EAF3FA; }
+  .nav-item .ja-l { font-size: 13.5px; font-weight: 700; color: #070F26; }
+  .nav-item.on .ja-l { color: #0071BC; }
+  .nav-item .zh-l { font-size: 11px; color: #8A98A4; }
+  .nav-item .cnt { margin-left: auto; font-size: 11px; color: #8A98A4; }
+  .nav-sub {
+    display: flex; align-items: baseline; gap: 8px; width: 100%;
+    padding: 8px 20px 8px 34px; border: none; background: transparent; text-align: left;
+  }
+  .nav-sub:hover { background: #F2F6F9; }
+  .nav-sub.on { background: #EAF3FA; }
+  .nav-sub .ja-l { font-size: 13px; color: #2E404D; }
+  .nav-sub.on .ja-l { color: #0071BC; font-weight: 700; }
+  .nav-sub .zh-l { font-size: 11px; color: #8A98A4; }
+  .nav-sub .cnt { margin-left: auto; font-size: 11px; color: #8A98A4; }
+  .chev {
+    margin-left: auto; width: 7px; height: 7px; flex-shrink: 0; align-self: center;
+    border-right: 2px solid #949494; border-bottom: 2px solid #949494;
+    transform: rotate(-45deg); transition: transform 160ms cubic-bezier(0.2, 0, 0.2, 1);
+  }
+  .chev.open { transform: rotate(45deg); }
+  .nav-divider { height: 1px; background: #EEF2F5; margin: 6px 20px; }
+
+  /* 案A */
+  .nav-a { width: 264px; background: #FFFFFF; padding: 12px 0 24px 0; }
+  .nav-a .cat-label { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+  /* 案B */
+  .nav-b { display: flex; }
+  .rail {
+    width: 76px; background: #070F26; display: flex; flex-direction: column;
+    align-items: center; gap: 6px; padding: 12px 0; overflow-y: auto;
+  }
+  .rail button {
+    width: 56px; height: 52px; border: none; background: transparent; color: #93A0B5;
+    font-size: 12px; font-weight: 700; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px;
+  }
+  .rail button:hover { background: rgba(255, 255, 255, 0.08); }
+  .rail button.on { background: #0071BC; color: #FFFFFF; }
+  .rail button .sub-l { font-size: 9px; font-weight: 400; opacity: 0.75; }
+  .rail .rdiv { width: 40px; height: 1px; background: rgba(255, 255, 255, 0.14); margin: 4px 0; }
+  .panel { width: 204px; background: #FFFFFF; overflow-y: auto; padding: 16px 0; }
+  .panel .phead { padding: 0 16px 10px 16px; border-bottom: 1px solid #EEF2F5; margin-bottom: 6px; }
+  .panel .phead .ja-l { font-size: 13.5px; font-weight: 700; color: #070F26; }
+  .panel .phead .zh-l { font-size: 11px; color: #8A98A4; }
+  .panel .nav-sub { padding: 9px 16px; flex-wrap: wrap; }
+
+  /* 案C */
+  .nav-c { width: 252px; background: #F7F9FB; padding: 12px 0 24px 0; }
+  .nav-c .tree-cat {
+    display: flex; align-items: baseline; gap: 6px; width: 100%;
+    padding: 16px 20px 5px 20px; border: none; background: transparent; text-align: left;
+  }
+  .nav-c .tree-cat .ja-l { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: #8A98A4; }
+  .nav-c .tree-cat.on .ja-l { color: #0071BC; }
+  .nav-c .tree-cat .zh-l { font-size: 10px; color: #A4B0BA; }
+  .nav-c .nav-sub { padding: 7px 20px; }
+  .nav-c .nav-sub .ja-l { font-size: 12.5px; }
+
+  /* ===== 右ペイン ===== */
+  main { flex: 1; min-width: 0; overflow-y: auto; background: #F7F9FB; display: flex; flex-direction: column; }
+
+  .list-wrap { padding: 32px 36px 48px 36px; }
+  .list-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 24px; }
+  .crumb { font-size: 11px; letter-spacing: 0.1em; font-weight: 700; color: #0071BC; margin-bottom: 6px; }
+  .list-title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .list-title h1 { margin: 0; font-size: 24px; font-weight: 700; color: #070F26; }
+  .list-title .zh-t { font-size: 14px; color: #8A98A4; }
+  .count { font-size: 12.5px; color: #5A6B78; margin-top: 6px; }
+  .search {
+    width: 280px; padding: 9px 12px; font-size: 13px; border: 1px solid #C9D2D9;
+    border-radius: 2px; background: #FFFFFF; color: #2E404D; outline: none; font-family: inherit;
+  }
+  .search:focus { border-color: #0071BC; box-shadow: 0 0 0 3px rgba(46, 144, 255, 0.25); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .card {
+    background: #FFFFFF; border: 1px solid #D9DFE5; border-bottom: 2px solid #D9DFE5;
+    padding: 20px; cursor: pointer; display: flex; flex-direction: column; gap: 7px;
+    transition: border-bottom-color 160ms cubic-bezier(0.2, 0, 0.2, 1);
+  }
+  .card:hover { border-bottom-color: #0071BC; }
+  .card .c-crumb { font-size: 10.5px; letter-spacing: 0.08em; font-weight: 700; color: #0071BC; }
+  .card .c-ja { font-size: 15.5px; font-weight: 700; color: #070F26; line-height: 1.4; }
+  .card .c-zh { font-size: 12px; color: #5A6B78; }
+  .card .c-desc {
+    font-size: 12.5px; color: #2E404D; line-height: 1.65;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .card .c-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .status { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #5A6B78; margin-right: 4px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .tag {
+    font-size: 11px; color: #5A6B78; border: 1px solid #D9DFE5; border-radius: 4px;
+    padding: 2px 8px; background: #F7F9FB;
+  }
+  .empty { padding: 64px 0; text-align: center; color: #8A98A4; font-size: 13.5px; line-height: 2; }
+
+  /* ===== 詳細 ===== */
+  .detail-wrap { padding: 24px 36px 48px 36px; max-width: 920px; }
+  .backlink {
+    border: none; background: transparent; padding: 6px 0; font-size: 13px; color: #0071BC;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .backlink:hover { color: #005B96; }
+  .backlink .arrow {
+    width: 7px; height: 7px; border-left: 2px solid currentColor; border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+  }
+  .detail-card { margin-top: 12px; background: #FFFFFF; border: 1px solid #D9DFE5; padding: 40px; }
+  .detail-card .d-crumb { font-size: 11px; letter-spacing: 0.1em; font-weight: 700; color: #0071BC; margin-bottom: 12px; }
+  .detail-card h1 { margin: 0 0 6px 0; font-size: 28px; font-weight: 700; color: #070F26; line-height: 1.35; }
+  .detail-card .d-zh { font-size: 16px; color: #5A6B78; margin-bottom: 16px; }
+  .detail-card .d-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+  .badge {
+    display: inline-flex; align-items: center; font-size: 11.5px; font-weight: 700;
+    padding: 3px 10px; border-radius: 2px;
+  }
+  .badge.live { background: rgba(0, 203, 93, 0.14); color: #00803B; }
+  .badge.trial { background: rgba(0, 113, 188, 0.12); color: #005B96; }
+  .keyline { width: 32px; height: 3px; background: #0071BC; margin-bottom: 16px; }
+  .sec-label { font-size: 13px; font-weight: 700; color: #070F26; margin-bottom: 10px; }
+  .d-ja-p { margin: 0 0 12px 0; font-size: 14.5px; line-height: 1.9; color: #2E404D; }
+  .d-zh-p { margin: 0 0 32px 0; font-size: 13.5px; line-height: 1.85; color: #5A6B78; }
+  .cta-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .btn-primary {
+    border: none; background: var(--action-primary, #0071BC); color: #FFFFFF;
+    font-size: 15px; font-weight: 700; padding: 13px 28px; border-radius: 2px;
+    transition: background 160ms cubic-bezier(0.2, 0, 0.2, 1);
+  }
+  .btn-primary:hover { background: var(--action-primary-hover, #005B96); }
+  .btn-primary:active { background: var(--action-primary-active, #004B7A); }
+  .cta-note { font-size: 11.5px; color: #8A98A4; }
+
+  /* ===== チャット ===== */
+  .chat-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .chat-hdr {
+    flex-shrink: 0; display: flex; align-items: center; gap: 16px;
+    padding: 14px 36px; background: #FFFFFF; border-bottom: 1px solid #E3E8EC;
+  }
+  .chat-hdr .vline { width: 1px; height: 24px; background: #E3E8EC; }
+  .chat-hdr .ct1 { font-size: 14px; font-weight: 700; color: #070F26; }
+  .chat-hdr .ct2 { font-size: 11px; color: #8A98A4; }
+  .chat-hdr .status { margin-left: auto; }
+  .msgs { flex: 1; min-height: 0; overflow-y: auto; padding: 28px 36px; display: flex; flex-direction: column; gap: 14px; }
+  .msg-row { display: flex; }
+  .msg-row.user { justify-content: flex-end; }
+  .bubble {
+    max-width: 560px; padding: 12px 16px; font-size: 13.5px; line-height: 1.75;
+    white-space: pre-line; border-radius: 2px;
+    background: #FFFFFF; color: #2E404D; border: 1px solid #D9DFE5;
+  }
+  .msg-row.user .bubble { background: #0071BC; color: #FFFFFF; border-color: #0071BC; }
+  .chat-input-row {
+    flex-shrink: 0; display: flex; gap: 12px; padding: 16px 36px;
+    background: #FFFFFF; border-top: 1px solid #E3E8EC;
+  }
+  .chat-input {
+    flex: 1; padding: 11px 14px; font-size: 13.5px; border: 1px solid #C9D2D9;
+    border-radius: 2px; color: #2E404D; outline: none; font-family: inherit;
+  }
+  .chat-input:focus { border-color: #0071BC; box-shadow: 0 0 0 3px rgba(46, 144, 255, 0.25); }
+  .btn-send {
+    border: none; background: #0071BC; color: #FFFFFF; font-size: 13.5px; font-weight: 700;
+    padding: 0 24px; border-radius: 2px;
+  }
+  .btn-send:hover { background: #005B96; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="mockbar" data-screen-label="モックツールバー">
+    <div class="label">CONCEPT MOCK — 社内検討用 / 内部讨论用</div>
+    <div class="segwrap">
+      <span class="seglabel">左ナビ案:</span>
+      <div class="seg" id="seg"></div>
+    </div>
+  </div>
+
+  <header class="hdr">
+    <img src="assets/ntt-data-logo-blue.png" alt="NTT DATA">
+    <div class="vline"></div>
+    <div>
+      <div class="t1">AIエージェントカタログ</div>
+      <div class="t2 zh">AI智能体服务目录</div>
+    </div>
+    <div class="right">
+      <span class="dept">情報システム部&nbsp;／&nbsp;<span class="zh">信息系统部</span></span>
+      <div class="avatar">佐</div>
+    </div>
+  </header>
+
+  <div class="body">
+    <div id="sidebar" style="display: contents;"></div>
+    <main id="main"></main>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ================= データ ================= */
+const CATS = [
+  { id: 'doc', ja: '文書作成', zh: '文档创作', abbr: '文書', abbrZh: '文档', subs: [
+    { id: 'minutes', ja: '議事録・要約', zh: '纪要与摘要' },
+    { id: 'draft', ja: 'ドラフト作成', zh: '文稿起草' }
+  ]},
+  { id: 'ana', ja: '分析・レポート', zh: '分析与报告', abbr: '分析', abbrZh: '分析', subs: [
+    { id: 'data', ja: 'データ分析', zh: '数据分析' },
+    { id: 'voc', ja: '顧客・市場分析', zh: '客户与市场' }
+  ]},
+  { id: 'kn', ja: '検索・ナレッジ', zh: '检索与知识', abbr: '検索', abbrZh: '检索', subs: [
+    { id: 'internal', ja: '社内ナレッジ', zh: '内部知识' },
+    { id: 'external', ja: '法令・外部情報', zh: '法规与外部' }
+  ]},
+  { id: 'auto', ja: '自動化・ワークフロー', zh: '自动化与流程', abbr: '自動', abbrZh: '自动', subs: [
+    { id: 'fin', ja: '経理・購買', zh: '财务与采购' },
+    { id: 'flow', ja: '業務フロー', zh: '业务流程' }
+  ]},
+  { id: 'cs', ja: '顧客対応', zh: '客户服务', abbr: '顧客', abbrZh: '客服', subs: [
+    { id: 'support', ja: '問い合わせ対応', zh: '咨询应答' },
+    { id: 'sales', ja: '営業支援', zh: '销售支持' }
+  ]},
+  { id: 'dev', ja: '開発・IT', zh: '开发与IT', abbr: '開発', abbrZh: '开发', subs: [
+    { id: 'code', ja: '開発支援', zh: '开发辅助' },
+    { id: 'ops', ja: '運用・保守', zh: '运维支持' }
+  ]}
+];
+
+const SVCS = [
+  { id: 'm1', cat: 'doc', sub: 'minutes', ja: '議事録作成エージェント', zh: '会议纪要生成', st: 1, tags: ['会議', '要約'],
+    dja: '会議の録音や文字起こしテキストから、決定事項・ToDo・発言要旨を整理した議事録を自動作成します。社内標準フォーマットへの整形にも対応します。',
+    dzh: '基于会议录音或转写文本，自动生成包含决议事项、待办与发言要点的会议纪要，并支持套用公司标准格式。' },
+  { id: 'm2', cat: 'doc', sub: 'minutes', ja: '文書要約エージェント', zh: '长文档摘要', st: 1, tags: ['要約', 'ドキュメント'],
+    dja: '長文の報告書・論文・資料を、目的に応じた粒度の要点サマリーに変換します。経営層向け1枚要約から詳細版まで指定できます。',
+    dzh: '将长篇报告、论文与资料压缩为不同粒度的要点摘要，可指定从高管一页纸到详细版的多种输出。' },
+  { id: 'm3', cat: 'doc', sub: 'minutes', ja: 'アクション抽出エージェント', zh: '行动项提取', st: 2, tags: ['タスク管理'],
+    dja: '議事録やメールスレッドからタスク・担当者・期限を抽出し、一覧で出力します。タスク管理ツールへの連携を想定しています。',
+    dzh: '从会议记录与邮件往来中提取任务、负责人和期限，以清单形式输出，并可对接任务管理工具。' },
+  { id: 'd1', cat: 'doc', sub: 'draft', ja: '報告書ドラフト作成', zh: '报告初稿生成', st: 1, tags: ['文書生成'],
+    dja: '箇条書きのメモやデータを渡すだけで、社内標準フォーマットの報告書ドラフトを生成します。トーンや分量の調整も対話で行えます。',
+    dzh: '只需提供要点笔记或数据，即可按公司标准格式生成报告初稿，语气与篇幅可通过对话调整。' },
+  { id: 'd2', cat: 'doc', sub: 'draft', ja: '契約書ドラフト支援', zh: '合同草拟辅助', st: 2, tags: ['法務'],
+    dja: '契約類型と条件を指定すると、標準条項に基づくドラフトと確認すべき注意点を提示します。最終判断は法務部門のレビューを前提とします。',
+    dzh: '指定合同类型与条件后，基于标准条款生成草案并提示注意事项，最终以法务部门审核为准。' },
+  { id: 'd3', cat: 'doc', sub: 'draft', ja: '提案書作成支援', zh: '方案书撰写辅助', st: 1, tags: ['営業', '文書生成'],
+    dja: '顧客課題と提供ソリューションを入力すると、提案書の構成案と本文ドラフトを作成します。過去の優良提案を参照した改善提案も行います。',
+    dzh: '输入客户课题与解决方案，即可生成方案书结构与正文初稿，并参考优秀案例提出改进建议。' },
+  { id: 'd4', cat: 'doc', sub: 'draft', ja: 'ビジネスメール作成', zh: '商务邮件撰写', st: 1, tags: ['メール'],
+    dja: '要件と相手との関係性を伝えると、敬語表現の適切なビジネスメール文面を作成します。返信文の生成や英文メールにも対応します。',
+    dzh: '根据事项与对方关系，生成措辞得体的商务邮件文案，支持回复邮件与英文邮件。' },
+  { id: 'a1', cat: 'ana', sub: 'data', ja: 'データ分析アシスタント', zh: '数据分析助手', st: 1, tags: ['BI', '可視化'],
+    dja: '自然言語の質問から社内データを集計・可視化し、示唆をコメント付きで返します。SQLやBIツールの知識がなくても分析できます。',
+    dzh: '通过自然语言提问，对企业数据进行汇总与可视化，并附带分析洞察，无需SQL或BI工具知识。' },
+  { id: 'a2', cat: 'ana', sub: 'data', ja: '売上レポート自動生成', zh: '销售报告自动生成', st: 1, tags: ['レポート'],
+    dja: '基幹システムの売上データから、週次・月次レポートを定型フォーマットで自動作成します。前期比較や異常値の解説コメントも付与します。',
+    dzh: '基于核心系统的销售数据自动生成周报与月报，附带同比环比对比及异常值说明。' },
+  { id: 'a3', cat: 'ana', sub: 'data', ja: 'リスク分析エージェント', zh: '风险分析', st: 2, tags: ['リスク管理'],
+    dja: 'プロジェクトや取引の情報からリスク要因を洗い出し、影響度と対応案を整理します。定期的なモニタリングレポートにも対応します。',
+    dzh: '从项目与交易信息中识别风险因素，整理影响程度与应对方案，支持定期监控报告。' },
+  { id: 'v1', cat: 'ana', sub: 'voc', ja: '顧客の声(VOC)分析', zh: '客户之声分析', st: 1, tags: ['VOC', '分類'],
+    dja: 'アンケート・レビュー・問い合わせログを自動分類し、不満・要望のトレンドを抽出します。改善施策の優先度づけを支援します。',
+    dzh: '对问卷、评论与咨询记录自动分类，提取不满与需求趋势，辅助确定改进措施的优先级。' },
+  { id: 'v2', cat: 'ana', sub: 'voc', ja: '競合・市場調査エージェント', zh: '竞品与市场调研', st: 2, tags: ['リサーチ'],
+    dja: '公開情報をもとに競合動向・市場トレンドを収集し、比較表とサマリーを作成します。出典リンク付きで根拠を確認できます。',
+    dzh: '基于公开信息收集竞品动态与市场趋势，生成对比表与摘要，并附带出处链接。' },
+  { id: 's1', cat: 'kn', sub: 'internal', ja: '社内規程検索', zh: '公司规章检索', st: 1, tags: ['RAG', '人事'],
+    dja: '就業規則や経費規程などの社内文書から、根拠箇所を引用して質問に回答します。「この出張は規程上どう精算する?」に即答します。',
+    dzh: '从公司规章制度文档中引用依据条款回答员工提问，例如出差报销的相关规定。' },
+  { id: 's2', cat: 'kn', sub: 'internal', ja: '技術ナレッジQA', zh: '技术知识问答', st: 1, tags: ['RAG', 'エンジニアリング'],
+    dja: '過去の設計書・障害票・ナレッジ記事を横断検索し、技術的な質問に回答します。属人化したノウハウの継承を支援します。',
+    dzh: '跨设计文档、故障单与知识文章检索，回答技术问题，助力经验传承。' },
+  { id: 's3', cat: 'kn', sub: 'internal', ja: 'ドキュメント横断検索', zh: '跨文档智能检索', st: 1, tags: ['検索'],
+    dja: 'ファイルサーバーや各種ストレージに散在する文書を意味検索で横断的に探し出します。キーワードが曖昧でも目的の資料に辿り着けます。',
+    dzh: '通过语义检索在文件服务器与各类存储中查找分散的文档，即使关键词模糊也能找到目标资料。' },
+  { id: 's4', cat: 'kn', sub: 'external', ja: '法令・規制リサーチ', zh: '法规检索', st: 2, tags: ['法務', 'リサーチ'],
+    dja: '業務に関係する法令・ガイドラインの該当条文を調査し、改正点を要約します。コンプライアンス部門の一次調査を効率化します。',
+    dzh: '调研与业务相关的法律法规条款并总结修订要点，提升合规部门初步调研效率。' },
+  { id: 's5', cat: 'kn', sub: 'external', ja: 'FAQ自動応答ボット', zh: 'FAQ自动应答', st: 1, tags: ['チャットボット'],
+    dja: '既存のFAQとマニュアルを学習し、社内外からの定型的な質問に自動回答します。回答できない質問は有人窓口へ引き継ぎます。',
+    dzh: '学习现有FAQ与手册，自动回答内外部常见问题，无法回答时转接人工。' },
+  { id: 'f1', cat: 'auto', sub: 'fin', ja: '経費精算チェック', zh: '报销审核辅助', st: 1, tags: ['経理', 'チェック'],
+    dja: '領収書と申請内容を照合し、規程違反や不備を自動で検出してコメントします。経理部門の確認作業を大幅に削減します。',
+    dzh: '核对发票与申请内容，自动检测违规与缺漏并给出说明，大幅减少财务审核工作。' },
+  { id: 'f2', cat: 'auto', sub: 'fin', ja: '請求書処理エージェント', zh: '发票处理', st: 1, tags: ['経理', 'OCR'],
+    dja: '受領した請求書のデータ化・仕訳候補の提案・支払期日の管理を自動化します。会計システムへの連携を想定しています。',
+    dzh: '自动完成发票数据化、记账科目建议与付款期限管理，并可对接财务系统。' },
+  { id: 'f3', cat: 'auto', sub: 'fin', ja: '受発注処理支援', zh: '订单处理辅助', st: 2, tags: ['購買'],
+    dja: '注文書・発注メールの内容を構造化し、基幹システムへの登録案を作成します。形式がばらばらな注文書にも対応します。',
+    dzh: '将订单与采购邮件内容结构化，生成核心系统的录入草案，支持多种格式的订单。' },
+  { id: 'w1', cat: 'auto', sub: 'flow', ja: 'スケジュール調整エージェント', zh: '日程协调', st: 1, tags: ['カレンダー'],
+    dja: '参加者の空き状況を踏まえて候補日時を提示し、招集メールまで自動作成します。社外参加者との調整にも対応します。',
+    dzh: '根据参会者的空闲情况提出候选时间，并自动生成会议邀请，支持与外部人员协调。' },
+  { id: 'w2', cat: 'auto', sub: 'flow', ja: '承認フロー自動化', zh: '审批流程自动化', st: 2, tags: ['ワークフロー'],
+    dja: '申請内容を読み取り、承認ルートの判定や差し戻し理由の下書きを自動化します。承認者には要点サマリーを提示します。',
+    dzh: '解析申请内容，自动判定审批路径并起草退回理由，向审批人提供要点摘要。' },
+  { id: 'w3', cat: 'auto', sub: 'flow', ja: '定型業務オートメーション', zh: '例行业务自动化', st: 2, tags: ['RPA連携'],
+    dja: 'RPAと連携し、データ転記・帳票出力などの定型業務を対話指示で実行します。シナリオ作成の専門知識は不要です。',
+    dzh: '与RPA联动，通过对话指令执行数据誊录与报表输出等例行业务，无需脚本开发知识。' },
+  { id: 'c1', cat: 'cs', sub: 'support', ja: '問い合わせ一次対応', zh: '咨询一线应答', st: 1, tags: ['チャットボット'],
+    dja: 'Webやメールの問い合わせに24時間自動応答し、必要に応じて担当者へ引き継ぎます。応対履歴は自動で記録・分類されます。',
+    dzh: '全天候自动应答网页与邮件咨询，必要时转接人工，应答记录自动归档分类。' },
+  { id: 'c2', cat: 'cs', sub: 'support', ja: 'コールセンター応対支援', zh: '坐席实时辅助', st: 2, tags: ['リアルタイム'],
+    dja: '通話内容をリアルタイムに解析し、回答候補と関連ナレッジをオペレーターに提示します。応対後の記録作成も自動化します。',
+    dzh: '实时分析通话内容，向坐席推送回答建议与相关知识，并自动生成通话记录。' },
+  { id: 'c3', cat: 'cs', sub: 'support', ja: '多言語サポート翻訳', zh: '多语言客服翻译', st: 1, tags: ['翻訳'],
+    dja: '問い合わせと回答を高精度に双方向翻訳し、多言語サポートを一つの窓口で実現します。専門用語の対訳辞書も管理できます。',
+    dzh: '对咨询与回复进行高质量双向翻译，以单一窗口支持多语言服务，可维护专业术语对照表。' },
+  { id: 'c4', cat: 'cs', sub: 'sales', ja: 'クレーム要約・分類', zh: '投诉归纳分类', st: 1, tags: ['分類'],
+    dja: 'クレーム内容を要約し、重要度・カテゴリを判定して担当部門へ振り分けます。重大案件は即時にエスカレーションします。',
+    dzh: '总结投诉内容，判定重要度与类别并分派至相关部门，重大事项即时上报。' },
+  { id: 'c5', cat: 'cs', sub: 'sales', ja: '営業フォローアップ支援', zh: '销售跟进辅助', st: 2, tags: ['CRM', '営業'],
+    dja: '商談記録から次のアクションを提案し、フォローメールの文面を自動作成します。CRMの活動記録も自動で更新します。',
+    dzh: '基于商谈记录建议后续行动并自动起草跟进邮件，同时自动更新CRM活动记录。' },
+  { id: 'g1', cat: 'dev', sub: 'code', ja: 'コードレビュー支援', zh: '代码评审辅助', st: 1, tags: ['開発', '品質'],
+    dja: 'プルリクエストを解析し、不具合リスク・規約違反・改善提案をコメントします。レビュー観点のばらつきを抑えられます。',
+    dzh: '分析合并请求，指出缺陷风险、规范问题与改进建议，减少评审标准的不一致。' },
+  { id: 'g2', cat: 'dev', sub: 'code', ja: 'テストケース生成', zh: '测试用例生成', st: 1, tags: ['テスト'],
+    dja: '仕様書やコードからテスト観点を洗い出し、テストケースとテストデータを生成します。境界値や異常系の漏れを防ぎます。',
+    dzh: '从规格书与代码中提炼测试视角，生成测试用例与测试数据，防止边界值与异常场景遗漏。' },
+  { id: 'g3', cat: 'dev', sub: 'code', ja: 'SQL・クエリ生成', zh: 'SQL查询生成', st: 1, tags: ['データベース'],
+    dja: '日本語の依頼文からSQLや抽出条件を生成し、実行結果の解説まで行います。既存クエリの改善・解説にも使えます。',
+    dzh: '根据自然语言请求生成SQL与筛选条件并解释执行结果，也可用于优化和解读既有查询。' },
+  { id: 'g4', cat: 'dev', sub: 'ops', ja: '障害対応ナレッジ支援', zh: '故障处置辅助', st: 2, tags: ['運用', 'SRE'],
+    dja: 'アラートやログから類似障害の過去事例と対応手順を即座に提示します。初動対応の時間短縮と品質の安定化を図ります。',
+    dzh: '根据告警与日志即时给出类似故障的历史案例与处置步骤，缩短初步响应时间。' },
+  { id: 'g5', cat: 'dev', sub: 'ops', ja: '設計書・仕様書生成', zh: '设计文档生成', st: 2, tags: ['ドキュメント'],
+    dja: 'ソースコードや構成情報から、設計書・運用手順書のドラフトを生成します。ドキュメントの陳腐化対策にも有効です。',
+    dzh: '基于源代码与配置信息生成设计文档与运维手册初稿，有效避免文档过时。' }
+];
+
+/* ================= 状態 ================= */
+const state = {
+  nav: 'A',
+  openCats: { doc: true },
+  selCat: null,
+  selSub: null,
+  lastCat: 'doc',
+  selSvc: null,
+  view: 'list',
+  query: ''
+};
+
+/* ================= ヘルパー ================= */
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const catOf = (id) => CATS.find(c => c.id === id);
+const subOf = (catId, subId) => catOf(catId).subs.find(b => b.id === subId);
+const svcOf = (id) => SVCS.find(x => x.id === id);
+const countSub = (subId) => SVCS.filter(x => x.sub === subId).length;
+const countCat = (catId) => SVCS.filter(x => x.cat === catId).length;
+const statusJa = (st) => st === 1 ? '提供中' : '試行版';
+const dotColor = (st) => st === 1 ? '#00CB5D' : '#FFC400';
+
+function filtered() {
+  let list = SVCS;
+  if (state.selSub) list = list.filter(x => x.sub === state.selSub);
+  else if (state.selCat) list = list.filter(x => x.cat === state.selCat);
+  const q = state.query.trim().toLowerCase();
+  if (q) list = list.filter(x => (x.ja + x.zh + x.dja + x.dzh + x.tags.join('')).toLowerCase().indexOf(q) >= 0);
+  return list;
+}
+
+/* ================= 描画: ナビ切替セグメント ================= */
+function renderSeg() {
+  const labels = { A: 'A アコーディオン', B: 'B カテゴリレール', C: 'C 全展開ツリー' };
+  document.getElementById('seg').innerHTML = ['A', 'B', 'C'].map(k =>
+    `<button class="${state.nav === k ? 'on' : ''}" data-act="nav" data-arg="${k}">${labels[k]}</button>`
+  ).join('');
+}
+
+/* ================= 描画: サイドバー ================= */
+function renderSidebar() {
+  const el = document.getElementById('sidebar');
+  if (state.nav === 'A') {
+    el.innerHTML = `
+    <nav class="side nav-a" data-screen-label="左ナビ案A">
+      <button class="nav-item ${!state.selCat && !state.selSub ? 'on' : ''}" data-act="all">
+        <span class="ja-l">すべてのサービス</span>
+        <span class="zh-l zh">全部服务</span>
+        <span class="cnt">${SVCS.length}</span>
+      </button>
+      <div class="nav-divider"></div>
+      ${CATS.map(c => {
+        const open = !!state.openCats[c.id];
+        const on = state.selCat === c.id && !state.selSub;
+        return `
+        <button class="nav-item ${on ? 'on' : ''}" data-act="cat" data-arg="${c.id}">
+          <span class="cat-label">
+            <span class="ja-l">${esc(c.ja)}</span>
+            <span class="zh-l zh">${esc(c.zh)}</span>
+          </span>
+          <span class="chev ${open ? 'open' : ''}"></span>
+        </button>
+        ${open ? c.subs.map(sb => `
+          <button class="nav-sub ${state.selSub === sb.id ? 'on' : ''}" data-act="sub" data-arg="${c.id}:${sb.id}">
+            <span class="ja-l">${esc(sb.ja)}</span>
+            <span class="zh-l zh">${esc(sb.zh)}</span>
+            <span class="cnt">${countSub(sb.id)}</span>
+          </button>`).join('') : ''}`;
+      }).join('')}
+    </nav>`;
+  } else if (state.nav === 'B') {
+    const panelCat = catOf(state.selCat || state.lastCat) || CATS[0];
+    el.innerHTML = `
+    <nav class="side nav-b" data-screen-label="左ナビ案B">
+      <div class="rail">
+        <button class="${!state.selCat && !state.selSub ? 'on' : ''}" data-act="all">
+          <span>全て</span><span class="sub-l zh">全部</span>
+        </button>
+        <div class="rdiv"></div>
+        ${CATS.map(c => `
+          <button class="${state.selCat === c.id ? 'on' : ''}" data-act="catsel" data-arg="${c.id}">
+            <span>${esc(c.abbr)}</span><span class="sub-l zh">${esc(c.abbrZh)}</span>
+          </button>`).join('')}
+      </div>
+      <div class="panel">
+        <div class="phead">
+          <div class="ja-l">${esc(panelCat.ja)}</div>
+          <div class="zh-l zh">${esc(panelCat.zh)}</div>
+        </div>
+        <button class="nav-sub ${state.selCat === panelCat.id && !state.selSub ? 'on' : ''}" data-act="catsel" data-arg="${panelCat.id}">
+          <span class="ja-l">すべて</span>
+          <span class="cnt">${countCat(panelCat.id)}</span>
+        </button>
+        ${panelCat.subs.map(sb => `
+          <button class="nav-sub ${state.selSub === sb.id ? 'on' : ''}" data-act="sub" data-arg="${panelCat.id}:${sb.id}">
+            <span class="ja-l">${esc(sb.ja)}</span>
+            <span class="zh-l zh">${esc(sb.zh)}</span>
+            <span class="cnt">${countSub(sb.id)}</span>
+          </button>`).join('')}
+      </div>
+    </nav>`;
+  } else {
+    el.innerHTML = `
+    <nav class="side nav-c" data-screen-label="左ナビ案C">
+      <button class="nav-item ${!state.selCat && !state.selSub ? 'on' : ''}" data-act="all">
+        <span class="ja-l" style="font-size: 13px;">すべてのサービス</span>
+        <span class="cnt">${SVCS.length}</span>
+      </button>
+      ${CATS.map(c => `
+        <button class="tree-cat ${state.selCat === c.id ? 'on' : ''}" data-act="catsel" data-arg="${c.id}">
+          <span class="ja-l">${esc(c.ja)}</span>
+          <span class="zh-l zh">${esc(c.zh)}</span>
+        </button>
+        ${c.subs.map(sb => `
+          <button class="nav-sub ${state.selSub === sb.id ? 'on' : ''}" data-act="sub" data-arg="${c.id}:${sb.id}">
+            <span class="ja-l">${esc(sb.ja)}</span>
+            <span class="cnt">${countSub(sb.id)}</span>
+          </button>`).join('')}`).join('')}
+    </nav>`;
+  }
+}
+
+/* ================= 描画: 右ペイン ================= */
+function cardHTML(x) {
+  const c = catOf(x.cat), sb = subOf(x.cat, x.sub);
+  return `
+  <div class="card" data-act="svc" data-arg="${x.id}">
+    <div class="c-crumb">${esc(c.ja)}・${esc(sb.ja)}</div>
+    <div class="c-ja">${esc(x.ja)}</div>
+    <div class="c-zh zh">${esc(x.zh)}</div>
+    <div class="c-desc">${esc(x.dja)}</div>
+    <div class="c-meta">
+      <span class="status"><span class="dot" style="background: ${dotColor(x.st)};"></span>${statusJa(x.st)}</span>
+      ${x.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}
+    </div>
+  </div>`;
+}
+
+function gridHTML(list) {
+  if (!list.length) return '<div class="empty">該当するサービスがありません。<br><span class="zh">没有符合条件的服务。</span></div>';
+  return `<div class="grid">${list.map(cardHTML).join('')}</div>`;
+}
+
+function renderMain() {
+  const el = document.getElementById('main');
+
+  if (state.view === 'list') {
+    let titleJa = 'すべてのサービス', titleZh = '全部服务', crumb = 'AI AGENT CATALOG';
+    if (state.selSub) {
+      const c = catOf(state.selCat), sb = subOf(state.selCat, state.selSub);
+      titleJa = sb.ja; titleZh = sb.zh;
+      crumb = 'ホーム ／ ' + c.ja + ' ／ ' + sb.ja;
+    } else if (state.selCat) {
+      const c = catOf(state.selCat);
+      titleJa = c.ja; titleZh = c.zh;
+      crumb = 'ホーム ／ ' + c.ja;
+    }
+    const list = filtered();
+    el.innerHTML = `
+    <div class="list-wrap" data-screen-label="サービス一覧">
+      <div class="list-head">
+        <div>
+          <div class="crumb">${esc(crumb)}</div>
+          <div class="list-title">
+            <h1>${esc(titleJa)}</h1>
+            <span class="zh-t zh">${esc(titleZh)}</span>
+          </div>
+          <div class="count" id="count">${list.length}件のサービス ／ <span class="zh">共${list.length}项服务</span></div>
+        </div>
+        <input class="search" id="search" placeholder="サービスを検索 ／ 搜索服务" value="${esc(state.query)}">
+      </div>
+      <div id="grid-holder">${gridHTML(list)}</div>
+    </div>`;
+    const search = document.getElementById('search');
+    search.addEventListener('input', () => {
+      state.query = search.value;
+      const l = filtered();
+      document.getElementById('grid-holder').innerHTML = gridHTML(l);
+      document.getElementById('count').innerHTML = `${l.length}件のサービス ／ <span class="zh">共${l.length}项服务</span>`;
+    });
+
+  } else if (state.view === 'detail') {
+    const x = svcOf(state.selSvc);
+    const c = catOf(x.cat), sb = subOf(x.cat, x.sub);
+    el.innerHTML = `
+    <div class="detail-wrap" data-screen-label="サービス詳細">
+      <button class="backlink" data-act="back"><span class="arrow"></span>一覧へ戻る ／ 返回列表</button>
+      <div class="detail-card">
+        <div class="d-crumb">${esc(c.ja)}・${esc(sb.ja)}</div>
+        <h1>${esc(x.ja)}</h1>
+        <div class="d-zh zh">${esc(x.zh)}</div>
+        <div class="d-meta">
+          <span class="badge ${x.st === 1 ? 'live' : 'trial'}">${statusJa(x.st)}</span>
+          ${x.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}
+        </div>
+        <div class="keyline"></div>
+        <div class="sec-label">概要&nbsp;／&nbsp;概述</div>
+        <p class="d-ja-p">${esc(x.dja)}</p>
+        <p class="d-zh-p zh">${esc(x.dzh)}</p>
+        <div class="cta-row">
+          <button class="btn-primary" data-act="start">利用開始する ／ 开始使用</button>
+          <span class="cta-note">※ 本画面はコンセプト確認用のモックです ／ <span class="zh">本页面为概念验证演示</span></span>
+        </div>
+      </div>
+    </div>`;
+
+  } else {
+    const x = svcOf(state.selSvc);
+    el.innerHTML = `
+    <div class="chat-wrap" data-screen-label="チャット画面">
+      <div class="chat-hdr">
+        <button class="backlink" data-act="backdetail"><span class="arrow"></span>詳細へ戻る ／ 返回详情</button>
+        <div class="vline"></div>
+        <div>
+          <div class="ct1">${esc(x.ja)}</div>
+          <div class="ct2 zh">${esc(x.zh)}</div>
+        </div>
+        <span class="status"><span class="dot" style="background: ${dotColor(x.st)};"></span>${statusJa(x.st)}</span>
+      </div>
+      <div class="msgs" id="msgs"></div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="メッセージを入力 ／ 请输入消息">
+        <button class="btn-send" data-act="send">送信 ／ 发送</button>
+      </div>
+    </div>`;
+    addMsg('agent', 'こんにちは。「' + x.ja + '」エージェントです。ご用件を入力してください。\n您好，这里是「' + x.zh + '」智能体，请输入您的需求。');
+    const input = document.getElementById('chat-input');
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
+    input.focus();
+  }
+  el.scrollTop = 0;
+}
+
+function addMsg(who, text) {
+  const box = document.getElementById('msgs');
+  if (!box) return;
+  const row = document.createElement('div');
+  row.className = 'msg-row ' + who;
+  const b = document.createElement('div');
+  b.className = 'bubble';
+  b.textContent = text;
+  row.appendChild(b);
+  box.appendChild(row);
+  box.scrollTop = box.scrollHeight;
+}
+
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const t = input.value.trim();
+  if (!t) return;
+  addMsg('user', t);
+  input.value = '';
+  const x = svcOf(state.selSvc);
+  setTimeout(() => {
+    addMsg('agent', '（モック応答）ご入力ありがとうございます。実際のサービスでは、「' + x.ja + '」がここで回答を生成します。\n（模拟回复）感谢您的输入。正式版中，「' + x.zh + '」将在此生成回答。');
+  }, 700);
+}
+
+/* ================= イベント ================= */
+function renderAll() { renderSeg(); renderSidebar(); renderMain(); }
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  const act = btn.dataset.act, arg = btn.dataset.arg;
+
+  if (act === 'nav') { state.nav = arg; renderAll(); }
+  else if (act === 'all') { state.selCat = null; state.selSub = null; state.view = 'list'; renderAll(); }
+  else if (act === 'cat') { /* 案A: トグル+選択 */
+    const open = !!state.openCats[arg];
+    state.openCats[arg] = !open;
+    if (!open) { state.selCat = arg; state.selSub = null; state.lastCat = arg; state.view = 'list'; }
+    renderAll();
+  }
+  else if (act === 'catsel') { state.selCat = arg; state.selSub = null; state.lastCat = arg; state.openCats[arg] = true; state.view = 'list'; renderAll(); }
+  else if (act === 'sub') {
+    const [c, sb] = arg.split(':');
+    state.selCat = c; state.selSub = sb; state.lastCat = c; state.openCats[c] = true; state.view = 'list';
+    renderAll();
+  }
+  else if (act === 'svc') { state.selSvc = arg; state.view = 'detail'; renderMain(); }
+  else if (act === 'back') { state.view = 'list'; renderAll(); }
+  else if (act === 'backdetail') { state.view = 'detail'; renderMain(); }
+  else if (act === 'start') { state.view = 'chat'; renderMain(); }
+  else if (act === 'send') { sendChat(); }
+});
+
+renderAll();
+</script>
+</body>
+</html>

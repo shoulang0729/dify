@@ -1,0 +1,57 @@
+/* ============================================================
+   NTT DATA — Typography Tokens
+   Brand basics (VVI): page titles use GEORGIA, body uses ARIAL.
+   Japanese: Meiryo UI (titles bold) / Meiryo (body).
+   These are the official brand typefaces — system fonts, no
+   webfont binaries required. Stacks below add cross-platform
+   fallbacks and Japanese coverage for a global audience.
+   ============================================================ */
+
+:root {
+  /* --- Families ------------------------------------------------- */
+  /* Display / titles — Georgia serif */
+  --font-display: Georgia, "Times New Roman", "Yu Mincho", "Hiragino Mincho ProN", serif;
+  /* Body / UI — Arial sans */
+  --font-sans: Arial, "Helvetica Neue", Helvetica, "Yu Gothic", "Hiragino Kaku Gothic ProN", "Meiryo", system-ui, sans-serif;
+  /* Japanese-first stack (titles in Meiryo UI bold per VVI) */
+  --font-jp: "Meiryo UI", "Yu Gothic", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+  /* Monospace — data, code, tabular */
+  --font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", Menlo, monospace;
+
+  /* --- Weights -------------------------------------------------- */
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-bold:    700;
+
+  /* --- Type scale (px) ----------------------------------------- */
+  --text-display-xl: 64px;  /* hero / cover titles */
+  --text-display-l:  48px;
+  --text-display-m:  36px;
+  --text-h1:         30px;
+  --text-h2:         24px;
+  --text-h3:         20px;
+  --text-body-lg:    18px;
+  --text-body:       16px;
+  --text-body-sm:    14px;
+  --text-caption:    12px;
+  --text-overline:   11px;
+
+  /* --- Line heights -------------------------------------------- */
+  --leading-tight:   1.1;
+  --leading-snug:    1.25;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.65;
+
+  /* --- Letter spacing ------------------------------------------ */
+  --tracking-tight:   -0.01em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.04em;
+  --tracking-overline:0.14em; /* ALL-CAPS labels / overlines */
+
+  /* --- Semantic roles ------------------------------------------ */
+  --role-display-font:   var(--font-display);
+  --role-heading-font:   var(--font-display);
+  --role-body-font:      var(--font-sans);
+  --role-ui-font:        var(--font-sans);
+  --role-label-font:     var(--font-sans);
+}
