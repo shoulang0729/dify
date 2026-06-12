@@ -39,11 +39,24 @@ if not TOKEN and not COOKIE:
     sys.exit("エラー: DIFY_TOKEN か DIFY_COOKIE のどちらかを設定してください")
 
 
+# Cloud は前段の Cloudflare が「ブラウザっぽくない」リクエストを 403 で弾くため、
+# 実ブラウザ相当の User-Agent を付ける。
+UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+)
+
+
 def req(path):
-    headers = {"Accept": "application/json"}
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": os.environ.get("DIFY_UA", UA),
+        "Referer": BASE + "/apps",
+        "Origin": BASE,
+    }
     if TOKEN:
         headers["Authorization"] = "Bearer " + TOKEN
-    elif COOKIE:
+    if COOKIE:
         headers["Cookie"] = COOKIE
     r = urllib.request.Request(API + path, headers=headers)
     with urllib.request.urlopen(r) as resp:
