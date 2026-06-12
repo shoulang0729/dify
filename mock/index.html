@@ -47,7 +47,10 @@
     flex-shrink: 0; display: flex; align-items: center; gap: 20px;
     padding: 0 24px; height: 64px; background: #FFFFFF; border-bottom: 1px solid #E3E8EC;
   }
-  .hdr img { height: 24px; display: block; }
+  .company-logo {
+    color: #0071BC; font-size: 18px; font-weight: 800; line-height: 1;
+    white-space: nowrap;
+  }
   .hdr .vline { width: 1px; height: 28px; background: #E3E8EC; }
   .hdr .t1 { font-size: 15px; font-weight: 700; color: #070F26; }
   .hdr .t2 { font-size: 11px; color: #8A98A4; }
@@ -249,7 +252,7 @@
   </div>
 
   <header class="hdr">
-    <img src="assets/ntt-data-logo-blue.png" alt="NTT DATA">
+    <div class="company-logo" aria-label="会社ロゴ">会社ロゴ</div>
     <div class="vline"></div>
     <div>
       <div class="t1">AIエージェントカタログ</div>
