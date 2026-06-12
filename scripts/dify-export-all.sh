@@ -11,27 +11,43 @@
 #
 # 必要: curl, jq
 #
-# 使い方:
+# 使い方（どちらか一方の認証を設定）:
 #   export DIFY_BASE="https://cloud.dify.ai"     # セルフホストなら自分の URL
-#   export DIFY_TOKEN="<console access token>"   # 下記の手順で取得
+#
+#   # 方式A: アクセストークン（Bearer）
+#   export DIFY_TOKEN="eyJ..."                   # __Host-access_token の値
+#
+#   # 方式B: Cookie 丸ごと（A が 401 のときはこちら）
+#   export DIFY_COOKIE="__Host-access_token=eyJ...; __Host-csrf_token=..."
+#
 #   scripts/dify-export-all.sh                   # apps/*.yml に書き出す
 #
-# トークンの取り方（Cloud）:
+# トークンの取り方（今の Cloud は Cookie 方式）:
 #   1. ブラウザで Dify にログイン
-#   2. DevTools(F12) → Network タブ → `console/api/...` のリクエストを1つ選ぶ
-#   3. Request Headers の `Authorization: Bearer xxxxx` の xxxxx をコピー
-#      （または Application → Local Storage の console_token）
+#   2. DevTools(F12) → Application タブ → Storage → Cookies → https://cloud.dify.ai
+#   3. `__Host-access_token` の Value(eyJ... の長い文字列)をコピー → DIFY_TOKEN へ
+#   ※ うまくいかない場合は、その行＋他の Cookie をまとめて DIFY_COOKIE へ。
+#   ⚠️ トークン/Cookie は自分のログインそのもの。人に渡さない・コミットしない・チャットに貼らない。
 #
 # エクスポート後:
 #   git add apps && scripts/ship.sh "chore: export dify templates"
 #
 set -euo pipefail
 
-: "${DIFY_TOKEN:?DIFY_TOKEN(console access token) を設定してください}"
 BASE="${DIFY_BASE:-https://cloud.dify.ai}"
 API="${BASE%/}/console/api"
 OUT="apps"
-AUTH="Authorization: Bearer ${DIFY_TOKEN}"
+
+# 認証ヘッダーを組み立て（Bearer か Cookie のどちらか）
+AUTH_ARGS=()
+if [ -n "${DIFY_TOKEN:-}" ]; then
+  AUTH_ARGS=(-H "Authorization: Bearer ${DIFY_TOKEN}")
+elif [ -n "${DIFY_COOKIE:-}" ]; then
+  AUTH_ARGS=(-H "Cookie: ${DIFY_COOKIE}")
+else
+  echo "エラー: DIFY_TOKEN か DIFY_COOKIE のどちらかを設定してください" >&2
+  exit 1
+fi
 
 command -v jq >/dev/null 2>&1 || { echo "エラー: jq が必要です（brew install jq 等）" >&2; exit 1; }
 
@@ -47,7 +63,7 @@ slug() {
 page=1
 count=0
 while : ; do
-  resp="$(curl -fsS -H "$AUTH" "$API/apps?page=${page}&limit=100")" || {
+  resp="$(curl -fsS "${AUTH_ARGS[@]}" "$API/apps?page=${page}&limit=100")" || {
     echo "エラー: アプリ一覧の取得に失敗。トークン失効 or エンドポイント要確認。" >&2
     exit 1
   }
@@ -60,7 +76,7 @@ while : ; do
     file="$OUT/$(slug "$name").yml"
     echo "▶ export: $name -> $file"
     # include_secret=false: 念のためシークレットを含めない（DSL に鍵は載らない前提）
-    curl -fsS -H "$AUTH" "$API/apps/${id}/export?include_secret=false" \
+    curl -fsS "${AUTH_ARGS[@]}" "$API/apps/${id}/export?include_secret=false" \
       | jq -r '.data' > "$file"
     count=$((count + 1))
   done <<< "$rows"
