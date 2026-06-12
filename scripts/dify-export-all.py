@@ -29,9 +29,9 @@ import sys
 import urllib.error
 import urllib.request
 
-BASE = os.environ.get("DIFY_BASE", "https://cloud.dify.ai").rstrip("/")
-TOKEN = os.environ.get("DIFY_TOKEN")
-COOKIE = os.environ.get("DIFY_COOKIE")
+BASE = (os.environ.get("DIFY_BASE") or "https://cloud.dify.ai").strip().rstrip("/")
+TOKEN = (os.environ.get("DIFY_TOKEN") or "").strip()
+COOKIE = (os.environ.get("DIFY_COOKIE") or "").strip()
 API = BASE + "/console/api"
 OUT = "apps"
 
