@@ -1,16 +1,3 @@
-# ---- Secrets / credentials (never commit) ----
-.env
-.env.*
-*.env
-*.key
-*.pem
-*.p12
-*.pfx
-secrets/
-**/secrets/
-credentials.json
-service-account*.json
-
 # ---- OS / Editor ----
 .DS_Store
 Thumbs.db
@@ -20,4 +7,3 @@ Thumbs.db
 
 # ---- Logs ----
 *.log
-logs/
