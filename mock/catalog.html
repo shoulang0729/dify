@@ -470,6 +470,23 @@
   .msg-row.user .bubble {
     background: var(--action-primary); color: var(--text-on-brand); border-color: var(--action-primary);
   }
+  /* ===== 考え中インジケータ（Issue #39：文言は使わず 3 点ドットの脈打ちのみ） ===== */
+  .bubble.typing { display: inline-flex; align-items: center; padding: 14px var(--space-4); }
+  .think-dots { display: inline-flex; align-items: center; gap: 4px; }
+  .think-dots span {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted);
+    animation: think-pulse 1.1s ease-in-out infinite;
+  }
+  .think-dots span:nth-child(2) { animation-delay: .15s; }
+  .think-dots span:nth-child(3) { animation-delay: .3s; }
+  @keyframes think-pulse {
+    0%, 80%, 100% { opacity: .25; transform: scale(0.85); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .think-dots span { animation: none; opacity: .6; }
+  }
+  .processing { display: flex; align-items: center; justify-content: center; padding: var(--space-5) 0; }
   .chat-input-row {
     flex-shrink: 0; display: flex; gap: var(--space-3); padding: var(--space-4) 36px;
     background: var(--surface-card); border-top: 1px solid var(--border-subtle);
@@ -2778,6 +2795,16 @@ function filtered() {
 /** demo view の agent 返答遅延タイマー。renderMain() 再実行時に消し忘れると
     連打・言語切替で古い #msgs へ二重に addMsg してしまうため保持する */
 let demoReplyTimer = null;
+/** Issue #39：エージェントが「処理している」感を出すための返答遅延パラメータ。
+    delay = base + perChar*文字数 を min〜max にクランプ。PM が体感を見て調整してよい */
+const DEMO_REPLY_MS = { base: 1200, perChar: 25, min: 1500, max: 3500 };
+const demoDelay = (text) => Math.min(DEMO_REPLY_MS.max,
+  Math.max(DEMO_REPLY_MS.min, DEMO_REPLY_MS.base + (text ? text.length : 0) * DEMO_REPLY_MS.perChar));
+/** true の間、agent の返答は表示待ち（考え中）。send/chip/run はこの間無視して二重消費を防ぐ。
+    scripted（state.log に積んだ台本ターン）の pending は renderMain() 再実行後も保持して再スケジュールするが、
+    freeform（台本が尽きた後の汎用返答）の pending は再描画されたら諦める（msgs 自体が作り直されるため） */
+let demoPending = false;
+let demoPendingFreeform = false;
 const scnOf = (id) => SCENARIOS[id] || null;
 /** 台本は ja / zh のみ。UI が en のときは ja の台本を使う（§2-5：エージェント本体は日中） */
 const scriptLang = (l) => (l === 'zh' ? 'zh' : 'ja');
@@ -2908,6 +2935,11 @@ function todoHTML(p) {
 /* ============================================================
    9b. 描画 — 業務デモ（work-pane / chat-pane の部品）
    ============================================================ */
+/** 「考え中」インジケータ（3 点脈打つドット）。文言は使わない（§2-2/Issue #39） */
+const dotsHTML = () => `<span class="think-dots"><span></span><span></span><span></span></span>`;
+/** 結果パネルが pending のときの処理中プレースホルダ */
+const pendingHTML = () => `<div class="processing">${dotsHTML()}</div>`;
+
 /** 結果パネルの中身。items（縦積み）か columns+rows（表）のどちらか一方 */
 function resultHTML(r) {
   const titleHTML = `<div class="kv"><div class="k">${esc(r.title)}</div></div>`;
@@ -2949,7 +2981,7 @@ function panelHTML(scn) {
       ${inputInner}
       <div class="run-row"><button class="btn-primary" data-act="run"${done ? ' disabled' : ''}>${esc(done ? t('runDone') : t('run'))}</button></div>
     </div>
-    ${done ? `<div class="panel"><div class="panel-h">${esc(t('resultPanel'))}</div>${resultHTML(scn.result[lang0])}</div>` : ''}`;
+    ${done ? `<div class="panel"><div class="panel-h">${esc(t('resultPanel'))}</div>${demoPending ? pendingHTML() : resultHTML(scn.result[lang0])}</div>` : ''}`;
 }
 
 /** チップ行（質問例）。qa 型 または 実行後は台本の次ターン、それ以外（実行前）は誘導文 */
@@ -2964,6 +2996,12 @@ function chipsHTML(scn) {
 
 function renderMain() {
   const el = document.getElementById('main');
+
+  /* 保留中の返答タイマーはいったん止める。demo view の scripted pending（state.log の最終ターン）
+     だけは下の復元処理で同じ遅延を再スケジュールする。それ以外（freeform の pending や demo 以外の
+     view）は #msgs 自体が作り直されるため諦めて pending を解除する（§2-3：表示は state を読むだけ） */
+  if (demoReplyTimer) { clearTimeout(demoReplyTimer); demoReplyTimer = null; }
+  if (state.view !== 'demo' || demoPendingFreeform) { demoPending = false; demoPendingFreeform = false; }
 
   const pat = PATTERNS.find(p => p.id === state.pattern);
   if (pat && !pat.ready) { el.innerHTML = todoHTML(pat); return; }
@@ -3074,14 +3112,27 @@ function renderMain() {
     </div>`;
     const sl = scriptLang(state.lang);
     addMsg('agent', T.chatHello[sl].replace('{name}', x.name[sl]));
-    /* log の復元。最後の 1 ターンだけ agent 返答を遅らせ、それ以前は即時描画する。
-       renderMain() は #msgs を作り直すので、前回の遅延がまだ残っていれば消しておく
-       （連打時に古い #msgs へ二重に描画されるのを防ぐ） */
-    if (demoReplyTimer) { clearTimeout(demoReplyTimer); demoReplyTimer = null; }
+    /* log の復元。最後の 1 ターンだけ agent 返答を遅らせ（考え中インジケータを出す）、
+       それ以前は即時描画する。demoPending が立っている（=最終ターンの返答がまだ未表示）間は
+       renderMain() が再実行されても pending のまま同じ遅延で再スケジュールする（言語/テーマ切替対応） */
     state.log.forEach((turn, i) => {
       addMsg('user', turn.q);
-      if (i === state.log.length - 1) demoReplyTimer = setTimeout(() => addMsg('agent', turn.a), 700);
-      else addMsg('agent', turn.a);
+      const isLast = i === state.log.length - 1;
+      if (isLast && demoPending) {
+        showTyping();
+        demoReplyTimer = setTimeout(() => {
+          hideTyping();
+          addMsg('agent', turn.a);
+          demoPending = false;
+          demoReplyTimer = null;
+          if (scn.template !== 'qa') {
+            const wp = document.querySelector('.work-pane');
+            if (wp) wp.innerHTML = panelHTML(scn);
+          }
+        }, demoDelay(turn.a));
+      } else {
+        addMsg('agent', turn.a);
+      }
     });
     const input = document.getElementById('chat-input');
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
@@ -3124,7 +3175,41 @@ function addMsg(who, text) {
   box.scrollTop = box.scrollHeight;
 }
 
+/** agent 側の「考え中」バブル（3 点ドット）。文言は使わない（Issue #39） */
+function showTyping() {
+  const box = document.getElementById('msgs');
+  if (!box || document.getElementById('typing-row')) return;
+  const row = document.createElement('div');
+  row.className = 'msg-row agent';
+  row.id = 'typing-row';
+  const b = document.createElement('div');
+  b.className = 'bubble typing';
+  b.innerHTML = dotsHTML();
+  row.appendChild(b);
+  box.appendChild(row);
+  box.scrollTop = box.scrollHeight;
+}
+function hideTyping() {
+  const row = document.getElementById('typing-row');
+  if (row) row.remove();
+}
+
+/** 台本が尽きた後の汎用返答（T.chatReply）。demo / chat どちらの view でも同じ遅延・インジケータにする */
+function scheduleFreeReply(text) {
+  demoPending = true;
+  demoPendingFreeform = true;
+  showTyping();
+  demoReplyTimer = setTimeout(() => {
+    hideTyping();
+    addMsg('agent', text);
+    demoPending = false;
+    demoPendingFreeform = false;
+    demoReplyTimer = null;
+  }, demoDelay(text));
+}
+
 function sendChat() {
+  if (demoPending) return; // 返答待ちの間は二重送信を無視（Issue #39）
   const input = document.getElementById('chat-input');
   const v = input.value.trim();
   if (!v) return;
@@ -3134,14 +3219,14 @@ function sendChat() {
   if (state.view === 'demo') {
     const sl = scriptLang(lang);
     input.value = '';
-    if (consume(sl, v)) { renderMain(); return; }        // 台本があれば台本の a を返す（q は入力文で置換）
-    addMsg('user', v);                                    // 台本が尽きたら従来の汎用返答
-    setTimeout(() => addMsg('agent', T.chatReply[sl].replace('{name}', x.name[sl])), 700);
+    if (consume(sl, v)) { demoPending = true; renderMain(); return; }  // 台本があれば台本の a を返す（q は入力文で置換）
+    addMsg('user', v);                                                  // 台本が尽きたら従来の汎用返答
+    scheduleFreeReply(T.chatReply[sl].replace('{name}', x.name[sl]));
     return;
   }
   /* --- 以下は既存のまま（chat view） --- */
   addMsg('user', v); input.value = '';
-  setTimeout(() => addMsg('agent', T.chatReply[lang].replace('{name}', x.name[lang])), 700);
+  scheduleFreeReply(T.chatReply[lang].replace('{name}', x.name[lang]));
 }
 
 /* ============================================================
@@ -3175,9 +3260,15 @@ document.addEventListener('click', (e) => {
     else { state.view = 'chat'; }
     renderMain();
   }
-  else if (act === 'run') { if (state.log.length === 0) { consume(scriptLang(state.lang)); renderMain(); } }
-  else if (act === 'chip') { consume(arg); renderMain(); }
-  else if (act === 'restart') { state.log = []; renderMain(); }
+  else if (act === 'run') {
+    if (demoPending) return; // 返答待ちの間は二重消費を無視（Issue #39）
+    if (state.log.length === 0 && consume(scriptLang(state.lang))) { demoPending = true; renderMain(); }
+  }
+  else if (act === 'chip') {
+    if (demoPending) return; // 返答待ちの間は二重消費を無視（Issue #39）
+    if (consume(arg)) { demoPending = true; renderMain(); }
+  }
+  else if (act === 'restart') { state.log = []; demoPending = false; demoPendingFreeform = false; renderMain(); }
   else if (act === 'send') { sendChat(); }
 });
 
