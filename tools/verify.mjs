@@ -174,7 +174,7 @@ section('7. 共通レイヤー契約');
     if (missing.length) fail(`state に必須キーが無い: ${missing.join(', ')}`); else ok(`state 必須キー ${required.length} 件 OK`);
   }
   const acts = new Set([...script.matchAll(/act === '([a-z]+)'/g)].map(m => m[1]));
-  const requiredActs = ['pattern', 'all', 'cat', 'sub', 'svc', 'back', 'backdetail', 'start', 'send', 'run', 'chip', 'restart'];
+  const requiredActs = ['pattern', 'all', 'cat', 'sub', 'svc', 'back', 'backdetail', 'start', 'send', 'run', 'chip', 'restart', 'gocat'];
   const missingActs = requiredActs.filter(a => !acts.has(a));
   if (missingActs.length) fail(`data-act ハンドラが無い: ${missingActs.join(', ')}`); else ok(`data-act ${requiredActs.length} 種 OK`);
 
@@ -258,6 +258,64 @@ if (SCENARIOS && SVCS && TEMPLATES) {
   if (!bad) ok(`SCENARIOS ${Object.keys(SCENARIOS).length} 件の整合 OK`);
 } else {
   fail('SCENARIOS / SVCS / TEMPLATES のいずれかが取得できない');
+}
+
+/* ---------- 10. ホームデータ整合（HOME / FEED） ---------- */
+section('10. ホームデータ整合（HOME / FEED）');
+{
+  const HOME = grab('HOME'), FEED = grab('FEED');
+  const svcIds = SVCS ? new Set(SVCS.map(s => s.id)) : new Set();
+  const catIds = CATS ? new Set(CATS.map(c => c.id)) : new Set();
+  let bad = 0;
+
+  if (!HOME) { fail('HOME が取得できない（grab() の正規表現に合わない書き方の可能性）'); bad++; }
+  else {
+    if (!Array.isArray(HOME.frequent) || HOME.frequent.length < 1) { fail('HOME.frequent: 1件以上必要'); bad++; }
+    else {
+      const seen = new Set();
+      for (const f of HOME.frequent) {
+        if (!svcIds.has(f.id)) { fail(`HOME.frequent.${f.id}: SVCS に存在しない`); bad++; }
+        if (seen.has(f.id)) { fail(`HOME.frequent: id 重複 ${f.id}`); bad++; } seen.add(f.id);
+        if (!Number.isInteger(f.uses) || f.uses < 1) { fail(`HOME.frequent.${f.id}.uses: 1以上の整数が必要`); bad++; }
+      }
+      const usesDesc = HOME.frequent.every((f, i) => i === 0 || HOME.frequent[i - 1].uses >= f.uses);
+      if (!usesDesc) warn('HOME.frequent: uses が降順でない');
+    }
+    if (!Array.isArray(HOME.recommended) || HOME.recommended.length < 1) { fail('HOME.recommended: 1件以上必要'); bad++; }
+    else {
+      for (const r of HOME.recommended) {
+        if (!svcIds.has(r.id)) { fail(`HOME.recommended.${r.id}: SVCS に存在しない`); bad++; }
+        checkML(r.why, `HOME.recommended.${r.id}.why`);
+      }
+    }
+  }
+
+  // FEED（③）は PR-2 で実装。存在すれば整合を検査する
+  if (FEED) {
+    if (!Array.isArray(FEED.mine) || FEED.mine.some(id => !catIds.has(id))) { fail('FEED.mine: CATS に存在しない id を含む'); bad++; }
+    if (!Array.isArray(FEED.recent)) { fail('FEED.recent: 配列が必要'); bad++; }
+    else {
+      const seen = new Set();
+      for (const id of FEED.recent) {
+        if (!svcIds.has(id)) { fail(`FEED.recent.${id}: SVCS に存在しない`); bad++; }
+        if (seen.has(id)) { fail(`FEED.recent: id 重複 ${id}`); bad++; } seen.add(id);
+      }
+    }
+    checkML(FEED.persona && FEED.persona.name, 'FEED.persona.name');
+    checkML(FEED.persona && FEED.persona.role, 'FEED.persona.role');
+    checkML(FEED.persona && FEED.persona.site, 'FEED.persona.site');
+    if (!Array.isArray(FEED.items) || FEED.items.length < 1) { fail('FEED.items: 1件以上必要'); bad++; }
+    else {
+      for (const it of FEED.items) {
+        if (!svcIds.has(it.id)) { fail(`FEED.items.${it.id}: SVCS に存在しない`); bad++; }
+        if (!['due', 'notify', 'routine'].includes(it.kind)) { fail(`FEED.items.${it.id}.kind: "${it.kind}" は due/notify/routine 以外`); bad++; }
+        checkML(it.when, `FEED.items.${it.id}.when`);
+        checkML(it.note, `FEED.items.${it.id}.note`);
+      }
+    }
+  }
+
+  if (!bad) ok('HOME' + (FEED ? ' / FEED' : '') + ' の整合 OK');
 }
 
 /* ---------- 結果 ---------- */
