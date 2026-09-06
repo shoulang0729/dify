@@ -37,12 +37,13 @@
 - 検出：`tools/verify.mjs`（直値検出・`var()` 未定義検出・dark ブロック存在）
 
 ### 2-3. 共通レイヤーの契約（パターンを増やすときの土台）
-- **データ**：`CATS`（大分類→中分類）/ `SVCS`（サービス、`cat`/`sub`/`st`/`tags`/`name`/`desc`）/ `TAGS` / `TEMPLATES`（デモ画面テンプレート 5 種 `qa`/`upload`/`form`/`diff`/`lookup` の名称・説明、3 言語）/ `SCENARIOS`（サービス id → `{ template, persona{name,role,site,native}, steps{ja,zh,en}, input?, result?, script{ja,zh} }`。**台本 `script` と `input`/`result` は ja/zh のみ**＝§2-5 の実装。`SVCS` に埋め込まず別定数）
+- **データ**：`CATS`（大分類→中分類）/ `SVCS`（サービス、`cat`/`sub`/`st`/`tags`/`name`/`desc`）/ `TAGS` / `TEMPLATES`（デモ画面テンプレート 5 種 `qa`/`upload`/`form`/`diff`/`lookup` の名称・説明、3 言語）/ `SCENARIOS`（サービス id → `{ template, persona{name,role,site,native}, steps{ja,zh,en}, input?, result?, script{ja,zh} }`。**台本 `script` と `input`/`result` は ja/zh のみ**＝§2-5 の実装。`SVCS` に埋め込まず別定数）/ `HOME`（② ダッシュボード用：`frequent`〔よく使う 6 件・サンプル利用件数〕・`recommended`〔おすすめ 3 件・理由 3 言語〕。**`SVCS` に埋め込まず別定数**。参照 id は `SVCS`/`CATS` に存在すること）
 - **状態**：`state = { pattern, lang, theme, openCats, selCat, selSub, lastCat, selSvc, view, query, log }`。`view` は `list` / `detail` / `chat` / `demo`。`log` はデモで消費した台本ターン `[{lang,q,a}]`（`log.length` が次に消費する index。言語切替後の再描画で会話を復元）
-- **遷移**：`document` の `click` ハンドラの `data-act`（`pattern`/`all`/`cat`/`sub`/`svc`/`back`/`backdetail`/`start`/`send`/`run`/`chip`/`restart`）。`start` は `SCENARIOS` にあれば `demo`、なければ従来の `chat` へ（フォールバックを残す）
+- **遷移**：`document` の `click` ハンドラの `data-act`（`pattern`/`all`/`cat`/`sub`/`svc`/`back`/`backdetail`/`start`/`send`/`run`/`chip`/`restart`/`gocat`）。`gocat` は分類タイルから直接その分類の一覧へ（`cat` と違いトグルしない）。`start` は `SCENARIOS` にあれば `demo`、なければ従来の `chat` へ（フォールバックを残す）
+- **ホーム**：`view === 'list'` かつ `selCat`/`selSub`/`query` が全部空の状態。ここだけ `pattern` で描き分ける（① グリッド / ② `renderDash` / ③ `renderFeed`）。`detail`/`chat`/`demo` は 3 パターン完全共通
 - ルール：**表示レイヤー（`renderSidebar` / `renderMain` 内のパターン分岐）は `state` を読んで描くだけ**。パターン固有の都合で `state` の形・データ形・遷移を変えない
 - なぜ：**パターンを切り替えても選択位置が保持され、同じ業務を別の見せ方で直接比較できる**のはこの契約のおかげ。②③（ダッシュボード / 業務フィード）はこの上に乗せる
-- 検出：`tools/verify.mjs`（`state` の必須キー・`data-act` 一覧・§9 シナリオ整合：`SCENARIOS` の id が `SVCS` に存在／`template` が `TEMPLATES` に存在／型の形式。台本の無い `SVCS` は warn）＋ reviewer の diff 監査
+- 検出：`tools/verify.mjs`（`state` の必須キー・`data-act` 一覧・§9 シナリオ整合：`SCENARIOS` の id が `SVCS` に存在／`template` が `TEMPLATES` に存在／型の形式。台本の無い `SVCS` は warn／§10 `HOME`・`FEED` の参照 id と 3 言語）＋ reviewer の diff 監査
 
 ### 2-4. 「モックの足場」と「プロダクト機能」を混ぜない
 - `.mockbar`（パターン選択セグメント）＝**レビュー用の足場**。本番 UI には存在しない
@@ -72,6 +73,7 @@
 ### 2-9. 顧客版カタログへの差し替えは「データ層だけ」
 - 顧客向けメニュー（分類・サービス）の差し替えは `CATS` / `SVCS` / `TAGS` の**データだけ**を変える。描画ロジックは触らない
 - 変更前後の**件数と id 一覧を設計書に書く**（reviewer が `regress.mjs` の差分と照合）
+- `SVCS[].id` は管理番号（§2-11、例 `KN-02`）として**顧客に見える**。差し替え時も **id を改名しない**（不要になったら欠番、新規は新 id）
 - 検出：`tools/regress.mjs`
 
 ### 2-10. シークレットを置かない
@@ -123,6 +125,6 @@ node tools/regress.mjs --update   # 設計書に書かれた意図的なデー�
 ## §6 バックログ（v2 以降）
 
 - **Dify Export / Import 自動化（git ⇄ Dify 同期）**：Cloud は Cloudflare／Cookie 認証で壊れやすい。本格運用はセルフホスト後（Issue #3）
-- **モック ②ダッシュボード / ③業務フィード**：§2-3 の共通レイヤー上に実装。並列可
+- **モック ②ダッシュボード / ③業務フィード**：§2-3 の共通レイヤー上に実装。**直列**（`T` 末尾・`renderMain` ホーム分岐・`PATTERNS`・verify §10・`regress.baseline.json` が重なる）。設計書 `docs/handoff/2026-09-06-patterns-dash-feed.md`。② は実装済み（#42 PR-1）、③ は PR-2
 - **顧客版カタログ（製造業・日中2拠点）**：シナリオ粒度で **7 分類 33 サービス**に再編し、A-1（#30）でデータ層を差し替え済み（§2-9）。残：A-2 パートナー連携 6 者の追加・B-1 デモ遷移テンプレート・B-2 台本投入。設計書は `docs/handoff/2026-09-06-*.md`、実現性は `docs/dify/`
 - **`top.html` の扱い**：バンドル済みで手編集不可。②③ を `catalog.html` 側に実装したら削除候補
