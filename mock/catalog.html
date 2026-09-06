@@ -103,6 +103,9 @@
   --badge-live-fg:        #00803B;
   --badge-trial-bg:       rgba(0, 113, 188, 0.12);
   --badge-trial-fg:       #005B96;
+  --status-concept:       var(--ntt-grey-100);
+  --badge-concept-bg:     rgba(148, 148, 148, 0.16);
+  --badge-concept-fg:     #5A6B78;
 
   /* Focus ring */
   --focus-ring:           var(--ntt-future-blue-50);
@@ -144,6 +147,9 @@
   --badge-live-fg:        #5BE79B;
   --badge-trial-bg:       rgba(46, 144, 255, 0.18);
   --badge-trial-fg:       #7FC0FF;
+  --status-concept:       #8A97A6;
+  --badge-concept-bg:     rgba(164, 176, 186, 0.16);
+  --badge-concept-fg:     #B8C3CC;
 }
 
 /* tokens/typography.css */
@@ -389,6 +395,7 @@
   .dot { width: 7px; height: 7px; border-radius: 50%; }
   .dot.live { background: var(--status-success); }
   .dot.trial { background: var(--status-warning); }
+  .dot.concept { background: var(--status-concept); }
   .tag {
     font-size: var(--text-overline); color: var(--text-secondary);
     border: 1px solid var(--border-card); border-radius: var(--radius-sm);
@@ -426,6 +433,7 @@
   }
   .badge.live { background: var(--badge-live-bg); color: var(--badge-live-fg); }
   .badge.trial { background: var(--badge-trial-bg); color: var(--badge-trial-fg); }
+  .badge.concept { background: var(--badge-concept-bg); color: var(--badge-concept-fg); }
   .keyline { width: 32px; height: var(--border-accent); background: var(--action-primary); margin-bottom: var(--space-4); }
   .sec-label { font-size: 13px; font-weight: var(--weight-bold); color: var(--text-heading); margin-bottom: 10px; }
   .d-desc { margin: 0 0 var(--space-8) 0; font-size: 14.5px; line-height: 1.9; color: var(--text-body); }
@@ -558,11 +566,12 @@ const T = {
   mockNote:     { ja: '※ 本画面はコンセプト確認用のモックです', zh: '※ 本页面为概念验证演示', en: '* This screen is a concept mock.' },
   statusLive:   { ja: '提供中', zh: '已上线', en: 'Available' },
   statusTrial:  { ja: '試行版', zh: '试用版', en: 'Trial' },
-  chatPh:       { ja: 'メッセージを入力', zh: '请输入消息', en: 'Type a message' },
+  statusConcept:{ ja: '構想', zh: '构想', en: 'Concept' },
+  chatPh:       { ja: 'メッセージを入力（日本語・中文どちらでも）', zh: '请输入消息（中文・日文均可）', en: 'Type a message (Japanese or Chinese)' },
   send:         { ja: '送信', zh: '发送', en: 'Send' },
-  chatHello:    { ja: 'こんにちは。「{name}」エージェントです。ご用件を入力してください。',
-                  zh: '您好，这里是「{name}」智能体，请输入您的需求。',
-                  en: 'Hello. This is the "{name}" agent. Please enter your request.' },
+  chatHello:    { ja: 'こんにちは。「{name}」エージェントです。日本語・中国語どちらでも入力できます。',
+                  zh: '您好，这里是「{name}」智能体。中文或日文均可输入。',
+                  en: 'Hello. This is the "{name}" agent. You can write in Japanese or Chinese.' },
   chatReply:    { ja: '（モック応答）ご入力ありがとうございます。実際のサービスでは、「{name}」がここで回答を生成します。',
                   zh: '（模拟回复）感谢您的输入。正式版中，「{name}」将在此生成回答。',
                   en: '(Mock reply) Thank you. In the live service, "{name}" would generate an answer here.' },
@@ -880,8 +889,17 @@ const subOf = (catId, subId) => { const c = catOf(catId); return c && c.subs.fin
 const svcOf = (id) => SVCS.find(x => x.id === id);
 const countSub = (subId) => SVCS.filter(x => x.sub === subId).length;
 const countCat = (catId) => SVCS.filter(x => x.cat === catId).length;
-const statusText = (st) => st === 1 ? t('statusLive') : t('statusTrial');
-const statusClass = (st) => st === 1 ? 'live' : 'trial';
+/* st: 1 提供中 / 2 試行版 / 3 構想 */
+const statusText = (st) => st === 1 ? t('statusLive') : st === 2 ? t('statusTrial') : t('statusConcept');
+const statusClass = (st) => st === 1 ? 'live' : st === 2 ? 'trial' : 'concept';
+
+/** 入力テキストの言語を判定（ひらがな/カタカナ→ja、漢字のみ→zh、それ以外→UI言語）
+    エージェントは UI 言語と無関係に日本語・中国語どちらの入力も受け付ける */
+function detectLang(s) {
+  if (/[぀-ヿ]/.test(s)) return 'ja';
+  if (/[一-鿿]/.test(s)) return 'zh';
+  return state.lang;
+}
 const countText = (n) => state.lang === 'en' ? (n + t('countUnit')) : (n + t('countUnit'));
 
 function filtered() {
@@ -1118,7 +1136,9 @@ function sendChat() {
   addMsg('user', v);
   input.value = '';
   const x = svcOf(state.selSvc);
-  setTimeout(() => addMsg('agent', t('chatReply').replace('{name}', L(x.name))), 700);
+  /* 返答は「入力された言語」に合わせる（メニュー表示言語とは独立） */
+  const lang = detectLang(v);
+  setTimeout(() => addMsg('agent', T.chatReply[lang].replace('{name}', x.name[lang])), 700);
 }
 
 /* ============================================================
