@@ -1,0 +1,370 @@
+# ---------------------------------------------------------------------------
+# 参照 DSL（外部出典・無改変コピー。冒頭コメントのみ追記）
+# 出典     : https://github.com/difyhub/workflows/blob/main/data-analysis/text-to-sql-en/workflow.yml
+# ライセンス: MIT (difyhub/workflows)
+# 雛形候補 : nm5 データ分析アシスタント / nm4 在庫・納期照会 / en2 BOM 逆引き（自然言語 → SQL → HTTP で自前 API 実行 → LLM 解説＋ECharts）
+# メモ     : start -> llm(SQL 生成, deepseek-coder) -> http-request(自前 SQL 実行 API) -> llm(分析, SiliconFlow Kimi-K2) -> end。SiliconFlow 依存の実例。lookup 型は必ず HTTP/DB プラグイン経由になる、という構成の見本
+# 取得日   : 2026-09-06
+# ---------------------------------------------------------------------------
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: Text-to-SQL Analyst
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/siliconflow:0.0.33@6792acf632f24f1c41a3192a78ef181f7149811a8dfd9a16ade984978613f79c
+    version: null
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/deepseek:0.0.6@dd589dc093c8084925858034ab5ec1fdf0d33819f43226c2f8c4a749a9acbbb2
+    version: null
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1762410999955-source-1762411226070-target
+      source: '1762410999955'
+      sourceHandle: source
+      target: '1762411226070'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: http-request
+      id: 1762411226070-source-1762413012087-target
+      source: '1762411226070'
+      sourceHandle: source
+      target: '1762413012087'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: http-request
+        targetType: llm
+      id: 1762413012087-source-1762413553007-target
+      source: '1762413012087'
+      sourceHandle: source
+      target: '1762413553007'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1762413553007-source-1762413702593-target
+      source: '1762413553007'
+      sourceHandle: source
+      target: '1762413702593'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: user_request
+          max_length: 200
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: user_request
+      height: 88
+      id: '1762410999955'
+      position:
+        x: 0
+        y: 25
+      positionAbsolute:
+        x: 0
+        y: 25
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1762410999955'
+          - user_request
+        desc: sql_expert
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-coder
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - id: 976a4bdb-c917-4736-813a-2bc7d2813de2
+          role: system
+          text: "prompt_template:\n        - id: 976a4bdb-c917-4736-813a-2bc7d2813de2\n\
+            \          role: system\n          text: |\n            # You are a data\
+            \ analysis expert, proficient in MySQL, capable of generating efficient\
+            \ SQL queries based on user questions.\n\n            ## Core Rules\n\
+            \            1.  **Strict Adherence**: Use only the provided tables and\
+            \ fields.\n            2.  **Compatibility**: Ensure SQL statements are\
+            \ fully compatible with MySQL syntax.\n            3.  **Format Requirement**:\
+            \ Strictly output only a single, complete SQL statement. It is forbidden\
+            \ to include any comments, explanations, thought processes (like <think>\
+            \ tags), or markdown markers (like ```sql).\n            4.  **Result\
+            \ Limit**: All queries must include `LIMIT 100` to prevent excessive data.\n\
+            \            5.  **Current Status**: To query \"current\" or \"active\"\
+            \ employees, use `WHERE to_date = '9999-01-01'` on the `salaries`, `titles`,\
+            \ `dept_emp`, and `dept_manager` tables.\n\n            ---\n        \
+            \    ## Database Schema\n\n            **employees (Employee Table)**\n\
+            \            ```sql\n            CREATE TABLE employees (\n          \
+            \    emp_no      INT          NOT NULL,\n              first_name  VARCHAR(14)\
+            \  NOT NULL,\n              last_name   VARCHAR(16)  NOT NULL,\n     \
+            \         gender      ENUM ('M','F') NOT NULL,    \n              hire_date\
+            \   DATE         NOT NULL,\n              PRIMARY KEY (emp_no)\n     \
+            \       );\n            ```\n\n            **departments (Department Table)**\n\
+            \            ```sql\n            CREATE TABLE departments (\n        \
+            \      dept_no     CHAR(4)        NOT NULL,\n              dept_name \
+            \  VARCHAR(40)    NOT NULL,\n              PRIMARY KEY (dept_no),\n  \
+            \            UNIQUE  KEY (dept_name)\n            );\n            ```\n\
+            \n            **dept_manager (Department Manager Table)**\n          \
+            \  ```sql\n            CREATE TABLE dept_manager (\n             emp_no\
+            \       INT            NOT NULL,\n             dept_no      CHAR(4)  \
+            \      NOT NULL,\n             from_date    DATE           NOT NULL,\n\
+            \             to_date      DATE           NOT NULL,\n             PRIMARY\
+            \ KEY (emp_no,dept_no)\n            ); \n            ```\n\n         \
+            \   **dept_emp (Department-Employee Relationship Table)**\n          \
+            \  ```sql\n            CREATE TABLE dept_emp (\n              emp_no \
+            \     INT            NOT NULL,\n              dept_no     CHAR(4)    \
+            \    NOT NULL,\n              from_date   DATE           NOT NULL,\n \
+            \             to_date     DATE           NOT NULL,\n              PRIMARY\
+            \ KEY (emp_no,dept_no)\n            );\n            ```\n\n          \
+            \  **titles (Title Table)**\n            ```sql\n            CREATE TABLE\
+            \ titles (\n              emp_no      INT            NOT NULL,\n     \
+            \         title       VARCHAR(50)    NOT NULL,\n              from_date\
+            \   DATE           NOT NULL,\n              to_date     DATE,\n      \
+            \        PRIMARY KEY (emp_no,title, from_date)\n            ); \n    \
+            \        ```\n\n            **salaries (Salary Table)**\n            ```sql\n\
+            \            CREATE TABLE salaries (\n              emp_no      INT  \
+            \          NOT NULL,\n              salary      INT            NOT NULL,\n\
+            \              from_date   DATE           NOT NULL,\n              to_date\
+            \     DATE           NOT NULL,\n              PRIMARY KEY (emp_no, from_date)\n\
+            \            ); \n            ```\n\n            ---\n\n            ##\
+            \ Query Examples\n\n            ### 1. Query the current highest-paid\
+            \ employee\n            SELECT CONCAT(e.first_name, ' ', e.last_name)\
+            \ as name, s.salary FROM employees e JOIN salaries s ON e.emp_no = s.emp_no\
+            \ WHERE s.to_date = '9999-01-01' ORDER BY s.salary DESC LIMIT 100\n\n\
+            \            ### 2. Query all current employees in the 'Engineering' department\n\
+            \            SELECT CONCAT(e.first_name, ' ', e.last_name) as name, d.dept_name\
+            \ FROM employees e JOIN dept_emp de ON e.emp_no = de.emp_no JOIN departments\
+            \ d ON de.dept_no = d.dept_no WHERE d.dept_name = 'Engineering' AND de.to_date\
+            \ = '9999-01-01' LIMIT 100\n\n            ### 3. Query the current manager\
+            \ of the 'Engineering' department\n            SELECT CONCAT(e.first_name,\
+            \ ' ', e.last_name) as name, d.dept_name FROM employees e JOIN dept_manager\
+            \ dm ON e.emp_no = dm.emp_no JOIN departments d ON dm.dept_no = d.dept_no\
+            \ WHERE d.dept_name = 'Engineering' AND dm.to_date = '9999-01-01' LIMIT\
+            \ 100\n\n            ---\n\n            User Question: {{#1762410999955.user_request#}}\n\
+            \n            Output SQL:"
+        selected: false
+        structured_output_enabled: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 116
+      id: '1762411226070'
+      position:
+        x: 342
+        y: 11
+      positionAbsolute:
+        x: 342
+        y: 11
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: key-value-94
+            key: ''
+            type: text
+            value: "{\n          \"sql_query\": \"{{#1762411226070.text#}}\"\n}"
+          type: json
+        headers: X-API-Key:******
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        ssl_verify: false
+        timeout:
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+        title: HTTP Request
+        type: http-request
+        url: http://sql_api:35003/execute_query
+        variables: []
+      height: 137
+      id: '1762413012087'
+      position:
+        x: 682.5714285714287
+        y: 1.4285714285714448
+      positionAbsolute:
+        x: 682.5714285714287
+        y: 1.4285714285714448
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: data_analyst
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: Pro/moonshotai/Kimi-K2-Instruct
+          provider: langgenius/siliconflow/siliconflow
+        prompt_template:
+        - id: c0169765-5494-44ee-a8fa-50b0864b7adc
+          role: system
+          text: "prompt_template:\n        - id: c0169765-5494-44ee-a8fa-50b0864b7adc\n\
+            \          role: system\n          text: |\n            # Role: Data Analysis\
+            \ Expert\n\n            You are a professional data analyst. Your task\
+            \ is to generate a concise, easy-to-read analysis report based on the\
+            \ user's question and the queried JSON data.\n\n            ## Core Rules\n\
+            \n            1.  **Data Source**: Strictly base your analysis on the\
+            \ provided JSON dataset `{{#1762413012087.body#}}`.\n            2.  **User\
+            \ Question**: Your analysis must directly answer the user's original question\
+            \ `{{#1762410999955.user_request#}}`.\n            3.  **Empty Data**:\
+            \ If the dataset is empty (e.g., `[]`), respond with: \"No relevant data\
+            \ was found\".\n            4.  **Format**: Use Markdown to format the\
+            \ response.\n            5.  **Table**: At the beginning of the analysis,\
+            \ convert the JSON data into a Markdown table.\n            6.  **ECharts**:\
+            \ At the end of the report, generate an ECharts JSON configuration based\
+            \ on the data, and wrap it in a ```echarts ... ``` code block.\n\n   \
+            \         ---\n\n            User Question: {{#1762410999955.user_request#}}\n\
+            \n            Query Result (JSON): {{#1762413012087.body#}}\n\n      \
+            \      ---\n\n            Begin your analysis report:"
+        selected: false
+        structured_output_enabled: true
+        title: LLM 2
+        type: llm
+        vision:
+          enabled: false
+      height: 116
+      id: '1762413553007'
+      position:
+        x: 1026
+        y: 11
+      positionAbsolute:
+        x: 1026
+        y: 11
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        outputs:
+        - value_selector:
+          - '1762413553007'
+          - text
+          value_type: string
+          variable: text
+        selected: true
+        title: End
+        type: end
+      height: 88
+      id: '1762413702593'
+      position:
+        x: 1368
+        y: 25
+      positionAbsolute:
+        x: 1368
+        y: 25
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: -12
+      y: 175.00000000000003
+      zoom: 0.7
+  rag_pipeline_variables: []
