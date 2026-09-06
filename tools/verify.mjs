@@ -150,6 +150,16 @@ if (CATS && SVCS && TAGS) {
   const unusedTags = Object.keys(TAGS).filter(k => !usedTags.has(k));
   if (unusedTags.length) warn(`未使用タグ: ${unusedTags.join(', ')}`);
   if (!bad) ok(`SVCS ${SVCS.length} 件の cat/sub/st/tags 整合 OK`);
+
+  // 管理番号（§7B）
+  const codeSeen = new Map();
+  for (const s of SVCS) {
+    if (!/^[a-z]{2}\d+$/.test(s.id)) { fail(`SVCS.${s.id}: id が /^[a-z]{2}\\d+$/ に一致しない（管理番号を作れない）`); bad++; }
+    const code = s.id.replace(/^([a-z]+)(\d+)$/, (_, a, b) => a.toUpperCase() + '-' + String(b).padStart(2, '0'));
+    if (codeSeen.has(code)) { fail(`管理番号の重複: ${code}（${codeSeen.get(code)} と ${s.id}）`); bad++; }
+    codeSeen.set(code, s.id);
+  }
+  if (!bad) ok(`管理番号 ${codeSeen.size} 件の重複なし OK`);
 }
 
 /* ---------- 7. 共通レイヤー契約 ---------- */

@@ -388,6 +388,15 @@
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
   .card .c-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+
+  /* ===== 管理番号 ===== */
+  .code {
+    font-family: var(--font-mono); font-size: var(--text-overline);
+    letter-spacing: 0.04em; color: var(--text-muted); white-space: nowrap;
+  }
+  .card .c-top { display: flex; align-items: baseline; gap: var(--space-2); }
+  .card .c-top .code { margin-left: auto; flex-shrink: 0; }
+  .detail-card .d-code { margin-bottom: 6px; }
   .status {
     display: inline-flex; align-items: center; gap: 5px;
     font-size: var(--text-overline); color: var(--text-secondary); margin-right: var(--space-1);
@@ -2767,6 +2776,13 @@ const countCat = (catId) => SVCS.filter(x => x.cat === catId).length;
 const statusText = (st) => st === 1 ? t('statusLive') : st === 2 ? t('statusTrial') : t('statusConcept');
 const statusClass = (st) => st === 1 ? 'live' : st === 2 ? 'trial' : 'concept';
 
+const pad2 = (n) => String(n).padStart(2, '0');
+/** サービス id → 管理番号（kn2 → KN-02）。表示のためだけの変換。データには持たせない */
+const svcCode = (id) => {
+  const m = /^([a-z]+)(\d+)$/.exec(id);
+  return m ? `${m[1].toUpperCase()}-${pad2(m[2])}` : String(id).toUpperCase();
+};
+
 /** 入力テキストの言語を判定（ひらがな/カタカナ→ja、漢字のみ→zh、それ以外→UI言語）
     エージェントは UI 言語と無関係に日本語・中国語どちらの入力も受け付ける */
 function detectLang(s) {
@@ -2905,7 +2921,10 @@ function cardHTML(x) {
   const c = catOf(x.cat), sb = subOf(x.cat, x.sub);
   return `
   <div class="card" data-act="svc" data-arg="${x.id}">
-    <div class="c-crumb">${esc(L(c.name))}・${esc(L(sb.name))}</div>
+    <div class="c-top">
+      <div class="c-crumb">${esc(L(c.name))}・${esc(L(sb.name))}</div>
+      <span class="code">${esc(svcCode(x.id))}</span>
+    </div>
     <div class="c-name">${esc(L(x.name))}</div>
     <div class="c-desc">${esc(L(x.desc))}</div>
     <div class="c-meta">
@@ -3047,6 +3066,7 @@ function renderMain() {
       <button class="backlink" data-act="back"><span class="arrow"></span>${esc(t('backToList'))}</button>
       <div class="detail-card">
         <div class="d-crumb">${esc(L(c.name))}・${esc(L(sb.name))}</div>
+        <div class="code d-code">${esc(svcCode(x.id))}</div>
         <h1>${esc(L(x.name))}</h1>
         <div class="d-meta">
           <span class="badge ${statusClass(x.st)}">${esc(statusText(x.st))}</span>
@@ -3092,6 +3112,7 @@ function renderMain() {
       <div class="chat-hdr">
         <button class="backlink" data-act="backdetail"><span class="arrow"></span>${esc(t('backToDetail'))}</button>
         <div class="vline"></div>
+        <span class="code">${esc(svcCode(x.id))}</span>
         <div class="ct1">${esc(L(x.name))}</div>
         <span class="tpl-badge" title="${esc(t('tplBadge'))}">${esc(L(TEMPLATES[scn.template].name))}</span>
         <span class="who">${esc(L(scn.persona.name))}・${esc(L(scn.persona.site))}</span>
@@ -3145,6 +3166,7 @@ function renderMain() {
       <div class="chat-hdr">
         <button class="backlink" data-act="backdetail"><span class="arrow"></span>${esc(t('backToDetail'))}</button>
         <div class="vline"></div>
+        <span class="code">${esc(svcCode(x.id))}</span>
         <div class="ct1">${esc(L(x.name))}</div>
         <span class="status"><span class="dot ${statusClass(x.st)}"></span>${esc(statusText(x.st))}</span>
       </div>
