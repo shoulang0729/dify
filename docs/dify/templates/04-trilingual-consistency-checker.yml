@@ -1,0 +1,781 @@
+# ---------------------------------------------------------------------------
+# 参照 DSL（外部出典・無改変コピー。冒頭コメントのみ追記）
+# 出典     : https://github.com/svcvit/Awesome-Dify-Workflow/blob/main/DSL/LanguageConsistencyChecker.yml
+# ライセンス: MIT (svcvit/Awesome-Dify-Workflow。原典 stvlynn/langfixer)
+# 雛形候補 : kn3 日中版ズレ検出 / lg2 用語揺れ検出 / en1 仕様改訂差分（複数言語版の同一文書を突き合わせて不一致を LLM で列挙）
+# メモ     : start(url, 基準言語) -> tool(jina ×3 言語取得) -> code(整形) -> llm(言語別チェック) -> end。URL 取得部を file 入力＋document-extractor に置換して使う
+# 取得日   : 2026-09-06
+# ---------------------------------------------------------------------------
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: 三语一致性检查
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.3
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: tool
+      id: 1731078730206-source-17310793844280-target
+      selected: false
+      source: '1731078730206'
+      sourceHandle: source
+      target: '17310793844280'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: tool
+      id: 1731078730206-source-17310794023810-target
+      selected: false
+      source: '1731078730206'
+      sourceHandle: source
+      target: '17310794023810'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: tool
+      id: 1731078730206-source-1732344950523-target
+      selected: false
+      source: '1731078730206'
+      sourceHandle: source
+      target: '1732344950523'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: llm
+      id: 1732346962510-source-17323455383030-target
+      selected: false
+      source: '1732346962510'
+      sourceHandle: source
+      target: '17323455383030'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: llm
+      id: 1732346962510-source-1731079450460-target
+      selected: false
+      source: '1732346962510'
+      sourceHandle: source
+      target: '1731079450460'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: llm
+      id: 1732346962510-source-17323455402970-target
+      selected: false
+      source: '1732346962510'
+      sourceHandle: source
+      target: '17323455402970'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: end
+      id: 17323455383030-source-1731079485152-target
+      source: '17323455383030'
+      sourceHandle: source
+      target: '1731079485152'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: end
+      id: 1731079450460-source-1731079485152-target
+      source: '1731079450460'
+      sourceHandle: source
+      target: '1731079485152'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: end
+      id: 17323455402970-source-1731079485152-target
+      source: '17323455402970'
+      sourceHandle: source
+      target: '1731079485152'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: code
+      id: 1732377867403-source-1732346962510-target
+      source: '1732377867403'
+      sourceHandle: source
+      target: '1732346962510'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: tool
+        targetType: code
+      id: 1732344950523-source-1732377867403-target
+      source: '1732344950523'
+      sourceHandle: source
+      target: '1732377867403'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: tool
+        targetType: code
+      id: 17310793844280-source-1732378541085-target
+      source: '17310793844280'
+      sourceHandle: source
+      target: '1732378541085'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: code
+      id: 1732378541085-source-1732346962510-target
+      source: '1732378541085'
+      sourceHandle: source
+      target: '1732346962510'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: tool
+        targetType: code
+      id: 17310794023810-source-1732378574421-target
+      source: '17310794023810'
+      sourceHandle: source
+      target: '1732378574421'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: code
+      id: 1732378574421-source-1732346962510-target
+      source: '1732378574421'
+      sourceHandle: source
+      target: '1732346962510'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: URL后缀
+          max_length: 90
+          options: []
+          required: true
+          type: text-input
+          variable: url
+        - label: 基准语言
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: lang
+      height: 116
+      id: '1731078730206'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        provider_id: jina
+        provider_name: jina
+        provider_type: builtin
+        selected: false
+        title: 英文
+        tool_configurations:
+          gather_all_images_at_the_end: 0
+          gather_all_links_at_the_end: 0
+          image_caption: 0
+          max_retries: 3
+          no_cache: 0
+          proxy_server: null
+          summary: 0
+          target_selector: null
+          wait_for_selector: null
+        tool_label: 获取单页面
+        tool_name: jina_reader
+        tool_parameters:
+          url:
+            type: mixed
+            value: https://raw.githubusercontent.com/langgenius/dify-docs/refs/heads/main/en/{{#1731078730206.url#}}
+        type: tool
+      height: 298
+      id: '17310793844280'
+      position:
+        x: 533.9453673454243
+        y: 358.6282645572012
+      positionAbsolute:
+        x: 533.9453673454243
+        y: 358.6282645572012
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        provider_id: jina
+        provider_name: jina
+        provider_type: builtin
+        selected: false
+        title: 日文
+        tool_configurations:
+          gather_all_images_at_the_end: 0
+          gather_all_links_at_the_end: 0
+          image_caption: 0
+          max_retries: 3
+          no_cache: 0
+          proxy_server: null
+          summary: 0
+          target_selector: null
+          wait_for_selector: null
+        tool_label: 获取单页面
+        tool_name: jina_reader
+        tool_parameters:
+          url:
+            type: mixed
+            value: https://raw.githubusercontent.com/langgenius/dify-docs/refs/heads/main/jp/{{#1731078730206.url#}}
+        type: tool
+      height: 298
+      id: '17310794023810'
+      position:
+        x: 527.2710872750391
+        y: 783.919470970977
+      positionAbsolute:
+        x: 527.2710872750391
+        y: 783.919470970977
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            frequency_penalty: 0.5
+            presence_penalty: 0.5
+            temperature: 0.7
+            top_p: 0.75
+          mode: chat
+          name: claude-3-5-sonnet-20241022
+          provider: openai_api_compatible
+        prompt_template:
+        - id: 22f11f37-ae52-4ae1-a171-476163e865e7
+          role: system
+          text: '## 角色
+
+            你是一个掌握多语言的文档审核专家，精通xml和markdown还有英文。你需要检查不同语言的Markdown格式文件之间有无翻译错误，以及有无漏翻译。
+
+
+            ## 文件内容
+
+            需要检查的内容如下：
+
+            英文版本：{{#1732378541085.result#}}
+
+            基准版本：{{#1732346962510.result#}}
+
+
+            ## 格式要求
+
+            - 你需要与基准版本对比，将英文版本修正后的内容输出，将建议需要修改的内容使用xml格式的标签标记出来。
+
+            - 删除多余内容的格式：<rm>多余内容</rm>
+
+            - 添加内容的格式：<add>添加内容</add>
+
+            - 如果需要修改内容，你需要先用<rm></rm>删除原文内容，然后再用<add></add>加入修改内容。
+
+            - 你需要对语法进行检查，如果有语法不正确的地方需要纠正
+
+            - 作为文档专家你熟悉英文的本土表达，你需要把不专业的词汇表达或者低质量翻译换为更合理的表达
+
+            - 输出结果中你不能输出多余的废话，废话是文章正文以外的和用户对话性质的内容
+
+            - 在开头不可以尝试和用户对话，你应该直接输出修改结果
+
+            - 不可以使用<rm></rm>或<add></add>之外的标注方式对原文进行修改
+
+            - 保证除了修改内容之外的内容与原文完全一致
+
+            - 请注意：如果没有需要修改的内容或者用户选择的基准语言：{{#1731078730206.lang#}}是英文，你不可以使用<add>和<rm>标签对原文进行增改，只能原封不动地输出以下内容：{{#1732378541085.result#}}'
+        selected: false
+        title: 英文检查
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1731079450460'
+      position:
+        x: 2072.8255731326944
+        y: 406.64115079677777
+      positionAbsolute:
+        x: 2072.8255731326944
+        y: 406.64115079677777
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '17323455383030'
+          - text
+          variable: cn
+        - value_selector:
+          - '1731079450460'
+          - text
+          variable: en
+        - value_selector:
+          - '17323455402970'
+          - text
+          variable: jp
+        selected: false
+        title: 结束
+        type: end
+      height: 142
+      id: '1731079485152'
+      position:
+        x: 2568.7024671163795
+        y: 393.1862416685342
+      positionAbsolute:
+        x: 2568.7024671163795
+        y: 393.1862416685342
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        provider_id: jina
+        provider_name: jina
+        provider_type: builtin
+        selected: false
+        title: 中文
+        tool_configurations:
+          gather_all_images_at_the_end: 0
+          gather_all_links_at_the_end: 0
+          image_caption: 0
+          max_retries: 3
+          no_cache: 0
+          proxy_server: null
+          summary: 0
+          target_selector: null
+          wait_for_selector: null
+        tool_label: Fetch Single Page
+        tool_name: jina_reader
+        tool_parameters:
+          url:
+            type: mixed
+            value: https://raw.githubusercontent.com/langgenius/dify-docs/refs/heads/main/zh_CN/{{#1731078730206.url#}}
+        type: tool
+      height: 298
+      id: '1732344950523'
+      position:
+        x: 527.2710872750391
+        y: -59.349039228713906
+      positionAbsolute:
+        x: 527.2710872750391
+        y: -59.349039228713906
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            frequency_penalty: 0.5
+            presence_penalty: 0.5
+            temperature: 0.7
+            top_p: 0.75
+          mode: chat
+          name: claude-3-5-sonnet-20241022
+          provider: openai_api_compatible
+        prompt_template:
+        - id: 22f11f37-ae52-4ae1-a171-476163e865e7
+          role: system
+          text: '## 角色
+
+            你是一个掌握多语言的文档审核专家，精通xml和markdown还有中文。你需要检查不同语言的Markdown格式文件之间有无翻译错误，以及有无漏翻译。
+
+
+            ## 文件内容
+
+            需要检查的内容如下：
+
+            中文版本：{{#1732377867403.result#}}
+
+            基准版本：{{#1732346962510.result#}}
+
+
+            ## 格式要求
+
+            - 你需要与基准版本对比，将中文版本修正后的内容输出，将建议需要修改的内容使用xml格式的标签标记出来。
+
+            - 删除多余内容的格式：<rm>多余内容</rm>
+
+            - 添加内容的格式：<add>添加内容</add>
+
+            - 如果需要修改内容，你需要先用<rm></rm>删除原文内容，然后再用<add></add>加入修改内容。
+
+            - 你需要对语法进行检查，如果有语法不正确的地方需要纠正
+
+            - 作为文档专家你熟悉中文的本土表达，你需要把不专业的词汇表达或者低质量翻译换为更合理的表达
+
+            - 输出结果中你不能输出多余的废话，废话是文章正文以外的和用户对话性质的内容
+
+            - 在开头不可以尝试和用户对话，你应该直接输出修改结果
+
+            - 不可以使用<rm></rm>或<add></add>之外的标注方式对原文进行修改
+
+            - 保证除了修改内容之外的内容与原文完全一致
+
+            - 请注意：如果没有需要修改的内容或者用户选择的基准语言：{{#1731078730206.lang#}}是中文，你不可以使用<add>和<rm>标签对原文进行增改，只能原封不动地输出​以下内容：{{#1732377867403.result#}}'
+        selected: false
+        title: 中文检查
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '17323455383030'
+      position:
+        x: 2072.8255731326944
+        y: 102.14288050255536
+      positionAbsolute:
+        x: 2072.8255731326944
+        y: 102.14288050255536
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            frequency_penalty: 0.5
+            presence_penalty: 0.5
+            temperature: 0.7
+            top_p: 0.75
+          mode: chat
+          name: claude-3-5-sonnet-20241022
+          provider: openai_api_compatible
+        prompt_template:
+        - id: 22f11f37-ae52-4ae1-a171-476163e865e7
+          role: system
+          text: '## 角色
+
+            你是一个掌握多语言的文档审核专家，精通xml和markdown还有日语。你需要检查不同语言的Markdown格式文件之间有无翻译错误，以及有无漏翻译。
+
+
+            ## 文件内容
+
+            需要检查的内容如下：
+
+            日文版本：{{#1732378574421.result#}}
+
+            基准版本：{{#1732346962510.result#}}
+
+
+            ## 格式要求
+
+            - 你需要与基准版本对比，将日文版本修正后的内容输出，将建议需要修改的内容使用xml格式的标签标记出来。
+
+            - 删除多余内容的格式：<rm>多余内容</rm>
+
+            - 添加内容的格式：<add>添加内容</add>
+
+            - 如果需要修改内容，你需要先用<rm></rm>删除原文内容，然后再用<add></add>加入修改内容。
+
+            - 你需要对语法进行检查，如果有语法不正确的地方需要纠正
+
+            - 作为文档专家你熟悉日文的本土表达，你需要把不专业的词汇表达或者低质量翻译换为更合理的表达
+
+            - 输出结果中你不能输出多余的废话，废话是文章正文以外的和用户对话性质的内容
+
+            - 在开头不可以尝试和用户对话，你应该直接输出修改结果
+
+            - 不可以使用<rm></rm>或<add></add>之外的标注方式对原文进行修改
+
+            - 保证除了修改内容之外的内容与原文完全一致
+
+            - 请注意：如果没有需要修改的内容或者用户选择的基准语言：{{#1731078730206.lang#}}是日文，你不可以使用<add>和<rm>标签对原文进行增改，只能原封不动地输出以下内容：{{#1732378574421.result#}}
+
+            '
+        selected: true
+        title: 日文检查
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '17323455402970'
+      position:
+        x: 2072.8255731326944
+        y: 640.9413723280669
+      positionAbsolute:
+        x: 2072.8255731326944
+        y: 640.9413723280669
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "\ndef main(cn: str, en: str, jp: str, lang: str) -> dict:\n    language_map\
+          \ = {\n        \"zh-Hans\": cn,\n        \"en-US\": en,\n        \"ja-JP\"\
+          : jp\n    }\n    return {\n        \"result\": language_map.get(lang, \"\
+          \")\n    }"
+        code_language: python3
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 基准语言设置
+        type: code
+        variables:
+        - value_selector:
+          - '1732377867403'
+          - result
+          variable: cn
+        - value_selector:
+          - '1732378541085'
+          - result
+          variable: en
+        - value_selector:
+          - '1732378574421'
+          - result
+          variable: jp
+        - value_selector:
+          - '1731078730206'
+          - lang
+          variable: lang
+      height: 54
+      id: '1732346962510'
+      position:
+        x: 1628.3858541464047
+        y: 457.0940369487137
+      positionAbsolute:
+        x: 1628.3858541464047
+        y: 457.0940369487137
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "def main(text: str) -> dict:\n    import json\n    try:\n        #\
+          \ 解析JSON字符串\n        parsed_data = json.loads(text)\n        # 从data字段中提取content\n\
+          \        content = parsed_data.get(\"data\", {}).get(\"content\", \"\")\n\
+          \        return {\n            \"result\": content\n        }\n    except\
+          \ json.JSONDecodeError:\n        return {\n            \"result\": \"\"\n\
+          \        }"
+        code_language: python3
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 处理中文
+        type: code
+        variables:
+        - value_selector:
+          - '1732344950523'
+          - text
+          variable: text
+      height: 54
+      id: '1732377867403'
+      position:
+        x: 926.0750652029874
+        y: 131.06194706601627
+      positionAbsolute:
+        x: 926.0750652029874
+        y: 131.06194706601627
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "def main(text: str) -> dict:\n    import json\n    try:\n        #\
+          \ 解析JSON字符串\n        parsed_data = json.loads(text)\n        # 从data字段中提取content\n\
+          \        content = parsed_data.get(\"data\", {}).get(\"content\", \"\")\n\
+          \        return {\n            \"result\": content\n        }\n    except\
+          \ json.JSONDecodeError:\n        return {\n            \"result\": \"\"\n\
+          \        }"
+        code_language: python3
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 处理英文
+        type: code
+        variables:
+        - value_selector:
+          - '17310793844280'
+          - text
+          variable: text
+      height: 54
+      id: '1732378541085'
+      position:
+        x: 941.7990259561811
+        y: 448.62187205755816
+      positionAbsolute:
+        x: 941.7990259561811
+        y: 448.62187205755816
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "def main(text: str) -> dict:\n    import json\n    try:\n        #\
+          \ 解析JSON字符串\n        parsed_data = json.loads(text)\n        # 从data字段中提取content\n\
+          \        content = parsed_data.get(\"data\", {}).get(\"content\", \"\")\n\
+          \        return {\n            \"result\": content\n        }\n    except\
+          \ json.JSONDecodeError:\n        return {\n            \"result\": \"\"\n\
+          \        }"
+        code_language: python3
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 处理日文
+        type: code
+        variables:
+        - value_selector:
+          - '17310794023810'
+          - text
+          variable: text
+      height: 54
+      id: '1732378574421'
+      position:
+        x: 926.0750652029874
+        y: 702.786818792227
+      positionAbsolute:
+        x: 926.0750652029874
+        y: 702.786818792227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: -936.227683354522
+      y: 1.9704134408573282
+      zoom: 0.7535779469905294

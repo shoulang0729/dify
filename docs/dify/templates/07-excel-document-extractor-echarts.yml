@@ -1,0 +1,270 @@
+# ---------------------------------------------------------------------------
+# 参照 DSL（外部出典・無改変コピー。冒頭コメントのみ追記）
+# 出典     : https://github.com/difyhub/workflows/blob/main/data-analysis/smart-chart-generator-en/workflow.yml
+# ライセンス: MIT (difyhub/workflows)
+# 雛形候補 : nm3 日報集計 / nm5 データ分析 / nm2 見積比較 / gn1 gn2 gn3（Excel/CSV アップロード → Document Extractor → LLM）
+# メモ     : start(file-list, select) -> document-extractor -> llm(deepseek-coder) -> end。upload 型テンプレートの最小骨子
+# 取得日   : 2026-09-06
+# ---------------------------------------------------------------------------
+app:
+  description: Automatically generate interactive ECharts visualizations from Excel/CSV
+    files.
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: Smart Chart Generator
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/deepseek:0.0.6@dd589dc093c8084925858034ab5ec1fdf0d33819f43226c2f8c4a749a9acbbb2
+    version: null
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: document-extractor
+      id: 1763707640053-source-1763710131991-target
+      source: '1763707640053'
+      sourceHandle: source
+      target: '1763710131991'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: document-extractor
+        targetType: llm
+      id: 1763710131991-source-1763710271780-target
+      source: '1763710131991'
+      sourceHandle: source
+      target: '1763710271780'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1763710271780-source-1763710406908-target
+      source: '1763710271780'
+      sourceHandle: source
+      target: '1763710406908'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - allowed_file_extensions: []
+          allowed_file_types:
+          - document
+          allowed_file_upload_methods:
+          - local_file
+          - remote_url
+          default: ''
+          hint: ''
+          label: Upload Excel file
+          max_length: 5
+          options: []
+          placeholder: ''
+          required: true
+          type: file-list
+          variable: file
+        - default: ''
+          hint: ''
+          label: chart_type
+          max_length: 48
+          options:
+          - Bar Chart
+          - Line Chart
+          - Pie Chart
+          - Stacked Chart
+          placeholder: ''
+          required: true
+          type: select
+          variable: chart_type
+      height: 114
+      id: '1763707640053'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        is_array_file: true
+        selected: false
+        title: Document Extractor
+        type: document-extractor
+        variable_selector:
+        - '1763707640053'
+        - file
+      height: 92
+      id: '1763710131991'
+      position:
+        x: 382
+        y: 282
+      positionAbsolute:
+        x: 382
+        y: 282
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-coder
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - id: 066711f9-bf9e-43b5-9abd-aba2435302b0
+          role: system
+          text: "# Role: Frontend Visualization Expert\n\n# Task\nYou are a frontend\
+            \ engineer proficient in ECharts. Please write a complete HTML file based\
+            \ on the user-provided [Excel Text Data] and [Chart Type].\n\n# Inputs\n\
+            1. Raw Data: {{#1763710131991.text#}}\n2. Chart Type: {{#1763707640053.chart_type#}}\n\
+            \n# Requirements\n1. **Core Library**: You MUST include the ECharts official\
+            \ CDN in the HTML <head>:\n   `https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js`\n\
+            2. **Page Layout**:\n   - **Top**: Generate a beautiful HTML table to\
+            \ display the parsed raw data (add simple CSS styling with borders). Title\
+            \ it \"Data Overview\".\n   - **Middle**: Create a `div` container with\
+            \ ID `chart-container`, width 100%, height 600px. Title it \"Visualization\
+            \ Analysis\".\n3. **Logic Processing**:\n   - Automatically parse the\
+            \ input text data. Identify the first row as Dimensions (Headers) and\
+            \ subsequent rows as Values.\n   - Generate the corresponding ECharts\
+            \ `option` configuration based on the user's selected `Chart Type`.\n\
+            \   - **Mandatory Config**: `tooltip` (trigger: axis/item), `legend` (bottom\
+            \ or top), `toolbox` (feature: saveAsImage).\n   - If the data contains\
+            \ multiple series (e.g., multiple value columns), automatically generate\
+            \ multiple Series.\n4. **Output Format**:\n   - **Output ONLY a Markdown\
+            \ code block** (i.e., ```html ... ```).\n   - Do NOT output any explanatory\
+            \ text or greetings. Output the code directly.\n\n# Output Template\n\
+            ```html\n<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"utf-8\"\
+            >\n    <title>AI Data Visualization Report</title>\n    <script src=\"\
+            [https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js](https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js)\"\
+            ></script>\n    <style>\n        body { font-family: Arial, sans-serif;\
+            \ padding: 20px; }\n        table { border-collapse: collapse; width:\
+            \ 100%; margin-bottom: 30px; }\n        th, td { border: 1px solid #ddd;\
+            \ padding: 8px; text-align: center; }\n        th { background-color:\
+            \ #f2f2f2; }\n        h2 { color: #333; }\n    </style>\n</head>\n<body>\n\
+            \    <h2>Data Overview</h2>\n    <div id=\"table-wrapper\">...</div>\n\
+            \    \n    <h2>Visualization Analysis</h2>\n    <div id=\"chart-container\"\
+            ></div>\n    \n    <script>\n        var chartDom = document.getElementById('chart-container');\n\
+            \        var myChart = echarts.init(chartDom);\n        var option;\n\n\
+            \        // TODO: Populate option based on parsed data\n        option\
+            \ = { ... };\n\n        option && myChart.setOption(option);\n       \
+            \ window.addEventListener('resize', () => myChart.resize());\n    </script>\n\
+            </body>\n</html>"
+        selected: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1763710271780'
+      position:
+        x: 684
+        y: 282
+      positionAbsolute:
+        x: 684
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        outputs:
+        - value_selector:
+          - '1763710271780'
+          - text
+          value_type: string
+          variable: text
+        selected: false
+        title: End
+        type: end
+      height: 88
+      id: '1763710406908'
+      position:
+        x: 986
+        y: 282
+      positionAbsolute:
+        x: 986
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: 35.608350321022726
+      y: -64.25905193750964
+      zoom: 0.9090592013945286
+  rag_pipeline_variables: []
