@@ -49,6 +49,13 @@
         "office",
         "daily"
       ]
+    },
+    {
+      "id": "pt",
+      "subs": [
+        "data",
+        "service"
+      ]
     }
   ],
   "svcs": [
@@ -368,6 +375,86 @@
       "tags": [
         "summary"
       ]
+    },
+    {
+      "id": "pt1",
+      "cat": "pt",
+      "sub": "data",
+      "st": 2,
+      "tags": [
+        "partner_infovendor",
+        "credit"
+      ]
+    },
+    {
+      "id": "pt2",
+      "cat": "pt",
+      "sub": "data",
+      "st": 2,
+      "tags": [
+        "partner_infovendor",
+        "market"
+      ]
+    },
+    {
+      "id": "pt3",
+      "cat": "pt",
+      "sub": "data",
+      "st": 2,
+      "tags": [
+        "partner_archive",
+        "search"
+      ]
+    },
+    {
+      "id": "pt4",
+      "cat": "pt",
+      "sub": "data",
+      "st": 3,
+      "tags": [
+        "partner_salarydb",
+        "hr"
+      ]
+    },
+    {
+      "id": "pt5",
+      "cat": "pt",
+      "sub": "service",
+      "st": 3,
+      "tags": [
+        "partner_recruit",
+        "hr"
+      ]
+    },
+    {
+      "id": "pt6",
+      "cat": "pt",
+      "sub": "service",
+      "st": 3,
+      "tags": [
+        "partner_procure",
+        "purchase"
+      ]
+    },
+    {
+      "id": "pt7",
+      "cat": "pt",
+      "sub": "service",
+      "st": 3,
+      "tags": [
+        "partner_procure",
+        "order"
+      ]
+    },
+    {
+      "id": "pt8",
+      "cat": "pt",
+      "sub": "service",
+      "st": 3,
+      "tags": [
+        "partner_training",
+        "education"
+      ]
     }
   ],
   "tags": [
@@ -381,6 +468,7 @@
     "claim",
     "contract",
     "costing",
+    "credit",
     "defect",
     "drawing",
     "education",
@@ -392,8 +480,15 @@
     "inventory",
     "kpi",
     "mail",
+    "market",
     "meeting",
     "order",
+    "partner_archive",
+    "partner_infovendor",
+    "partner_procure",
+    "partner_recruit",
+    "partner_salarydb",
+    "partner_training",
     "procedure",
     "purchase",
     "regulation",
@@ -473,10 +568,10 @@
     "wordmark"
   ],
   "counts": {
-    "cats": 7,
-    "subs": 15,
-    "svcs": 33,
-    "tags": 35,
+    "cats": 8,
+    "subs": 17,
+    "svcs": 41,
+    "tags": 43,
     "ui": 49
   }
 }
