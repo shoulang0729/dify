@@ -746,7 +746,15 @@ const TAGS = {
   finance:    { ja: '経理', zh: '财务', en: 'Finance' },
   order:      { ja: '受発注', zh: '订单', en: 'Orders' },
   calendar:   { ja: '日程', zh: '日程', en: 'Scheduling' },
-  summary:    { ja: '要約', zh: '摘要', en: 'Summaries' }
+  summary:    { ja: '要約', zh: '摘要', en: 'Summaries' },
+  partner_infovendor: { ja: '情報ベンダ',       zh: '信息服务商',   en: 'Info vendor' },
+  partner_archive:    { ja: '記事アーカイブ',   zh: '文章档案',     en: 'Article archive' },
+  partner_salarydb:   { ja: '給与DB',           zh: '薪酬数据库',   en: 'Salary DB' },
+  partner_recruit:    { ja: '採用エージェント', zh: '招聘代理',     en: 'Recruiting agent' },
+  partner_procure:    { ja: '購買エージェント', zh: '采购代理',     en: 'Procurement agent' },
+  partner_training:   { ja: '研修ベンダ',       zh: '培训服务商',   en: 'Training vendor' },
+  credit:             { ja: '与信・リスク',     zh: '信用与风险',   en: 'Credit & risk' },
+  market:             { ja: '市況・業界',       zh: '行情与行业',   en: 'Market intel' }
 };
 
 /* ============================================================
@@ -802,6 +810,13 @@ const CATS = [
     subs: [
       { id: 'office', name: { ja: '経理・受発注', zh: '财务与订单', en: 'Finance & Orders' } },
       { id: 'daily',  name: { ja: '日常業務', zh: '日常业务', en: 'Daily Work' } }
+    ]},
+  { id: 'pt',
+    name: { ja: 'パートナー連携', zh: '合作伙伴协作', en: 'Partner Ecosystem' },
+    abbr: { ja: '連携', zh: '协作', en: 'Partners' },
+    subs: [
+      { id: 'data',    name: { ja: 'データ・リサーチ', zh: '数据与调研', en: 'Data & Research' } },
+      { id: 'service', name: { ja: '代行・エージェント', zh: '代办与代理', en: 'Agents & Outsourcing' } }
     ]}
 ];
 
@@ -986,7 +1001,49 @@ const SVCS = [
     name: { ja: '文書要約', zh: '文档摘要', en: 'Document Summarizer' },
     desc: { ja: '長文の報告書・仕様書・通達・メールスレッドを、目的に応じた粒度の要点サマリーに変換します。中国語の長文を日本語 1 枚に要約する、日本語の本社資料を中国語の箇条書きにするなど、言語をまたいだ要約に対応します。',
             zh: '将长篇报告、规格书、通知与邮件往来压缩为不同粒度的要点摘要。支持跨语言摘要，例如将中文长文概括为一页日文，或将日文总部资料整理为中文要点。',
-            en: 'Condenses long reports, specifications, notices and email threads into summaries at your chosen level of detail. Works across languages — a one-page Japanese summary of a Chinese document, or Chinese bullet points from Japanese HQ materials.' } }
+            en: 'Condenses long reports, specifications, notices and email threads into summaries at your chosen level of detail. Works across languages — a one-page Japanese summary of a Chinese document, or Chinese bullet points from Japanese HQ materials.' } },
+
+  /* ---- pt: パートナー連携（構想中のパートナー 6 者。役割名で扱う） ---- */
+  { id: 'pt1', cat: 'pt', sub: 'data', st: 2, tags: ['partner_infovendor', 'credit'],
+    name: { ja: '取引先・サプライヤーの与信・リスク監視', zh: '客户与供应商信用及风险监控', en: 'Customer & Supplier Credit and Risk Monitoring' },
+    desc: { ja: '情報ベンダの企業財務・信用・供給網・ニュースのデータフィードを取り込み、取引先やサプライヤーの与信状況と供給リスク（財務悪化・支払遅延・株主変更・上流原材料の集中）を照会します。新規取引や年間契約更新の前に、社内の購買実績・見積比較・契約条件と並べて判断材料を作り、監視対象に変化があれば通知します。',
+            zh: '接入信息服务商的企业财务、信用、供应链与新闻数据，查询客户和供应商的信用状况与供应风险（财务恶化、付款拖延、股东变更、上游原材料集中）。在新开交易或年度合同更新前，与公司内部的采购实绩、报价比较和合同条件并列形成判断依据，监控对象发生变化时发出通知。',
+            en: 'Pulls corporate financials, credit, supply-chain and news feeds from an information vendor to check the credit standing and supply risk of customers and suppliers — deteriorating financials, late payments, ownership changes, upstream material concentration. Lines the findings up with your purchase history, quote comparisons and contract terms before new deals or renewals, and alerts you when a monitored company changes.' } },
+  { id: 'pt2', cat: 'pt', sub: 'data', st: 2, tags: ['partner_infovendor', 'market'],
+    name: { ja: '業界・材料相場リサーチ（本社報告の外部根拠）', zh: '行业与原材料行情调研（总部汇报的外部依据）', en: 'Industry & Material Market Research for HQ Reporting' },
+    desc: { ja: '情報ベンダの業界レポート・材料相場・ニュース速報を、テーマと期間を指定して要点にまとめます。サプライヤーの値上げ理由の妥当性確認、競合や完成車メーカーの動きの把握、見積・原価の前提となる材料単価の更新に使え、出典付きの短文として本社報告資料へそのまま貼れる形で出力します。',
+            zh: '按主题与期间，把信息服务商的行业报告、原材料行情与新闻快讯整理为要点。可用于核实供应商涨价理由、掌握竞争对手与整车厂动向、更新报价与成本所依据的材料单价，并以附出处的短文形式输出，可直接粘贴到总部汇报资料中。',
+            en: 'Summarizes industry reports, material price indices and breaking news from an information vendor for a chosen topic and period. Use it to verify supplier price-increase reasons, track competitors and OEMs, and refresh material prices behind quotes and costing. Outputs short, sourced paragraphs ready to paste into headquarters reports.' } },
+  { id: 'pt3', cat: 'pt', sub: 'data', st: 2, tags: ['partner_archive', 'search'],
+    name: { ja: '業界誌・技術記事アーカイブの横断検索', zh: '行业期刊与技术文章档案的跨库检索', en: 'Trade Journal & Technical Article Archive Search' },
+    desc: { ja: '記事アーカイブ検索サービスが持つ業界誌・広告・技術記事の過去記事を横断検索し、要点と出典を返します。社内ナレッジに無い他社事例・新工法・材料や設備の情報を補い、社内の技術記録と並べて「社外ではどう解決しているか」を示します。本社への提案や報告の裏付けにも使えます。',
+            zh: '跨库检索文章档案检索服务所收录的行业期刊、广告与技术文章（含历史文章），返回要点与出处。补充公司知识库中没有的他社案例、新工艺、材料与设备信息，并与内部技术记录并列，展示「外部是如何解决的」。也可作为向总部提案与汇报的依据。',
+            en: 'Searches the back catalog of trade journals, advertisements and technical articles held by an article-archive service and returns key points with sources. Fills gaps in internal knowledge — other companies cases, new methods, materials and equipment — and shows them beside your own technical records. Also backs proposals and reports to headquarters.' } },
+  { id: 'pt4', cat: 'pt', sub: 'data', st: 3, tags: ['partner_salarydb', 'hr'],
+    name: { ja: '現地給与水準の照会と給与改定の妥当性確認', zh: '当地薪酬水平查询与调薪合理性确认', en: 'Local Salary Benchmark Lookup & Pay Review Check' },
+    desc: { ja: '給与 DB サービスから職種・経験・地域・企業規模ごとの給与水準、手当・福利厚生の相場、法定変更（最低賃金・社会保険基数）の解説を照会し、社内の等級別水準と並べて給与改定やオファー金額の妥当性を確認します。外部へ送るのは等級別の集計値のみで、個人の給与データは社外に出しません。本社への説明資料も作成します。',
+            zh: '从薪酬数据库服务查询按职种、经验、地区、企业规模划分的薪酬水平、津贴与福利行情，以及法定变更（最低工资、社保基数）的解读，并与公司内部的职级水平并列，确认调薪与录用报价的合理性。向外部发送的仅为职级汇总值，个人薪酬数据不出公司。同时可生成给总部的说明资料。',
+            en: 'Queries a salary database service for pay levels by role, experience, region and company size, allowance and benefit norms, and explanations of statutory changes (minimum wage, social-insurance base). Places them beside your own grade-level figures to check pay reviews and offer amounts. Only aggregated grade data leaves the company — never individual salaries. Also drafts the explanation for headquarters.' } },
+  { id: 'pt5', cat: 'pt', sub: 'service', st: 3, tags: ['partner_recruit', 'hr'],
+    name: { ja: '現地技術者・管理職の採用支援（一次面談の要約・候補者サマリ）', zh: '现地技术与管理人才招聘支持（初面摘要与候选人汇总）', en: 'Local Engineer & Manager Recruiting Support (First-Interview Summaries)' },
+    desc: { ja: '採用エージェントと連携し、求人要件（日中バイリンガル・設備経験など）から求人票を起草して媒体掲載を依頼し、エージェント側の AI 一次面談の結果を匿名化された候補者 ID 単位で受け取って要約・比較します。本社承認用の候補者サマリを日本語で作成し、氏名・連絡先はエージェント側に留めたまま必要最小限の情報だけを扱います。',
+            zh: '与招聘代理协作：根据招聘要求（中日双语、设备经验等）起草职位说明并委托发布，以匿名候选人编号接收代理方 AI 初面结果并进行摘要与比较。生成供总部审批的日文候选人汇总，姓名与联系方式保留在代理方，公司仅处理必要的最少信息。',
+            en: 'Works with a recruiting agent: drafts the job posting from your requirements (JP–CN bilingual, equipment experience) and requests publication, then receives the results of the agent AI first interviews as anonymized candidate IDs and summarizes and compares them. Produces a Japanese candidate summary for headquarters approval while names and contact details stay with the agent — only the minimum information is handled.' } },
+  { id: 'pt6', cat: 'pt', sub: 'service', st: 3, tags: ['partner_procure', 'purchase'],
+    name: { ja: '戦略購買の立案（集約・複数年・代替サプライヤー）', zh: '战略采购方案制定（集中采购・多年合同・替代供应商）', en: 'Strategic Sourcing Planning (Consolidation, Multi-Year, Alternates)' },
+    desc: { ja: '年間の発注実績と現行契約を購買エージェント（AI）に渡し、品目カテゴリごとの集約（日中拠点の共同購買）、複数年契約、代替サプライヤー候補、期待削減額とリスクを提案として受け取ります。単発の見積比較の先にある「買い方そのものの見直し」を、購買課長が本社と合意できる形にまとめます。',
+            zh: '把年度采购实绩与现行合同交给采购代理（AI），按品类获得集中采购（中日两地联合采购）、多年合同、替代供应商候选、预期降本金额与风险的方案。在单次报价比较之上，把「采购方式本身的重新审视」整理成采购科长可与总部达成一致的形式。',
+            en: 'Hands your annual purchase history and current contracts to a procurement agent AI and receives proposals per category: consolidation (joint JP–CN buying), multi-year contracts, alternate supplier candidates, expected savings and risks. Turns one-off quote comparisons into a review of how you buy, in a form the purchasing manager can agree with headquarters.' } },
+  { id: 'pt7', cat: 'pt', sub: 'service', st: 3, tags: ['partner_procure', 'order'],
+    name: { ja: 'RFQ 起草と購買代行への引き継ぎ', zh: 'RFQ 起草与采购代理交接', en: 'RFQ Drafting & Handoff to Procurement Agency' },
+    desc: { ja: '品目・数量・納期・条件を入力すると RFQ（見積依頼書）を起草し、購買エージェント会社へ配布・見積回収・条件揃え・一次交渉を引き継ぎます。回答期限と案件番号を管理し、回収された見積は社内の見積比較へ戻して発注判断に使います。発注実行や納期フォローまで代行範囲に含めるかは案件ごとに選べます。',
+            zh: '输入品目、数量、交期与条件后起草 RFQ（询价单），并将发布、报价回收、条件归一与初步谈判交接给采购代理公司。管理回复期限与案件编号，回收的报价返回公司内部的报价比较用于下单判断。是否将下单执行与交期跟进纳入代办范围，可按案件选择。',
+            en: 'Drafts an RFQ from item, quantity, delivery and terms, then hands distribution, quote collection, normalization and first-round negotiation to a procurement agency. Tracks the reply deadline and case number, and returns collected quotes to your internal quote comparison for the order decision. Whether order execution and delivery follow-up are included is chosen per case.' } },
+  { id: 'pt8', cat: 'pt', sub: 'service', st: 3, tags: ['partner_training', 'education'],
+    name: { ja: '研修プログラム化と実施代行・受講管理', zh: '培训项目化与实施代办・学习管理', en: 'Training Program Design, Delivery Outsourcing & Tracking' },
+    desc: { ja: '社内で作成した教育・OJT 資料や作業標準書を研修ベンダに引き継ぎ、研修プログラム（回数・到達目標・確認テスト）へ組み立てて中国語での実施を代行してもらいます。受講状況・テスト結果・修了を受け取り、研修前後の不良率や作業時間で効果を測定して本社へ報告できる形にまとめます。',
+            zh: '将公司内部编制的培训・OJT 资料与作业标准书交接给培训服务商，组建为培训项目（次数、达成目标、确认测试）并由其以中文代为实施。接收出勤、测试成绩与结业情况，用培训前后的不良率与作业时间衡量效果，整理成可向总部汇报的形式。',
+            en: 'Hands your in-house training and OJT materials and work standards to a training vendor, who builds them into a program (sessions, learning goals, quizzes) and delivers it in Chinese on your behalf. Receives attendance, test scores and completion, measures impact through defect rate and cycle time before and after, and packages the result for headquarters.' } }
 ];
 
 /* ============================================================
