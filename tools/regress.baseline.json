@@ -1,0 +1,446 @@
+{
+  "cats": [
+    {
+      "id": "doc",
+      "subs": [
+        "minutes",
+        "draft"
+      ]
+    },
+    {
+      "id": "ana",
+      "subs": [
+        "data",
+        "voc"
+      ]
+    },
+    {
+      "id": "kn",
+      "subs": [
+        "internal",
+        "external"
+      ]
+    },
+    {
+      "id": "auto",
+      "subs": [
+        "fin",
+        "flow"
+      ]
+    },
+    {
+      "id": "cs",
+      "subs": [
+        "support",
+        "sales"
+      ]
+    },
+    {
+      "id": "dev",
+      "subs": [
+        "code",
+        "ops"
+      ]
+    }
+  ],
+  "svcs": [
+    {
+      "id": "m1",
+      "cat": "doc",
+      "sub": "minutes",
+      "st": 1,
+      "tags": [
+        "meeting",
+        "summary"
+      ]
+    },
+    {
+      "id": "m2",
+      "cat": "doc",
+      "sub": "minutes",
+      "st": 1,
+      "tags": [
+        "summary",
+        "doc"
+      ]
+    },
+    {
+      "id": "m3",
+      "cat": "doc",
+      "sub": "minutes",
+      "st": 2,
+      "tags": [
+        "task"
+      ]
+    },
+    {
+      "id": "d1",
+      "cat": "doc",
+      "sub": "draft",
+      "st": 1,
+      "tags": [
+        "docgen"
+      ]
+    },
+    {
+      "id": "d2",
+      "cat": "doc",
+      "sub": "draft",
+      "st": 2,
+      "tags": [
+        "legal"
+      ]
+    },
+    {
+      "id": "d3",
+      "cat": "doc",
+      "sub": "draft",
+      "st": 1,
+      "tags": [
+        "sales",
+        "docgen"
+      ]
+    },
+    {
+      "id": "d4",
+      "cat": "doc",
+      "sub": "draft",
+      "st": 1,
+      "tags": [
+        "mail"
+      ]
+    },
+    {
+      "id": "a1",
+      "cat": "ana",
+      "sub": "data",
+      "st": 1,
+      "tags": [
+        "bi",
+        "viz"
+      ]
+    },
+    {
+      "id": "a2",
+      "cat": "ana",
+      "sub": "data",
+      "st": 1,
+      "tags": [
+        "report"
+      ]
+    },
+    {
+      "id": "a3",
+      "cat": "ana",
+      "sub": "data",
+      "st": 2,
+      "tags": [
+        "risk"
+      ]
+    },
+    {
+      "id": "v1",
+      "cat": "ana",
+      "sub": "voc",
+      "st": 1,
+      "tags": [
+        "voc",
+        "classify"
+      ]
+    },
+    {
+      "id": "v2",
+      "cat": "ana",
+      "sub": "voc",
+      "st": 2,
+      "tags": [
+        "research"
+      ]
+    },
+    {
+      "id": "s1",
+      "cat": "kn",
+      "sub": "internal",
+      "st": 1,
+      "tags": [
+        "rag",
+        "hr"
+      ]
+    },
+    {
+      "id": "s2",
+      "cat": "kn",
+      "sub": "internal",
+      "st": 1,
+      "tags": [
+        "rag",
+        "eng"
+      ]
+    },
+    {
+      "id": "s3",
+      "cat": "kn",
+      "sub": "internal",
+      "st": 1,
+      "tags": [
+        "search"
+      ]
+    },
+    {
+      "id": "s4",
+      "cat": "kn",
+      "sub": "external",
+      "st": 2,
+      "tags": [
+        "legal",
+        "research"
+      ]
+    },
+    {
+      "id": "s5",
+      "cat": "kn",
+      "sub": "external",
+      "st": 1,
+      "tags": [
+        "chatbot"
+      ]
+    },
+    {
+      "id": "f1",
+      "cat": "auto",
+      "sub": "fin",
+      "st": 1,
+      "tags": [
+        "finance",
+        "check"
+      ]
+    },
+    {
+      "id": "f2",
+      "cat": "auto",
+      "sub": "fin",
+      "st": 1,
+      "tags": [
+        "finance",
+        "ocr"
+      ]
+    },
+    {
+      "id": "f3",
+      "cat": "auto",
+      "sub": "fin",
+      "st": 2,
+      "tags": [
+        "purchase"
+      ]
+    },
+    {
+      "id": "w1",
+      "cat": "auto",
+      "sub": "flow",
+      "st": 1,
+      "tags": [
+        "calendar"
+      ]
+    },
+    {
+      "id": "w2",
+      "cat": "auto",
+      "sub": "flow",
+      "st": 2,
+      "tags": [
+        "workflow"
+      ]
+    },
+    {
+      "id": "w3",
+      "cat": "auto",
+      "sub": "flow",
+      "st": 2,
+      "tags": [
+        "rpa"
+      ]
+    },
+    {
+      "id": "c1",
+      "cat": "cs",
+      "sub": "support",
+      "st": 1,
+      "tags": [
+        "chatbot"
+      ]
+    },
+    {
+      "id": "c2",
+      "cat": "cs",
+      "sub": "support",
+      "st": 2,
+      "tags": [
+        "realtime"
+      ]
+    },
+    {
+      "id": "c3",
+      "cat": "cs",
+      "sub": "support",
+      "st": 1,
+      "tags": [
+        "translate"
+      ]
+    },
+    {
+      "id": "c4",
+      "cat": "cs",
+      "sub": "sales",
+      "st": 1,
+      "tags": [
+        "classify"
+      ]
+    },
+    {
+      "id": "c5",
+      "cat": "cs",
+      "sub": "sales",
+      "st": 2,
+      "tags": [
+        "crm",
+        "sales"
+      ]
+    },
+    {
+      "id": "g1",
+      "cat": "dev",
+      "sub": "code",
+      "st": 1,
+      "tags": [
+        "dev",
+        "quality"
+      ]
+    },
+    {
+      "id": "g2",
+      "cat": "dev",
+      "sub": "code",
+      "st": 1,
+      "tags": [
+        "test"
+      ]
+    },
+    {
+      "id": "g3",
+      "cat": "dev",
+      "sub": "code",
+      "st": 1,
+      "tags": [
+        "db"
+      ]
+    },
+    {
+      "id": "g4",
+      "cat": "dev",
+      "sub": "ops",
+      "st": 2,
+      "tags": [
+        "ops",
+        "sre"
+      ]
+    },
+    {
+      "id": "g5",
+      "cat": "dev",
+      "sub": "ops",
+      "st": 2,
+      "tags": [
+        "doc"
+      ]
+    }
+  ],
+  "tags": [
+    "bi",
+    "calendar",
+    "chatbot",
+    "check",
+    "classify",
+    "crm",
+    "db",
+    "dev",
+    "doc",
+    "docgen",
+    "eng",
+    "finance",
+    "hr",
+    "legal",
+    "mail",
+    "meeting",
+    "ocr",
+    "ops",
+    "purchase",
+    "quality",
+    "rag",
+    "realtime",
+    "report",
+    "research",
+    "risk",
+    "rpa",
+    "sales",
+    "search",
+    "sre",
+    "summary",
+    "task",
+    "test",
+    "translate",
+    "viz",
+    "voc",
+    "workflow"
+  ],
+  "patterns": [
+    {
+      "id": "nav",
+      "ready": true
+    },
+    {
+      "id": "dash",
+      "ready": false
+    },
+    {
+      "id": "feed",
+      "ready": false
+    }
+  ],
+  "uiKeys": [
+    "all",
+    "allServices",
+    "appTitle",
+    "backToDetail",
+    "backToList",
+    "chatHello",
+    "chatPh",
+    "chatReply",
+    "countUnit",
+    "dept",
+    "home",
+    "mockLabel",
+    "mockNote",
+    "noResults",
+    "overview",
+    "searchPh",
+    "segLabel",
+    "send",
+    "startUse",
+    "statusConcept",
+    "statusLive",
+    "statusTrial",
+    "themeToDark",
+    "themeToLight",
+    "todoEyebrow",
+    "todoTitle",
+    "wordmark"
+  ],
+  "counts": {
+    "cats": 6,
+    "subs": 12,
+    "svcs": 33,
+    "tags": 36,
+    "ui": 27
+  }
+}
