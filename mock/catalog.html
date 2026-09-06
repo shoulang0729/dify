@@ -608,9 +608,61 @@
   .chat-hdr .who { font-size: 12.5px; color: var(--text-secondary); margin-left: var(--space-2); }
   .chat-hdr .restart { margin-left: var(--space-3); }
 
+  /* ===== ② ダッシュボード（ホーム） ===== */
+  .dash-wrap { padding: var(--space-8) 36px var(--space-12) 36px; }
+  .dash-hero {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-8);
+  }
+  .dash-hero h1 { margin: 0 0 6px; font-size: var(--text-h2); color: var(--text-heading); font-weight: var(--weight-bold); }
+  .dash-hero p { margin: 0; font-size: 13.5px; color: var(--text-secondary); line-height: var(--leading-relaxed); }
+  .stat-strip {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--space-4); margin-bottom: var(--space-10);
+  }
+  .stat { background: var(--surface-card); border: 1px solid var(--border-card); border-bottom: 2px solid var(--border-card); padding: var(--space-5); }
+  .stat-n { display: flex; align-items: center; gap: 8px; font-size: 28px; font-weight: var(--weight-bold); color: var(--text-heading); }
+  .stat-l { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .dash-sec { margin-bottom: var(--space-10); }
+  .sec-h {
+    display: flex; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-4);
+    border-left: var(--border-accent) solid var(--action-primary); padding-left: var(--space-3);
+  }
+  .sec-h h2 { margin: 0; font-size: 15px; font-weight: var(--weight-bold); color: var(--text-heading); }
+  .sec-note { font-size: 11.5px; color: var(--text-muted); margin-left: auto; }
+  .sec-count { font-size: var(--text-overline); color: var(--text-muted); }
+  .rank-grid, .reco-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-4); }
+  .rank-item, .reco-item { display: flex; flex-direction: column; gap: 6px; }
+  .rank-h { display: flex; align-items: center; justify-content: space-between; }
+  .rank-n {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--action-primary); color: var(--text-on-brand);
+    font-size: 11.5px; font-weight: var(--weight-bold); display: flex; align-items: center; justify-content: center;
+  }
+  .rank-uses { font-size: var(--text-overline); color: var(--text-secondary); }
+  .r-why { font-size: 12.5px; line-height: var(--leading-relaxed); color: var(--text-body); background: var(--surface-sunken); border: 1px solid var(--border-subtle); padding: var(--space-3); }
+  .r-why-l { font-size: var(--text-overline); font-weight: var(--weight-bold); color: var(--action-primary); margin-right: 6px; }
+  .cat-row {
+    display: grid; grid-template-columns: minmax(200px, 1.2fr) auto minmax(160px, 1fr) auto;
+    align-items: center; gap: var(--space-4); width: 100%; text-align: left;
+    padding: 12px var(--space-4); border: none; border-top: 1px solid var(--border-subtle); background: transparent;
+    cursor: pointer; font-family: inherit;
+  }
+  .cat-row:hover { background: var(--surface-hover); }
+  .cat-row .c-nm { font-size: 13.5px; font-weight: var(--weight-bold); color: var(--text-heading); }
+  .cat-bar { display: flex; height: 8px; background: var(--surface-sunken); overflow: hidden; border-radius: var(--radius-pill); }
+  .cat-bar .s-live { background: var(--status-success); }
+  .cat-bar .s-trial { background: var(--status-warning); }
+  .cat-bar .s-concept { background: var(--status-concept); }
+  .cat-mix { font-size: var(--text-overline); color: var(--text-secondary); }
+  .home-count { font-size: 12.5px; color: var(--text-secondary); margin-bottom: var(--space-4); }
+
   @media (max-width: 1180px) {
     .demo-body { flex-direction: column; }
     .work-pane { flex: 0 0 auto; max-width: none; border-right: none; border-bottom: 1px solid var(--border-subtle); }
+    /* ▼ 追記（②③ ホーム） */
+    .dash-hero { flex-direction: column; align-items: stretch; }
+    .dash-hero .search { width: 100%; }
+    .cat-row { grid-template-columns: 1fr auto; row-gap: var(--space-2); }
   }
 </style>
 </head>
@@ -714,7 +766,23 @@ const T = {
                   zh: '演示脚本到此结束。可继续自由输入（返回通用模拟回复），或点击「重新开始」。',
                   en: 'End of the scripted demo. Free input returns a generic mock reply; use "Restart" to replay.' },
   tplBadge:     { ja: 'テンプレート', zh: '模板', en: 'Template' },
-  stepPrefix:   { ja: '手順', zh: '步骤', en: 'Step' }
+  stepPrefix:   { ja: '手順', zh: '步骤', en: 'Step' },
+
+  /* ---- ② ダッシュボード（12 キー） ---- */
+  dashWelcome:  { ja: 'AIエージェント ホーム', zh: 'AI智能体 首页', en: 'AI Agent Home' },
+  dashLead:     { ja: '{c} 分類 {n} 件のエージェントを用意しています。よく使われているものから試せます。',
+                  zh: '共 {c} 个分类 {n} 个智能体，可以从常用的开始试用。',
+                  en: '{n} agents in {c} categories. Start with the ones most people use.' },
+  statAll:      { ja: 'サービス総数', zh: '服务总数', en: 'All services' },
+  dashFreq:     { ja: 'よく使われているエージェント', zh: '常用智能体', en: 'Most used agents' },
+  dashFreqNote: { ja: '社内の利用実績（デモ用のサンプル値）', zh: '公司内使用情况（演示用示例数据）', en: 'Company-wide usage (sample figures for this demo)' },
+  usesUnit:     { ja: '今月 {n} 件', zh: '本月 {n} 次', en: '{n} runs this month' },
+  dashReco:     { ja: 'おすすめ', zh: '推荐', en: 'Recommended' },
+  dashRecoNote: { ja: '初めての方はここから', zh: '初次使用可从这里开始', en: 'A good place to start' },
+  recoWhy:      { ja: 'おすすめの理由', zh: '推荐理由', en: 'Why' },
+  dashCats:     { ja: '分類から見る', zh: '按分类查看', en: 'Browse by category' },
+  dashCatsNote: { ja: 'バーは成熟度の内訳（提供中／試行版／構想）', zh: '柱状条显示成熟度构成（已上线／试用版／构想）', en: 'The bar shows the maturity mix (available / trial / concept)' },
+  backHome:     { ja: 'ホームへ戻る', zh: '返回首页', en: 'Back to home' }
 };
 
 /* パターン定義（表示レイヤーの選択肢） */
@@ -724,7 +792,7 @@ const PATTERNS = [
     desc: { ja: '分類から辿って探す。目的が明確な利用者向け。',
             zh: '按分类逐层查找，适合目标明确的用户。',
             en: 'Browse by category. For users who know what they need.' } },
-  { id: 'dash', ready: false,
+  { id: 'dash', ready: true,
     name: { ja: '② ダッシュボード', zh: '② 仪表盘', en: '② Dashboard' },
     desc: { ja: 'よく使う・おすすめを前面に出すホーム。初めて使う利用者向け。',
             zh: '以常用与推荐为主的首页，适合初次使用的用户。',
@@ -2741,6 +2809,36 @@ const SCENARIOS = {
 };
 
 /* ============================================================
+   2c. ② ダッシュボードのホーム用データ
+   frequent[].uses は「社内利用実績のサンプル値」。実データではない（画面に注記を出す）。
+   SVCS に埋め込まず別定数にする（§2-3 の流儀。SCENARIOS と同じ）
+   ============================================================ */
+const HOME = {
+  frequent: [
+    { id: 'kn1', uses: 312 },
+    { id: 'lg1', uses: 268 },
+    { id: 'dc2', uses: 214 },
+    { id: 'nm3', uses: 186 },
+    { id: 'qa1', uses: 147 },
+    { id: 'kn3', uses: 132 }
+  ],
+  recommended: [
+    { id: 'dc1',
+      why: { ja: '現場の数字から本社向け報告の下書きまで一気に作れます。効果が最初に見えやすい業務です。',
+             zh: '可以从现场数据一口气生成给总部的汇报草案，是最容易先看到效果的业务。',
+             en: 'Turns plant figures into a draft report for headquarters in one step. The easiest place to see value first.' } },
+    { id: 'kn2',
+      why: { ja: '止まった設備の型式と症状を入れるだけ。紙のマニュアルを探す時間がなくなります。',
+             zh: '只需输入停机设备的型号和现象，不必再翻纸质手册。',
+             en: 'Just enter the model and symptom of the stopped machine. No more hunting through paper manuals.' } },
+    { id: 'qa3',
+      why: { ja: '顧客からの一報に、その日のうちに一次回答を返せます。分類も記録に残ります。',
+             zh: '客户来函当天即可给出初步答复，分类结果也会留存记录。',
+             en: 'Send a first reply to a customer complaint the same day, with the classification kept on record.' } }
+  ]
+};
+
+/* ============================================================
    3. 状態（共通レイヤー）
    pattern を切り替えても選択位置は保持され、直接比較できる
    ============================================================ */
@@ -2952,6 +3050,117 @@ function todoHTML(p) {
 }
 
 /* ============================================================
+   9a. 描画 — ② ダッシュボード（ホーム）
+   ============================================================ */
+/** ②③ ホームの検索欄を束ねる。sectionsFn() はホーム本体の HTML を返す関数（§3-5）
+    renderMain() を呼ばないので IME 変換中のフォーカス/キャレットが保持される */
+function bindHomeSearch(sectionsFn) {
+  const s = document.getElementById('search');
+  const h = document.getElementById('home-holder');
+  if (!s || !h) return;
+  s.addEventListener('input', () => {
+    state.query = s.value;
+    const q = state.query.trim();
+    if (!q) { h.innerHTML = sectionsFn(); return; }      // 空に戻したらホームを復元
+    const list = filtered();
+    h.innerHTML = `<div class="home-count">${esc(countText(list.length))}</div>` + gridHTML(list);
+  });
+}
+
+/** ② ダッシュボード：ホーム本体（検索で差し替える範囲） */
+function dashSectionsHTML() {
+  const n1 = SVCS.filter(x => x.st === 1).length;
+  const n2 = SVCS.filter(x => x.st === 2).length;
+  const n3 = SVCS.filter(x => x.st === 3).length;
+
+  const statStripHTML = `
+    <div class="stat-strip">
+      <div class="stat"><div class="stat-n">${SVCS.length}</div><div class="stat-l">${esc(t('statAll'))}</div></div>
+      <div class="stat"><div class="stat-n"><span class="dot live"></span>${n1}</div><div class="stat-l">${esc(t('statusLive'))}</div></div>
+      <div class="stat"><div class="stat-n"><span class="dot trial"></span>${n2}</div><div class="stat-l">${esc(t('statusTrial'))}</div></div>
+      <div class="stat"><div class="stat-n"><span class="dot concept"></span>${n3}</div><div class="stat-l">${esc(t('statusConcept'))}</div></div>
+    </div>`;
+
+  const freqHTML = `
+    <div class="dash-sec">
+      <div class="sec-h">
+        <h2>${esc(t('dashFreq'))}</h2>
+        <span class="sec-note">${esc(t('dashFreqNote'))}</span>
+      </div>
+      <div class="rank-grid">
+        ${HOME.frequent.map((f, i) => `
+        <div class="rank-item">
+          <div class="rank-h">
+            <span class="rank-n">${i + 1}</span>
+            <span class="rank-uses">${esc(t('usesUnit').replace('{n}', f.uses))}</span>
+          </div>
+          ${cardHTML(svcOf(f.id))}
+        </div>`).join('')}
+      </div>
+    </div>`;
+
+  const recoHTML = `
+    <div class="dash-sec">
+      <div class="sec-h">
+        <h2>${esc(t('dashReco'))}</h2>
+        <span class="sec-note">${esc(t('dashRecoNote'))}</span>
+      </div>
+      <div class="reco-grid">
+        ${HOME.recommended.map(r => `
+        <div class="reco-item">
+          ${cardHTML(svcOf(r.id))}
+          <div class="r-why"><span class="r-why-l">${esc(t('recoWhy'))}</span>${esc(L(r.why))}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+
+  const catsHTML = `
+    <div class="dash-sec">
+      <div class="sec-h">
+        <h2>${esc(t('dashCats'))}</h2>
+        <span class="sec-note">${esc(t('dashCatsNote'))}</span>
+      </div>
+      ${CATS.map(c => {
+        const list = SVCS.filter(x => x.cat === c.id);
+        const cn1 = list.filter(x => x.st === 1).length;
+        const cn2 = list.filter(x => x.st === 2).length;
+        const cn3 = list.filter(x => x.st === 3).length;
+        const total = list.length || 1;
+        return `
+        <button class="cat-row" data-act="gocat" data-arg="${c.id}">
+          <span class="c-nm">${esc(L(c.name))}</span>
+          <span class="cat-mix">${esc(countText(list.length))}</span>
+          <span class="cat-bar">
+            ${cn1 ? `<span class="s-live" style="width:${(cn1 / total * 100)}%"></span>` : ''}
+            ${cn2 ? `<span class="s-trial" style="width:${(cn2 / total * 100)}%"></span>` : ''}
+            ${cn3 ? `<span class="s-concept" style="width:${(cn3 / total * 100)}%"></span>` : ''}
+          </span>
+          <span class="cat-mix">${cn1} / ${cn2} / ${cn3}</span>
+        </button>`;
+      }).join('')}
+    </div>`;
+
+  return statStripHTML + freqHTML + recoHTML + catsHTML;
+}
+
+function renderDash(el) {
+  el.innerHTML = `
+  <div class="dash-wrap" data-screen-label="ダッシュボード">
+    <div class="crumb">AI AGENT CATALOG</div>
+    <div class="dash-hero">
+      <div>
+        <h1>${esc(t('dashWelcome'))}</h1>
+        <p>${esc(t('dashLead').replace('{c}', CATS.length).replace('{n}', SVCS.length))}</p>
+      </div>
+      <input class="search" id="search" placeholder="${esc(t('searchPh'))}" value="${esc(state.query)}">
+    </div>
+    <div id="home-holder">${dashSectionsHTML()}</div>
+  </div>`;
+  bindHomeSearch(dashSectionsHTML);
+  el.scrollTop = 0;
+}
+
+/* ============================================================
    9b. 描画 — 業務デモ（work-pane / chat-pane の部品）
    ============================================================ */
 /** 「考え中」インジケータ（3 点脈打つドット）。文言は使わない（§2-2/Issue #39） */
@@ -3025,6 +3234,12 @@ function renderMain() {
   const pat = PATTERNS.find(p => p.id === state.pattern);
   if (pat && !pat.ready) { el.innerHTML = todoHTML(pat); return; }
 
+  /* ▼ 追加：ホーム（絞り込みなしの list）だけパターンで描き分ける */
+  const atHome = !state.selCat && !state.selSub && !state.query.trim();
+  if (state.view === 'list' && atHome && state.pattern === 'dash') { renderDash(el); return; }
+  if (state.view === 'list' && atHome && state.pattern === 'feed') { renderFeed(el); return; }
+  /* ▲ 追加ここまで */
+
   if (state.view === 'list') {
     let title = t('allServices'), crumb = 'AI AGENT CATALOG';
     if (state.selSub) {
@@ -3039,6 +3254,7 @@ function renderMain() {
     const list = filtered();
     el.innerHTML = `
     <div class="list-wrap" data-screen-label="サービス一覧">
+      ${state.pattern !== 'nav' ? `<button class="backlink" data-act="all"><span class="arrow"></span>${esc(t('backHome'))}</button>` : ''}
       <div class="list-head">
         <div>
           <div class="crumb">${esc(crumb)}</div>
@@ -3267,6 +3483,11 @@ document.addEventListener('click', (e) => {
     const open = !!state.openCats[arg];
     state.openCats[arg] = !open;
     if (!open) { state.selCat = arg; state.selSub = null; state.lastCat = arg; state.view = 'list'; }
+    renderAll();
+  }
+  else if (act === 'gocat') {
+    state.selCat = arg; state.selSub = null; state.lastCat = arg;
+    state.openCats[arg] = true; state.view = 'list'; state.query = '';
     renderAll();
   }
   else if (act === 'sub') {

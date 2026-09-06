@@ -509,7 +509,7 @@
     },
     {
       "id": "dash",
-      "ready": false
+      "ready": true
     },
     {
       "id": "feed",
@@ -521,6 +521,7 @@
     "all",
     "allServices",
     "appTitle",
+    "backHome",
     "backToDetail",
     "backToList",
     "beforeLabel",
@@ -531,6 +532,14 @@
     "chipZh",
     "chipsLabel",
     "countUnit",
+    "dashCats",
+    "dashCatsNote",
+    "dashFreq",
+    "dashFreqNote",
+    "dashLead",
+    "dashReco",
+    "dashRecoNote",
+    "dashWelcome",
     "demoDone",
     "dept",
     "dropHint",
@@ -544,6 +553,7 @@
     "noResults",
     "overview",
     "personaLabel",
+    "recoWhy",
     "restart",
     "resultPanel",
     "run",
@@ -556,6 +566,7 @@
     "send",
     "startDemo",
     "startUse",
+    "statAll",
     "statusConcept",
     "statusLive",
     "statusTrial",
@@ -565,6 +576,7 @@
     "todoEyebrow",
     "todoTitle",
     "tplBadge",
+    "usesUnit",
     "wordmark"
   ],
   "counts": {
@@ -572,6 +584,6 @@
     "subs": 17,
     "svcs": 41,
     "tags": 43,
-    "ui": 49
+    "ui": 61
   }
 }
