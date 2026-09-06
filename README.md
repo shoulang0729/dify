@@ -3,17 +3,19 @@
 AIエージェント・ポータルの **UI/UX コンセプト確認用モック**（静的 HTML/CSS/JS、ビルド不要）。
 GitHub Pages で公開しています。
 
-🔗 **公開URL: https://shoulang0729.github.io/Dify/**
+🔗 **公開URL: https://shoulang0729.github.io/dify/**
 
 > ⚠️ これは本番システムではありません。チャット応答はダミー（LLM 未接続）です。
 
 ## 収録モック
 
-| | ファイル | 内容 |
-|---|---|---|
-| ランディング | `mock/index.html` | 2つのモックを見比べる比較ページ |
-| モックA | `mock/catalog.html` | AIエージェントカタログ（左ナビ3案・一覧→詳細→チャット起動） |
-| モックB | `mock/top.html` | トップページ（レイアウト3案・カテゴリ→業務画面） |
+| | ファイル | 公開URL | 内容 |
+|---|---|---|---|
+| ランディング | `mock/index.html` | https://shoulang0729.github.io/dify/ | 2つのモックを見比べる比較ページ |
+| モックA | `mock/catalog.html` | https://shoulang0729.github.io/dify/catalog.html | AIエージェントカタログ（左ナビ3案・一覧→詳細→チャット起動） |
+| モックB | `mock/top.html` | https://shoulang0729.github.io/dify/top.html | トップページ（レイアウト3案・カテゴリ→業務画面） |
+
+> `mock/` フォルダがサイトのルートとして公開されるため、URL に `/mock/` は含まれません。
 
 詳細は [`mock/README.md`](./mock/README.md) を参照してください。
 

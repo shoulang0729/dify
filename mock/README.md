@@ -33,11 +33,21 @@ mock/
 
 ## GitHub Pages で公開（共有用）
 
-1. この `mock/` フォルダをリポジトリに配置
-2. リポジトリ **Settings → Pages**
-3. **Source: Deploy from a branch** → Branch `main` / フォルダ `/(root)`
-4. 数分後、`https://<org>.github.io/<repo>/mock/` で公開
+このリポジトリでは **GitHub Actions によるデプロイ**を採用しています
+（`.github/workflows/pages.yml`）。`main` への push で自動更新されます。
 
+- ワークフローが `mock/` フォルダを**サイトのルートとして**公開するため、
+  URL に `/mock/` は**含まれません**。
+- 公開URL: **https://shoulang0729.github.io/dify/**
+
+| 画面 | URL |
+|------|-----|
+| 比較ランディング（`index.html`） | https://shoulang0729.github.io/dify/ |
+| モックA カタログ（`catalog.html`） | https://shoulang0729.github.io/dify/catalog.html |
+| モックB トップ（`top.html`） | https://shoulang0729.github.io/dify/top.html |
+
+> 別リポジトリで同じ構成を使う場合は、`Settings → Pages` の Source を
+> **GitHub Actions** にしてください（"Deploy from a branch" ではありません）。
 > Private リポジトリで Pages を公開するには GitHub Pro / Team / Enterprise が必要です。
 
 ## 位置づけ
