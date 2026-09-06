@@ -14,6 +14,7 @@
  *   6. データ整合（SVCS の cat/sub が CATS に存在、tags が TAGS に存在、st ∈ {1,2,3}）
  *   7. 共通レイヤー契約（state の必須キー / data-act 一覧 / detectLang 存在 / localStorage キー）
  *   8. Pages 設定（pages.yml の path: mock / mock/.nojekyll）
+ *   9. シナリオ整合（SCENARIOS の id が SVCS に存在／template が TEMPLATES に存在／台本の無い SVCS は warn）
  */
 import { readFileSync, existsSync, writeFileSync, unlinkSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -63,6 +64,7 @@ else {
 /* ---------- 2. i18n キー集合 ---------- */
 section('2. i18n キー集合（ja / zh / en）');
 const T = grab('T'), TAGS = grab('TAGS'), PATTERNS = grab('PATTERNS'), CATS = grab('CATS'), SVCS = grab('SVCS');
+const TEMPLATES = grab('TEMPLATES'), SCENARIOS = grab('SCENARIOS');
 const kana = /[぀-ヿ]/;
 let i18nBad = 0;
 const checkML = (obj, label) => {
@@ -79,8 +81,18 @@ if (CATS) for (const c of CATS) {
   for (const s of c.subs) checkML(s.name, `CATS.${c.id}.subs.${s.id}.name`);
 }
 if (SVCS) for (const s of SVCS) { checkML(s.name, `SVCS.${s.id}.name`); checkML(s.desc, `SVCS.${s.id}.desc`); }
-if (i18nBad === 0 && T && TAGS && PATTERNS && CATS && SVCS)
-  ok(`全辞書 3 言語一致（T=${Object.keys(T).length} TAGS=${Object.keys(TAGS).length} PATTERNS=${PATTERNS.length} CATS=${CATS.length} SVCS=${SVCS.length}）`);
+if (TEMPLATES) for (const k in TEMPLATES) { checkML(TEMPLATES[k].name, `TEMPLATES.${k}.name`); checkML(TEMPLATES[k].desc, `TEMPLATES.${k}.desc`); }
+if (SCENARIOS) for (const id in SCENARIOS) {
+  const scn = SCENARIOS[id];
+  checkML(scn.persona.name, `SCENARIOS.${id}.persona.name`);
+  checkML(scn.persona.role, `SCENARIOS.${id}.persona.role`);
+  checkML(scn.persona.site, `SCENARIOS.${id}.persona.site`);
+  for (const l of LANGS) {
+    if (!Array.isArray(scn.steps[l]) || !scn.steps[l].length) { fail(`SCENARIOS.${id}.steps.${l}: 欠落/空`); i18nBad++; }
+  }
+}
+if (i18nBad === 0 && T && TAGS && PATTERNS && CATS && SVCS && TEMPLATES && SCENARIOS)
+  ok(`全辞書 3 言語一致（T=${Object.keys(T).length} TAGS=${Object.keys(TAGS).length} PATTERNS=${PATTERNS.length} CATS=${CATS.length} SVCS=${SVCS.length} TEMPLATES=${Object.keys(TEMPLATES).length}）`);
 
 /* ---------- 3. 未定義キー / 4. 未使用キー ---------- */
 section('3. 未定義キー参照 / 4. 未使用キー');
@@ -152,7 +164,7 @@ section('7. 共通レイヤー契約');
     if (missing.length) fail(`state に必須キーが無い: ${missing.join(', ')}`); else ok(`state 必須キー ${required.length} 件 OK`);
   }
   const acts = new Set([...script.matchAll(/act === '([a-z]+)'/g)].map(m => m[1]));
-  const requiredActs = ['pattern', 'all', 'cat', 'sub', 'svc', 'back', 'backdetail', 'start', 'send'];
+  const requiredActs = ['pattern', 'all', 'cat', 'sub', 'svc', 'back', 'backdetail', 'start', 'send', 'run', 'chip', 'restart'];
   const missingActs = requiredActs.filter(a => !acts.has(a));
   if (missingActs.length) fail(`data-act ハンドラが無い: ${missingActs.join(', ')}`); else ok(`data-act ${requiredActs.length} 種 OK`);
 
@@ -174,6 +186,68 @@ section('8. Pages 設定');
   else if (!/path:\s*mock\b/.test(readFileSync(wf, 'utf8'))) fail('pages.yml の upload path が mock ではない（§2-8）');
   else ok('pages.yml: path: mock');
   if (!existsSync(resolve(ROOT, 'mock/.nojekyll'))) fail('mock/.nojekyll が無い'); else ok('mock/.nojekyll あり');
+}
+
+/* ---------- 9. シナリオ整合（SCENARIOS ⇔ SVCS ⇔ TEMPLATES） ---------- */
+section('9. シナリオ整合');
+if (SCENARIOS && SVCS && TEMPLATES) {
+  const svcIds = new Set(SVCS.map(s => s.id));
+  const tplKeys = new Set(Object.keys(TEMPLATES));
+  let bad = 0;
+  for (const id in SCENARIOS) {
+    if (!svcIds.has(id)) { fail(`SCENARIOS.${id}: SVCS に存在しない id`); bad++; continue; }
+    const scn = SCENARIOS[id];
+
+    if (!tplKeys.has(scn.template)) { fail(`SCENARIOS.${id}: template "${scn.template}" が TEMPLATES に無い`); bad++; }
+
+    if (!['ja', 'zh'].includes(scn.persona && scn.persona.native)) { fail(`SCENARIOS.${id}.persona.native: "${scn.persona && scn.persona.native}" は ja/zh 以外`); bad++; }
+
+    const stepLens = LANGS.map(l => (scn.steps && Array.isArray(scn.steps[l])) ? scn.steps[l].length : -1);
+    if (new Set(stepLens).size !== 1 || stepLens[0] < 3 || stepLens[0] > 6) { fail(`SCENARIOS.${id}.steps: 3 言語の長さ不一致 or 3〜6 の範囲外（${stepLens.join('/')}）`); bad++; }
+
+    const ja = scn.script && scn.script.ja, zh = scn.script && scn.script.zh;
+    if (!Array.isArray(ja) || !Array.isArray(zh) || ja.length !== zh.length || ja.length < 2 || ja.length > 4) {
+      fail(`SCENARIOS.${id}.script: ja/zh の長さ不一致 or 2〜4 の範囲外`); bad++;
+    } else {
+      for (const [lbl, arr] of [['ja', ja], ['zh', zh]]) {
+        for (let i = 0; i < arr.length; i++) {
+          const turn = arr[i];
+          if (typeof turn.q !== 'string' || !turn.q.trim() || typeof turn.a !== 'string' || !turn.a.trim()) {
+            fail(`SCENARIOS.${id}.script.${lbl}[${i}]: q/a が非空文字列でない`); bad++;
+          }
+          if (turn.q && turn.q.includes("'")) { fail(`SCENARIOS.${id}.script.${lbl}[${i}].q: '（U+0027）を含む`); bad++; }
+          if (turn.a && turn.a.includes("'")) { fail(`SCENARIOS.${id}.script.${lbl}[${i}].a: '（U+0027）を含む`); bad++; }
+        }
+      }
+    }
+
+    if (scn.template !== 'qa') {
+      if (!scn.input || !scn.input.ja || !scn.input.zh) { fail(`SCENARIOS.${id}.input: ja/zh が無い（template=${scn.template}）`); bad++; }
+      if (!scn.result || !scn.result.ja || !scn.result.zh) { fail(`SCENARIOS.${id}.result: ja/zh が無い（template=${scn.template}）`); bad++; }
+      else {
+        for (const l of ['ja', 'zh']) {
+          const r = scn.result[l];
+          const hasItems = Array.isArray(r.items), hasTable = Array.isArray(r.columns) && Array.isArray(r.rows);
+          if (hasItems === hasTable) { fail(`SCENARIOS.${id}.result.${l}: items か columns+rows のどちらか一方が必要`); bad++; }
+          if (hasTable && r.rows.some(row => row.length !== r.columns.length)) { fail(`SCENARIOS.${id}.result.${l}: rows の列数が columns と不一致`); bad++; }
+        }
+      }
+      if (scn.input) {
+        for (const l of ['ja', 'zh']) {
+          const inp = scn.input[l]; if (!inp) continue;
+          if (scn.template === 'upload' && !Array.isArray(inp.files)) { fail(`SCENARIOS.${id}.input.${l}.files: 配列が必要（upload）`); bad++; }
+          if (scn.template === 'form' && !Array.isArray(inp.fields)) { fail(`SCENARIOS.${id}.input.${l}.fields: 配列が必要（form）`); bad++; }
+          if (scn.template === 'diff' && !(typeof inp.left === 'string' && typeof inp.right === 'string')) { fail(`SCENARIOS.${id}.input.${l}: left/right が必要（diff）`); bad++; }
+          if (scn.template === 'lookup' && typeof inp.query !== 'string') { fail(`SCENARIOS.${id}.input.${l}.query: 文字列が必要（lookup）`); bad++; }
+        }
+      }
+    }
+  }
+  const noScript = SVCS.filter(s => !SCENARIOS[s.id]).map(s => s.id);
+  if (noScript.length) warn(`台本の無い SVCS ${noScript.length} 件: ${noScript.join(', ')}`);
+  if (!bad) ok(`SCENARIOS ${Object.keys(SCENARIOS).length} 件の整合 OK`);
+} else {
+  fail('SCENARIOS / SVCS / TEMPLATES のいずれかが取得できない');
 }
 
 /* ---------- 結果 ---------- */

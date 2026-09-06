@@ -281,10 +281,10 @@
   .hdr .t1 { font-size: 15px; font-weight: var(--weight-bold); color: var(--text-heading); }
   .hdr .right { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); }
   .hdr .dept { font-size: 12.5px; color: var(--text-secondary); }
-  .hdr .avatar {
+  .avatar {
     width: 32px; height: 32px; border-radius: 50%; background: var(--action-primary);
     color: var(--text-on-brand); display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: var(--weight-bold);
+    font-size: 13px; font-weight: var(--weight-bold); flex-shrink: 0;
   }
 
   /* 言語 / テーマ切替（プロダクト機能） */
@@ -502,6 +502,90 @@
   }
   .todo-card h2 { margin: 0 0 var(--space-4); font-size: var(--text-h3); color: var(--text-heading); font-weight: var(--weight-bold); }
   .todo-card p { margin: 0; font-size: 13.5px; line-height: var(--leading-relaxed); color: var(--text-secondary); }
+
+  /* ===== B: 詳細画面の担当者・利用シナリオ ===== */
+  .persona {
+    display: flex; gap: var(--space-3); align-items: center;
+    padding: var(--space-4); border: 1px solid var(--border-card); background: var(--surface-sunken);
+  }
+  .persona .p-name { font-weight: var(--weight-bold); color: var(--text-heading); font-size: 14px; }
+  .persona .p-role { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+  .persona .p-native { font-size: var(--text-overline); letter-spacing: 0.06em; color: var(--text-muted); margin-top: 4px; }
+  .d-two { display: grid; grid-template-columns: 1fr auto; gap: var(--space-6); margin-bottom: var(--space-6); align-items: start; }
+  .tpl-badge {
+    display: inline-flex; align-items: center; font-size: 11.5px; font-weight: var(--weight-bold);
+    padding: 3px 10px; border-radius: var(--radius-xs);
+    background: var(--badge-trial-bg); color: var(--badge-trial-fg);
+  }
+  .steps { margin: 0 0 var(--space-8); padding-left: 1.4em; font-size: 14px; line-height: 1.9; color: var(--text-body); }
+  .steps li::marker { color: var(--action-primary); font-weight: var(--weight-bold); }
+
+  /* ===== B: 業務デモ画面 ===== */
+  .demo-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .demo-body { flex: 1; min-height: 0; display: flex; }
+  .work-pane {
+    flex: 0 0 46%; min-width: 360px; max-width: 560px; overflow-y: auto;
+    border-right: 1px solid var(--border-subtle); padding: var(--space-5) var(--space-6);
+    background: var(--surface-canvas);
+  }
+  .chat-pane { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--surface-card); }
+  .panel {
+    background: var(--surface-card); border: 1px solid var(--border-card);
+    padding: var(--space-4); margin-bottom: var(--space-4); overflow-x: auto;
+  }
+  .panel-h { font-size: 13px; font-weight: var(--weight-bold); color: var(--text-heading); margin-bottom: 10px; }
+  .drop {
+    border: 1px dashed var(--border-default); padding: var(--space-4); text-align: center;
+    color: var(--text-muted); font-size: 12.5px; margin-bottom: var(--space-2);
+  }
+  .file {
+    font-size: var(--text-overline); color: var(--text-secondary);
+    border: 1px solid var(--border-card); border-radius: var(--radius-sm);
+    padding: 2px var(--space-2); background: var(--surface-canvas);
+    display: inline-flex; margin: 4px 4px 0 0;
+  }
+  .field { margin-bottom: var(--space-3); }
+  .field label {
+    display: block; font-size: var(--text-overline); letter-spacing: 0.06em;
+    color: var(--text-secondary); margin-bottom: 4px;
+  }
+  .field .val {
+    width: 100%; padding: 9px var(--space-3); font-size: 13px;
+    border: 1px solid var(--border-default); border-radius: var(--radius-xs);
+    background: var(--surface-card); color: var(--text-body);
+  }
+  .diff-in { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--space-2); align-items: center; }
+  .run-row { display: flex; justify-content: flex-end; margin-top: var(--space-3); }
+  .run-row .btn-primary { padding: 9px 20px; font-size: 13.5px; }
+  .run-row .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .panel.done { opacity: .6; }
+  .kv { padding: var(--space-2) 0; border-top: 1px solid var(--border-subtle); }
+  .kv:first-child { border-top: none; }
+  .kv .k { font-size: 12px; font-weight: var(--weight-bold); color: var(--text-heading); }
+  .kv .v { font-size: 13px; color: var(--text-body); white-space: pre-line; margin-top: 4px; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .tbl th { background: var(--surface-sunken); text-align: left; padding: var(--space-2); }
+  .tbl td { border-top: 1px solid var(--border-subtle); padding: var(--space-2); }
+  .chips {
+    flex-shrink: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center;
+    padding: var(--space-2) 36px; border-top: 1px solid var(--border-subtle);
+    font-size: 12px; color: var(--text-secondary);
+  }
+  .chip {
+    border: 1px solid var(--border-brand); color: var(--text-link); background: var(--surface-card);
+    border-radius: var(--radius-pill); padding: 5px 12px; font-size: 12.5px; max-width: 420px;
+    text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+  }
+  .chip:hover { background: var(--surface-selected); }
+  .chip .cl { font-weight: var(--weight-bold); margin-right: 6px; color: var(--text-muted); }
+  .chat-hdr .tpl-badge { margin-left: var(--space-2); }
+  .chat-hdr .who { font-size: 12.5px; color: var(--text-secondary); margin-left: var(--space-2); }
+  .chat-hdr .restart { margin-left: var(--space-3); }
+
+  @media (max-width: 1180px) {
+    .demo-body { flex-direction: column; }
+    .work-pane { flex: 0 0 auto; max-width: none; border-right: none; border-bottom: 1px solid var(--border-subtle); }
+  }
 </style>
 </head>
 <body>
@@ -578,7 +662,33 @@ const T = {
   todoEyebrow:  { ja: 'PHASE 2', zh: 'PHASE 2', en: 'PHASE 2' },
   todoTitle:    { ja: 'このパターンは準備中です', zh: '此方案正在准备中', en: 'This pattern is in progress' },
   themeToLight: { ja: 'ライトモードへ', zh: '切换到浅色', en: 'Switch to light' },
-  themeToDark:  { ja: 'ダークモードへ', zh: '切换到深色', en: 'Switch to dark' }
+  themeToDark:  { ja: 'ダークモードへ', zh: '切换到深色', en: 'Switch to dark' },
+
+  /* ---- B: 担当者シナリオ・業務デモ（22 キー） ---- */
+  personaLabel: { ja: '担当者', zh: '使用者', en: 'Persona' },
+  scenarioLabel:{ ja: '利用シナリオ', zh: '使用场景', en: 'Scenario' },
+  screenType:   { ja: '画面タイプ', zh: '界面类型', en: 'Screen type' },
+  nativeLabel:  { ja: '母語', zh: '母语', en: 'Native language' },
+  nativeJa:     { ja: '日本語', zh: '日语', en: 'Japanese' },
+  nativeZh:     { ja: '中国語', zh: '中文', en: 'Chinese' },
+  startDemo:    { ja: 'デモを見る', zh: '查看演示', en: 'View demo' },
+  inputPanel:   { ja: '入力', zh: '输入', en: 'Input' },
+  resultPanel:  { ja: '結果', zh: '结果', en: 'Result' },
+  run:          { ja: '実行', zh: '执行', en: 'Run' },
+  runDone:      { ja: '実行済み', zh: '已执行', en: 'Done' },
+  restart:      { ja: '最初から', zh: '重新开始', en: 'Restart' },
+  dropHint:     { ja: 'ファイルをここにドロップ（モックのため操作不要）', zh: '将文件拖到此处（演示无需操作）', en: 'Drop files here (no action needed in this mock)' },
+  beforeLabel:  { ja: '旧', zh: '旧版', en: 'Before' },
+  afterLabel:   { ja: '新', zh: '新版', en: 'After' },
+  chipsLabel:   { ja: '次の質問例', zh: '接下来可以问', en: 'Try asking' },
+  chipJa:       { ja: '日', zh: '日', en: 'JA' },
+  chipZh:       { ja: '中', zh: '中', en: 'ZH' },
+  runHint:      { ja: '左の「実行」を押すとデモが始まります', zh: '点击左侧「执行」开始演示', en: 'Press "Run" on the left to start the demo' },
+  demoDone:     { ja: '台本はここまでです。自由に入力すると汎用のモック応答が返ります。「最初から」でやり直せます。',
+                  zh: '演示脚本到此结束。可继续自由输入（返回通用模拟回复），或点击「重新开始」。',
+                  en: 'End of the scripted demo. Free input returns a generic mock reply; use "Restart" to replay.' },
+  tplBadge:     { ja: 'テンプレート', zh: '模板', en: 'Template' },
+  stepPrefix:   { ja: '手順', zh: '步骤', en: 'Step' }
 };
 
 /* パターン定義（表示レイヤーの選択肢） */
@@ -880,6 +990,252 @@ const SVCS = [
 ];
 
 /* ============================================================
+   2a. デモテンプレート辞書（画面タイプ名。UI 表示用・3 言語）
+   ============================================================ */
+const TEMPLATES = {
+  qa:     { name: { ja: 'QAチャット型',          zh: '问答对话型',       en: 'Q&A chat' },
+            desc: { ja: '聞いて、根拠付きの答えを受け取る', zh: '提问后获得附依据的回答', en: 'Ask and get a sourced answer' } },
+  upload: { name: { ja: 'アップロード→結果型',    zh: '上传→结果型',      en: 'Upload → result' },
+            desc: { ja: 'ファイルを渡して、整理された結果を受け取る', zh: '上传文件后获得整理好的结果', en: 'Hand over files and get a structured result' } },
+  form:   { name: { ja: 'フォーム入力→ドラフト生成型', zh: '表单输入→草案生成型', en: 'Form → draft' },
+            desc: { ja: '条件を埋めて、ドラフトを受け取る', zh: '填写条件后获得草案', en: 'Fill in the terms and get a draft' } },
+  diff:   { name: { ja: '差分比較型',            zh: '差异比较型',       en: 'Diff comparison' },
+            desc: { ja: '新旧 2 版を比べて、変更点と影響を受け取る', zh: '比较新旧两版，获得变更点与影响', en: 'Compare two versions and get changes and impact' } },
+  lookup: { name: { ja: '照会（データ引き）型',   zh: '查询（数据检索）型', en: 'Lookup' },
+            desc: { ja: 'キーを入れて、システムのデータを引く', zh: '输入关键字，检索系统数据', en: 'Enter a key and pull system data' } }
+};
+
+/**
+ * デモシナリオの型（implementer 向け JSDoc。実行時には評価されないコメント）。
+ * type ML3 = { ja: string; zh: string; en: string };           // メニュー側：3 言語必須（§2-1）
+ * type Turn = { q: string; a: string };                        // 台本 1 往復（担当者の入力 → エージェントの返答）
+ * type Template = 'qa' | 'upload' | 'form' | 'diff' | 'lookup';
+ *
+ * type Input = {                        // テンプレートごとに使うキーが決まる（他は無視）
+ *   files?:  string[];                  // upload : 添付ファイル名（表示のみ）
+ *   fields?: { label: string; value: string }[];   // form : 入力欄（label と既定値）
+ *   left?:   string; right?: string;    // diff   : 比較する 2 版のラベル
+ *   query?:  string;                    // lookup : 照会キー（既定値）
+ * };
+ * type Result = {                       // 結果パネル。items か columns+rows のどちらか一方
+ *   title: string;
+ *   items?:   { k: string; v: string }[];          // 見出し＋本文の縦積み（8D の各 D、報告書の章、KV 表）
+ *   columns?: string[]; rows?: string[][];         // 表（比較表・照会結果・差分一覧）
+ * };
+ *
+ * type Scenario = {
+ *   template: Template;
+ *   persona: { name: ML3; role: ML3; site: ML3; native: 'ja' | 'zh' };
+ *   steps:   { ja: string[]; zh: string[]; en: string[] };    // 利用シナリオ 3〜6 手順。3 言語同じ長さ
+ *   input?:  { ja: Input;  zh: Input  };                      // qa 型では省略
+ *   result?: { ja: Result; zh: Result };                      // qa 型では省略
+ *   script:  { ja: Turn[]; zh: Turn[] };                      // 3 往復。ja / zh は同じ長さ・同じ意味（並行台本）
+ * };
+ * サービス id（SVCS[].id）→ Scenario。SVCS に無い id を書かない
+ * const SCENARIOS: Record<string, Scenario>;
+ */
+/* ============================================================
+   2b. デモシナリオ（サービス id → Scenario）。型は上記 JSDoc を参照。
+   台本は ja / zh の 2 言語のみ（§2-5：エージェント本体は日中どちらの入力も受ける）
+   B-1 段階では 5 件のみ投入（kn1 qa／qa1 upload／dc5 form／qa2 diff／nm4 lookup）。
+   残り 28 件は B-2（feat/demo-scripts）で投入する。
+   ============================================================ */
+const SCENARIOS = {
+
+  kn1: { template: 'qa',
+    persona: { name: { ja: '王 磊', zh: '王磊', en: 'Wang Lei' },
+               role: { ja: '生産技術課 主任', zh: '生产技术科 主管', en: 'Production Engineering Supervisor' },
+               site: { ja: '蘇州工場', zh: '苏州工厂', en: 'Suzhou Plant' }, native: 'zh' },
+    steps: { ja: ['ライン 3 で新材質の加工条件が決まらず、過去に同じ材質をやった記録を探したい', '材質・穴径・加工内容を中国語で質問する', '過去の技術報告 3 件から推奨条件が根拠付きで返る', '追い質問で過去の失敗事例を確認し、条件表を作成する'],
+             zh: ['3号线新材质的加工条件定不下来，想找以前做过同材质的记录', '用中文提问材质、孔径与加工内容', '从3份历史技术报告中返回附依据的推荐条件', '追问过去的失败案例，据此制定条件表'],
+             en: ['Line 3 cannot settle machining conditions for a new material; look for past records', 'Ask in Chinese with material, hole size and operation', 'Get recommended conditions with sources from 3 past technical reports', 'Ask about past failures and build the condition sheet'] },
+    script: {
+      ja: [
+        { q: 'SUS304 の Φ8 深穴（深さ 60mm）ドリル加工、推奨条件を教えて', a: '過去の技術報告 3 件（TR-2023-041、TR-2024-007、TR-2024-102）から推奨条件をまとめました。\n・切削速度：18〜22 m/min（TR-2024-007 で 25 m/min にした際に工具寿命が 40% 低下）\n・送り：0.06 mm/rev\n・ステップ送り：深さ 3D ごとに一旦抜く（切りくず詰まり対策）\n・クーラント：内部給油 2.0 MPa 以上を推奨\n根拠の報告書はいずれも蘇州工場 ライン 2 の実績です。' },
+        { q: '前にも切りくず詰まりで折損した事例はある？', a: 'あります。NC-2024-0118（2024/3、ライン 2）：ステップ送りなしで連続加工したところ、加工数 210 本目で工具折損。対策として「3D ごとのステップ送り」と「クーラント圧 1.5→2.0 MPa」を採用し、以降 6 か月再発なしと記録されています。' },
+        { q: 'この条件を条件表の形にして', a: '条件表（ドラフト）\n・品目：SUS304 / Φ8 深穴 60mm\n・工具：超硬コーティングドリル Φ8（L/D=8）\n・Vc 20 m/min ／ f 0.06 mm/rev ／ ステップ 24 mm ごと\n・クーラント：内部給油 2.0 MPa\n・工具交換基準：200 本または摩耗幅 0.2 mm\n・参照：TR-2024-007、NC-2024-0118\n中国語版も同時に出力できます。必要なら「中国語で」と入力してください。' }
+      ],
+      zh: [
+        { q: 'SUS304 Φ8 深孔（深60mm）钻孔加工，推荐条件是什么？', a: '根据3份历史技术报告（TR-2023-041、TR-2024-007、TR-2024-102）整理如下：\n・切削速度：18〜22 m/min（TR-2024-007 中提高到 25 m/min 时刀具寿命下降 40%）\n・进给：0.06 mm/rev\n・分段进给：每 3D 深度退刀一次（防止切屑堵塞）\n・冷却液：建议内冷 2.0 MPa 以上\n依据报告均为苏州工厂2号线的实绩。' },
+        { q: '以前有没有因为切屑堵塞导致断刀的案例？', a: '有。NC-2024-0118（2024年3月，2号线）：未采用分段进给连续加工，第210件时刀具折断。对策为「每3D分段进给」及「冷却液压力 1.5→2.0 MPa」，记录显示之后6个月未再发生。' },
+        { q: '把这些条件整理成条件表', a: '条件表（草案）\n・品目：SUS304 / Φ8 深孔 60mm\n・刀具：硬质合金涂层钻头 Φ8（L/D=8）\n・Vc 20 m/min ／ f 0.06 mm/rev ／ 每 24 mm 分段\n・冷却液：内冷 2.0 MPa\n・换刀基准：200件或磨损宽度 0.2 mm\n・参考：TR-2024-007、NC-2024-0118\n也可同时输出日文版，需要时请输入「日文版」。' }
+      ] } },
+
+  qa1: { template: 'upload',
+    persona: { name: { ja: '陳 静', zh: '陈静', en: 'Chen Jing' },
+               role: { ja: '品質保証課 係長', zh: '品质保证科 组长', en: 'QA Team Leader' },
+               site: { ja: '蘇州工場', zh: '苏州工厂', en: 'Suzhou Plant' }, native: 'zh' },
+    steps: { ja: ['K 社から外観不良（塗装ブツ）の指摘。48 時間以内に 8D の D1〜D3 を提出する必要がある', '不良報告と検査記録をアップロード', '類似不具合 2 件と原因候補、8D ドラフト（D1〜D5）が返る', '是正処置の妥当性を確認し、日中 2 言語の 8D を K 社と本社へ提出'],
+             zh: ['K公司指出外观不良（涂装颗粒），需在48小时内提交8D的D1〜D3', '上传不良报告与检验记录', '返回2件类似不良、原因假设与8D草案（D1〜D5）', '确认纠正措施合理性后，向K公司和总部提交中日双语8D'],
+             en: ['Customer K reports paint particles; D1–D3 of the 8D are due within 48 hours', 'Upload the defect report and inspection records', 'Get 2 similar cases, root-cause hypotheses and an 8D draft (D1–D5)', 'Check corrective actions and submit the bilingual 8D to K and HQ'] },
+    input: { ja: { files: ['不良報告_NC-2025-0912.xlsx', '外観検査記録_L3_0905-0906.pdf', '塗装条件記録_0905.csv'] },
+             zh: { files: ['不良报告_NC-2025-0912.xlsx', '外观检验记录_L3_0905-0906.pdf', '涂装条件记录_0905.csv'] } },
+    result: {
+      ja: { title: '8D 報告書ドラフト 8D-25-0912（塗装ブツ／SK-3310-A ブラケット）',
+            items: [
+              { k: 'D1 チーム', v: 'リーダー：品質保証課 陳静／生産技術課 王磊／製造二課 李強／塗装 S 社 窓口' },
+              { k: 'D2 問題の記述', v: 'K 社 受入検査にて SK-3310-A 表面に直径 0.3〜0.5 mm のブツ。ロット 250905-L3、出荷 1,200 個中 18 個（1.5%）。当社出荷検査（抜取 n=32）では未検出。' },
+              { k: 'D3 暫定処置', v: '同ロット在庫 640 個を全数目視（9/6 完了、不良 9 個）。次ロットから抜取を n=32→n=125（AQL 0.65）に強化。K 社在庫はK 社側で選別中。' },
+              { k: '類似不具合', v: 'NC-2024-0331（2024/6、同ライン）：塗装ブース吸気フィルター目詰まりで同種ブツ。NC-2023-0207：前処理脱脂液の濃度低下。' },
+              { k: 'D4 原因候補（なぜなぜ）', v: '① 塗装ブース吸気フィルター：交換履歴 7/20、基準 60 日 → 9/5 時点で 47 日（基準内だが夏季で目詰まり進行の可能性）\n② 前処理脱脂液濃度：9/5 記録 3.8%（基準 4.0〜5.0%）**基準外**\n③ 塗料撹拌時間：記録上 異常なし\n→ 最有力は ②、①は寄与要因' },
+              { k: 'D5 是正処置（案）', v: '脱脂液の濃度管理を 1 回/日→2 回/日、自動補給装置の校正（9/10）。フィルター交換基準を夏季 45 日に短縮。効果確認：3 ロット連続で外観不良 0.2% 以下。' }
+            ] },
+      zh: { title: '8D报告草案 8D-25-0912（涂装颗粒／SK-3310-A 支架）',
+            items: [
+              { k: 'D1 团队', v: '组长：品质保证科 陈静／生产技术科 王磊／制造二科 李强／涂装外协 S公司 窗口' },
+              { k: 'D2 问题描述', v: 'K公司来料检验发现 SK-3310-A 表面有直径 0.3〜0.5 mm 颗粒。批次 250905-L3，出货1,200件中18件（1.5%）。本公司出货检验（抽样 n=32）未检出。' },
+              { k: 'D3 临时措施', v: '同批次库存640件全数目视（9/6完成，不良9件）。下批起抽样由 n=32 加强为 n=125（AQL 0.65）。K公司库存由K方筛选中。' },
+              { k: '类似不良', v: 'NC-2024-0331（2024年6月，同一线）：喷房进气过滤器堵塞导致同类颗粒。NC-2023-0207：前处理脱脂液浓度下降。' },
+              { k: 'D4 原因假设（5Why）', v: '① 喷房进气过滤器：更换记录 7/20，基准60天 → 9/5 时为47天（基准内，但夏季堵塞可能加快）\n② 前处理脱脂液浓度：9/5 记录 3.8%（基准 4.0〜5.0%）**超出基准**\n③ 涂料搅拌时间：记录无异常\n→ 最可能为②，①为促成因素' },
+              { k: 'D5 纠正措施（案）', v: '脱脂液浓度管理由1次/日改为2次/日，自动补液装置校准（9/10）。过滤器更换基准夏季缩短为45天。效果确认：连续3批外观不良 ≤0.2%。' }
+            ] } },
+    script: {
+      ja: [
+        { q: '【アップロード】不良報告_NC-2025-0912.xlsx、外観検査記録_L3_0905-0906.pdf、塗装条件記録_0905.csv', a: '3 ファイルを読み、類似不具合 2 件を照合して 8D の D1〜D5 ドラフトを作成しました（右の結果）。原因候補として最有力なのは前処理脱脂液の濃度低下（9/5 記録 3.8%、基準 4.0〜5.0%）で、2023 年の NC-2023-0207 と同じパターンです。D3 暫定処置までは K 社の 48 時間期限に対して提出可能な状態です。' },
+        { q: 'D5 の是正処置は妥当？抜けはない？', a: '概ね妥当ですが 2 点補強を推奨します。\n・「なぜ濃度が下がったか」の根本原因（自動補給装置の故障か、点検漏れか）が D4 で確定していないため、D5 に「補給装置の故障原因調査（9/12 まで）」を追加\n・K 社は再発防止で「管理項目の帳票化」を求める傾向があるため、「脱脂液濃度チェックシート（様式 QC-27）の新設」を明記\nD6（効果確認）は 3 ロット連続 0.2% 以下、D7（水平展開）はライン 1・2 の脱脂槽も同基準に、を提案します。' },
+        { q: 'D1〜D5 を中国語版と日本語版で出力して', a: '出力しました：\n・8D-25-0912_ja.docx（日本語、本社・K 社日本窓口向け）\n・8D-25-0912_zh.docx（中国語、現場・S 社共有向け）\n両版は同じ内容で、部品番号・数値・日付は共通です。用語は社内用語集に合わせています（「ブツ」→「颗粒」、「前処理脱脂」→「前处理脱脂」）。提出前に陳係長と王主任の確認欄にチェックを入れてください。' }
+      ],
+      zh: [
+        { q: '【上传】不良报告_NC-2025-0912.xlsx、外观检验记录_L3_0905-0906.pdf、涂装条件记录_0905.csv', a: '已读取3个文件，对照2件类似不良，生成8D的D1〜D5草案（见右侧结果）。最可能的原因是前处理脱脂液浓度下降（9/5记录3.8%，基准4.0〜5.0%），与2023年的NC-2023-0207模式相同。D3临时措施部分已可在K公司48小时期限内提交。' },
+        { q: 'D5 的纠正措施合理吗？有没有遗漏？', a: '总体合理，建议补强2点：\n・「浓度为什么会下降」的根本原因（自动补液装置故障还是点检遗漏）在D4尚未确定，建议D5增加「补液装置故障原因调查（9/12前）」\n・K公司在再发防止上倾向要求「管理项目表单化」，建议明确「新增脱脂液浓度检查表（表格 QC-27）」\nD6（效果确认）建议连续3批 ≤0.2%，D7（横向展开）建议1号线、2号线脱脂槽采用同一基准。' },
+        { q: '把 D1〜D5 输出为中文版和日文版', a: '已输出：\n・8D-25-0912_zh.docx（中文，现场与S公司共享用）\n・8D-25-0912_ja.docx（日文，总部与K公司日本窗口用）\n两版内容一致，零件号、数值、日期相同。术语按公司术语表统一（「颗粒」↔「ブツ」、「前处理脱脂」↔「前処理脱脂」）。提交前请在陈组长与王主管的确认栏打勾。' }
+      ] } },
+
+  qa2: { template: 'diff',
+    persona: { name: { ja: '李 強', zh: '李强', en: 'Li Qiang' },
+               role: { ja: '製造二課 課長', zh: '制造二科 科长', en: 'Manufacturing Sec. 2 Manager' },
+               site: { ja: '蘇州工場', zh: '苏州工厂', en: 'Suzhou Plant' }, native: 'zh' },
+    steps: { ja: ['S 社の材料値上げで、ブラケットの鋼板をサプライヤー T 社に切り替えたい（4M：材料）', '変更前・変更後の条件を入力して比較', '過去の変更履歴から「同種の変更で起きたこと」と影響工程・顧客承認の要否が返る', '影響を踏まえて変更申請書（ECR）を起票する'],
+             zh: ['因S公司材料涨价，想把支架钢板切换到供应商T公司（4M：材料）', '输入变更前后条件进行比较', '从历史变更记录返回「同类变更过去发生过什么」及受影响工序、是否需客户承认', '据此填写变更申请（ECR）'],
+             en: ['Supplier S raised prices; switch the bracket steel to supplier T (4M: material)', 'Enter before/after conditions and compare', 'See what happened in similar past changes, affected processes and approval needs', 'Raise the change request (ECR) with the impact filled in'] },
+    input: { ja: { left: '変更前：鋼板 SPCC t1.2 ／ S 社 ／ ロット幅 1,219', right: '変更後：鋼板 SPCC t1.2 ／ T 社 ／ ロット幅 1,250' },
+             zh: { left: '变更前：钢板 SPCC t1.2 ／ S公司 ／ 卷宽 1,219', right: '变更后：钢板 SPCC t1.2 ／ T公司 ／ 卷宽 1,250' } },
+    result: {
+      ja: { title: '変更影響予測 ECR-25-0088（材料サプライヤー変更：SK-3310-A ブラケット）',
+            columns: ['#', '影響項目', '過去の類似変更で起きたこと', '今回の予測', '対応'],
+            rows: [
+              ['1', 'プレス成形（割れ・しわ）', 'ECR-23-0041（S→U 社）：同じ SPCC でも降伏点が 15 MPa 高く、R 部に微小割れ', '中（T 社ミルシート：降伏点 +8 MPa）', '初回ロットで成形性評価 30 個'],
+              ['2', '塗装密着性', 'ECR-24-0017：表面油の種類変更で密着不良 → 前処理条件を変更', '中', '碁盤目試験（QC-31）を初回ロットで実施'],
+              ['3', '板取り・材料歩留', 'ロット幅 1,219→1,250 で歩留 +2.1%（過去実績）', '良（コスト削減 ▲1.8%）', 'NC プログラム変更（生産技術）'],
+              ['4', '顧客承認', 'K 社の PPAP 要求：材料サプライヤー変更は「レベル 3 提出」対象', '**要**', 'K 社へ変更通知 → 承認まで平均 6 週間'],
+              ['5', '在庫切替', 'S 社在庫 3,200 枚（約 2.5 か月分）', '—', '切替時期は 12 月ロットからを推奨']
+            ] },
+      zh: { title: '变更影响预测 ECR-25-0088（材料供应商变更：SK-3310-A 支架）',
+            columns: ['#', '影响项目', '过去类似变更发生过什么', '本次预测', '应对'],
+            rows: [
+              ['1', '冲压成形（开裂・起皱）', 'ECR-23-0041（S→U公司）：同为SPCC但屈服点高15 MPa，R角出现微裂', '中（T公司材质单：屈服点 +8 MPa）', '首批做30件成形性评价'],
+              ['2', '涂装附着力', 'ECR-24-0017：表面防锈油种类变更导致附着不良 → 修改前处理条件', '中', '首批实施划格试验（QC-31）'],
+              ['3', '排样・材料利用率', '卷宽 1,219→1,250 利用率 +2.1%（历史实绩）', '好（成本 ▲1.8%）', '修改NC程序（生产技术）'],
+              ['4', '客户承认', 'K公司PPAP要求：材料供应商变更属「等级3提交」', '**需要**', '向K公司发变更通知 → 承认平均需6周'],
+              ['5', '库存切换', 'S公司库存3,200张（约2.5个月）', '—', '建议从12月批次开始切换']
+            ] } },
+    script: {
+      ja: [
+        { q: '【比較】変更前：S 社 SPCC t1.2 ⇄ 変更後：T 社 SPCC t1.2（ロット幅 1,250）', a: '過去の変更履歴 2 件（ECR-23-0041、ECR-24-0017）と不具合記録を照合し、影響 5 項目を予測しました（右の表）。注意点は 2 つ：① 同じ SPCC でも降伏点差で R 部割れが出た前例があるので初回ロットで成形性評価が必要、② K 社の PPAP 上「材料サプライヤー変更」はレベル 3 提出＝**顧客承認が必須**で、承認まで平均 6 週間かかります。' },
+        { q: 'K 社の承認が要るなら、切替はいつからが現実的？', a: '逆算します。\n・ECR 起票・社内承認：9/15\n・T 社サンプル材入手・成形性評価・碁盤目試験：9/30\n・K 社へ変更通知＋レベル 3 提出：10/5\n・K 社承認（平均 6 週間）：11/16 ごろ\n・S 社在庫 3,200 枚は 11 月末で消化見込み\n→ **12 月ロットからの切替**が現実的です。K 社承認が遅れる場合に備え、S 社へ 1 か月分（1,300 枚）の追加発注をオプションとして残すことを推奨します。' },
+        { q: 'この内容で ECR のドラフトを作って', a: 'ECR-25-0088 ドラフトを作成しました。\n・変更区分：4M－材料（サプライヤー変更）\n・対象：SK-3310-A ブラケット（K 社向け）\n・理由：S 社値上げ（+9%）。T 社切替でコスト ▲1.8%、歩留 +2.1%\n・影響評価：右表 5 項目を転記\n・検証計画：成形性評価 30 個、碁盤目試験、初品検査\n・顧客承認：要（PPAP レベル 3）\n・切替予定：2025-12 ロット\n承認ルート：製造二課長 → 品質保証課長 → 工場長（材料変更は工場長決裁）。添付に T 社ミルシートと過去 ECR 2 件のリンクを付けています。' }
+      ],
+      zh: [
+        { q: '【比较】变更前：S公司 SPCC t1.2 ⇄ 变更后：T公司 SPCC t1.2（卷宽1,250）', a: '对照2件历史变更（ECR-23-0041、ECR-24-0017）与不良记录，预测了5项影响（见右表）。需注意2点：① 同为SPCC但曾因屈服点差异导致R角开裂，首批需做成形性评价；② 按K公司PPAP，「材料供应商变更」属等级3提交＝**必须客户承认**，承认平均需6周。' },
+        { q: '既然需要K公司承认，什么时候切换比较现实？', a: '倒推如下：\n・ECR填写与内部审批：9/15\n・取得T公司样材、成形性评价、划格试验：9/30\n・向K公司发变更通知＋等级3提交：10/5\n・K公司承认（平均6周）：约11/16\n・S公司库存3,200张预计11月底用完\n→ **从12月批次开始切换**较为现实。为防K公司承认延迟，建议保留向S公司追加1个月用量（1,300张）的选项。' },
+        { q: '按这个内容起草ECR', a: '已生成 ECR-25-0088 草案。\n・变更类别：4M－材料（供应商变更）\n・对象：SK-3310-A 支架（K公司用）\n・理由：S公司涨价（+9%）。切换T公司成本 ▲1.8%，利用率 +2.1%\n・影响评价：转录右表5项\n・验证计划：成形性评价30件、划格试验、首件检验\n・客户承认：需要（PPAP等级3）\n・切换预定：2025-12 批次\n审批路径：制造二科长 → 品质保证科长 → 厂长（材料变更由厂长决裁）。附件包含T公司材质单及2件历史ECR链接。' }
+      ] } },
+
+  dc5: { template: 'form',
+    persona: { name: { ja: '李 強', zh: '李强', en: 'Li Qiang' },
+               role: { ja: '製造二課 課長', zh: '制造二科 科长', en: 'Manufacturing Sec. 2 Manager' },
+               site: { ja: '蘇州工場', zh: '苏州工厂', en: 'Suzhou Plant' }, native: 'zh' },
+    steps: { ja: ['塗装ラインの乾燥炉を更新したい。稟議書を書くのは年に 1 回程度で書式に慣れていない', '件名・金額・目的・見積の有無をフォームに入力', '社内フォーマットの稟議書ドラフトと、承認ルート・記載漏れ・添付漏れが返る', '漏れを埋めて工場長へ提出'],
+             zh: ['想更新涂装线的烘干炉，审批单一年才写一次，不熟悉格式', '在表单中填写标题、金额、目的、有无报价', '返回公司格式的审批单草案、审批路径以及填写与附件缺漏', '补齐缺漏后提交厂长'],
+             en: ['Wants to replace the paint-line drying oven; writes approval requests only once a year', 'Enter title, amount, purpose and whether quotes exist', 'Get a draft in the corporate format with the approval route and missing items', 'Fill the gaps and submit to the plant manager'] },
+    input: { ja: { fields: [
+              { label: '件名', value: '塗装ライン 乾燥炉 更新' },
+              { label: '金額（税込）', value: 'RMB 1,850,000' },
+              { label: '目的・背景', value: '現行炉は 2011 年導入。温度ムラ ±8℃（基準 ±5℃）で塗膜硬化不足が 8 月に 2 件。修理部品の供給終了。' },
+              { label: '見積', value: 'メーカー 2 社から取得済み（A 社 1,850,000／B 社 2,020,000）' } ] },
+             zh: { fields: [
+              { label: '标题', value: '涂装线 烘干炉 更新' },
+              { label: '金额（含税）', value: 'RMB 1,850,000' },
+              { label: '目的・背景', value: '现有炉2011年导入。温度不均 ±8℃（基准 ±5℃），8月发生2件涂膜固化不足。维修配件停止供应。' },
+              { label: '报价', value: '已取得2家厂商报价（A公司 1,850,000／B公司 2,020,000）' } ] } },
+    result: {
+      ja: { title: '稟議書ドラフト RG-25-0117（設備投資・ルート B：課長→部長→工場長→本社設備部）',
+            items: [
+              { k: '1. 件名', v: '塗装ライン 乾燥炉 更新（A 社製 DO-3200 型）' },
+              { k: '2. 目的・背景', v: '現行乾燥炉（2011 年導入、14 年経過）の温度ムラが ±8℃ と基準 ±5℃ を超え、2025 年 8 月に塗膜硬化不足による不良 2 件（NC-2025-0812、0829）が発生。メーカーの修理部品供給が 2025 年末で終了するため、計画的な更新を申請する。' },
+              { k: '3. 金額・比較', v: 'A 社 RMB 1,850,000（税込、据付・試運転含む）／B 社 RMB 2,020,000。A 社を選定（同等性能で 8.4% 安価、納期 10 週）。' },
+              { k: '4. 効果', v: '温度ムラ ±3℃ 以内（メーカー保証）。硬化不足不良の撲滅（年間損失 約 RMB 96 千）。エネルギー消費 ▲18%（年間 RMB 62 千）。投資回収 約 11.7 年→**要確認**（回収期間が長いため、生産能力・品質リスク回避を主効果として記載することを推奨）。' },
+              { k: '5. スケジュール', v: '承認 10 月中 → 発注 11/1 → 納入 1 月中旬 → 春節連休中に据付（2/16〜2/22）→ 2 月末 量産' },
+              { k: '承認ルート判定', v: 'RMB 1,000,000 超の設備投資 → **ルート B**（製造二課長 → 製造部長 → 工場長 → 本社設備部 → 本社経営会議）。本社分は日本語版が必要。' },
+              { k: '記載漏れ・添付漏れ', v: '❗ 見積書 2 社分の添付なし\n❗ 「予算区分」欄が未記入（2025 年度 設備予算に計上済みか）\n❗ 据付時の生産影響（塗装ライン停止 7 日）と代替手段の記載なし\n⚠ 効果欄の投資回収年数が長い。品質・供給リスクを主効果に' }
+            ] },
+      zh: { title: '审批单草案 RG-25-0117（设备投资・路径B：科长→部长→厂长→总部设备部）',
+            items: [
+              { k: '1. 标题', v: '涂装线 烘干炉 更新（A公司 DO-3200 型）' },
+              { k: '2. 目的・背景', v: '现有烘干炉（2011年导入，已14年）温度不均 ±8℃，超出基准 ±5℃，2025年8月发生2件因涂膜固化不足导致的不良（NC-2025-0812、0829）。厂商维修配件将于2025年底停止供应，故申请计划性更新。' },
+              { k: '3. 金额・比较', v: 'A公司 RMB 1,850,000（含税，含安装与试运行）／B公司 RMB 2,020,000。选定A公司（性能相当且便宜8.4%，交期10周）。' },
+              { k: '4. 效果', v: '温度不均 ±3℃ 以内（厂商保证）。杜绝固化不足不良（年损失约 RMB 96千）。能耗 ▲18%（年 RMB 62千）。投资回收约11.7年→**待确认**（回收期较长，建议以产能与质量风险规避作为主要效果）。' },
+              { k: '5. 日程', v: '10月内审批 → 11/1 下单 → 1月中旬到货 → 春节假期安装（2/16〜2/22）→ 2月底量产' },
+              { k: '审批路径判定', v: '超过 RMB 1,000,000 的设备投资 → **路径B**（制造二科长 → 制造部长 → 厂长 → 总部设备部 → 总部经营会议）。总部部分需日文版。' },
+              { k: '填写・附件缺漏', v: '❗ 未附2家报价单\n❗ 「预算类别」栏未填（是否已列入2025年度设备预算）\n❗ 未记载安装期间的生产影响（涂装线停机7天）及替代方案\n⚠ 效果栏投资回收期较长。建议以质量与供应风险为主要效果' }
+            ] } },
+    script: {
+      ja: [
+        { q: '【フォーム送信】塗装ライン乾燥炉更新／RMB 1,850,000／温度ムラ・部品供給終了／見積 2 社', a: '稟議書ドラフトを社内フォーマット 5 章で作成しました（右の結果）。金額が RMB 1,000,000 を超えるため承認ルートは **B（本社設備部・経営会議まで）**で、本社向けの日本語版が必要です。記載漏れが 3 件（見積添付・予算区分・据付時の生産影響）あります。効果欄の投資回収が 11.7 年と長いので、品質・供給リスク回避を主効果に書き換えることを推奨します。' },
+        { q: '据付時の生産影響はどう書けばいい？塗装は 7 日止まる', a: '記載例（5. スケジュールの下に「6. 生産への影響と対策」として追加）：\n「据付期間 2026/2/16〜2/22 の 7 日間、塗装ラインを停止する。春節連休（2/15〜2/21）と重ねることで実質の稼働影響は 1 日。連休前の 2 月上旬に塗装工程を 1.5 日分前倒しし、K 社向け在庫を 5 日分確保する。万一据付が遅延した場合は、塗装外注 S 社への一時委託（単価 +12%、最大 3 日分）で対応する。」\n春節と重ねる案は工場カレンダーから拾いました。人事に連休中の据付立会い（2 名）の残業扱いを確認してください。' },
+        { q: '本社向けの日本語版で、金額は円換算も併記して', a: '本社向け日本語版を作成しました。金額欄：「RMB 1,850,000（約 ¥38,850,000、1 RMB = ¥21.0 で換算、2025/9/5 社内レート）」。B 社比較も同様に併記しています。本社の稟議様式では「投資区分：更新投資」「償却年数：10 年」の欄があるため追記しました。工場長の押印後、本社設備部へ提出する送付状（日本語）も添えています。' }
+      ],
+      zh: [
+        { q: '【提交表单】涂装线烘干炉更新／RMB 1,850,000／温度不均・配件停供／2家报价', a: '已按公司格式5章生成审批单草案（见右侧结果）。金额超过 RMB 1,000,000，审批路径为 **B（到总部设备部・经营会议）**，需要日文版。填写缺漏3项（报价附件・预算类别・安装期间生产影响）。效果栏投资回收11.7年偏长，建议改为以质量与供应风险规避为主要效果。' },
+        { q: '安装期间的生产影响怎么写？涂装要停7天', a: '记载示例（在「5. 日程」下增加「6. 对生产的影响与对策」）：\n「安装期间 2026/2/16〜2/22 共7天涂装线停机。与春节假期（2/15〜2/21）重叠，实际稼动影响为1天。假期前的2月上旬将涂装工序提前1.5天，确保K公司用库存5天。若安装延迟，通过临时委托涂装外协S公司（单价+12%，最多3天）应对。」\n与春节重叠的方案取自工厂日历。请与人事确认假期中安装监督（2人）的加班处理。' },
+        { q: '日文版给总部的话，金额并列标注日元换算', a: '已生成总部用日文版。金额栏：「RMB 1,850,000（約 ¥38,850,000、1 RMB = ¥21.0 で換算、2025/9/5 社内レート）」。B公司比较同样并列标注。总部审批格式有「投資区分：更新投資」「償却年数：10 年」栏，已补充。同时附上厂长签章后提交总部设备部的日文送付状。' }
+      ] } },
+
+  nm4: { template: 'lookup',
+    persona: { name: { ja: '孫 麗', zh: '孙丽', en: 'Sun Li' },
+               role: { ja: '物流課 出荷・在庫担当', zh: '物流科 出货・库存担当', en: 'Shipping & Inventory Coordinator' },
+               site: { ja: '蘇州工場', zh: '苏州工厂', en: 'Suzhou Plant' }, native: 'zh' },
+    steps: { ja: ['日本本社の営業から「SK-2207-B、来週 3,000 個追加で出せる？」と日本語のチャットが来た', '品番を入力して在庫・生産計画・入荷予定を照会', '在庫・仕掛・計画と、回答に必要な前提条件が返る', '返信文（日本語）をそのまま本社へ送る'],
+             zh: ['日本总部销售用日文发来聊天「SK-2207-B，下周能追加出3,000件吗？」', '输入品号查询库存、生产计划、到货预定', '返回库存、在制、计划及回答所需的前提条件', '把回复（日文）直接发给总部'],
+             en: ['HQ sales asks in Japanese whether 3,000 extra SK-2207-B can ship next week', 'Enter the part number to query stock, plan and inbound', 'Get stock, WIP, plan and the assumptions needed for an answer', 'Send the Japanese reply to HQ as is'] },
+    input: { ja: { query: 'SK-2207-B 在庫・納期' }, zh: { query: 'SK-2207-B 库存・交期' } },
+    result: {
+      ja: { title: '照会結果：SK-2207-B（ブラケット B、K 社・本社向け）— 2025/9/6 08:30 時点',
+            columns: ['区分', '数量', '備考'],
+            rows: [
+              ['完成品在庫（良品）', '4,120 個', '倉庫 A-12。うち K 社 9/10 出荷予定 2,400 を引当済 → **引当可能 1,720**'],
+              ['保留品', '860 個', 'ロット 250901-L1 全数検査中（CL-25-0906）。9/8 判定予定'],
+              ['仕掛（L1）', '1,500 個', '9/8 完成予定（塗装 9/9 戻り）'],
+              ['生産計画', '9/9〜9/12 各日 800 個', '週合計 3,200 個。うち本社定期分 2,000 引当済'],
+              ['来週出荷可能量（試算）', '**1,720 ＋ 1,500 ＋ 1,200 ＝ 4,420**', '9/12 出荷なら。保留品 860 が良品判定なら +860'],
+              ['材料', 'SPCC t1.0 コイル 3.2 t', '約 11,000 個分。制約なし'],
+              ['要確認', '—', '① 9/12 出荷の船便（上海→大阪 週 2 便、金曜締切 木曜 15:00）② 追加分の通い箱 30 箱の空き']
+            ] },
+      zh: { title: '查询结果：SK-2207-B（支架B，K公司・总部用）— 2025/9/6 08:30 时点',
+            columns: ['类别', '数量', '备注'],
+            rows: [
+              ['成品库存（良品）', '4,120件', '仓库 A-12。其中K公司9/10出货预定2,400已占用 → **可用 1,720**'],
+              ['保留品', '860件', '批次 250901-L1 全数检验中（CL-25-0906）。9/8判定'],
+              ['在制（L1）', '1,500件', '9/8完成预定（涂装9/9返回）'],
+              ['生产计划', '9/9〜9/12 每日800件', '周合计3,200件。其中总部定期分2,000已占用'],
+              ['下周可出货量（试算）', '**1,720 ＋ 1,500 ＋ 1,200 ＝ 4,420**', '按9/12出货。保留品860若判定良品则 +860'],
+              ['材料', 'SPCC t1.0 卷料 3.2 t', '约11,000件用量。无制约'],
+              ['待确认', '—', '① 9/12出货的船期（上海→大阪 每周2班，周五班截单周四15:00）② 追加分周转箱30箱是否有空']
+            ] } },
+    script: {
+      ja: [
+        { q: 'SK-2207-B 在庫・納期', a: '在庫・生産計画・入荷予定を照会しました（右の表）。来週 9/12 出荷なら追加 **3,000 個は対応可能**です（引当可能在庫 1,720 ＋ 仕掛 1,500 ＋ 来週生産の未引当分 1,200 ＝ 4,420）。前提条件は 2 つ：① 船便の締切（木曜 15:00）に合わせて 9/11 までに梱包完了 ② 通い箱 30 箱の確保。保留品 860 個（K 社クレームで検査中）は計算に入れていません。' },
+        { q: '本社の営業にそのまま送れる日本語の返信を作って', a: '返信案：\n「お問い合わせの SK-2207-B 追加 3,000 個、来週 9/12（金）の上海発便で出荷可能です。\n・充当：完成品在庫 1,720 ＋ 9/8 完成の仕掛 1,500 ＋ 来週生産分 1,200（計 4,420 の範囲内）\n・条件：9/10 までに正式注文をいただけること（船便締切 9/11 木 15:00 のため）\n・K 社向け 9/10 出荷分 2,400 個への影響はありません\n・現在検査中の保留品 860 個は計算に含めていません\n通い箱の確保を物流で進めておきます。ご注文の可否を 9/10 中にご連絡ください。 蘇州工場 物流課 孫」' },
+        { q: 'もし 5,000 個って言われたら？', a: '5,000 個は来週単独では**不可**です（上限 4,420、保留品が良品判定でも 5,280 でぎりぎり・リスク大）。代替案：\n・9/12 便で 4,400 個 ＋ 9/16（火）便で 600 個の**分納**（2 便目は翌週 9/15 の生産 800 個から充当）\n・または L1 に 9/13（土）の休日出勤 1 直（800 個）を入れれば 9/12 便は無理でも 9/16 便で 5,000 一括\n残業上限（月 36h）超過者が L1 に 2 名いるため、休日出勤は人事確認が必要です。本社にはまず分納案で打診することを推奨します。' }
+      ],
+      zh: [
+        { q: 'SK-2207-B 库存・交期', a: '已查询库存、生产计划与到货预定（见右表）。若下周9/12出货，追加**3,000件可以对应**（可用库存1,720＋在制1,500＋下周生产未占用1,200＝4,420）。前提条件2项：①配合船期截单（周四15:00），9/11前完成包装 ②确保30个周转箱。保留品860件（K公司客诉检验中）未计入。' },
+        { q: '写一份可以直接发给总部销售的日文回复', a: '回复案（日文）：\n「お問い合わせの SK-2207-B 追加 3,000 個、来週 9/12（金）の上海発便で出荷可能です。\n・充当：完成品在庫 1,720 ＋ 9/8 完成の仕掛 1,500 ＋ 来週生産分 1,200（計 4,420 の範囲内）\n・条件：9/10 までに正式注文をいただけること（船便締切 9/11 木 15:00 のため）\n・K 社向け 9/10 出荷分 2,400 個への影響はありません\n・現在検査中の保留品 860 個は計算に含めていません\n通い箱の確保を物流で進めておきます。ご注文の可否を 9/10 中にご連絡ください。 蘇州工場 物流課 孫」' },
+        { q: '如果对方说要5,000件呢？', a: '5,000件下周单独**无法满足**（上限4,420，即使保留品判定良品也只有5,280，风险大）。替代方案：\n・9/12班 4,400件 ＋ 9/16（周二）班 600件**分批交付**（第2批从下周9/15的生产800件中充当）\n・或L1在9/13（周六）加1个班次（800件），虽赶不上9/12班，但可在9/16班一次交付5,000件\nL1有2名员工加班已超月36h上限，休息日出勤需人事确认。建议先向总部提出分批方案。' }
+      ] } }
+};
+
+/* ============================================================
    3. 状態（共通レイヤー）
    pattern を切り替えても選択位置は保持され、直接比較できる
    ============================================================ */
@@ -892,8 +1248,9 @@ const state = {
   selSub: null,
   lastCat: 'kn',
   selSvc: null,
-  view: 'list',
-  query: ''
+  view: 'list',          // 'list' | 'detail' | 'chat' | 'demo'
+  query: '',
+  log: []                // デモで消費した台本ターン [{ lang: 'ja'|'zh', q: string, a: string }]
 };
 
 /* ============================================================
@@ -936,6 +1293,23 @@ function filtered() {
     });
   }
   return list;
+}
+
+/* ---- デモ（業務デモ画面）ヘルパー（§2-4） ---- */
+/** demo view の agent 返答遅延タイマー。renderMain() 再実行時に消し忘れると
+    連打・言語切替で古い #msgs へ二重に addMsg してしまうため保持する */
+let demoReplyTimer = null;
+const scnOf = (id) => SCENARIOS[id] || null;
+/** 台本は ja / zh のみ。UI が en のときは ja の台本を使う（§2-5：エージェント本体は日中） */
+const scriptLang = (l) => (l === 'zh' ? 'zh' : 'ja');
+/** 次に消費する台本ターン（尽きていれば null） */
+const nextTurn = (scn, lang) => scn.script[lang][state.log.length] || null;
+
+function consume(lang, qOverride) {
+  const scn = scnOf(state.selSvc); if (!scn) return false;
+  const turn = nextTurn(scn, lang); if (!turn) return false;
+  state.log.push({ lang, q: qOverride ?? turn.q, a: turn.a });
+  return true;
 }
 
 /* ============================================================
@@ -1052,6 +1426,63 @@ function todoHTML(p) {
   </div>`;
 }
 
+/* ============================================================
+   9b. 描画 — 業務デモ（work-pane / chat-pane の部品）
+   ============================================================ */
+/** 結果パネルの中身。items（縦積み）か columns+rows（表）のどちらか一方 */
+function resultHTML(r) {
+  const titleHTML = `<div class="kv"><div class="k">${esc(r.title)}</div></div>`;
+  if (r.columns) {
+    return titleHTML + `
+      <table class="tbl">
+        <thead><tr>${r.columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead>
+        <tbody>${r.rows.map(row => `<tr>${row.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>`;
+  }
+  return titleHTML + r.items.map(it => `<div class="kv"><div class="k">${esc(it.k)}</div><div class="v">${esc(it.v)}</div></div>`).join('');
+}
+
+/** work-pane の中身（入力パネル＋結果パネル）。テンプレートごとに入力 UI だけ分岐する */
+function panelHTML(scn) {
+  const done = state.log.length > 0;
+  const lang0 = done ? state.log[0].lang : scriptLang(state.lang);
+  const inp = scn.input[lang0];
+  let inputInner = '';
+  if (scn.template === 'upload') {
+    inputInner = `<div class="drop">${esc(t('dropHint'))}</div>` +
+      inp.files.map(f => `<span class="file">📄 ${esc(f)}</span>`).join('');
+  } else if (scn.template === 'form') {
+    inputInner = inp.fields.map(f => `
+      <div class="field"><label>${esc(f.label)}</label><div class="val">${esc(f.value)}</div></div>`).join('');
+  } else if (scn.template === 'diff') {
+    inputInner = `
+      <div class="diff-in">
+        <span class="file">📄 ${esc(t('beforeLabel'))}：${esc(inp.left)}</span>
+        <span>⇄</span>
+        <span class="file">📄 ${esc(t('afterLabel'))}：${esc(inp.right)}</span>
+      </div>`;
+  } else if (scn.template === 'lookup') {
+    inputInner = `<div class="field"><div class="val">🔍 ${esc(inp.query)}</div></div>`;
+  }
+  return `
+    <div class="panel${done ? ' done' : ''}">
+      <div class="panel-h">${esc(t('inputPanel'))}</div>
+      ${inputInner}
+      <div class="run-row"><button class="btn-primary" data-act="run"${done ? ' disabled' : ''}>${esc(done ? t('runDone') : t('run'))}</button></div>
+    </div>
+    ${done ? `<div class="panel"><div class="panel-h">${esc(t('resultPanel'))}</div>${resultHTML(scn.result[lang0])}</div>` : ''}`;
+}
+
+/** チップ行（質問例）。qa 型 または 実行後は台本の次ターン、それ以外（実行前）は誘導文 */
+function chipsHTML(scn) {
+  const tJa = nextTurn(scn, 'ja'), tZh = nextTurn(scn, 'zh');
+  if (scn.template !== 'qa' && state.log.length === 0) return `<span>${esc(t('runHint'))}</span>`;
+  if (!tJa && !tZh) return `<span>${esc(t('demoDone'))}</span>`;
+  return `<span>${esc(t('chipsLabel'))}</span>` +
+    (tJa ? `<button class="chip" data-act="chip" data-arg="ja"><span class="cl">${esc(t('chipJa'))}</span>${esc(tJa.q)}</button>` : '') +
+    (tZh ? `<button class="chip" data-act="chip" data-arg="zh"><span class="cl">${esc(t('chipZh'))}</span>${esc(tZh.q)}</button>` : '');
+}
+
 function renderMain() {
   const el = document.getElementById('main');
 
@@ -1093,6 +1524,7 @@ function renderMain() {
   } else if (state.view === 'detail') {
     const x = svcOf(state.selSvc);
     const c = catOf(x.cat), sb = subOf(x.cat, x.sub);
+    const scn = scnOf(x.id);
     el.innerHTML = `
     <div class="detail-wrap" data-screen-label="サービス詳細">
       <button class="backlink" data-act="back"><span class="arrow"></span>${esc(t('backToList'))}</button>
@@ -1106,12 +1538,75 @@ function renderMain() {
         <div class="keyline"></div>
         <div class="sec-label">${esc(t('overview'))}</div>
         <p class="d-desc">${esc(L(x.desc))}</p>
+        ${scn ? `
+        <div class="d-two">
+          <div>
+            <div class="sec-label">${esc(t('personaLabel'))}</div>
+            <div class="persona">
+              <div class="avatar">${esc(L(scn.persona.name).charAt(0))}</div>
+              <div>
+                <div class="p-name">${esc(L(scn.persona.name))}</div>
+                <div class="p-role">${esc(L(scn.persona.role))} ／ ${esc(L(scn.persona.site))}</div>
+                <div class="p-native">${esc(t('nativeLabel'))}：${esc(scn.persona.native === 'ja' ? t('nativeJa') : t('nativeZh'))}</div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="sec-label">${esc(t('screenType'))}</div>
+            <span class="tpl-badge" title="${esc(t('tplBadge'))}">${esc(L(TEMPLATES[scn.template].name))}</span>
+          </div>
+        </div>
+        <div class="sec-label">${esc(t('scenarioLabel'))}</div>
+        <ol class="steps" aria-label="${esc(t('stepPrefix'))}">
+          ${scn.steps[state.lang].map(s => `<li>${esc(s)}</li>`).join('')}
+        </ol>` : ''}
         <div class="cta-row">
-          <button class="btn-primary" data-act="start">${esc(t('startUse'))}</button>
+          <button class="btn-primary" data-act="start">${esc(scn ? t('startDemo') : t('startUse'))}</button>
           <span class="cta-note">${esc(t('mockNote'))}</span>
         </div>
       </div>
     </div>`;
+
+  } else if (state.view === 'demo') {
+    const x = svcOf(state.selSvc);
+    const scn = scnOf(state.selSvc);
+    el.innerHTML = `
+    <div class="demo-wrap" data-screen-label="業務デモ">
+      <div class="chat-hdr">
+        <button class="backlink" data-act="backdetail"><span class="arrow"></span>${esc(t('backToDetail'))}</button>
+        <div class="vline"></div>
+        <div class="ct1">${esc(L(x.name))}</div>
+        <span class="tpl-badge" title="${esc(t('tplBadge'))}">${esc(L(TEMPLATES[scn.template].name))}</span>
+        <span class="who">${esc(L(scn.persona.name))}・${esc(L(scn.persona.site))}</span>
+        <span class="status"><span class="dot ${statusClass(x.st)}"></span>${esc(statusText(x.st))}</span>
+        <button class="backlink restart" data-act="restart">${esc(t('restart'))}</button>
+      </div>
+      <div class="demo-body">
+        ${scn.template !== 'qa' ? `<div class="work-pane">${panelHTML(scn)}</div>` : ''}
+        <div class="chat-pane">
+          <div class="msgs" id="msgs"></div>
+          <div class="chips" id="chips">${chipsHTML(scn)}</div>
+          <div class="chat-input-row">
+            <input class="chat-input" id="chat-input" placeholder="${esc(t('chatPh'))}">
+            <button class="btn-send" data-act="send">${esc(t('send'))}</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    const sl = scriptLang(state.lang);
+    addMsg('agent', T.chatHello[sl].replace('{name}', x.name[sl]));
+    /* log の復元。最後の 1 ターンだけ agent 返答を遅らせ、それ以前は即時描画する。
+       renderMain() は #msgs を作り直すので、前回の遅延がまだ残っていれば消しておく
+       （連打時に古い #msgs へ二重に描画されるのを防ぐ） */
+    if (demoReplyTimer) { clearTimeout(demoReplyTimer); demoReplyTimer = null; }
+    state.log.forEach((turn, i) => {
+      addMsg('user', turn.q);
+      if (i === state.log.length - 1) demoReplyTimer = setTimeout(() => addMsg('agent', turn.a), 700);
+      else addMsg('agent', turn.a);
+    });
+    const input = document.getElementById('chat-input');
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
+    input.focus();
 
   } else {
     const x = svcOf(state.selSvc);
@@ -1154,11 +1649,19 @@ function sendChat() {
   const input = document.getElementById('chat-input');
   const v = input.value.trim();
   if (!v) return;
-  addMsg('user', v);
-  input.value = '';
   const x = svcOf(state.selSvc);
   /* 返答は「入力された言語」に合わせる（メニュー表示言語とは独立） */
   const lang = detectLang(v);
+  if (state.view === 'demo') {
+    const sl = scriptLang(lang);
+    input.value = '';
+    if (consume(sl, v)) { renderMain(); return; }        // 台本があれば台本の a を返す（q は入力文で置換）
+    addMsg('user', v);                                    // 台本が尽きたら従来の汎用返答
+    setTimeout(() => addMsg('agent', T.chatReply[sl].replace('{name}', x.name[sl])), 700);
+    return;
+  }
+  /* --- 以下は既存のまま（chat view） --- */
+  addMsg('user', v); input.value = '';
   setTimeout(() => addMsg('agent', T.chatReply[lang].replace('{name}', x.name[lang])), 700);
 }
 
@@ -1185,10 +1688,17 @@ document.addEventListener('click', (e) => {
     state.selCat = c; state.selSub = sb; state.lastCat = c; state.openCats[c] = true; state.view = 'list';
     renderAll();
   }
-  else if (act === 'svc') { state.selSvc = arg; state.view = 'detail'; renderMain(); }
+  else if (act === 'svc') { state.selSvc = arg; state.view = 'detail'; state.log = []; renderMain(); }
   else if (act === 'back') { state.view = 'list'; renderAll(); }
   else if (act === 'backdetail') { state.view = 'detail'; renderMain(); }
-  else if (act === 'start') { state.view = 'chat'; renderMain(); }
+  else if (act === 'start') {
+    if (scnOf(state.selSvc)) { state.log = []; state.view = 'demo'; }
+    else { state.view = 'chat'; }
+    renderMain();
+  }
+  else if (act === 'run') { if (state.log.length === 0) { consume(scriptLang(state.lang)); renderMain(); } }
+  else if (act === 'chip') { consume(arg); renderMain(); }
+  else if (act === 'restart') { state.log = []; renderMain(); }
   else if (act === 'send') { sendChat(); }
 });
 
