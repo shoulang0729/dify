@@ -1,53 +1,158 @@
 {
   "cats": [
     {
-      "id": "doc",
-      "subs": [
-        "minutes",
-        "draft"
-      ]
-    },
-    {
-      "id": "ana",
-      "subs": [
-        "data",
-        "voc"
-      ]
-    },
-    {
       "id": "kn",
       "subs": [
-        "internal",
-        "external"
+        "tech",
+        "rule"
       ]
     },
     {
-      "id": "auto",
+      "id": "qa",
       "subs": [
-        "fin",
-        "flow"
+        "defect",
+        "change"
       ]
     },
     {
-      "id": "cs",
+      "id": "dc",
       "subs": [
-        "support",
-        "sales"
+        "report",
+        "site",
+        "apply"
       ]
     },
     {
-      "id": "dev",
+      "id": "lg",
       "subs": [
-        "code",
-        "ops"
+        "trans",
+        "align"
+      ]
+    },
+    {
+      "id": "nm",
+      "subs": [
+        "cost",
+        "actual"
+      ]
+    },
+    {
+      "id": "en",
+      "subs": [
+        "spec",
+        "bom"
+      ]
+    },
+    {
+      "id": "gn",
+      "subs": [
+        "office",
+        "daily"
       ]
     }
   ],
   "svcs": [
     {
-      "id": "m1",
-      "cat": "doc",
-      "sub": "minutes",
+      "id": "kn1",
+      "cat": "kn",
+      "sub": "tech",
+      "st": 1,
+      "tags": [
+        "search"
+      ]
+    },
+    {
+      "id": "kn2",
+      "cat": "kn",
+      "sub": "tech",
+      "st": 1,
+      "tags": [
+        "equipment",
+        "search"
+      ]
+    },
+    {
+      "id": "kn3",
+      "cat": "kn",
+      "sub": "rule",
+      "st": 1,
+      "tags": [
+        "regulation",
+        "hr"
+      ]
+    },
+    {
+      "id": "kn4",
+      "cat": "kn",
+      "sub": "rule",
+      "st": 2,
+      "tags": [
+        "faq",
+        "hr"
+      ]
+    },
+    {
+      "id": "kn5",
+      "cat": "kn",
+      "sub": "rule",
+      "st": 2,
+      "tags": [
+        "authority",
+        "regulation"
+      ]
+    },
+    {
+      "id": "qa1",
+      "cat": "qa",
+      "sub": "defect",
+      "st": 2,
+      "tags": [
+        "defect",
+        "rootcause",
+        "report8d"
+      ]
+    },
+    {
+      "id": "qa2",
+      "cat": "qa",
+      "sub": "change",
+      "st": 3,
+      "tags": [
+        "change4m"
+      ]
+    },
+    {
+      "id": "qa3",
+      "cat": "qa",
+      "sub": "change",
+      "st": 2,
+      "tags": [
+        "claim"
+      ]
+    },
+    {
+      "id": "qa4",
+      "cat": "qa",
+      "sub": "change",
+      "st": 2,
+      "tags": [
+        "audit",
+        "report"
+      ]
+    },
+    {
+      "id": "dc1",
+      "cat": "dc",
+      "sub": "report",
+      "st": 1,
+      "tags": [
+        "report"
+      ]
+    },
+    {
+      "id": "dc2",
+      "cat": "dc",
+      "sub": "report",
       "st": 1,
       "tags": [
         "meeting",
@@ -55,343 +160,252 @@
       ]
     },
     {
-      "id": "m2",
-      "cat": "doc",
-      "sub": "minutes",
-      "st": 1,
-      "tags": [
-        "summary",
-        "doc"
-      ]
-    },
-    {
-      "id": "m3",
-      "cat": "doc",
-      "sub": "minutes",
+      "id": "dc3",
+      "cat": "dc",
+      "sub": "site",
       "st": 2,
       "tags": [
-        "task"
+        "education",
+        "procedure"
       ]
     },
     {
-      "id": "d1",
-      "cat": "doc",
-      "sub": "draft",
+      "id": "dc4",
+      "cat": "dc",
+      "sub": "site",
       "st": 1,
       "tags": [
-        "docgen"
+        "safety",
+        "translate"
       ]
     },
     {
-      "id": "d2",
-      "cat": "doc",
-      "sub": "draft",
+      "id": "dc5",
+      "cat": "dc",
+      "sub": "apply",
       "st": 2,
       "tags": [
-        "legal"
+        "approval"
       ]
     },
     {
-      "id": "d3",
-      "cat": "doc",
-      "sub": "draft",
+      "id": "dc6",
+      "cat": "dc",
+      "sub": "apply",
+      "st": 2,
+      "tags": [
+        "trade"
+      ]
+    },
+    {
+      "id": "dc7",
+      "cat": "dc",
+      "sub": "apply",
+      "st": 2,
+      "tags": [
+        "contract",
+        "purchase"
+      ]
+    },
+    {
+      "id": "lg1",
+      "cat": "lg",
+      "sub": "trans",
       "st": 1,
       "tags": [
-        "sales",
-        "docgen"
+        "translate",
+        "glossary"
       ]
     },
     {
-      "id": "d4",
-      "cat": "doc",
-      "sub": "draft",
+      "id": "lg2",
+      "cat": "lg",
+      "sub": "trans",
+      "st": 2,
+      "tags": [
+        "glossary"
+      ]
+    },
+    {
+      "id": "lg3",
+      "cat": "lg",
+      "sub": "align",
+      "st": 2,
+      "tags": [
+        "procedure",
+        "translate"
+      ]
+    },
+    {
+      "id": "lg4",
+      "cat": "lg",
+      "sub": "align",
       "st": 1,
       "tags": [
         "mail"
       ]
     },
     {
-      "id": "a1",
-      "cat": "ana",
-      "sub": "data",
-      "st": 1,
+      "id": "nm1",
+      "cat": "nm",
+      "sub": "cost",
+      "st": 3,
       "tags": [
-        "bi",
-        "viz"
+        "costing"
       ]
     },
     {
-      "id": "a2",
-      "cat": "ana",
-      "sub": "data",
-      "st": 1,
-      "tags": [
-        "report"
-      ]
-    },
-    {
-      "id": "a3",
-      "cat": "ana",
-      "sub": "data",
+      "id": "nm2",
+      "cat": "nm",
+      "sub": "cost",
       "st": 2,
       "tags": [
-        "risk"
+        "purchase",
+        "costing"
       ]
     },
     {
-      "id": "v1",
-      "cat": "ana",
-      "sub": "voc",
+      "id": "nm3",
+      "cat": "nm",
+      "sub": "actual",
       "st": 1,
       "tags": [
-        "voc",
-        "classify"
+        "kpi",
+        "summary"
       ]
     },
     {
-      "id": "v2",
-      "cat": "ana",
-      "sub": "voc",
+      "id": "nm4",
+      "cat": "nm",
+      "sub": "actual",
       "st": 2,
       "tags": [
-        "research"
+        "inventory",
+        "faq"
       ]
     },
     {
-      "id": "s1",
-      "cat": "kn",
-      "sub": "internal",
-      "st": 1,
+      "id": "nm5",
+      "cat": "nm",
+      "sub": "actual",
+      "st": 2,
       "tags": [
-        "rag",
-        "hr"
+        "analysis",
+        "kpi"
       ]
     },
     {
-      "id": "s2",
-      "cat": "kn",
-      "sub": "internal",
-      "st": 1,
+      "id": "en1",
+      "cat": "en",
+      "sub": "spec",
+      "st": 2,
       "tags": [
-        "rag",
-        "eng"
+        "spec",
+        "glossary"
       ]
     },
     {
-      "id": "s3",
-      "cat": "kn",
-      "sub": "internal",
-      "st": 1,
+      "id": "en2",
+      "cat": "en",
+      "sub": "bom",
+      "st": 2,
       "tags": [
+        "bom"
+      ]
+    },
+    {
+      "id": "en3",
+      "cat": "en",
+      "sub": "bom",
+      "st": 3,
+      "tags": [
+        "drawing",
         "search"
       ]
     },
     {
-      "id": "s4",
-      "cat": "kn",
-      "sub": "external",
+      "id": "gn1",
+      "cat": "gn",
+      "sub": "office",
+      "st": 1,
+      "tags": [
+        "finance"
+      ]
+    },
+    {
+      "id": "gn2",
+      "cat": "gn",
+      "sub": "office",
+      "st": 1,
+      "tags": [
+        "finance"
+      ]
+    },
+    {
+      "id": "gn3",
+      "cat": "gn",
+      "sub": "office",
       "st": 2,
       "tags": [
-        "legal",
-        "research"
+        "order"
       ]
     },
     {
-      "id": "s5",
-      "cat": "kn",
-      "sub": "external",
-      "st": 1,
-      "tags": [
-        "chatbot"
-      ]
-    },
-    {
-      "id": "f1",
-      "cat": "auto",
-      "sub": "fin",
-      "st": 1,
-      "tags": [
-        "finance",
-        "check"
-      ]
-    },
-    {
-      "id": "f2",
-      "cat": "auto",
-      "sub": "fin",
-      "st": 1,
-      "tags": [
-        "finance",
-        "ocr"
-      ]
-    },
-    {
-      "id": "f3",
-      "cat": "auto",
-      "sub": "fin",
+      "id": "gn4",
+      "cat": "gn",
+      "sub": "daily",
       "st": 2,
       "tags": [
-        "purchase"
+        "calendar",
+        "meeting"
       ]
     },
     {
-      "id": "w1",
-      "cat": "auto",
-      "sub": "flow",
+      "id": "gn5",
+      "cat": "gn",
+      "sub": "daily",
       "st": 1,
       "tags": [
-        "calendar"
-      ]
-    },
-    {
-      "id": "w2",
-      "cat": "auto",
-      "sub": "flow",
-      "st": 2,
-      "tags": [
-        "workflow"
-      ]
-    },
-    {
-      "id": "w3",
-      "cat": "auto",
-      "sub": "flow",
-      "st": 2,
-      "tags": [
-        "rpa"
-      ]
-    },
-    {
-      "id": "c1",
-      "cat": "cs",
-      "sub": "support",
-      "st": 1,
-      "tags": [
-        "chatbot"
-      ]
-    },
-    {
-      "id": "c2",
-      "cat": "cs",
-      "sub": "support",
-      "st": 2,
-      "tags": [
-        "realtime"
-      ]
-    },
-    {
-      "id": "c3",
-      "cat": "cs",
-      "sub": "support",
-      "st": 1,
-      "tags": [
-        "translate"
-      ]
-    },
-    {
-      "id": "c4",
-      "cat": "cs",
-      "sub": "sales",
-      "st": 1,
-      "tags": [
-        "classify"
-      ]
-    },
-    {
-      "id": "c5",
-      "cat": "cs",
-      "sub": "sales",
-      "st": 2,
-      "tags": [
-        "crm",
-        "sales"
-      ]
-    },
-    {
-      "id": "g1",
-      "cat": "dev",
-      "sub": "code",
-      "st": 1,
-      "tags": [
-        "dev",
-        "quality"
-      ]
-    },
-    {
-      "id": "g2",
-      "cat": "dev",
-      "sub": "code",
-      "st": 1,
-      "tags": [
-        "test"
-      ]
-    },
-    {
-      "id": "g3",
-      "cat": "dev",
-      "sub": "code",
-      "st": 1,
-      "tags": [
-        "db"
-      ]
-    },
-    {
-      "id": "g4",
-      "cat": "dev",
-      "sub": "ops",
-      "st": 2,
-      "tags": [
-        "ops",
-        "sre"
-      ]
-    },
-    {
-      "id": "g5",
-      "cat": "dev",
-      "sub": "ops",
-      "st": 2,
-      "tags": [
-        "doc"
+        "summary"
       ]
     }
   ],
   "tags": [
-    "bi",
+    "analysis",
+    "approval",
+    "audit",
+    "authority",
+    "bom",
     "calendar",
-    "chatbot",
-    "check",
-    "classify",
-    "crm",
-    "db",
-    "dev",
-    "doc",
-    "docgen",
-    "eng",
+    "change4m",
+    "claim",
+    "contract",
+    "costing",
+    "defect",
+    "drawing",
+    "education",
+    "equipment",
+    "faq",
     "finance",
+    "glossary",
     "hr",
-    "legal",
+    "inventory",
+    "kpi",
     "mail",
     "meeting",
-    "ocr",
-    "ops",
+    "order",
+    "procedure",
     "purchase",
-    "quality",
-    "rag",
-    "realtime",
+    "regulation",
     "report",
-    "research",
-    "risk",
-    "rpa",
-    "sales",
+    "report8d",
+    "rootcause",
+    "safety",
     "search",
-    "sre",
+    "spec",
     "summary",
-    "task",
-    "test",
-    "translate",
-    "viz",
-    "voc",
-    "workflow"
+    "trade",
+    "translate"
   ],
   "patterns": [
     {
@@ -437,10 +451,10 @@
     "wordmark"
   ],
   "counts": {
-    "cats": 6,
-    "subs": 12,
+    "cats": 7,
+    "subs": 15,
     "svcs": 33,
-    "tags": 36,
+    "tags": 35,
     "ui": 27
   }
 }
