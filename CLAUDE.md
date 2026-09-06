@@ -37,12 +37,12 @@
 - 検出：`tools/verify.mjs`（直値検出・`var()` 未定義検出・dark ブロック存在）
 
 ### 2-3. 共通レイヤーの契約（パターンを増やすときの土台）
-- **データ**：`CATS`（大分類→中分類）/ `SVCS`（サービス、`cat`/`sub`/`st`/`tags`/`name`/`desc`）/ `TAGS`
-- **状態**：`state = { pattern, lang, theme, openCats, selCat, selSub, lastCat, selSvc, view, query }`
-- **遷移**：`document` の `click` ハンドラの `data-act`（`pattern`/`all`/`cat`/`sub`/`svc`/`back`/`backdetail`/`start`/`send`）
+- **データ**：`CATS`（大分類→中分類）/ `SVCS`（サービス、`cat`/`sub`/`st`/`tags`/`name`/`desc`）/ `TAGS` / `TEMPLATES`（デモ画面テンプレート 5 種 `qa`/`upload`/`form`/`diff`/`lookup` の名称・説明、3 言語）/ `SCENARIOS`（サービス id → `{ template, persona{name,role,site,native}, steps{ja,zh,en}, input?, result?, script{ja,zh} }`。**台本 `script` と `input`/`result` は ja/zh のみ**＝§2-5 の実装。`SVCS` に埋め込まず別定数）
+- **状態**：`state = { pattern, lang, theme, openCats, selCat, selSub, lastCat, selSvc, view, query, log }`。`view` は `list` / `detail` / `chat` / `demo`。`log` はデモで消費した台本ターン `[{lang,q,a}]`（`log.length` が次に消費する index。言語切替後の再描画で会話を復元）
+- **遷移**：`document` の `click` ハンドラの `data-act`（`pattern`/`all`/`cat`/`sub`/`svc`/`back`/`backdetail`/`start`/`send`/`run`/`chip`/`restart`）。`start` は `SCENARIOS` にあれば `demo`、なければ従来の `chat` へ（フォールバックを残す）
 - ルール：**表示レイヤー（`renderSidebar` / `renderMain` 内のパターン分岐）は `state` を読んで描くだけ**。パターン固有の都合で `state` の形・データ形・遷移を変えない
 - なぜ：**パターンを切り替えても選択位置が保持され、同じ業務を別の見せ方で直接比較できる**のはこの契約のおかげ。②③（ダッシュボード / 業務フィード）はこの上に乗せる
-- 検出：`tools/verify.mjs`（`state` の必須キー・`data-act` 一覧）＋ reviewer の diff 監査
+- 検出：`tools/verify.mjs`（`state` の必須キー・`data-act` 一覧・§9 シナリオ整合：`SCENARIOS` の id が `SVCS` に存在／`template` が `TEMPLATES` に存在／型の形式。台本の無い `SVCS` は warn）＋ reviewer の diff 監査
 
 ### 2-4. 「モックの足場」と「プロダクト機能」を混ぜない
 - `.mockbar`（パターン選択セグメント）＝**レビュー用の足場**。本番 UI には存在しない
@@ -83,7 +83,7 @@
 ## §3 検証コマンド（implementer は PR 前、reviewer はレビュー時に必ず実行）
 
 ```bash
-node tools/verify.mjs     # 構文 / i18n 一致 / 未定義・未使用キー / CSS トークン / 共通レイヤー / Pages 設定
+node tools/verify.mjs     # 構文 / i18n 一致 / 未定義・未使用キー / CSS トークン / データ整合 / 共通レイヤー / Pages 設定 / シナリオ整合
 node tools/regress.mjs    # データ層スナップショット比較（件数・id）。FAIL = 意図しない増減
 node tools/regress.mjs --update   # 設計書に書かれた意図的なデータ変更のときだけ基準を更新
 ```
