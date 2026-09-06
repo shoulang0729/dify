@@ -1,79 +1,452 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="light" data-lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>モック比較 ／ AIエージェント 画面案</title>
+<title>AIエージェント カタログ ― デモの見方 ／ AI智能体目录 ― 演示指南</title>
+<script>
+(function () {
+  var doc = document.documentElement;
+  var lang = 'ja';
+  var theme = 'light';
+  try {
+    var storedLang = localStorage.getItem('mock.lang');
+    if (storedLang === 'zh') lang = 'zh';
+    var storedTheme = localStorage.getItem('mock.theme');
+    if (storedTheme === 'dark') theme = 'dark';
+  } catch (e) { /* localStorage 不可でも既定値（ja / light）で動作 */ }
+  doc.setAttribute('data-lang', lang);
+  doc.setAttribute('lang', lang);
+  doc.setAttribute('data-theme', theme);
+})();
+</script>
 <style>
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;min-height:100%;}
-  body{
-    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans","Meiryo UI",Arial,sans-serif;
-    background:#F6F8FA;color:#2E404D;-webkit-font-smoothing:antialiased;
+/* tokens/colors.css */
+/* ============================================================
+   NTT DATA — Color Tokens
+   Source of truth: NTT DATA Group Corporate template theme
+   ("NTT DATA Group Corp." color scheme) + VVI brand guidance.
+
+   構成:
+     1. ブランドパレット（不変・テーマで変えない）
+     2. セマンティックエイリアス（ライト既定値）
+     3. [data-theme="dark"] でセマンティック層のみ上書き
+   ============================================================ */
+
+:root {
+  /* --- Brand core ------------------------------------------------ */
+  --ntt-future-blue:      #0071BC; /* PRIMARY brand color */
+  --ntt-future-blue-150:  #005B96; /* darker — depth, hovers on light */
+  --ntt-future-blue-50:   #2E90FF; /* lighter Future Blue — links, accents, on-dark text */
+
+  /* --- Neutrals / backgrounds ----------------------------------- */
+  --ntt-smart-navy:       #070F26; /* primary dark background + headings */
+  --ntt-text-grey:        #2E404D; /* default body text */
+  --ntt-grey-100:         #949494; /* muted text, dividers, disabled */
+  --ntt-black:            #000000; /* select use only (per VVI) */
+  --ntt-white:            #FFFFFF;
+
+  /* Extended neutral ramp (derived from Smart Navy / Text Grey) */
+  --ntt-grey-700:         #3D4A57;
+  --ntt-grey-300:         #C7CDD2;
+  --ntt-grey-200:         #DDE1E5;
+  --ntt-grey-100-bg:      #EEF1F3; /* subtle surface tint */
+  --ntt-grey-50:          #F6F8FA; /* app canvas / off-white */
+
+  /* --- Secondary accents ---------------------------------------- */
+  --ntt-green:            #00CB5D;
+  --ntt-turquoise:        #00DFED;
+
+  /* --- Attention accents ---------------------------------------- */
+  --ntt-yellow:           #FFC400;
+  --ntt-orange:           #FF7A00;
+  --ntt-orange-100:       #E42600;
+  --ntt-orange-150:       #B22000;
+
+  /* ============================================================
+     SEMANTIC ALIASES — reference these in product UI
+     ダークモードはここだけを上書きする
+     ============================================================ */
+
+  /* Surfaces */
+  --surface-canvas:       var(--ntt-grey-50);
+  --surface-card:         var(--ntt-white);
+  --surface-sunken:       var(--ntt-grey-100-bg);
+  --surface-inverse:      var(--ntt-smart-navy);
+  --surface-brand:        var(--ntt-future-blue);
+  --surface-header:       var(--ntt-white);
+  --surface-hover:        #F2F6F9;
+  --surface-selected:     #EAF3FA;
+  --surface-rail:         var(--ntt-smart-navy);
+
+  /* Text */
+  --text-heading:         var(--ntt-smart-navy);
+  --text-body:            var(--ntt-text-grey);
+  --text-secondary:       #5A6B78;
+  --text-muted:           #8A98A4;
+  --text-on-brand:        var(--ntt-white);
+  --text-on-inverse:      var(--ntt-white);
+  --text-link:            var(--ntt-future-blue);
+  --text-link-hover:      var(--ntt-future-blue-150);
+
+  /* Borders */
+  --border-subtle:        #E3E8EC;
+  --border-default:       #C9D2D9;
+  --border-card:          #D9DFE5;
+  --border-strong:        var(--ntt-text-grey);
+  --border-brand:         var(--ntt-future-blue);
+
+  /* Interactive (primary) */
+  --action-primary:       var(--ntt-future-blue);
+  --action-primary-hover: var(--ntt-future-blue-150);
+  --action-primary-active:#004B7A;
+
+  /* Status / feedback */
+  --status-success:       var(--ntt-green);
+  --status-info:          var(--ntt-future-blue-50);
+  --status-warning:       var(--ntt-yellow);
+  --status-danger:        var(--ntt-orange-100);
+  --status-danger-strong: var(--ntt-orange-150);
+  --badge-live-bg:        rgba(0, 203, 93, 0.14);
+  --badge-live-fg:        #00803B;
+  --badge-trial-bg:       rgba(0, 113, 188, 0.12);
+  --badge-trial-fg:       #005B96;
+  --status-concept:       var(--ntt-grey-100);
+  --badge-concept-bg:     rgba(148, 148, 148, 0.16);
+  --badge-concept-fg:     #5A6B78;
+
+  /* Focus ring */
+  --focus-ring:           var(--ntt-future-blue-50);
+}
+
+/* ============================================================
+   DARK THEME — セマンティック層のみ差し替え。
+   ブランドパレット（--ntt-*）は一切変更しない。
+   下地は Smart Navy から起こしたニュートラルランプ。
+   ============================================================ */
+:root[data-theme="dark"] {
+  --surface-canvas:       #0A1220;
+  --surface-card:         #111C30;
+  --surface-sunken:       #070F26;
+  --surface-header:       #0D1728;
+  --surface-hover:        #16233A;
+  --surface-selected:     #17304C;
+  --surface-rail:         #050B1A;
+
+  --text-heading:         var(--ntt-white);
+  --text-body:            #DDE1E5;
+  --text-secondary:       #A4B0BA;
+  --text-muted:           #7A8794;
+  --text-link:            var(--ntt-future-blue-50); /* on-dark 用として定義済み */
+  --text-link-hover:      #6BB2FF;
+
+  --border-subtle:        #1E2B41;
+  --border-default:       #2A3A52;
+  --border-card:          #223148;
+
+  --action-primary:       var(--ntt-future-blue);
+  --action-primary-hover: var(--ntt-future-blue-50);
+  --action-primary-active:#1A6FB5;
+
+  /* ダーク背景でのコントラスト確保のため明度を上げる */
+  --status-success:       #2BE07E;
+  --status-warning:       #FFD34D;
+  --badge-live-bg:        rgba(43, 224, 126, 0.16);
+  --badge-live-fg:        #5BE79B;
+  --badge-trial-bg:       rgba(46, 144, 255, 0.18);
+  --badge-trial-fg:       #7FC0FF;
+  --status-concept:       #8A97A6;
+  --badge-concept-bg:     rgba(164, 176, 186, 0.16);
+  --badge-concept-fg:     #B8C3CC;
+}
+
+/* tokens/typography.css */
+/* ============================================================
+   NTT DATA — Typography Tokens
+   Brand basics (VVI): page titles use GEORGIA, body uses ARIAL.
+   Japanese: Meiryo UI (titles bold) / Meiryo (body).
+   ============================================================ */
+
+:root {
+  --font-display: Georgia, "Times New Roman", "Yu Mincho", "Hiragino Mincho ProN", serif;
+  --font-sans: Arial, "Helvetica Neue", Helvetica, "Yu Gothic", "Hiragino Kaku Gothic ProN", "Meiryo", system-ui, sans-serif;
+  --font-jp: "Meiryo UI", Meiryo, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-zh: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", sans-serif;
+  --font-en: Arial, "Helvetica Neue", Helvetica, system-ui, sans-serif;
+  --font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", Menlo, monospace;
+
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-bold:    700;
+
+  --text-h1:         30px;
+  --text-h2:         24px;
+  --text-h3:         20px;
+  --text-body-lg:    18px;
+  --text-body:       16px;
+  --text-body-sm:    14px;
+  --text-caption:    12px;
+  --text-overline:   11px;
+
+  --leading-tight:   1.1;
+  --leading-snug:    1.25;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight:   -0.01em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.04em;
+  --tracking-overline:0.14em;
+}
+
+/* 表示言語に応じて本文フォントを切り替える */
+:root[data-lang="ja"] { --font-ui: var(--font-jp); }
+:root[data-lang="zh"] { --font-ui: var(--font-zh); }
+:root[data-lang="en"] { --font-ui: var(--font-en); }
+
+/* tokens/spacing.css */
+:root {
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+
+  --radius-none: 0;
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-pill: 999px;
+
+  --border-hairline: 1px;
+  --border-thick:    2px;
+  --border-accent:   3px;
+
+  --shadow-sm:  0 1px 3px rgba(7, 15, 38, 0.08), 0 1px 2px rgba(7, 15, 38, 0.06);
+  --shadow-md:  0 4px 12px rgba(7, 15, 38, 0.10);
+  --shadow-focus: 0 0 0 3px rgba(46, 144, 255, 0.35);
+
+  --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+}
+</style>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    font-family: var(--font-ui, var(--font-jp));
+    background: var(--surface-canvas); color: var(--text-body);
+    -webkit-font-smoothing: antialiased;
   }
-  a{text-decoration:none;color:inherit;}
-  .wrap{max-width:920px;margin:0 auto;padding:56px 32px 64px;}
-  .eyebrow{font-size:12px;letter-spacing:0.14em;font-weight:700;color:#0071BC;text-transform:uppercase;}
-  h1{margin:14px 0 6px;font-size:30px;font-weight:800;color:#070F26;letter-spacing:0.01em;}
-  .sub{font-size:14px;color:#8A98A4;}
-  .note{margin-top:18px;display:flex;gap:10px;align-items:flex-start;background:#FBF1DA;border:1px solid #F0DCA8;border-radius:8px;padding:12px 16px;font-size:12.5px;color:#7A5A12;line-height:1.6;}
-  .grid{margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:22px;}
-  .card{background:#fff;border:1px solid #E9EDF1;border-radius:14px;overflow:hidden;transition:box-shadow .15s,transform .15s,border-color .15s;display:flex;flex-direction:column;}
-  .card:hover{box-shadow:0 16px 34px rgba(7,15,38,0.10);border-color:#D4DBE2;transform:translateY(-3px);}
-  .thumb{height:150px;display:flex;align-items:center;justify-content:center;position:relative;}
-  .thumb .badge{position:absolute;top:12px;left:12px;font-size:10.5px;font-weight:700;letter-spacing:0.06em;background:rgba(255,255,255,0.92);color:#0071BC;border-radius:6px;padding:3px 9px;}
-  .t-cat{background:radial-gradient(120% 140% at 80% -20%,#10306b 0%,#070F26 60%);}
-  .t-top{background:linear-gradient(135deg,#0071BC 0%,#005B96 100%);}
-  .thumb .mark{display:flex;gap:7px;align-items:center;}
-  .thumb .mark span{display:block;width:30px;height:38px;border-radius:5px;background:rgba(255,255,255,0.9);}
-  .thumb .mark span:nth-child(2){opacity:0.6;}
-  .thumb .mark span:nth-child(3){opacity:0.35;}
-  .meta{padding:20px 22px 22px;display:flex;flex-direction:column;flex:1;}
-  .meta h2{margin:0;font-size:17px;font-weight:800;color:#070F26;}
-  .meta .zh{font-size:12px;color:#9AA6B0;margin-top:2px;}
-  .meta p{font-size:12.5px;color:#7C8A95;line-height:1.7;margin:12px 0 0;flex:1;}
-  .feat{margin:14px 0 0;display:flex;flex-wrap:wrap;gap:7px;}
-  .feat span{font-size:11px;color:#5A6B78;background:#F1F4F7;border-radius:7px;padding:4px 9px;}
-  .open{margin-top:18px;display:inline-flex;align-items:center;gap:7px;align-self:flex-start;background:#0071BC;color:#fff;font-size:13px;font-weight:700;padding:10px 20px;border-radius:9px;}
-  .foot{margin-top:40px;font-size:11.5px;color:#B6BFC7;line-height:1.7;}
+  a { color: var(--text-link); }
+  a:hover { color: var(--text-link-hover); }
+  code { font-family: var(--font-mono); font-size: 0.92em; background: var(--surface-sunken); border: 1px solid var(--border-subtle); border-radius: var(--radius-xs); padding: 1px 5px; }
+
+  html[data-lang="ja"] .zh { display: none; }
+  html[data-lang="zh"] .ja { display: none; }
+
+  /* ===== ヘッダー ===== */
+  .hdr {
+    display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;
+    padding: var(--space-3) var(--space-5);
+    background: var(--surface-header); border-bottom: 1px solid var(--border-subtle);
+  }
+  .hdr .wordmark {
+    display: inline-flex; align-items: center; justify-content: center; height: 30px; padding: 0 14px;
+    border: 1px dashed var(--border-default); border-radius: var(--radius-sm);
+    font-weight: var(--weight-bold); font-size: 13px; letter-spacing: var(--tracking-wide);
+    color: var(--text-muted);
+  }
+  .hdr .right { margin-left: auto; display: flex; align-items: center; gap: var(--space-1); }
+  .langtoggle { display: flex; gap: var(--space-1); }
+  .langtoggle button {
+    font-family: inherit; font-size: 12.5px; color: var(--text-body); cursor: pointer;
+    background: var(--surface-card); border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm); padding: 6px 12px;
+    transition: border-color var(--duration-fast) var(--ease-standard);
+  }
+  .langtoggle button:hover { border-color: var(--action-primary); }
+  html[data-lang="ja"] .langtoggle button[data-lang-btn="ja"],
+  html[data-lang="zh"] .langtoggle button[data-lang-btn="zh"] {
+    background: var(--action-primary); color: var(--text-on-brand); border-color: var(--action-primary);
+    font-weight: var(--weight-bold);
+  }
+
+  /* ===== 本文 ===== */
+  .guide { max-width: 760px; margin: 0 auto; padding: var(--space-10) var(--space-5) var(--space-12); }
+  .eyebrow { font-size: var(--text-overline); letter-spacing: var(--tracking-overline); font-weight: var(--weight-bold); color: var(--action-primary); text-transform: uppercase; }
+  h1 { margin: var(--space-2) 0 var(--space-3); font-size: var(--text-h1); font-weight: var(--weight-bold); color: var(--text-heading); letter-spacing: var(--tracking-tight); line-height: var(--leading-snug); }
+  .lead { font-size: var(--text-body); color: var(--text-secondary); line-height: var(--leading-relaxed); }
+  .lead strong { color: var(--text-body); }
+  .cta {
+    display: inline-flex; align-items: center; gap: var(--space-2); margin-top: var(--space-6);
+    background: var(--action-primary); color: var(--text-on-brand); text-decoration: none;
+    font-size: var(--text-body-sm); font-weight: var(--weight-bold);
+    padding: 10px 22px; border-radius: var(--radius-md);
+    transition: background var(--duration-fast) var(--ease-standard);
+  }
+  .cta:hover { background: var(--action-primary-hover); color: var(--text-on-brand); }
+
+  section.step { margin-top: var(--space-10); padding-top: var(--space-8); border-top: 1px solid var(--border-subtle); }
+  section.step h2 { margin: 0 0 var(--space-3); font-size: var(--text-h3); font-weight: var(--weight-bold); color: var(--text-heading); }
+  section.step p { font-size: var(--text-body-sm); line-height: var(--leading-relaxed); color: var(--text-body); margin: 0 0 var(--space-3); }
+  section.step ul, section.step ol { margin: 0; padding-left: 1.4em; font-size: var(--text-body-sm); line-height: var(--leading-relaxed); color: var(--text-body); }
+  section.step li { margin: 0 0 var(--space-2); }
+  section.step li:last-child { margin-bottom: 0; }
+  section.step strong { color: var(--text-heading); }
+
+  dl.deftable { margin: 0; }
+  dl.deftable dt { font-size: var(--text-body-sm); font-weight: var(--weight-bold); color: var(--text-heading); margin-top: var(--space-3); }
+  dl.deftable dt:first-child { margin-top: 0; }
+  dl.deftable dd { margin: 2px 0 0; font-size: var(--text-body-sm); line-height: var(--leading-relaxed); color: var(--text-secondary); }
+
+  .note { margin-top: var(--space-3); font-size: var(--text-caption); color: var(--text-muted); line-height: var(--leading-relaxed); }
+
+  footer.guidefoot { margin-top: var(--space-10); padding-top: var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-caption); color: var(--text-muted); line-height: var(--leading-relaxed); }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="eyebrow">Concept Mock · 社内検討用</div>
-  <h1>AIエージェント 画面案の比較</h1>
-  <div class="sub">2つのモックを見比べられます ／ 对比两种界面方案</div>
-
-  <div class="note">⚠️ これは本番システムではありません。コンセプト確認用のモックで、チャット応答はすべてダミーです。</div>
-
-  <div class="grid">
-    <a class="card" href="catalog.html">
-      <div class="thumb t-cat"><span class="badge">MOCK A</span><div class="mark"><span></span><span></span><span></span></div></div>
-      <div class="meta">
-        <h2>AIエージェントカタログver.1</h2>
-        <div class="zh">AI智能体服务目录</div>
-        <p>左ナビ3案を切替できるカタログ画面。大分類8×中分類17×41サービス（在中日系製造業向け）を一覧 → 詳細 → チャット起動まで。</p>
-        <div class="feat"><span>左ナビ3案</span><span>カタログ一覧</span><span>サービス詳細</span></div>
-        <span class="open">開く →</span>
-      </div>
-    </a>
-
-    <a class="card" href="top.html">
-      <div class="thumb t-top"><span class="badge">MOCK B</span><div class="mark"><span></span><span></span><span></span></div></div>
-      <div class="meta">
-        <h2>AIエージェントカタログver.2</h2>
-        <div class="zh">门户首页</div>
-        <p>左サイドバー固定のホーム画面。レイアウト3案を切替でき、カテゴリ → 個別の業務画面（チャット）まで遷移。</p>
-        <div class="feat"><span>レイアウト3案</span><span>サイドバー遷移</span><span>業務画面</span></div>
-        <span class="open">開く →</span>
-      </div>
-    </a>
+<header class="hdr">
+  <span class="wordmark"><span class="ja">青嶺精工</span><span class="zh">青岭精工</span></span>
+  <div class="right">
+    <div class="langtoggle">
+      <button type="button" data-lang-btn="ja">日本語</button>
+      <button type="button" data-lang-btn="zh">中文</button>
+    </div>
   </div>
+</header>
 
-  <div class="foot">
-    純粋な静的 HTML / CSS / JS（ビルド不要・サーバー不要）。各ファイルをブラウザで直接開くだけで動作します。<br>
-    データはすべてダミー（サンプルのユースケース）。チャットはモック応答（LLM未接続）です。
-  </div>
-</div>
+<main class="guide">
+  <div class="eyebrow">Concept Mock</div>
+  <h1>
+    <span class="ja">AIエージェント カタログ ― デモの見方</span>
+    <span class="zh">AI智能体目录 ― 演示指南</span>
+  </h1>
+  <p class="lead ja">このサイトは、在中日系製造業向け AIエージェント カタログの<strong>画面案（モック）</strong>です。会社名「青嶺精工」は仮の名前、応答は台本、数字はサンプルです。実際の AI 処理・社内データ連携は行っていません。</p>
+  <p class="lead zh">本站是面向在华日资制造业的 AI 智能体目录的<strong>界面方案（演示模型）</strong>。公司名"青岭精工"为虚构，回答为预设脚本，数字均为示例。不进行真实的 AI 处理，也不连接任何公司数据。</p>
+
+  <a class="cta ja" href="catalog.html">カタログを開く</a>
+  <a class="cta zh" href="catalog.html">打开目录</a>
+
+  <section class="step">
+    <h2 class="ja">1. 画面の構成</h2>
+    <h2 class="zh">1. 界面构成</h2>
+    <ul class="ja">
+      <li><strong>上のグレー帯</strong>（① 階層ナビ／② ダッシュボード／③ 業務フィード）は、見せ方を比較するための<strong>検討用の切替</strong>です。本番の画面には出ません。</li>
+      <li><strong>その下が実画面</strong>です。ヘッダー右の <strong>言語（日／中／英）</strong> と <strong>テーマ（ライト／ダーク）</strong> は本番にも残る機能です。</li>
+      <li>言語切替で変わるのは<strong>メニューやラベルの表示だけ</strong>です。エージェント本体は日本語・中国語どちらの入力も受け付けます（後述）。</li>
+    </ul>
+    <ul class="zh">
+      <li><strong>顶部灰色条</strong>（① 层级导航／② 仪表盘／③ 业务动态）是用于比较展示方式的<strong>评审用切换</strong>，正式界面中不会出现。</li>
+      <li><strong>其下方为正式界面</strong>。页眉右侧的<strong>语言（日／中／英）</strong>与<strong>主题（浅色／深色）</strong>是正式版也会保留的功能。</li>
+      <li>切换语言只改变<strong>菜单与标签的显示语言</strong>。智能体本身同时接受日语和中文输入（见后文）。</li>
+    </ul>
+  </section>
+
+  <section class="step">
+    <h2 class="ja">2. デモの手順</h2>
+    <h2 class="zh">2. 演示步骤</h2>
+    <ol class="ja">
+      <li>左の分類を開き、<strong>サービスカード</strong>を選びます。カードには管理番号（例 <code>KN-02</code>）・成熟度・タグが付いています。</li>
+      <li><strong>詳細画面</strong>で、想定する担当者（ペルソナ）・利用の流れ・画面タイプを確認します。</li>
+      <li><strong>「デモを見る」</strong>を押すと業務デモ画面に移ります。</li>
+      <li>【日】【中】のチップを押すか、自由に入力して送信します。数秒の「考え中」のあと、エージェントが返答します。</li>
+      <li>アップロード／フォーム型の画面では<strong>「実行」</strong>を押すと、左側に結果（ドラフト・差分・照会結果など）が表示されます。</li>
+      <li><strong>「最初から」</strong>でデモをやり直せます。<strong>「← 詳細へ戻る」</strong>で戻れます。</li>
+    </ol>
+    <ol class="zh">
+      <li>展开左侧分类，选择一张<strong>服务卡片</strong>。卡片上带有管理编号（如 <code>KN-02</code>）、成熟度和标签。</li>
+      <li>在<strong>详情页</strong>确认预设的使用者（人物画像）、使用流程和界面类型。</li>
+      <li>点击<strong>「查看演示」</strong>进入业务演示界面。</li>
+      <li>点击【日】【中】提示按钮，或自由输入后发送。等待数秒“思考中”后，智能体给出回答。</li>
+      <li>上传／表单类界面点击<strong>「执行」</strong>，左侧会显示结果（草稿、差异、查询结果等）。</li>
+      <li>点击<strong>「重新开始」</strong>可重做演示，点击<strong>「← 返回详情」</strong>可返回。</li>
+    </ol>
+  </section>
+
+  <section class="step">
+    <h2 class="ja">3. 5 つの画面タイプ</h2>
+    <h2 class="zh">3. 五种界面类型</h2>
+    <dl class="deftable ja">
+      <dt>QA</dt><dd>質問に答える。技術ナレッジ・規程・当局通達など</dd>
+      <dt>アップロード → 結果</dt><dd>文書・図面・帳票を読み込み、要約・抽出・チェック結果を出す</dd>
+      <dt>フォーム → ドラフト</dt><dd>項目を埋めると報告書・申請書・メールのドラフトが出る</dd>
+      <dt>差分比較</dt><dd>新旧の文書を比べ、変わった箇所と影響を示す</dd>
+      <dt>照会</dt><dd>在庫・納期・給与水準などを条件で調べて答える</dd>
+    </dl>
+    <dl class="deftable zh">
+      <dt>问答</dt><dd>回答问题。技术知识、规章制度、监管通告等</dd>
+      <dt>上传 → 结果</dt><dd>读取文档、图纸、单据，输出摘要、提取和检查结果</dd>
+      <dt>表单 → 草稿</dt><dd>填写项目后生成报告、申请书、邮件的草稿</dd>
+      <dt>差异比较</dt><dd>对比新旧文档，指出变更之处及其影响</dd>
+      <dt>查询</dt><dd>按条件查询库存、交期、薪资水平等并作答</dd>
+    </dl>
+  </section>
+
+  <section class="step">
+    <h2 class="ja">4. 言語について</h2>
+    <h2 class="zh">4. 关于语言</h2>
+    <p class="ja">メニューの言語は日／中／英から選べますが、<strong>エージェントへの入力は日本語でも中国語でもかまいません</strong>。入力した言語で返答します（メニューが英語でも、日本語で聞けば日本語で返ります）。日中対応はすべてのサービスの前提です。</p>
+    <p class="zh">菜单语言可选日／中／英，但<strong>向智能体输入时使用日语或中文均可</strong>，智能体会以输入的语言回答（即使菜单为英文，用日语提问也会以日语回答）。日中双语是所有服务的基本前提。</p>
+  </section>
+
+  <section class="step">
+    <h2 class="ja">5. 成熟度バッジ</h2>
+    <h2 class="zh">5. 成熟度标识</h2>
+    <dl class="deftable ja">
+      <dt>提供中</dt><dd>すぐ使える想定。標準的な Dify の機能で実現できる</dd>
+      <dt>試行版</dt><dd>一部の部署で試しながら整える想定。社内データの整備や連携が必要</dd>
+      <dt>構想</dt><dd>将来の候補。外部パートナーとの連携や個人情報の扱いなど、前提の整理が必要</dd>
+    </dl>
+    <dl class="deftable zh">
+      <dt>已提供</dt><dd>可立即使用。可用 Dify 的标准功能实现</dd>
+      <dt>试行版</dt><dd>先在部分部门试用并完善。需要整理公司数据或建立连接</dd>
+      <dt>构想中</dt><dd>未来候选。需要先理清与外部合作方的对接、个人信息处理等前提</dd>
+    </dl>
+  </section>
+
+  <section class="step">
+    <h2 class="ja">6. 管理番号とフィードバックのお願い</h2>
+    <h2 class="zh">6. 管理编号与反馈方式</h2>
+    <p class="ja">各サービスには <strong><code>KN-02</code></strong> のような管理番号が付いています（分類 2 文字 ＋ 通番）。ご意見は <strong>「番号 ＋ 画面 ＋ 内容」</strong> でお知らせください。例：「KN-05 のデモ、中国語の 2 往復目の回答が長い」「DC-01 の結果パネルに宛先を足したい」</p>
+    <p class="zh">每项服务都带有类似 <strong><code>KN-02</code></strong> 的管理编号（2 位分类码 ＋ 序号）。反馈时请按<strong>「编号 ＋ 界面 ＋ 内容」</strong>告知。例：“KN-05 的演示中，中文第 2 轮回答太长”“希望在 DC-01 的结果面板中增加收件人”</p>
+  </section>
+
+  <section class="step">
+    <h2 class="ja">7. 表示パターン</h2>
+    <h2 class="zh">7. 展示模式</h2>
+    <p class="ja">上のグレー帯で 3 つの見せ方を切り替えられます。<strong>① 階層ナビ</strong>は分類から探す標準の入口。<strong>② ダッシュボード</strong>は全体像・よく使うサービスを前面に出すホーム（管理者向け）。<strong>③ 業務フィード</strong>は担当者の今日の仕事から入る画面。どこから入っても、詳細・デモ画面は共通です。</p>
+    <p class="zh">可通过顶部灰色条切换三种展示方式。<strong>① 层级导航</strong>是按分类查找的标准入口；<strong>② 仪表盘</strong>是突出整体概况与常用服务的首页（面向管理者）；<strong>③ 业务动态</strong>是从担当者当天的工作切入的界面。无论从何处进入，详情与演示界面都是相同的。</p>
+    <p class="note ja">※ ②③ は準備中です。公開次第、この説明を更新します。</p>
+    <p class="note zh">※ ②③ 正在准备中，上线后将更新本说明。</p>
+  </section>
+
+  <footer class="guidefoot">
+    <p class="ja">本ページと各画面はコンセプト確認用のモックです。応答はすべて台本、数値はサンプルであり、実在の企業・人物・データとは関係ありません。</p>
+    <p class="zh">本页及各界面均为概念确认用的演示模型。所有回答均为预设脚本，数值均为示例，与真实的企业、人物、数据无关。</p>
+  </footer>
+</main>
+
+<script>
+(function () {
+  function setLang(l) {
+    var doc = document.documentElement;
+    doc.setAttribute('data-lang', l);
+    doc.setAttribute('lang', l);
+    try { localStorage.setItem('mock.lang', l); } catch (e) { /* 保存できなくても表示は切り替わる */ }
+  }
+  var btns = document.querySelectorAll('[data-lang-btn]');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].addEventListener('click', (function (btn) {
+      return function () { setLang(btn.getAttribute('data-lang-btn')); };
+    })(btns[i]));
+  }
+})();
+</script>
 </body>
 </html>
