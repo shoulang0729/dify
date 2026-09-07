@@ -1,7 +1,7 @@
 # CLAUDE.md — このリポジトリでの作業ルール
 
-`shoulang0729/dify` は **AIエージェントカタログの UI モック**（`mock/`、GitHub Pages で公開）と、
-**Dify 開発ツール群**（`scripts/`、`tools/`）を置くリポジトリ。
+`shoulang0729/dify` は次の **4 区分**を置くリポジトリ：**①デモ**＝`mock/`（AIエージェントカタログの UI モック、GitHub Pages で公開）／**②実装ソース**＝`dify/`（マスタ DSL・環境レイヤー・KB・テスト）・`scripts/`・`tools/`／**③ユースケース・シナリオ**＝`docs/`（設計書・実装リファレンス）・`mock/js/data/scenarios/`（デモ台本）／**④ダミーデータ**＝`data/world/`（架空世界マスタ）・`dify/kb/`・`dify/tests/`。地図はトップ `README.md`、管理番号からの索引は `docs/service-map.md`（生成物）。
+Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環境へ `dify/env/<env>/env.yml` の差し替えでリリースする（§2-12）。
 （SwingTrainer アプリ本体は別リポ `shoulang0729/Dify.SwingTrainer`。）
 
 作業は **architect → implementer → reviewer** の3エージェント分業で進める（`/feature <お題>`）。
@@ -72,6 +72,7 @@
 - `.github/workflows/pages.yml` は **`path: mock`** で `mock/` を**サイトのルート**として公開。URL に `/mock/` は**含まれない**（`https://shoulang0729.github.io/dify/`）
 - **`mock/css/**`・`mock/js/**` も公開対象**。`catalog.html`/`index.html` からの参照は**相対パスのみ**（先頭 `/`・`../` 禁止＝`file://` でも開ける）。`mock/` 配下に `_` 始まりのディレクトリを作らない
 - `mock/.nojekyll` 必須
+- **`mock/` ＝ 4 区分の①デモ。改名しない**（`localStorage` の `mock.lang`/`mock.theme` と過去 Issue/PR のリンクが load-bearing）
 - 検出：`tools/verify.mjs`
 
 ### 2-9. 顧客版カタログへの差し替えは「データ層だけ」
@@ -82,7 +83,9 @@
 
 ### 2-10. シークレットを置かない
 - Dify のトークン／Cookie／API キーは**環境変数渡し**。コミット・チャット貼り付け禁止
-- `.gitignore` で `.env*`・`*.key`・`*.pem`・`secrets/` を除外済み
+- `.gitignore` で `.env`・`.env.*`（`.env.example` は除く）・`*.key`・`*.pem`・`secrets/`・`dify/build/` を除外済み。設定ファイルはリポジトリの外（`~/.config/dify/env`）
+- **`dify/env/**/env.yml` にも顧客実名・実 URL・dataset id・キーを書かない**。環境固有の値は `${VAR}` で環境変数から渡す。顧客は `customer-a` のような匿名 id
+- 検出：`tools/verify.mjs`（§12 env に秘密・実名が無い）
 
 ### 2-11. 管理番号（サービスの呼び名）
 - サービスは **`<分類コード>-<2桁通番>`** で呼ぶ：内部 id を大文字化し通番を 2 桁ゼロ埋め（`kn2` → `KN-02`、`pt8` → `PT-08`）。**変換のみ**で別データは持たない。台帳は `docs/handoff/service-index.md`
@@ -90,6 +93,17 @@
 - **通番は分類内の追加順、永久欠番**（削除しても再利用しない）。中分類を移しても番号は変えない。顧客実名版に差し替えても番号は不変（§2-9）
 - なぜ：設計書・Issue・PR・チャットで「KN-05 の中国語台本 3 往復目」と言えば一意に決まる
 - 検出：`tools/verify.mjs`（`SVCS[].id` が `/^[a-z]{2}\d+$/`・変換後の番号が重複しない）＋ `tools/regress.mjs` の id 一覧（欠番の台帳）
+
+### 2-12. 環境差分は `dify/env/<env>/env.yml` に閉じる
+- **何を**：モデル（provider/name、用途 `chat`/`reasoning`/`embedding`/`rerank`）・KB id・社名と拠点の表記・Start 変数の既定・フラグ（`cross_border`/`partner_mode`/`pipl_mask`）は env にだけ書く。マスタ DSL（`dify/apps/*.yml`）には**架空世界マスタの語と Cloud で動く既定値**（`langgenius/openai/openai` `gpt-4o-mini`・`dataset_ids: []`）だけを書く。プレースホルダ（`{{…}}`）は入れない
+- **なぜ**：マスタ 1 本を社内・顧客 A・顧客 B へ配るため。DSL を環境ごとに fork すると差分が追えなくなる。プレースホルダを入れないのは Cloud への URL インポート（マスタをそのまま貼る）を壊さないため
+- **どこで検出**：`scripts/dify/render.py --env cloud-master --all --check` の出力がマスタと**バイト一致**／`tools/verify.mjs` §12（env のスキーマ・秘密や実名が無い）／`render.py --strict`（未解決の `${VAR}`・未一致の override）
+- 設計書：`docs/handoff/2026-09-07-repo-layout-v2.md` §3・§4
+
+### 2-13. 架空データの正本は `data/world/`
+- **何を**：会社（青嶺精工／青岭精工／Seirei Seiko Co., Ltd.）・拠点（蘇州工場・Japan HQ）・人・部署・品番・設備・取引先記号・KPI・文書番号体系・カレンダー。台本（`mock/js/data/scenarios/**`）・KB 用文書（`dify/kb/**`）・テスト（`dify/tests/**`）・ユースケース文書はここにある値だけを使う。**新しい名前・数字はまずマスタに足す**
+- **なぜ**：4 か所に同じ架空世界が散らばり、既に食い違っている（社名の英名が無かった・`K社`/`K 社`・役職ゆれ）。顧客環境では実データに差し替える境目でもある
+- **どこで検出**：`node tools/check-world.mjs`（`npm run world`。**warn のみ・CI には入れない**）。食い違いを潰す PR では `--strict`。未統一の一覧は `data/world/README.md`
 
 ---
 
@@ -100,6 +114,8 @@ node tools/verify.mjs     # 構文 / i18n 一致 / 未定義・未使用キー /
 node tools/regress.mjs    # データ層スナップショット比較（件数・id）。FAIL = 意図しない増減
 node tools/regress.mjs --update   # 設計書に書かれた意図的なデータ変更のときだけ基準を更新
 npm test                  # 上 2 つをまとめて実行（CI の verify ワークフローと同じ）。PR では GitHub Actions の `verify` が自動で走る
+npm run index             # docs/service-map.md（管理番号の索引）を再生成。verify §11 が鮮度を検査するので、サービスを足したら必ず
+npm run world             # data/world/ と台本・文書の食い違いを報告（warn のみ。CI には入れない）
 ```
 
 **1つでも FAIL、または §2 の逸脱があればマージしない。**
@@ -123,13 +139,16 @@ npm test                  # 上 2 つをまとめて実行（CI の verify ワ�
 - `main` 直 commit 禁止。`feat/<issue>-<slug>` 等で作業 → PR → **squash マージ** → ブランチ削除
 - コミットメッセージは意味のあるものに。PR 本文に設計書パス・変更要約・検証結果・触っていない範囲
 - 並列は**ファイル集合が重ならないときだけ**。**同じファイル**を触るお題は直列。分割後は `css/components.css`（デザイン）／`js/data/scenarios/<分類>.js`（台本）／`js/data/*.js`（データ）／`js/render.js`（描画）が別ファイルなので、**別ファイルなら並列可**
+- **リリースは `release/<env>/<YYYYMMDD>` タグ**（同日 2 回目は `-2`）。環境ごとの記録は `dify/CHANGELOG.md`。**顧客ごとにブランチを切らない**（差分は `dify/env/` で吸収）
 - 設計書は機能ごとに `docs/handoff/YYYY-MM-DD-<slug>.md`
 
 ---
 
 ## §6 バックログ（v2 以降）
 
-- **Dify Export / Import 自動化（git ⇄ Dify 同期）**：Cloud は Cloudflare／Cookie 認証で壊れやすい。本格運用はセルフホスト後（Issue #3）
+- **Dify Export / Import 自動化（git ⇄ Dify 同期）**：**import 方向（git → Dify）は #84 の `render.py`／`release.py` で実装**（Cloud は URL インポート、セルフホストは Console API）。export 方向（Dify → git）のみ Issue #3 に残る（セルフホスト後）
+- **リポジトリ構成 v2（#84）**：4 区分・`data/world`・`dify/env`・リリースモデル。設計書 `docs/handoff/2026-09-07-repo-layout-v2.md`。PR-1（地図・索引・world）済み、PR-2（env＋render）・PR-3（release＋CHANGELOG）進行中
+- **Dify Cloud 実装（#82）**：第 1 弾 KN-01・DC-01 を `dify/apps/` に置き、Mac の Claude Code（`/dify-deploy`）で投入・テスト。結果は `dify/results/`
 - **モック ②ダッシュボード / ③業務フィード**：§2-3 の共通レイヤー上に実装。**直列**（`T` 末尾・`renderMain` ホーム分岐・`PATTERNS`・verify §10・`regress.baseline.json` が重なる）。設計書 `docs/handoff/2026-09-06-patterns-dash-feed.md`。①②③ すべて実装済み（#42：PR-1 #47・デザインパス #51・PR-2 #52）。見え方の改善は Claude Design に引き渡す予定（トークン名は変えず値だけ触る／レイアウトは 2 つ目の `<style>` と `render*`）
 - **顧客版カタログ（製造業・日中2拠点）**：シナリオ粒度で **7 分類 33 サービス**に再編し、A-1（#30）でデータ層を差し替え済み（§2-9）。A-2 パートナー連携 8 件・B-1 デモ遷移テンプレート・B-2 台本は投入済み。2026-09-07 に **DC-08 報告レビュー（提出前チェック／受領後の論点整理）** と **GN-06 頼まれ事・放置業務の追跡** を追加し **8 分類 17 中分類 43 サービス**（提供中 12／試行版 23／構想 8）。設計書は `docs/handoff/2026-09-06-*.md`、実現性は `docs/dify/`
 - **ユースケース化の段取り**：`/usecase`（`.claude/commands/usecase.md`）。Notion DB「ユースケース候補」の状態 `候補` → `確認中` → `設計中` → `実装中` → `公開済み`。統廃合は 5 軸（分類・タグ・ペルソナ・入出力・出口）の一致数で判定。Notion 原文はコミットしない（§2-10）
