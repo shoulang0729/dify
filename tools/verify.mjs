@@ -5,11 +5,12 @@
  * 使い方:  node tools/verify.mjs
  * 終了コード: 0 = 全 PASS / 1 = 1つ以上 FAIL
  *
- * チェック項目（設計書 docs/handoff/2026-09-07-split-catalog.md §4-2。PR-B でファイル分割対応）:
+ * チェック項目（設計書 docs/handoff/2026-09-07-split-catalog.md §4-2。PR-C でアプリ層も分割対応）:
  *   1.   JS 構文（各 JS ファイルを個別に node --check）
- *   1-A. （新規）二重宣言：全 JS を <script src> の順に連結して node --check
+ *   1-A. （新規）二重宣言：全 JS（データ層＋アプリ層）を <script src> の順に連結して node --check
  *   1-B. （新規）読み込み契約：実ファイル存在／相対パスのみ／scenarios タグ集合＝ディレクトリの *.js 集合／
- *        読み込み順／catalog.html に <style> が 0 個
+ *        読み込み順が data/ui → data/catalog → data/home → data/style → data/scenarios/* → app → render → events／
+ *        <script src> 15 本・インライン <script> 0 個／catalog.html に <style> が 0 個
  *   2.   i18n キー集合の一致（T / TAGS / PATTERNS / CATS / SVCS / TEMPLATES が ja/zh/en を全て持ち、空でない。en にかな残りなし）
  *   3.   未定義キー参照（t('key') / T.key が T に存在するか。全 JS ファイルの連結テキストを対象）
  *   4.   未使用キー（T にあるがどこからも参照されない）※警告扱い（FAIL にしない）
@@ -17,7 +18,8 @@
  *   5-A. index.html のトークン非コピー（mock/index.html が css/tokens.css を <link> し、トークン定義のコピーを持たない）
  *   6.   データ整合（SVCS の cat/sub が CATS に存在、tags が TAGS に存在、st ∈ {1,2,3}、added は YYYY-MM-DD、管理番号重複なし）
  *   7.   共通レイヤー契約（state の必須キー / data-act 一覧 / detectLang 存在 / localStorage キー）。
- *        対象は js/app.js + js/render.js + js/events.js（あれば）＋ catalog.html のインライン <script>（PR-C 前提）
+ *        対象は js/app.js + js/render.js + js/events.js の連結（PR-C：アプリ層はすべてファイル分割済み。
+ *        インライン <script> が残っていれば loadMock() がそれも拾う＝退行時も検査は効く）
  *   8.   Pages 設定（pages.yml の path: mock / mock/.nojekyll / mock/ 直下に _ 始まりディレクトリが無い）
  *   9.   シナリオ整合（SCENARIOS の id が SVCS に存在／template が TEMPLATES に存在／id 接頭＝ファイル名／台本の無い SVCS は warn）
  *   10.  ホームデータ整合（HOME / FEED）
@@ -108,25 +110,29 @@ section('1-B. 読み込み契約');
     if (!missingFromTags.length && !missingFromDir.length) ok(`scenarios/ の *.js ${dirFiles.size} 個 ＝ <script src> のタグ集合`);
   }
 
-  // ④ 読み込み順が data/ui → data/catalog → data/home → data/style → data/scenarios/*（設計順）→（app/render/events。PR-C 以降）
+  // ④ 読み込み順が data/ui → data/catalog → data/home → data/style → data/scenarios/* → app → render → events（設計順・PR-C で確定）
   const scenarioOrder = ['kn', 'qa', 'dc', 'lg', 'nm', 'en', 'gn', 'pt'];
-  const expectedDataOrder = [
+  const expectedOrder = [
     'js/data/ui.js', 'js/data/catalog.js', 'js/data/home.js', 'js/data/style.js',
-    ...scenarioOrder.map(p => `js/data/scenarios/${p}.js`)
+    ...scenarioOrder.map(p => `js/data/scenarios/${p}.js`),
+    'js/app.js', 'js/render.js', 'js/events.js'
   ];
-  const actualDataOrder = scriptSrcs.filter(s => s.startsWith('js/data/'));
-  if (JSON.stringify(actualDataOrder) !== JSON.stringify(expectedDataOrder)) {
-    fail(`<script src> の順序が設計書 §2-1 と異なる:\n   期待: ${expectedDataOrder.join(' → ')}\n   実際: ${actualDataOrder.join(' → ')}`);
+  if (JSON.stringify(scriptSrcs) !== JSON.stringify(expectedOrder)) {
+    fail(`<script src> の順序が設計書 §2-1 と異なる:\n   期待: ${expectedOrder.join(' → ')}\n   実際: ${scriptSrcs.join(' → ')}`);
     bad++;
-  } else ok('<script src> の順序が設計書 §2-1 と一致（data/ui → data/catalog → data/home → data/style → data/scenarios/*）');
-  // app/render/events が存在する場合（PR-C 以降）は data/* の後ろに来ていること
-  const appTags = scriptSrcs.filter(s => !s.startsWith('js/data/'));
-  const lastDataIdx = Math.max(...expectedDataOrder.map(s => scriptSrcs.indexOf(s)));
-  for (const s of appTags) {
-    if (scriptSrcs.indexOf(s) < lastDataIdx) { fail(`<script src="${s}">: データ層より前に読み込まれている`); bad++; }
-  }
+  } else ok('<script src> の順序が設計書 §2-1 と一致（data/ui → … → data/scenarios/pt → app → render → events）');
 
-  // ⑤ catalog.html に <style> ブロックが 0 個（PR-A の帰結。PR-B でも維持を再確認）
+  // ⑤ <script> タグ 15 本すべてが src 付き（インライン <script> が 0 個）
+  const scriptTagCount = [...html.matchAll(/<script\b/g)].length;
+  if (scriptTagCount !== scriptSrcs.length) {
+    fail(`catalog.html の <script> タグ ${scriptTagCount} 個のうち src 無しが ${scriptTagCount - scriptSrcs.length} 個ある（インライン <script> は禁止）`);
+    bad++;
+  } else if (scriptSrcs.length !== 15) {
+    fail(`<script src> が ${scriptSrcs.length} 本（期待 15 本 = data 12 + app/render/events 3）`);
+    bad++;
+  } else ok('<script src> 15 本すべてに src があり、インライン <script> は 0 個');
+
+  // ⑥ catalog.html に <style> ブロックが 0 個（PR-A の帰結。PR-B/PR-C でも維持を再確認）
   const styleCount = [...html.matchAll(/<style>/g)].length;
   if (styleCount !== 0) { fail(`catalog.html に <style> ブロックが ${styleCount} 個残っている`); bad++; }
 

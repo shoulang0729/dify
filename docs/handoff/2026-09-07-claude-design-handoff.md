@@ -28,25 +28,31 @@ Dify で実装する前の**画面案**であり、応答は台本・数字は�
 
 ## 2. ファイル構成と「層」
 
+`catalog.html` は層ごとにファイル分割済み（Issue #77 リファクタリング P2。設計書 `docs/handoff/2026-09-07-split-catalog.md`）：
+
 ```
 mock/
-├── index.html      デモガイド（日／中）。catalog.html のトークン定義をコピーして使っている
-├── catalog.html    本体。1 ファイル完結（外部 CSS/JS/画像なし、ビルドなし、約 520 KB）
-└── README.md
-tools/
-├── verify.mjs      静的検査（i18n 一致・トークン・共通レイヤー・データ整合）
-└── regress.mjs     データ層スナップショット比較（+ regress.baseline.json）
+├── index.html            デモガイド（日／中）。css/tokens.css を <link> で共有（コピーしない）
+├── catalog.html          殻。<link> 2 本と <script src> 15 本だけ。ここは基本触らない
+├── css/tokens.css        トークン層
+├── css/components.css    コンポーネント CSS
+├── js/data/…             データ層（触らない。style.js の SVG path だけ可）
+├── js/app.js             状態・ヘルパー（触らない）
+├── js/render.js          描画（変えてよい）
+└── js/events.js          遷移・起動（触らない）
 ```
 
-`catalog.html` は上から次の順で、**層ごとに触ってよい／いけないが決まっている**：
-
-| 位置 | 層 | 触ってよいか |
+| ファイル | 層 | 触ってよいか |
 |---|---|---|
-| 1 つ目 `<style>`（約 290 行） | **トークン層**：`--ntt-*` ブランドパレット → セマンティックトークン（light）→ `:root[data-theme="dark"]` で上書き → `data-lang` 別フォント | セマンティックトークンの**値**は変えてよい。名前は変えない。`--ntt-*` は**名前も値も不変**。新トークンは light と dark を**同時に**定義 |
-| 2 つ目 `<style>`（約 625 行、139 クラス） | **コンポーネント CSS** | 自由に変えてよい。ただし色は `var(--…)` のみ、`#RRGGBB` 直値は書かない（verify が FAIL にする） |
-| `<script>` 前半 | **データ層**：`T`（UI 文言 73 キー）/ `PATTERNS` / `TAGS` / `CATS` / `SVCS` / `TEMPLATES` / `SCENARIOS` / `HOME` / `FEED` / `CAT_STYLE` | **触らない**（`CAT_STYLE` の SVG path だけは差し替え可） |
-| `<script>` 中盤 | **状態と遷移**：`state`、`data-act` の click ハンドラ、`detectLang`、localStorage | **触らない** |
-| `<script>` 後半 | **描画**：`renderChrome / renderSeg / renderSidebar / cardHTML / gridHTML / renderDash / dashSectionsHTML / renderFeed / feedSectionsHTML / feedItemHTML / panelHTML / resultHTML / chipsHTML / renderMain / addMsg / showTyping` | マークアップ・クラス名は変えてよい。**`data-act` / `data-arg` / `id="search" #msgs #chat-input #home-holder` は残す**（遷移とテストが依存） |
+| `mock/css/tokens.css`（287 行） | **トークン層**：`--ntt-*` → セマンティック（light）→ `:root[data-theme="dark"]` → `data-lang` 別フォント | セマンティックトークンの**値**は変えてよい。名前は変えない。`--ntt-*` は名前も値も不変。新トークンは light と dark を**同時に**。**dark ブロックは 1 つだけ**（増やすと検査が素通りする）。**`index.html` も同じファイルを見ているので、壊すと 2 画面同時に壊れる** |
+| `mock/css/components.css`（674 行、139 クラス） | **コンポーネント CSS** | 自由に変えてよい。色は `var(--…)` のみ、`#RRGGBB` 直値は禁止（verify FAIL） |
+| `mock/js/render.js`（665 行） | **描画**：`renderChrome / renderSeg / renderSidebar / cardHTML / gridHTML / todoHTML / bindHomeSearch / dashSectionsHTML / renderDash / feedItemHTML / feedSectionsHTML / renderFeed / panelHTML / resultHTML / chipsHTML / renderMain / addMsg / showTyping / renderAll` | マークアップ・クラス名は変えてよい。**`data-act` / `data-arg` / `id="search" #msgs #chat-input #home-holder` は残す**。`bindHomeSearch` の IME 対策（`renderMain()` を呼ばず `#home-holder` だけ差し替える）も残す |
+| `mock/js/data/style.js`（19 行） | **分類アイコン**（`CAT_STYLE` の SVG path） | 差し替え可。色は CSS の `--cat-*` 側 |
+| `mock/js/data/{ui,catalog,home}.js` ＋ `js/data/scenarios/*.js` | **データ層** | **触らない** |
+| `mock/js/app.js`・`mock/js/events.js` | **状態と遷移**：`state`・`data-act` ハンドラ・`detectLang`・localStorage | **触らない** |
+| `mock/catalog.html` | 殻 | `<link>`/`<script src>` の並びを変えない。body のマークアップは `renderSidebar`/`renderMain` が差し込む器なので基本触らない |
+
+Pages を確認するときは初回だけ強制リロード（Cmd/Ctrl+Shift+R）すること（分割後は HTML と CSS/JS のキャッシュが数分ずれることがある）。
 
 ---
 
