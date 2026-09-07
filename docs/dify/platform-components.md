@@ -18,7 +18,7 @@ Dify のアプリ（Chatflow／Workflow）だけでは成立しない部分を�
 | 書き込む側 | `due`：QMS 不具合票 → Webhook Trigger → Workflow → POST（QA-01）／BPMS 差し戻し → 同（DC-05）。`routine`：Schedule Trigger（PC-11）が実行前に POST（NM-03 LG-03）。`notify`：KN-05 の通達巡回・EN-01 の仕様更新検知（PC-12）が POST |
 | 代替案 | **BPMS の通知・タスク一覧をそのままフィード源にする**（Dify は BPMS に書くだけ、PC-16 が BPMS API を読む）。BPMS が全拠点で使われているならこちらが正。二重通知を避けられる |
 | 依存する外部システム | QMS（不具合票）、BPMS／稟議 WF（差し戻し・期限）、SSO（担当者 id） |
-| 使うサービス | QA-01 DC-05 QA-02 NM-03 LG-03 KN-05 EN-01（モックの 7 件）＋ QA-03 GN-02 PT-01 PT-07 |
+| 使うサービス | QA-01 DC-05 QA-02 NM-03 LG-03 KN-05 EN-01（モックの 7 件）＋ QA-03 GN-02 PT-01 PT-07。**GN-06 頼まれ事・放置業務の追跡＝主要な書き手**（`source = task`。`due`＝期限つきの票〔表示開始は期限の 6 営業日前〕／`routine`＝繰り返し票の次回分〔PC-11 から自動起票〕／`notify`＝放置日数が **14 日で担当者本人・30 日で依頼者**、WIP 上限超過、週次のまとめ、**票の状態が「相談中」になったら上長へ**。冪等キーは `task_id + threshold`。詳細は `usecases/GN-06.md` §4・§8） |
 | 段階導入 | 無くても ①② は動く。第 1 段：手動登録＋Schedule 由来の `routine` のみ。第 2 段：QMS/BPMS Webhook。第 3 段：BPMS 統合（代替案） |
 | 工数感 | M |
 | リスク | BPMS と二重通知／担当者マッピング（部署→人）の保守／絶対日付とタイムゾーン（蘇州 UTC+8・日本 UTC+9）／管理番号をフィード項目に出さない（D-14） |
@@ -152,7 +152,7 @@ Dify のアプリ（Chatflow／Workflow）だけでは成立しない部分を�
 | なぜ Dify 単体では足りないか | Trigger は起動のみ。「どの定例が・いつ・誰宛に・失敗したらどうする」の台帳と、タイムゾーン・冪等の運用が外側に要る |
 | 実現案 | 定例台帳 `jobs`：`job_id`／`svc_id`／`cron`／`tz`（`Asia/Shanghai` か `Asia/Tokyo`）／`owner`／`notify_on_fail`（PC-14 のチャネル）／`last_run`／`last_status`。Schedule Trigger（1.10.0〜、セルフホスト前提）→ Workflow 先頭で `run_key = <job_id>-<日付>` を作り PC-01 に `routine` を POST（冪等）→ 本処理 → 失敗時は `if-else` → `tools/wecom`／`tools/email`。祝日（両国）は KB か Code の定数（GN-04 と共用） |
 | 依存する外部システム | 通知チャネル（PC-14）、日報の置き場（ファイルサーバ／COS） |
-| 使うサービス | NM-03（毎日 8:30）LG-03（毎週月曜）KN-05（通達巡回）PT-01（週次与信）GN-02（月初）PT-08（受講管理の週次）PC-05 の夜間全量同期 |
+| 使うサービス | NM-03（毎日 8:30）LG-03（毎週月曜）KN-05（通達巡回）PT-01（週次与信）GN-02（月初）PT-08（受講管理の週次）**GN-06（定型の自動起票＝`recurrence` から次回票を作る／毎朝 8:30 の放置日数の再計算と 14 日・30 日の閾値判定／毎週金曜 16:00 の週次まとめ／四半期末の棚卸し。祝日・締め日は GN-04 と共用の稼働カレンダーで避ける）**PC-05 の夜間全量同期 |
 | 段階導入 | 無い場合：担当者が手動実行（③ の `routine` は表示だけ） |
 | 工数感 | S |
 | リスク | Cloud での Trigger 可否は未確認（F-7 でセルフホスト）／両国のタイムゾーン差と祝日／二重起動 |
