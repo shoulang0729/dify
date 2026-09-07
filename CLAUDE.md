@@ -37,7 +37,7 @@
 - 検出：`tools/verify.mjs`（直値検出・`var()` 未定義検出・dark ブロック存在）
 
 ### 2-3. 共通レイヤーの契約（パターンを増やすときの土台）
-- **データ**：`CATS`（大分類→中分類）/ `SVCS`（サービス、`cat`/`sub`/`st`/`tags`/`name`/`desc`）/ `TAGS` / `TEMPLATES`（デモ画面テンプレート 5 種 `qa`/`upload`/`form`/`diff`/`lookup` の名称・説明、3 言語）/ `SCENARIOS`（サービス id → `{ template, persona{name,role,site,native}, steps{ja,zh,en}, input?, result?, script{ja,zh} }`。**台本 `script` と `input`/`result` は ja/zh のみ**＝§2-5 の実装。`SVCS` に埋め込まず別定数）/ `HOME`（② ダッシュボード用：`frequent`〔よく使う 6 件・サンプル利用件数〕・`recommended`〔おすすめ 3 件・理由 3 言語〕。**`SVCS` に埋め込まず別定数**。参照 id は `SVCS`/`CATS` に存在すること）
+- **データ**：`CATS`（大分類→中分類）/ `SVCS`（サービス、`cat`/`sub`/`st`/`tags`/`name`/`desc`）/ `TAGS` / `TEMPLATES`（デモ画面テンプレート 5 種 `qa`/`upload`/`form`/`diff`/`lookup` の名称・説明、3 言語）/ `SCENARIOS`（サービス id → `{ template, persona{name,role,site,native}, steps{ja,zh,en}, input?, result?, script{ja,zh} }`。**台本 `script` と `input`/`result` は ja/zh のみ**＝§2-5 の実装。`SVCS` に埋め込まず別定数）/ `HOME`（② ダッシュボード用：`frequent`〔よく使う 6 件・サンプル利用件数〕・`recommended`〔おすすめ 3 件・理由 3 言語〕。**`SVCS` に埋め込まず別定数**。参照 id は `SVCS`/`CATS` に存在すること）/ `FEED`（③ 業務フィード用：`persona`・`mine`〔担当分類 3〕・`recent`〔最近使った 4〕・`items`〔疑似イベント 7 件、`kind` は `due`/`routine`/`notify`、絶対日付は持たない〕。**`SVCS` に埋め込まず別定数**。管理番号はフィード項目に出さない）/ `CAT_STYLE`（分類 id → インライン SVG アイコン。色は CSS の `--cat-*` トークン側）
 - **状態**：`state = { pattern, lang, theme, openCats, selCat, selSub, lastCat, selSvc, view, query, log }`。`view` は `list` / `detail` / `chat` / `demo`。`log` はデモで消費した台本ターン `[{lang,q,a}]`（`log.length` が次に消費する index。言語切替後の再描画で会話を復元）
 - **遷移**：`document` の `click` ハンドラの `data-act`（`pattern`/`all`/`cat`/`sub`/`svc`/`back`/`backdetail`/`start`/`send`/`run`/`chip`/`restart`/`gocat`）。`gocat` は分類タイルから直接その分類の一覧へ（`cat` と違いトグルしない）。`start` は `SCENARIOS` にあれば `demo`、なければ従来の `chat` へ（フォールバックを残す）
 - **ホーム**：`view === 'list'` かつ `selCat`/`selSub`/`query` が全部空の状態。ここだけ `pattern` で描き分ける（① グリッド / ② `renderDash` / ③ `renderFeed`）。`detail`/`chat`/`demo` は 3 パターン完全共通
@@ -125,6 +125,6 @@ node tools/regress.mjs --update   # 設計書に書かれた意図的なデー�
 ## §6 バックログ（v2 以降）
 
 - **Dify Export / Import 自動化（git ⇄ Dify 同期）**：Cloud は Cloudflare／Cookie 認証で壊れやすい。本格運用はセルフホスト後（Issue #3）
-- **モック ②ダッシュボード / ③業務フィード**：§2-3 の共通レイヤー上に実装。**直列**（`T` 末尾・`renderMain` ホーム分岐・`PATTERNS`・verify §10・`regress.baseline.json` が重なる）。設計書 `docs/handoff/2026-09-06-patterns-dash-feed.md`。② は実装済み（#42 PR-1）、③ は PR-2
+- **モック ②ダッシュボード / ③業務フィード**：§2-3 の共通レイヤー上に実装。**直列**（`T` 末尾・`renderMain` ホーム分岐・`PATTERNS`・verify §10・`regress.baseline.json` が重なる）。設計書 `docs/handoff/2026-09-06-patterns-dash-feed.md`。①②③ すべて実装済み（#42：PR-1 #47・デザインパス #51・PR-2 #52）。見え方の改善は Claude Design に引き渡す予定（トークン名は変えず値だけ触る／レイアウトは 2 つ目の `<style>` と `render*`）
 - **顧客版カタログ（製造業・日中2拠点）**：シナリオ粒度で **7 分類 33 サービス**に再編し、A-1（#30）でデータ層を差し替え済み（§2-9）。残：A-2 パートナー連携 6 者の追加・B-1 デモ遷移テンプレート・B-2 台本投入。設計書は `docs/handoff/2026-09-06-*.md`、実現性は `docs/dify/`
-- **`top.html` の扱い**：バンドル済みで手編集不可。②③ を `catalog.html` 側に実装したら削除候補
+- **`top.html` の扱い**：バンドル済みで手編集不可。②③ が `catalog.html` に入ったので **削除（PR-3）**。トップ `index.html` はデモガイド（#45）
