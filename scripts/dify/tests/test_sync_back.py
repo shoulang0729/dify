@@ -3,7 +3,7 @@
 
     python3 scripts/dify/tests/test_sync_back.py     # exit 0 で全件 PASS。ネットワークを呼ばない。dify/apps は書き換えない
 
-設計: docs/handoff/2026-09-07-china-models-and-syncback.md §3-7（T1〜T8）
+設計: docs/handoff/2026-09-07-china-models-and-syncback.md §3-7（T1〜T8）／T9 は DI-015 対応（本 PR で追加）
 
 CI（`npm test`）には入れない（`CLAUDE.md` §3 のコマンド集合を変えない）。実行は implementer と reviewer が手で行う。
 """
@@ -277,6 +277,43 @@ def test_t8_multi_llm(tmpdir):
     check("T8: 往復後の dict がマスタと一致", os.path.isfile(out_path) and load(out_path) == load(master))
 
 
+# ---------------------------------------------------------------------------
+# T9: DI-015 — completion_params の食い違いでも自己検証の前に差分要約が出る
+# ---------------------------------------------------------------------------
+
+def test_t9_completion_params_summary_before_exit(tmpdir):
+    """自己検証（S6）で不一致（exit 1）になっても、差分要約（completion_params の
+    マスタ／export 両方の値）を先に stdout へ出す（DI-015）。マスタは無変更のまま。"""
+    master = os.path.join(APPS_DIR, "KN-01-tech-knowledge-qa.yml")
+    data = load(master)
+    changed = False
+    for n in data["workflow"]["graph"]["nodes"]:
+        d = n.get("data") or {}
+        if d.get("type") == "llm":
+            # Cloud 側だけ max_tokens が古い値のまま、という擬似エクスポートを作る
+            d["model"]["completion_params"]["max_tokens"] = 4096
+            changed = True
+    check("T9-precondition: llm ノードが見つかる", changed)
+
+    out_dir = os.path.join(tmpdir, "t9")
+    os.makedirs(out_dir, exist_ok=True)
+    exported = os.path.join(out_dir, "export.yml")
+    write_yaml(exported, data)
+
+    before = load(master)
+    result = run(["--code", "KN-01", "--out", out_dir, "--dry-run", exported])
+    combined = result.stdout + result.stderr
+
+    check("T9: exit 1", result.returncode == 1, f"exit={result.returncode}")
+    check("T9: stdout に差分要約（モデル差分の行）が出る", "モデル差分:" in combined, combined)
+    check("T9: completion_params.max_tokens の両方の値が出る（マスタ 8192 / export 4096）",
+          "マスタ=8192" in combined and "export=4096" in combined, combined)
+    check("T9: 「差が出たルール」が要約に出る", "差が出たルール:" in combined, combined)
+    out_path = os.path.join(out_dir, "KN-01-tech-knowledge-qa.yml")
+    check("T9: 書き込まれていない（--dry-run）", not os.path.isfile(out_path))
+    check("T9: マスタは無変更", load(master) == before)
+
+
 def main():
     check("前提: sync_back.py が存在する", os.path.isfile(SYNC_BACK))
     before_status = subprocess.run(["git", "status", "--porcelain", "dify/apps/"], cwd=ROOT,
@@ -291,6 +328,7 @@ def main():
         test_t6_unsupported_env(tmpdir)
         test_t7_code_detection(tmpdir)
         test_t8_multi_llm(tmpdir)
+        test_t9_completion_params_summary_before_exit(tmpdir)
 
     after_status = subprocess.run(["git", "status", "--porcelain", "dify/apps/"], cwd=ROOT,
                                    capture_output=True, text=True).stdout
