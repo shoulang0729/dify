@@ -213,6 +213,11 @@
   --status-live-text:    #5BE79B;
   --status-trial-text:   #FFD34D;
   --status-concept-text: #B8C3CC;
+
+  /* --- 影（dark）。--shadow-sm/md はネイビーの薄い影で dark 面にほぼ見えないため、
+     この2行だけ dark で上書きする（§5-6）。--shadow-focus は変えない --- */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.55);
 }
 
 /* tokens/typography.css */
@@ -437,11 +442,14 @@
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-4); }
   .card {
     background: var(--surface-card); border: 1px solid var(--border-card);
-    border-bottom: 2px solid var(--border-card);
+    border-bottom: 2px solid var(--border-card); box-shadow: var(--shadow-sm);
     padding: var(--space-5); cursor: pointer; display: flex; flex-direction: column; gap: 7px;
-    transition: border-bottom-color 160ms var(--ease-standard), background var(--duration-fast) var(--ease-standard);
+    transition: border-bottom-color 160ms var(--ease-standard), background var(--duration-fast) var(--ease-standard),
+                box-shadow var(--duration-base) var(--ease-standard), transform var(--duration-base) var(--ease-standard);
   }
-  .card:hover { border-bottom-color: var(--cat-accent); }
+  .card:hover {
+    border-bottom-color: var(--cat-accent); box-shadow: var(--shadow-md); transform: translateY(-1px);
+  }
   .card .c-crumb {
     font-size: 10.5px; letter-spacing: 0.08em;
     font-weight: var(--weight-bold); color: var(--cat-accent);
@@ -576,6 +584,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .think-dots span { animation: none; opacity: .6; }
+    .card:hover { transform: none; }
   }
   .processing { display: flex; align-items: center; justify-content: center; padding: var(--space-5) 0; }
   .chat-input-row {
@@ -822,6 +831,20 @@
     .dash-hero { flex-direction: column; align-items: stretch; }
     .dash-hero .search { width: 100%; }
     .cat-row { grid-template-columns: 1fr auto; row-gap: var(--space-2); }
+    /* ▼ デザインパス（#42 PR-3）で追記 */
+    .hero { padding: var(--space-8) var(--space-5) var(--space-6); }
+    .hero-top { flex-direction: column; align-items: stretch; }
+    .hero .search { width: 100%; }
+    .hero h1 { font-size: var(--text-h2); }
+    .stat-strip { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+    .stat { border-left: none; padding-left: 0; }
+    .stat-total .stat-n { font-size: 36px; }
+    .stat .stat-n { font-size: 30px; }
+    .dash-body { padding: var(--space-8) var(--space-5) var(--space-12); }
+    .use-row { grid-template-columns: 22px minmax(0, 1fr) auto; row-gap: var(--space-2); }
+    .use-bar { grid-column: 1 / -1; }
+    .cat-row { grid-template-columns: 36px 1fr auto; row-gap: var(--space-2); }
+    .cat-bar { grid-column: 1 / -1; }
   }
 </style>
 </head>
