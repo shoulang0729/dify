@@ -23,6 +23,9 @@ architect（設計）成果物。**アプリコード（`mock/**` `tools/**`）�
 | [`usecases/README.md`](./usecases/README.md) | **43 サービスの一覧**（管理番号・成熟度・実現性・依存 PC・Outline 使用）と、追加時のルール | 全員 |
 | `usecases/<管理番号>.md` | 1 サービス 1 ファイルの実装リファレンス（業務シナリオ・想定インプット・観点・Dify 構成・プロンプト・検証観点・テストシナリオ・別出し・Outline・未確定）。雛形は [`usecases/_TEMPLATE.md`](./usecases/_TEMPLATE.md) | implementer・reviewer |
 
+`usecases/` は**③ユースケース**（設計書 `docs/handoff/2026-09-07-repo-layout-v2.md` §1 の 4 区分）、実際に Dify へ入れる資材（DSL・環境定義・スクリプト）は `dify/`（②）、ダミーデータは `data/world`・`dify/kb`（④）に置く。
+管理番号（`KN-02` など）から ①②③④ を横断する索引は [`docs/service-map.md`](../service-map.md)（生成物。`npm run index` で更新）。
+
 ## 読み方
 
 1. **PM**：`feasibility-33-services.md` の §0（集計と PM 判断待ち）だけ読めば「実装に進めるか」を判断できる。個別サービスの根拠は §3 の折りたたみ。

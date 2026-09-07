@@ -121,6 +121,7 @@ Scope B スライド 12-13「判断・調査は Dify、承認・実行は BPMS�
 
 ### 5-3. 評価データの置き場とダミーの作り方
 
+- **架空世界の正本は `data/world/`。新しい名前・数字はまずそこに足す**（`data/world/README.md`）
 - **実データは置かない**（顧客文書・実名・実発票・実給与）。このリポジトリには **§7 の表（要約）だけ**。実ファイルは実装リポジトリの `eval/<管理番号>/` か Langfuse のデータセットに置く
 - ダミーの作り方：仮社名 **青嶺精工**、拠点は 蘇州工場／日本本社、人物は `SCENARIOS` のペルソナ名を再利用、文書番号は台本の体系（`TR-2024-007`・`NC-2025-0912`・`8D-25-0912`・`C-2609-A`）、金額は RMB／JPY の丸い数字。**実在の型番・会社名・URL を混ぜない**
 - ファイルは生成スクリプトで作る（docx/xlsx/pdf を python-docx・openpyxl 等で。スキャン PDF は生成画像を PDF 化）。スクリプトを残し、成果物はコミットしない
@@ -182,9 +183,9 @@ API キーは環境変数渡し（`CLAUDE.md` §2-10）。ランナーの引数�
 
 | もの | 置き場 | 命名 |
 |---|---|---|
-| export した DSL | 実装リポジトリ `dsl/<管理番号>/<app-name>.yml`（本リポジトリには置かない） | `KN-02-manual-qa.yml` |
+| export した DSL | **本リポジトリ `dify/apps/<管理番号>-<slug>.yml`**（1 サービス 1 ファイル） | `KN-02-manual-qa.yml` |
 | 秘密 | Dify の環境変数（Secret 型）／サーバ側 `.env`。**DSL・プロンプト・PR に書かない** | — |
-| KB id・tool 識別子 | 環境固有。export に含まれるので、環境ごとの差分表を `dsl/README` に持つ | — |
+| KB id・tool 識別子 | **環境固有。DSL には入れず `dify/env/<env>/env.yml` に持つ**（`dataset_ids` は空のまま commit し、`scripts/dify/render.py` が環境ごとに埋める） | — |
 
 - export 前に確認：Secret 型の環境変数の値が export に出ていないこと／`dependencies` の識別子が顧客環境と一致すること
 - DSL の `version` は `0.6.0` 固定。顧客環境の Dify を上げるときは dsl-skill の対応表で `0.7.0` へ移る（Agent v2 は 0.7.0 専用）
@@ -192,6 +193,7 @@ API キーは環境変数渡し（`CLAUDE.md` §2-10）。ランナーの引数�
 ### 7-3. Export/Import 自動化は v2
 
 git ⇄ Dify の同期（Issue #3）は **v2**。Cloud は Console API が壊れやすく、セルフホスト後に着手（`CLAUDE.md` §6）。それまでは手動 export → PR、reviewer は import して動作を見る。
+**import 方向は `docs/handoff/2026-09-07-repo-layout-v2.md` §4 の `render.py`／`release.py` に統合（Issue #84）。export 方向のみ Issue #3 に残る。**
 
 ---
 

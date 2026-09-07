@@ -1,0 +1,14 @@
+dept_id,dept_ja,dept_zh,dept_en,site_id,parent_dept_id,note
+gijutsu,生産技術課,生产技术科,Production Engineering,suzhou,,出典: kn1/dc3/lg2/en3/pt3/pt8 の persona.role
+hozen,設備保全課,设备保全科,Maintenance,suzhou,,出典: kn2 の persona.role
+kanri,管理部,管理部,Administration Division,suzhou,,出典: kn3/kn5/gn4/gn6/pt1/pt4 の persona.role（総務・人事／財務・法務の日本人駐在員が所属）
+seizobu,製造部,制造部,Manufacturing,suzhou,,出典: dc4/lg3 の persona.role（田中浩二）
+seizo2,製造二課,制造二科,Manufacturing Sec. 2,suzhou,seizobu,出典: kn4/qa2/dc5/nm3 の persona.role。parent_dept_id は課名から推定（未確定）
+hinshitsu,品質保証課,品质保证科,Quality Assurance,suzhou,,出典: qa1/qa4/en1/en2 の persona.role
+eigyo,営業・顧客対応,销售・客户对应,Sales & Customer Liaison,suzhou,,出典: qa3/lg4/nm1 の persona.role
+kojocho,工場長室,厂长办公室,Plant Manager Office,suzhou,,出典: dc1/dc2/dc8/lg1/nm5/gn5 の persona.role（工場長本人を含む）
+butsuryu,物流課,物流科,Logistics,suzhou,,出典: dc6/nm4 の persona.role
+koubai,購買課,采购科,Procurement,suzhou,,出典: nm2/pt2/pt6/pt7 の persona.role
+zaimu,財務課,财务科,Finance,suzhou,,出典: gn1/gn2 の persona.role
+seisankanri,生産管理課,生产管理科,Production Control,suzhou,,出典: gn3 の persona.role（呉婷の兼務先。工場長室との重複は README の「未統一」に記載）
+jinji,人事課,人事科,HR,suzhou,,出典: pt5 の persona.role
