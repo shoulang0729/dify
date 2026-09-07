@@ -60,6 +60,8 @@ python3 scripts/dify/kb_upload.py --env $DIFY_ENV --dry-run KN-01
 - あれば再利用・無ければ作成し、`dify/kb/KN-01/` の 3 文書をアップロード → インデックス完了まで待つ（数分）
 - 同名文書はスキップ（再実行しても二重登録しない）
 - 完了したら **Chrome**：KN-01 のアプリを開く → 「知識検索」ノード → **ナレッジを追加** → `KN-01 技術ナレッジQA` を選択 → 保存 → **再公開**
+- **チャンクは区切り `\n\n`・最大 1024 字の custom 固定**（`kb_upload.py` が送信。UI 既定の改行区切りだと条件表・箇条書きが 1 行 1 チャンクに分断される。DI-006）
+- **新規 KB 作成時は Rerank を無効化**（`retrieval_model.reranking_enable: false` を送信。DI-005）。`POST /datasets` がこの項目を受け付けない版では、警告を出して従来どおり作成するので、その場合は Chrome で **ナレッジ → 該当 KB → 検索設定 → Rerank を OFF** にする。既存 KB を再利用する経路では設定を変更しないので、既存 KB は必ず画面で確認する
 
 ### ③ テスト実行と結果の commit
 ```bash

@@ -136,7 +136,7 @@ workflow:
             model: ''
             provider: ''
           score_threshold: null
-          top_k: 4
+          top_k: 8
         query_variable_selector:
         - sys
         - query
