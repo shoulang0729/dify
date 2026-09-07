@@ -598,12 +598,6 @@
     0%, 80%, 100% { opacity: .25; transform: scale(0.85); }
     40% { opacity: 1; transform: scale(1); }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .think-dots span { animation: none; opacity: .6; }
-    .card:hover { transform: none; }
-    .hero-bg .h-belt, .hero-bg .h-node, .hero-copy, .stat-strip, .dash-sec, .feed-sec,
-    .feed-side .side-box, .grid .card, .detail-card, .panel.result, .use-fill, .cat-bar span { animation: none; }
-  }
   .processing { display: flex; align-items: center; justify-content: center; padding: var(--space-5) 0; }
   .chat-input-row {
     flex-shrink: 0; display: flex; gap: var(--space-3); padding: var(--space-4) 36px;
@@ -974,6 +968,13 @@
     .feed-head { flex-direction: column; align-items: stretch; }
     .feed-head .search { width: 100%; }
     .feed-body { grid-template-columns: minmax(0, 1fr); }
+  }
+  /* prefers-reduced-motion は全 animation 宣言より後ろに置く（同じ詳細度なので後勝ち） */
+  @media (prefers-reduced-motion: reduce) {
+    .think-dots span { animation: none; opacity: .6; }
+    .card:hover { transform: none; }
+    .hero-bg .h-belt, .hero-bg .h-node, .hero-copy, .stat-strip, .dash-sec, .feed-sec,
+    .feed-side .side-box, .grid .card, .detail-card, .panel.result, .use-fill, .cat-bar span { animation: none; }
   }
 </style>
 </head>

@@ -46,3 +46,7 @@
 3. 目視：日／中／英 × ライト／ダーク × ①②③・詳細・デモ 5 テンプレート。1100px / 375px で横スクロールなし
 4. zh でヒーロー h1 の明朝表示（Songti SC / SimSun フォールバック）
 5. `prefers-reduced-motion` でアニメーション停止
+
+
+## 取り込み時の修正（Claude Code）
+- `@media (prefers-reduced-motion: reduce)` ブロックが `@keyframes` と各 `animation` 宣言より**前**にあり、同じ詳細度の後続ルールに負けて効いていなかった（Playwright で reduce 指定時に 16 要素が動作）。ブロックをコンポーネント `<style>` の**末尾**へ移動して解消（0 要素）。内容は無変更
