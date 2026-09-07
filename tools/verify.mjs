@@ -10,7 +10,8 @@
  *   2. i18n キー集合の一致（T / TAGS / PATTERNS / CATS / SVCS が ja/zh/en を全て持ち、空でない。en にかな残りなし）
  *   3. 未定義キー参照（t('key') / T.key が T に存在するか）
  *   4. 未使用キー（T にあるがどこからも参照されない）※警告扱い（FAIL にしない）
- *   5. CSS トークン（var(--x) が定義済みか / dark ブロック存在 / コンポーネント CSS に色直値なし / --ntt-* が dark で上書きされていない）
+ *   5. CSS トークン（mock/css/tokens.css・mock/css/components.css を直接読む。var(--x) が定義済みか / dark ブロック存在 / コンポーネント CSS に色直値なし / --ntt-* が dark で上書きされていない）
+ *   5-A. index.html のトークン非コピー（mock/index.html が css/tokens.css を <link> し、トークン定義のコピーを持たない）
  *   6. データ整合（SVCS の cat/sub が CATS に存在、tags が TAGS に存在、st ∈ {1,2,3}、added は YYYY-MM-DD）
  *   7. 共通レイヤー契約（state の必須キー / data-act 一覧 / detectLang 存在 / localStorage キー）
  *   8. Pages 設定（pages.yml の path: mock / mock/.nojekyll）
@@ -23,6 +24,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const HTML = resolve(ROOT, 'mock/catalog.html');
+const INDEX_HTML = resolve(ROOT, 'mock/index.html');
+const TOKENS_CSS = resolve(ROOT, 'mock/css/tokens.css');
+const COMPONENTS_CSS = resolve(ROOT, 'mock/css/components.css');
 const LANGS = ['ja', 'zh', 'en'];
 
 let fails = 0, warns = 0;
@@ -37,9 +41,8 @@ const html = readFileSync(HTML, 'utf8');
 /* ---------- 抽出 ---------- */
 const scriptMatch = html.match(/<script>\s*([\s\S]*?)<\/script>\s*<\/body>/);
 const script = scriptMatch ? scriptMatch[1] : '';
-const styleBlocks = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(m => m[1]);
-const tokenCss = styleBlocks[0] || '';       // トークン定義（:root 群）
-const componentCss = styleBlocks[1] || '';   // コンポーネント CSS
+const tokenCss = existsSync(TOKENS_CSS) ? readFileSync(TOKENS_CSS, 'utf8') : '';           // トークン定義（:root 群）
+const componentCss = existsSync(COMPONENTS_CSS) ? readFileSync(COMPONENTS_CSS, 'utf8') : ''; // コンポーネント CSS
 
 /** ソース中の `const NAME = <literal>;` を安全に評価して取り出す */
 function grab(name) {
@@ -108,6 +111,8 @@ if (T) {
 
 /* ---------- 5. CSS トークン ---------- */
 section('5. CSS トークン');
+if (!existsSync(TOKENS_CSS)) fail(`not found: ${TOKENS_CSS}`);
+if (!existsSync(COMPONENTS_CSS)) fail(`not found: ${COMPONENTS_CSS}`);
 {
   const defined = new Set([...tokenCss.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map(m => m[1]));
   const used = new Set([...(tokenCss + componentCss).matchAll(/var\((--[a-z0-9-]+)/gi)].map(m => m[1]));
@@ -151,6 +156,38 @@ section('5. CSS トークン');
   if (CATS) for (const c of CATS) {
     if (!lc.has(`--cat-${c.id}`)) warn(`CATS.${c.id}: --cat-${c.id} が未定義（既定色 --cat-accent で描画される）`);
   }
+
+  // 5-d（旧 1-B⑤・一部）. catalog.html に <style> ブロックが 0 個
+  const styleCount = [...html.matchAll(/<style>/g)].length;
+  if (styleCount !== 0) fail(`catalog.html に <style> ブロックが ${styleCount} 個残っている（css/*.css に分離すること）`);
+  else ok('catalog.html に <style> ブロックなし');
+
+  // 5-e（旧 1-B①②・一部）. <link rel="stylesheet"> 2 本が tokens → components の順で実在ファイルを相対パスで指す
+  const linkHrefs = [...html.matchAll(/<link\s+rel="stylesheet"\s+href="([^"]+)">/g)].map(m => m[1]);
+  const expectedHrefs = ['css/tokens.css', 'css/components.css'];
+  if (linkHrefs.join(',') !== expectedHrefs.join(',')) {
+    fail(`catalog.html の <link rel="stylesheet"> が想定と異なる: [${linkHrefs.join(', ')}]（期待: [${expectedHrefs.join(', ')}]）`);
+  } else {
+    let linkBad = 0;
+    for (const href of linkHrefs) {
+      if (href.startsWith('/') || href.includes('../')) { fail(`<link href="${href}">: 相対パスでない（先頭 / や ../ を含む）`); linkBad++; }
+      if (!existsSync(resolve(ROOT, 'mock', href))) { fail(`<link href="${href}">: 実ファイルが無い`); linkBad++; }
+    }
+    if (!linkBad) ok('catalog.html の <link rel="stylesheet"> 2 本（tokens → components）が実在ファイルを相対パスで指している');
+  }
+}
+
+/* ---------- 5-A. index.html のトークン非コピー ---------- */
+section('5-A. index.html のトークン非コピー');
+if (!existsSync(INDEX_HTML)) fail(`not found: ${INDEX_HTML}`);
+else {
+  const indexHtml = readFileSync(INDEX_HTML, 'utf8');
+  if (!/<link\s+rel="stylesheet"\s+href="css\/tokens\.css">/.test(indexHtml)) {
+    fail('index.html に <link rel="stylesheet" href="css/tokens.css"> が無い');
+  } else ok('index.html が css/tokens.css を <link> している');
+  if (/--ntt-[a-z0-9-]+\s*:/i.test(indexHtml)) {
+    fail('index.html にトークン定義のコピー（--ntt-* の定義行）が残っている');
+  } else ok('index.html にトークン定義のコピーなし');
 }
 
 /* ---------- 6. データ整合 ---------- */
