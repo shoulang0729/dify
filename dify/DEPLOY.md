@@ -28,6 +28,16 @@ export DIFY_APP_KEY_DC01=...                # DC-01 アプリの Service API キ
 
 環境変数名の規則：`DIFY_APP_KEY_<管理番号のハイフン無し>`（`KN-01` → `DIFY_APP_KEY_KN01`）。社内・顧客環境向けの追加変数は [`scripts/dify/env.example`](../scripts/dify/env.example) を参照。
 
+### 環境変数の確認のしかた（値を出さない）
+
+キーが入っているかを確かめるときは **設定の有無だけ**を見る。
+
+    [ -n "${DIFY_APP_KEY_KN01:-}" ] && echo set || echo unset
+
+**禁止**：`echo $DIFY_APP_KEY_KN01` / `env` / `printenv` / `set` / `cat ~/.config/dify/*` /
+`export -p`。値がツール出力・ログ・チャットに 1 度でも出たら**そのキーは漏れたものとして扱う**
+（Dify の画面で再発行する。手順は §4 の表の最終行）。
+
 ## 1. 手順
 
 **`DIFY_ENV=cloud-master`（既定）のとき**は render 不要。マスタの raw URL をそのまま貼れる（① そのまま）。
@@ -46,7 +56,11 @@ python3 scripts/dify/render.py --env $DIFY_ENV --all --strict
    - `https://raw.githubusercontent.com/shoulang0729/dify/main/dify/apps/KN-01-tech-knowledge-qa.yml`
    - `https://raw.githubusercontent.com/shoulang0729/dify/main/dify/apps/DC-01-hq-report-draft.yml`
    - `version: 0.6.0` は Cloud より古いので「古いバージョン」の警告が出ることがある → そのまま続行
-3. LLM ノードを開き、**モデルが `openrouter / qwen/qwen3.8-max` になっているか確認**する（DSL の指定どおり入っていれば変更不要）。空欄・エラーならプロバイダー未設定。**勝手に別のモデルに変えない**（変えるなら env とマスタを同時に直す＝`CLAUDE.md` §2-12）
+3. LLM ノードを開き、**モデルが `openrouter / qwen/qwen3.8-max` になっているか確認**する。あわせて
+   モデル設定のパラメータが **`temperature 0.2` / `max_tokens 4096` / `reasoning_effort low` /
+   `exclude_reasoning_tokens ON`** になっているかを見る（DSL の `completion_params` の指定どおりなら変更不要。
+   DI-010 / DI-011 の対処）。空欄・エラーならプロバイダー未設定。
+   **勝手に別のモデル・別の値に変えない**（変えるなら env とマスタを同時に直す＝`CLAUDE.md` §2-12）
 4. 右上「公開」→「公開する」
 5. 左メニュー「API アクセス」→「API キー」→ 新規作成 → 値を環境変数へ（`DIFY_APP_KEY_KN01` / `DIFY_APP_KEY_DC01`）
 
@@ -62,6 +76,9 @@ python3 scripts/dify/kb_upload.py --env $DIFY_ENV --dry-run KN-01
 - 完了したら **Chrome**：KN-01 のアプリを開く → 「知識検索」ノード → **ナレッジを追加** → `KN-01 技術ナレッジQA` を選択 → 保存 → **再公開**
 - **チャンクは区切り `\n\n`・最大 1024 字の custom 固定**（`kb_upload.py` が送信。UI 既定の改行区切りだと条件表・箇条書きが 1 行 1 チャンクに分断される。DI-006）
 - **新規 KB 作成時は Rerank を無効化**（`retrieval_model.reranking_enable: false` を送信。DI-005）。`POST /datasets` がこの項目を受け付けない版では、警告を出して従来どおり作成するので、その場合は Chrome で **ナレッジ → 該当 KB → 検索設定 → Rerank を OFF** にする。既存 KB を再利用する経路では設定を変更しないので、既存 KB は必ず画面で確認する
+- **KB を紐づけたら、その場で「知識検索」ノードの検索設定を開いて確認する**。Rerank が勝手に ON になり
+  Rerank モデル（`openrouter / cohere/rerank-4-pro` など）が入っていることがある（DI-012。**cloud-master は UI 既定の Rerank ON を許容する**。方針は
+  `docs/handoff/2026-09-08-thinking-budget-and-streaming.md` §4 で PM が採択済み）。入っていたらそのまま進めてよい
 
 ### ③ テスト実行と結果の commit
 ```bash
@@ -83,6 +100,14 @@ git push
 
 マスタを直したあと、Cloud 上の既存アプリに反映する手順。
 
+0. **再インポートの前に、Cloud 側が Git と乖離していないか見る。**
+   Chrome で対象アプリを「DSL をエクスポート」→ 落ちたファイルを
+
+       python3 scripts/dify/sync_back.py ~/Downloads/<番号>*.yml --dry-run
+
+   に掛け、差分要約を読む。**モデル・プロンプトに身に覚えのない差分があれば、そこで止めて報告する**
+   （2026-09-08 に DC-01 の Cloud 下書きが `gpt-4o-mini` になっていた。Git に無い変更＝ DI-013）。
+   差分が `dataset_ids` / `dependencies` / `version` / Rerank 設定だけなら、そのまま 1 番へ進んでよい
 1. Studio でそのアプリを開く → 右上「…」→ **「DSL をインポート」**（既存アプリを上書き更新できるかは**版によるため確認要**。2026-09-07 時点で未確認）
 2. 上書きできない版だった場合は、**新規アプリとして作成し、旧アプリの名前に `(old)` を付けて残す**（`/dify-deploy` の既定動作と同じ）。API キーは新アプリで再発行し、環境変数を差し替える
 3. どちらの場合も **再インポート後に「公開」**し、KN-01 系は**知識検索ノードの KB 紐づけをやり直す**（`dataset_ids` は空で入るため）
@@ -112,6 +137,8 @@ dify/DEPLOY.md に従って KN-01 と DC-01 を投入・テストし、結果を
 | モデルのエラー（provider not found 等） | `openrouter` プラグイン未導入、またはそのアカウントで当該モデルが未提供 | 設定 → モデルプロバイダーで OpenRouter を追加。モデルが一覧に無ければ手入力（customizable-model）を試し、それでも駄目なら `KNOWN_ISSUES.md` に `DI-xxx` で起票して止まる |
 | インポートで「バージョンが古い」警告 | `version: 0.6.0` と Cloud の差 | 警告なら続行。**エラー**で止まる場合はエラー文をそのまま Issue に貼る |
 | `kb_upload.py` が `タイムアウト` | 大きい文書のインデックス中 | `--timeout 1800` で再実行（同名文書はスキップされる） |
+| `HTTP 504`（本文 `error code: 504`）が 120 秒前後で返る | blocking 受信で Cloud 前段のゲートウェイに掛かった（DI-010） | 既定の streaming を使う（`--blocking` を外す）。それでも遅いときはモデルの `reasoning_effort` を見直す（`docs/handoff/2026-09-08-thinking-budget-and-streaming.md` §2-7） |
+| API キーの値が画面・ログ・チャットに出てしまった | `echo $VAR` などで値を展開した（§0） | **そのキーを漏れたものとして扱う**。Dify の該当アプリ → 「API アクセス」→ 旧キーを削除 → 新規作成し、`~/.config/dify/<env>.env` の該当行を差し替えて `set -a; source ...; set +a` し直す。リポジトリ・Issue・PR に値が残っていないことを `git log -p` で確認する |
 
 報告のしかた：エラー文（HTTP ステータス＋本文）を**そのまま**貼る。API キーは貼らない。
 

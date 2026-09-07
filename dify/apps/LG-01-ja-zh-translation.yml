@@ -175,6 +175,9 @@ workflow:
         desc: 'System は docs/dify/usecases/LG-01.md §5-1（最小構成向けに調整）。モデルは環境に合わせて変更'
         model:
           completion_params:
+            exclude_reasoning_tokens: true
+            max_tokens: 4096
+            reasoning_effort: low
             temperature: 0.2
           mode: chat
           name: qwen/qwen3.8-max
@@ -238,6 +241,9 @@ workflow:
         desc: '照校（reflection）。docs/dify/templates/01-translation-reflection-workflow.yml の EXPERT_SUGGESTIONS の型を、指摘＋修正を1段でやる構成に簡略化'
         model:
           completion_params:
+            exclude_reasoning_tokens: true
+            max_tokens: 4096
+            reasoning_effort: low
             temperature: 0.2
           mode: chat
           name: qwen/qwen3.8-max

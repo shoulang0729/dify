@@ -179,6 +179,9 @@ workflow:
         desc: 'System は docs/dify/usecases/LG-04.md §5-1（最小構成向けに調整）。モデルは環境に合わせて変更'
         model:
           completion_params:
+            exclude_reasoning_tokens: true
+            max_tokens: 4096
+            reasoning_effort: low
             temperature: 0.2
           mode: chat
           name: qwen/qwen3.8-max

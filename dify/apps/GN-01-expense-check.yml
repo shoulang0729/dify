@@ -232,6 +232,9 @@ workflow:
         desc: 'System は docs/dify/usecases/GN-01.md §5-1（最小構成向けに調整。Code の findings が無いため、規程照合は LLM が <context> を見て行う）。モデルは環境に合わせて変更'
         model:
           completion_params:
+            exclude_reasoning_tokens: true
+            max_tokens: 4096
+            reasoning_effort: low
             temperature: 0.2
           mode: chat
           name: qwen/qwen3.8-max

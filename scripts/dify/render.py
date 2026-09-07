@@ -10,7 +10,7 @@
 
 置換ルール（DSL のパス。詳細は設計書 §4-1）
   R1 llm ノードの model                          ← models.chat（models.overrides で個別に models.<role>）
-  R2 question-classifier / parameter-extractor   ← models.reasoning
+  R2 question-classifier / parameter-extractor   ← models.reasoning（completion_params も env から）
   R3 knowledge-retrieval の reranking_model       ← models.rerank（空なら reranking_enable: false）
   R4 knowledge-retrieval の single_retrieval_config.model ← models.reasoning
   R5 knowledge-retrieval の dataset_ids           ← knowledge.<論理KB名>.id（null/未設定は「未解決」警告のみ。exit 1 にしない）
@@ -245,7 +245,8 @@ def render_app(code, data, env, env_masked, replace_table, replace_masked, stric
             if m.get("provider") and m.get("name"):
                 before = dict(d.get("model") or {})
                 after = {**before, "provider": m.get("provider"), "name": m.get("name"),
-                         "mode": m.get("mode", before.get("mode", "chat"))}
+                         "mode": m.get("mode", before.get("mode", "chat")),
+                         "completion_params": m.get("completion_params", before.get("completion_params", {}))}
                 d["model"] = after
                 if after != before:
                     rows.append(("R2", f"{t}:{title}.model", fmt_model(before), fmt_model(after)))
