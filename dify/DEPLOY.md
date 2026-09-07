@@ -9,12 +9,13 @@ PM の Mac（Claude Code CLI ＋ Claude in Chrome）から、`dify/apps/*.yml` �
 - Mac に Python 3（標準ライブラリのみ使用。追加パッケージ不要）と `git`
 - Claude Code CLI でこのリポジトリを clone 済み（`git clone https://github.com/shoulang0729/dify.git && cd dify`）
 - Chrome で Dify Cloud にログイン済み（Claude in Chrome が同じプロファイルを使う）
-- API キーは **環境変数** で渡す（`CLAUDE.md` §2-10）。値は commit しない・チャットに貼らない
+- API キーは **環境変数** で渡す（`CLAUDE.md` §2-10）。値は commit しない・チャットに貼らない。**リポジトリ内に `.env` を作らない**（`git status` に出たら追加しないこと）
 
 ```bash
-cp scripts/dify/.env.example .env          # .env は .gitignore 済み
-# .env を編集して値を入れたら
-set -a; source .env; set +a
+# 設定ファイルは **リポジトリの外** に置く（このリポの .gitignore は .env を除外していない。誤 commit 防止）
+mkdir -p ~/.config/dify && cp scripts/dify/.env.example ~/.config/dify/env
+# ~/.config/dify/env を編集して値を入れたら
+set -a; source ~/.config/dify/env; set +a
 # または直接
 export DIFY_BASE_URL=https://api.dify.ai/v1
 export DIFY_DATASET_KEY=...                 # ナレッジ API キー（Studio → ナレッジ → 右上 API → API キー）

@@ -70,4 +70,4 @@ Dify Cloud はアプリを MCP サーバーとして公開できる（アプリ 
 - Knowledge Retrieval の `dataset_ids` は空で置き、KB は環境側で紐づける（環境固有 id を DSL に入れない）
 - KB 用文書は `dify/kb/<管理番号>/`。架空データのみ（仮社名 青嶺精工、ペルソナは `SCENARIOS` の範囲、実在企業名・実データ禁止）
 - テストは `dify/tests/<管理番号>.json`（ID は `<管理番号> T<2 桁>`、`docs/dify/implementation-guide.md` §5）。結果は `dify/results/`
-- 秘密（API キー・Cookie）は置かない。`.env*` は `.gitignore` 済み
+- 秘密（API キー・Cookie）は置かない。設定ファイルはリポジトリの外（`~/.config/dify/env`）に置く（`.gitignore` は現状 `.env` を除外していない → 追加は別 PR）
