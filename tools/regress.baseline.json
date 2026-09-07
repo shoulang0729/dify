@@ -215,6 +215,16 @@
       ]
     },
     {
+      "id": "dc8",
+      "cat": "dc",
+      "sub": "report",
+      "st": 2,
+      "tags": [
+        "report",
+        "kpi"
+      ]
+    },
+    {
       "id": "lg1",
       "cat": "lg",
       "sub": "trans",
@@ -594,7 +604,7 @@
   "counts": {
     "cats": 8,
     "subs": 17,
-    "svcs": 41,
+    "svcs": 42,
     "tags": 43,
     "ui": 73
   }
