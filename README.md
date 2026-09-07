@@ -31,3 +31,13 @@ GitHub Pages で公開しています。
 
 Dify アプリの DSL 版管理・SwingAnalist の設計は、別リポジトリ
 **`shoulang0729/Dify.SwingTrainer`（Private）** に分離しました。
+
+## 開発の始め方
+
+Node.js（`.nvmrc` 記載のバージョン、`nvm use` 推奨）が必要です。依存パッケージはありません。
+
+```bash
+npm test   # tools/verify.mjs と tools/regress.mjs をまとめて実行
+```
+
+作業ブランチの切り方・PR の出し方・検証コマンドの詳細は [`CLAUDE.md`](./CLAUDE.md) を参照してください。

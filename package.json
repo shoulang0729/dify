@@ -1,0 +1,15 @@
+{
+  "name": "dify-mock-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AIエージェントカタログ UI モックと検証ツール群",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "verify": "node tools/verify.mjs",
+    "regress": "node tools/regress.mjs",
+    "regress:update": "node tools/regress.mjs --update",
+    "test": "node tools/verify.mjs && node tools/regress.mjs"
+  }
+}
