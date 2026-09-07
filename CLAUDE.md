@@ -27,18 +27,19 @@
 各項目：**何を** / **なぜ** / **どこで検出するか**。
 
 ### 2-1. 多言語辞書のキー集合は ja / zh / en で完全一致
-- 対象：`mock/catalog.html` 内の `T`（UI 文言）・`TAGS`・`PATTERNS[].name/desc`・`CATS[].name/abbr/subs[].name`・`SVCS[].name/desc`
+- 対象：**`mock/js/data/**` 内の** `T`（UI 文言）・`TAGS`・`PATTERNS[].name/desc`・`CATS[].name/abbr/subs[].name`・`SVCS[].name/desc`
 - なぜ：言語切替で一部だけ別言語が残る事故を防ぐ。`L(obj)` は `obj[lang] ?? obj.ja` にフォールバックするので**欠落は静かに日本語が出て気づけない**
 - 検出：`tools/verify.mjs`（キー欠落・空値・`en` にかな残り）
 - ルール：**追加は3言語同時**。英語はモック用ドラフトでよいが**空にしない**
 
 ### 2-2. 色はセマンティックトークンのみ。ブランドパレットは不変
-- 対象：2つ目の `<style>`（コンポーネント CSS）に **`#RRGGBB` の直値を書かない**。必ず `var(--surface-*|--text-*|--border-*|--action-*|--status-*|--badge-*)`
-- `--ntt-*`（NTT DATA ブランドパレット）は**変更禁止**。ダーク対応は `:root[data-theme="dark"]` で**セマンティック層だけ**上書き
+- 対象：**`mock/css/components.css`** に **`#RRGGBB` の直値を書かない**。必ず `var(--surface-*|--text-*|--border-*|--action-*|--status-*|--badge-*)`
+- **`mock/css/tokens.css`** の `--ntt-*`（NTT DATA ブランドパレット）は**変更禁止**。ダーク対応は同ファイルの `:root[data-theme="dark"]` で**セマンティック層だけ**上書き（**dark ブロックは 1 つだけ**）。**`mock/index.html` は同じ `tokens.css` を `<link>` で参照する。トークンをコピーしない**
 - なぜ：直値が1つ入ると、その箇所だけダークで浮く／ブランド色がズレる
 - 検出：`tools/verify.mjs`（直値検出・`var()` 未定義検出・dark ブロック存在）
 
 ### 2-3. 共通レイヤーの契約（パターンを増やすときの土台）
+- **置き場**：`mock/js/data/ui.js`（`T`/`PATTERNS`/`TAGS`/`TEMPLATES`）・`catalog.js`（`CATS`/`SVCS`）・`home.js`（`HOME`/`FEED`）・`style.js`（`CAT_STYLE`）・`scenarios/<分類>.js`（`SCENARIOS`。大分類ごと 8 ファイル、`window.SCENARIOS` に `Object.assign` で登録）。**`js/data/**` は純粋なリテラル宣言のみ**（`document`・`localStorage`・関数呼び出しを書かない。verify が vm で実行して読むため）。`state` とヘルパーは `mock/js/app.js`、描画は `mock/js/render.js`、click ハンドラと起動は `mock/js/events.js`。**読み込み順は `catalog.html` の `<script src>` の並びが唯一の正**（`data/ui → data/catalog → data/home → data/style → data/scenarios/* → app → render → events`）。古典的スクリプトのまま（`type="module"` にしない＝`file://` 対応）
 - **データ**：`CATS`（大分類→中分類）/ `SVCS`（サービス、`cat`/`sub`/`st`/`tags`/`name`/`desc`、任意 `added`〔追加日 `YYYY-MM-DD`。`NEW_DAYS` 以内なら ①バッジ／②新着帯／③お知らせを**その場で計算**して出す。`state`・`HOME`・`FEED` には持たせない。regress の対象外〕）/ `TAGS` / `TEMPLATES`（デモ画面テンプレート 5 種 `qa`/`upload`/`form`/`diff`/`lookup` の名称・説明、3 言語）/ `SCENARIOS`（サービス id → `{ template, persona{name,role,site,native}, steps{ja,zh,en}, input?, result?, script{ja,zh} }`。**台本 `script` と `input`/`result` は ja/zh のみ**＝§2-5 の実装。`SVCS` に埋め込まず別定数）/ `HOME`（② ダッシュボード用：`frequent`〔よく使う 6 件・サンプル利用件数〕・`recommended`〔おすすめ 3 件・理由 3 言語〕。**`SVCS` に埋め込まず別定数**。参照 id は `SVCS`/`CATS` に存在すること）/ `FEED`（③ 業務フィード用：`persona`・`mine`〔担当分類 3〕・`recent`〔最近使った 4〕・`items`〔疑似イベント 7 件、`kind` は `due`/`routine`/`notify`、絶対日付は持たない〕。**`SVCS` に埋め込まず別定数**。管理番号はフィード項目に出さない）/ `CAT_STYLE`（分類 id → インライン SVG アイコン。色は CSS の `--cat-*` トークン側）
 - **状態**：`state = { pattern, lang, theme, openCats, selCat, selSub, lastCat, selSvc, view, query, log }`。`view` は `list` / `detail` / `chat` / `demo`。`log` はデモで消費した台本ターン `[{lang,q,a}]`（`log.length` が次に消費する index。言語切替後の再描画で会話を復元）
 - **遷移**：`document` の `click` ハンドラの `data-act`（`pattern`/`all`/`cat`/`sub`/`svc`/`back`/`backdetail`/`start`/`send`/`run`/`chip`/`restart`/`gocat`）。`gocat` は分類タイルから直接その分類の一覧へ（`cat` と違いトグルしない）。`start` は `SCENARIOS` にあれば `demo`、なければ従来の `chat` へ（フォールバックを残す）
@@ -69,6 +70,7 @@
 
 ### 2-8. Pages の公開方式
 - `.github/workflows/pages.yml` は **`path: mock`** で `mock/` を**サイトのルート**として公開。URL に `/mock/` は**含まれない**（`https://shoulang0729.github.io/dify/`）
+- **`mock/css/**`・`mock/js/**` も公開対象**。`catalog.html`/`index.html` からの参照は**相対パスのみ**（先頭 `/`・`../` 禁止＝`file://` でも開ける）。`mock/` 配下に `_` 始まりのディレクトリを作らない
 - `mock/.nojekyll` 必須
 - 検出：`tools/verify.mjs`
 
@@ -120,7 +122,7 @@ npm test                  # 上 2 つをまとめて実行（CI の verify ワ�
 
 - `main` 直 commit 禁止。`feat/<issue>-<slug>` 等で作業 → PR → **squash マージ** → ブランチ削除
 - コミットメッセージは意味のあるものに。PR 本文に設計書パス・変更要約・検証結果・触っていない範囲
-- 並列は**ファイル集合が重ならないときだけ**。`mock/catalog.html` の同じ関数を触るお題は直列
+- 並列は**ファイル集合が重ならないときだけ**。**同じファイル**を触るお題は直列。分割後は `css/components.css`（デザイン）／`js/data/scenarios/<分類>.js`（台本）／`js/data/*.js`（データ）／`js/render.js`（描画）が別ファイルなので、**別ファイルなら並列可**
 - 設計書は機能ごとに `docs/handoff/YYYY-MM-DD-<slug>.md`
 
 ---
@@ -131,4 +133,5 @@ npm test                  # 上 2 つをまとめて実行（CI の verify ワ�
 - **モック ②ダッシュボード / ③業務フィード**：§2-3 の共通レイヤー上に実装。**直列**（`T` 末尾・`renderMain` ホーム分岐・`PATTERNS`・verify §10・`regress.baseline.json` が重なる）。設計書 `docs/handoff/2026-09-06-patterns-dash-feed.md`。①②③ すべて実装済み（#42：PR-1 #47・デザインパス #51・PR-2 #52）。見え方の改善は Claude Design に引き渡す予定（トークン名は変えず値だけ触る／レイアウトは 2 つ目の `<style>` と `render*`）
 - **顧客版カタログ（製造業・日中2拠点）**：シナリオ粒度で **7 分類 33 サービス**に再編し、A-1（#30）でデータ層を差し替え済み（§2-9）。A-2 パートナー連携 8 件・B-1 デモ遷移テンプレート・B-2 台本は投入済み。2026-09-07 に **DC-08 報告レビュー（提出前チェック／受領後の論点整理）** と **GN-06 頼まれ事・放置業務の追跡** を追加し **8 分類 17 中分類 43 サービス**（提供中 12／試行版 23／構想 8）。設計書は `docs/handoff/2026-09-06-*.md`、実現性は `docs/dify/`
 - **ユースケース化の段取り**：`/usecase`（`.claude/commands/usecase.md`）。Notion DB「ユースケース候補」の状態 `候補` → `確認中` → `設計中` → `実装中` → `公開済み`。統廃合は 5 軸（分類・タグ・ペルソナ・入出力・出口）の一致数で判定。Notion 原文はコミットしない（§2-10）
+- **リファクタリング P2（#77）**で `catalog.html` を層ごとに分割済み（`css/tokens.css`・`components.css`・`js/data/**`・`js/app.js`・`render.js`・`events.js`）。P3 候補：`?v=` キャッシュスタンプの機械検証、`tools/bundle.mjs`（単一ファイル生成）、`scenarios/` の 1 サービス 1 ファイル化。構成 v2（#84）は `docs/handoff/2026-09-07-repo-layout-v2.md`
 - **`top.html` の扱い**：バンドル済みで手編集不可。②③ が `catalog.html` に入ったので **削除（PR-3）**。トップ `index.html` はデモガイド（#45）
