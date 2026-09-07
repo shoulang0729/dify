@@ -99,3 +99,9 @@ D-1〜D-13 は **architect 推奨どおり**。D-14 のみ変更。
 - 配置：`gn6` = `GN-06`、汎用業務支援／日常業務、試行版、`form` 型。データ層の追加のみ。PC-01 フィードストアの主要な書き手（③業務フィードの出口）
 - 管理手法：GTD の捕捉／2 分ルール／アイゼンハワー／WIP 制限 3／エイジング 14 日（本人）・30 日（依頼者）。工数見積の精緻化・主観優先度・RACI は採らない
 - D-1〜D-6 は architect 推奨どおり：定型の自動起票は PC-11 で第 1 段階から／四半期・数字は出すが評価は人・個人別は本人と直属上長のみ／閾値 14/30 日は設定値／全員が振れる・匿名不可・受け側は WIP 上限と相談メモで守る／PC-01 追記は別 PR／名称「頼まれ事・放置業務の追跡」
+
+## 11. リポジトリ構成 v2（`2026-09-07-repo-layout-v2.md`）の PM 判断 — 2026-09-07
+- 4 区分（①デモ＝`mock/`／②実装＝`dify/`・`scripts/dify`・`tools`／③＝`docs/dify/usecases`・`docs/handoff`・`mock/js/data/scenarios`＋`docs/service-map.md`／④＝`data/world/`・`dify/kb`・`dify/tests`）。マスタ（Cloud）→ 社内・顧客 A・顧客 B へ `dify/env/<env>/env.yml` で差し替えてリリース
+- Q1〜Q10 は architect 推奨どおり：`mock/` 改名しない／render は (b) 実値＋置換表／`data/world` 8 ファイル・初版は既存資産から抽出・CI に入れない／タグ `release/<env>/<YYYYMMDD>`／顧客は Community 1.15.x／索引鮮度は verify FAIL／`dify/CHANGELOG.md`／顧客ブランチは切らない／`/dify-deploy` 配置済み
+- **Q6：会社・本社の英語表記＝`Seirei Seiko Co., Ltd.`／`Japan HQ`**（PM 確定）
+- 実施順：P2 PR-C → v2 PR-1（地図・索引・`data/world`）→ PR-2（`dify/env`＋`render`）→ PR-3（`release`＋CHANGELOG）。`CLAUDE.md` §2-12「環境差分は env に閉じる」は PR-2 と同時に PM が追記
