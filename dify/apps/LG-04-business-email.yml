@@ -6,7 +6,7 @@
 # 参照 DSL : docs/dify/templates/01-translation-reflection-workflow.yml（LLM ノードの変数参照 {{#node_id.var#}} の型）
 #            docs/dify/templates/05-chatflow-form-input-demo.yml（フォーム受けの構成の参考）
 # 構成    : Start(purpose / recipient / points / lang / tone) → LLM（件名・本文・文面のポイントを作成） → End(output)
-# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダに合わせて UI で変更する（dify/README.md）
+# モデル   : openrouter / qwen/qwen3.8-max を既定（dify/env/cloud-master/env.yml の models.chat）。変えるときは env とマスタを同時に（dify/README.md）
 # 注意    : 受信メールの要約・本社 CC サマリーの分岐（if-else）・数値の差分計算（Code）・PC-10 の禁止情報の自動検出は未実装。
 #           事実を足さない・社外秘を書かないは System プロンプトのルールで担保する最小構成
 # ---------------------------------------------------------------------------
@@ -181,8 +181,8 @@ workflow:
           completion_params:
             temperature: 0.2
           mode: chat
-          name: gpt-4o-mini
-          provider: langgenius/openai/openai
+          name: qwen/qwen3.8-max
+          provider: langgenius/openrouter/openrouter
         prompt_template:
         - id: 9b2f3d4e-5f60-4182-8b9c-2d3e4f5a6b01
           role: system

@@ -8,7 +8,7 @@
 # 構成    : Start(source_text / direction / style / glossary) → LLM①（翻訳。用語対応表・候補・登録候補を含む）
 #           → LLM②（照校。原文と一段目の訳文を比較し、訳抜け・数値・固有名詞の一致を点検、修正版と変更点を出す）
 #           → End(translation = LLM① の全文〔訳文＋用語対応・候補・登録候補〕, notes = LLM② の全文〔修正版＋変更点〕)
-# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダに合わせて UI で変更する（dify/README.md）
+# モデル   : openrouter / qwen/qwen3.8-max を既定（dify/env/cloud-master/env.yml の models.chat）。変えるときは env とマスタを同時に（dify/README.md）
 # 注意    : 用語集 CSV の自動照合（PC-06）・翻訳メモリ検索（Knowledge Retrieval）・言語判定/保護トークン化（PC-07 の Code
 #           ノード）は未実装。用語集は `glossary` に貼り付けたテキストをそのまま LLM に渡す最小構成
 # ---------------------------------------------------------------------------
@@ -177,8 +177,8 @@ workflow:
           completion_params:
             temperature: 0.2
           mode: chat
-          name: gpt-4o-mini
-          provider: langgenius/openai/openai
+          name: qwen/qwen3.8-max
+          provider: langgenius/openrouter/openrouter
         prompt_template:
         - id: 8a1f2c3d-4e5f-4071-9a8b-1c2d3e4f5a01
           role: system
@@ -240,8 +240,8 @@ workflow:
           completion_params:
             temperature: 0.2
           mode: chat
-          name: gpt-4o-mini
-          provider: langgenius/openai/openai
+          name: qwen/qwen3.8-max
+          provider: langgenius/openrouter/openrouter
         prompt_template:
         - id: 8a1f2c3d-4e5f-4071-9a8b-1c2d3e4f5a03
           role: system

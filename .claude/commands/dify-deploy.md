@@ -13,7 +13,7 @@ description: Mac（Claude Code CLI ＋ Claude in Chrome）から dify/apps の D
 
 ## 1. アプリの取り込み（Chrome）
 対象ごとに、Claude in Chrome に次を頼む（自分で操作できる設定ならそのまま実行）：
-> Dify Cloud の Studio で「アプリを作成 → DSL ファイルをインポート → URL」を開き、`https://raw.githubusercontent.com/shoulang0729/dify/main/dify/apps/<ファイル名>.yml` を貼って作成。古いバージョンの警告はそのまま続行。LLM ノードのモデルをこの環境のプロバイダーに合わせて選び、公開。「API アクセス」で API キーを新規作成して表示。
+> Dify Cloud の Studio で「アプリを作成 → DSL ファイルをインポート → URL」を開き、`https://raw.githubusercontent.com/shoulang0729/dify/main/dify/apps/<ファイル名>.yml` を貼って作成。古いバージョンの警告はそのまま続行。**LLM ノードを開き、モデルが DSL の指定どおり `openrouter / qwen/qwen3.8-max`（分類・抽出ノードがあれば `moonshotai/kimi-k3`）になっているか確認する。空欄・エラー、またはモデル一覧に該当モデルが無い場合は、勝手に別のモデルを選ばずそこで止めて報告する**（設定 → モデルプロバイダーで OpenRouter の追加が要る。OpenRouter は id の手入力も可）。確認できたら公開。「API アクセス」で API キーを新規作成して表示。
 表示された API キーは **人が**環境変数に入れる（チャットに貼らない）。既に同名アプリがある場合は「上書きインポート」ではなく新規作成し、旧アプリは名前に `(old)` を付けて残す。
 
 ## 2. ナレッジの投入
@@ -22,6 +22,7 @@ description: Mac（Claude Code CLI ＋ Claude in Chrome）から dify/apps の D
 python3 scripts/dify/kb_upload.py <番号>
 ```
 完了後、Chrome に「<番号> のアプリの知識検索ノードに KB `<番号> <サービス名>` を追加して保存・再公開」を頼む。KB が無いサービス（form 型など）はこの段を飛ばす。
+KB を作ったら Chrome で**「検索設定」の Rerank を OFF** にする（既定 ON のままだと OpenRouter 経由の Rerank が 429 になり検索 0 件。`dify/KNOWN_ISSUES.md` DI-005）。チャンクの区切りは `\n\n`・最大 1024 字（DI-006）。
 
 ## 3. テストと結果の記録
 ```bash
@@ -31,6 +32,7 @@ git commit -m "test(dify): <番号...> Service API テスト結果"
 git push
 ```
 失敗があれば `dify/results/` の表を読んで原因を 1 行ずつ要約し、**DSL の修正が要るもの**は Issue #82 にコメント（エラー文はそのまま、キーは伏せる）。修正は別セッション（作る側）が行うので、ここでは DSL を直さない。
+失敗・詰まりは `dify/KNOWN_ISSUES.md` に `DI-xxx` の行を足す（症状 1 行・原因・対処・状態 `open`）。DSL 修正はここでは行わない。
 
 ## 4. 完了報告（書式）
 ```
@@ -39,6 +41,7 @@ git push
 KB: <番号> ✅（文書 n 本）/ 対象外
 テスト: <番号> 合格 x/y（結果ファイル）
 Issue #82 コメント: あり/なし
+KNOWN_ISSUES 追記: DI-xxx（無ければ「なし」）
 ```
 
 ## 停止条件

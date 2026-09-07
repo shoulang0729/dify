@@ -105,3 +105,26 @@ D-1〜D-13 は **architect 推奨どおり**。D-14 のみ変更。
 - Q1〜Q10 は architect 推奨どおり：`mock/` 改名しない／render は (b) 実値＋置換表／`data/world` 8 ファイル・初版は既存資産から抽出・CI に入れない／タグ `release/<env>/<YYYYMMDD>`／顧客は Community 1.15.x／索引鮮度は verify FAIL／`dify/CHANGELOG.md`／顧客ブランチは切らない／`/dify-deploy` 配置済み
 - **Q6：会社・本社の英語表記＝`Seirei Seiko Co., Ltd.`／`Japan HQ`**（PM 確定）
 - 実施順：P2 PR-C → v2 PR-1（地図・索引・`data/world`）→ PR-2（`dify/env`＋`render`）→ PR-3（`release`＋CHANGELOG）。`CLAUDE.md` §2-12「環境差分は env に閉じる」は PR-2 と同時に PM が追記
+
+## 12. 既定 LLM を Qwen / Kimi（OpenRouter）にする・環境台帳・不具合台帳（`2026-09-07-china-models-and-syncback.md`）の PM 判断 — 2026-09-07
+
+- 要望：「LLM は中国で使える LLM にして欲しい。個人的には Qwen と KIMI の新しいやつを使いたい」「**僕の契約は OpenRouter なので SiliconFlow はまだ切り替えなくて良い**」「社内セルフホストは Ollama とかだと思う（未確認）」「基盤の各種環境の違いもメンテナンスしないといけないね」
+- 事実確認：2026-09-07 に PM が `langgenius/dify-official-plugins` main の `models/<provider>` を取得（openrouter 0.1.7 / siliconflow 0.0.59 / moonshot 0.1.12 / tongyi 0.2.18 / ollama 1.0.1）
+
+| # | 決定 |
+|---|---|
+| D-1 | **cloud-master は OpenRouter**（`langgenius/openrouter/openrouter`）。SiliconFlow には切り替えない |
+| D-2 | `models.chat` = `qwen/qwen3.8-max`（temperature 0.2 維持）／`models.reasoning` = `moonshotai/kimi-k3` |
+| D-3 | 追加 role **`kimi`**（kimi-k3）と **`qwen_small`**（`qwen/qwen3.6-35b-a3b`）を**全 env に**定義（role の定義漏れは警告なしでマスタの値のまま動くため） |
+| D-4 | **`inhouse` は Ollama 想定・未確認**。モデル名は `${INHOUSE_*_MODEL}` の環境変数で渡し、`env.example` に変数を足す |
+| D-5 | **`customer-a` は SiliconFlow のまま・未確認**。型番だけ現行の `Qwen/Qwen3.5-397B-A17B` / `Pro/moonshotai/Kimi-K2.6` に更新 |
+| D-6 | **環境台帳を `dify/env/README.md` に新設**（env / edition / 接続先の種類 / プロバイダ / モデル 4 種 / 外部到達 / 確認状態 / 確認日 / 根拠）。`env.yml` を変えたら同じ PR で台帳も更新。実名・実 URL は書かない |
+| D-7 | `embedding` は cloud-master のみ空。**Rerank は有効にしない**（OpenRouter 経由の Rerank が 429 で検索 0 件になった実測。DP-40） |
+| D-8 | マスタ 12 本も同じ値に揃える。手順は「env を直す → render で期待値を確認 → `model:` ブロックの 2 行と先頭コメントを直す → `render --check` 全件 `[OK]`」（render 出力のコピーは prompt の block scalar を壊すため採らない） |
+| D-9 | Cloud で調整した DSL は **`scripts/dify/sync_back.py` で Git のマスタへ戻す**（Cloud は編集場所、Git がマスタ）。他 env からの逆流は非対応。別セルフホストへは `release.py --env inhouse` で配る |
+| D-10 | 実装で出た不具合は **`dify/KNOWN_ISSUES.md`**（`DI-xxx` 連番）に残す。初期行は **PM の Mac で実際に観測した 6 件＋コード実測 3 件の計 9 件**。`docs/dify/usecases/<番号>.md` §10 には要約を書かずリンクだけ |
+| D-11 | 観測された不具合のうち直せるもの（DC-01 の出力言語・社外秘・番号生成、KN-01 の top_k、KB のチャンクと Rerank）は **PR-4「第 1 弾 DSL 修正」**でまとめて直し、PR 本文で `DI-xxx` を参照する（この運用の初回例にする） |
+
+- `docs/dify/templates/*.yml` の `gpt-4o-mini` は触らない（外部出典・無改変）
+- **確認要**：既存アプリへの上書きインポートが Cloud の版でできるか（できなければ新規作成＋旧を `(old)`）
+- `CLAUDE.md` §2-12 の追記と `.claude/commands/dify-deploy.md` の更新は **PM が適用**

@@ -4,7 +4,7 @@
 # 参照 DSL : docs/dify/templates/07-excel-document-extractor-echarts.yml（start(select 等) → llm → end の骨子）
 #            docs/dify/templates/01-translation-reflection-workflow.yml（LLM ノードの変数参照 {{#node_id.var#}}）
 # 構成    : Start(period / site / kpi_notes / lang) → LLM → End(output = LLM の text)
-# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダーに合わせて UI で変更する（dify/README.md）
+# モデル   : openrouter / qwen/qwen3.8-max を既定（dify/env/cloud-master/env.yml の models.chat）。変えるときは env とマスタを同時に（dify/README.md）
 # 注意    : 最小構成のため達成率・前月比などの計算ノードは持たない。LLM は入力に書かれた数値だけを使い、計算しない
 # ---------------------------------------------------------------------------
 app:
@@ -158,8 +158,8 @@ workflow:
           completion_params:
             temperature: 0.2
           mode: chat
-          name: gpt-4o-mini
-          provider: langgenius/openai/openai
+          name: qwen/qwen3.8-max
+          provider: langgenius/openrouter/openrouter
         prompt_template:
         - id: 7d2e8b3a-5f61-4c07-8a9d-0a1b2c3d4e01
           role: system

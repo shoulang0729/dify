@@ -9,7 +9,7 @@
 #            docs/dify/templates/05-chatflow-form-input-demo.yml（advanced-chat の Start / LLM / Answer）
 # 構成    : Start(sys.query) → Knowledge Retrieval(dataset_ids は空。インポート後に UI で KB を紐づける) → LLM → Answer
 # KB      : dify/kb/KN-02/ の 3 文書（設備マニュアル抜粋・アラームコード表・保全内部規程）を 1 つの KB にまとめてアップロードする
-# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダーに合わせて UI で変更する（dify/README.md）
+# モデル   : openrouter / qwen/qwen3.8-max を既定（dify/env/cloud-master/env.yml の models.chat）。変えるときは env とマスタを同時に（dify/README.md）
 # ---------------------------------------------------------------------------
 app:
   description: 'KN-02 設備マニュアル・取扱説明書の検索。設備の型式とアラームコード（または症状）を中国語または日本語で聞くと、取扱説明書の該当ページを引いて復旧手順を要約する。【インポート後】(1) LLM ノードのモデルを環境のプロバイダーに合わせて選び直す (2) ナレッジベースを作成し dify/kb/KN-02/ の 3 文書をアップロードして Knowledge Retrieval ノードに紐づける (3) 公開。'
@@ -181,8 +181,8 @@ workflow:
           completion_params:
             temperature: 0.2
           mode: chat
-          name: gpt-4o-mini
-          provider: langgenius/openai/openai
+          name: qwen/qwen3.8-max
+          provider: langgenius/openrouter/openrouter
         prompt_template:
         - id: 8b1c2d3e-4f50-4a61-9b72-0a1b2c3d4e01
           role: system

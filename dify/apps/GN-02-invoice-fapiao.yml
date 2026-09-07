@@ -8,7 +8,7 @@
 #            docs/dify/templates/06-text-to-sql-http-api-echarts.yml（LLM ノードの structured_output_enabled）
 # 構成    : Start(invoice_text / invoice_file) → Document Extractor(invoice_file) → LLM（構造化 JSON 抽出）
 #           → Code（JSON → CSV 整形。計算はしない）→ End(csv / warnings)
-# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダーに合わせて UI で変更する（dify/README.md）
+# モデル   : openrouter / qwen/qwen3.8-max を既定（dify/env/cloud-master/env.yml の models.chat）。変えるときは env とマスタを同時に（dify/README.md）
 # 注意    : invoice_text・invoice_file はどちらか一方の入力を想定（どちらも required: false）。file が無いときは
 #           Document Extractor の出力が空文字になる想定（Dify 側の実際の挙動は未確認。PR に不安な点として記載）。
 #           structured_output_enabled は参照 DSL 06 にあるフィールドをそのまま使用（スキーマ定義フィールドは
@@ -193,8 +193,8 @@ workflow:
           completion_params:
             temperature: 0.2
           mode: chat
-          name: gpt-4o-mini
-          provider: langgenius/openai/openai
+          name: qwen/qwen3.8-max
+          provider: langgenius/openrouter/openrouter
         prompt_template:
         - id: 2b3c4d5e-9fa5-4041-ad3b-4e5f6a7b8c01
           role: system
