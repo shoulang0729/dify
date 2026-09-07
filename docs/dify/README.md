@@ -16,12 +16,18 @@ architect（設計）成果物。**アプリコード（`mock/**` `tools/**`）�
 | [`plugins-and-references.md`](./plugins-and-references.md) | 目的別の公式プラグイン／データソース／モデル／観測／DSL 生成支援／事例のカタログ（どのサービス id で使うか付き） | implementer |
 | [`templates/README.md`](./templates/README.md) | 保存した参照 DSL 8 本の一覧（出典・ライセンス・`version`・雛形候補サービス）と、URL のみ記録したもの | implementer |
 | `templates/*.yml` | 参照 DSL 本体（外部出典・無改変。冒頭にコメントで出典・ライセンス・雛形候補を追記） | implementer |
+| [`implementation-guide.md`](./implementation-guide.md) | **実装フェーズの全体方針**：アーキテクチャ図・Scope B の役割分担（Dify＝処理役、承認は BPMS）・実装順（提供中 12 → 試行版 21 → 構想 8）・テストシナリオの書式（`KN-02 T01`、6 種別、Langfuse データセット）・プロンプト共通ルール・DSL 運用 | PM・implementer・reviewer |
+| [`platform-components.md`](./platform-components.md) | **別出しが必要な共通部品 PC-01〜PC-16**（フィードストア・認証・文書取込・業務連携・Outline・用語集・言語判定・モデル・評価・PIPL・スケジューラ・差分・ファイル出力・通知・パートナー GW・本番 UI）。部品×分類マトリクスと先行して作る順 | PM・implementer |
+| [`outline-wiki-usecases.md`](./outline-wiki-usecases.md) | **Outline Wiki 前提**の整理（ソース確認済みの API／Webhook／権限）、既存 41 件への影響（読む／書く）、新規ユースケース案 `OW-01〜10`（統合案つき）、PM 判断待ち O-1〜O-9 | PM・architect |
+| [`usecases/README.md`](./usecases/README.md) | **41 サービスの一覧**（管理番号・成熟度・実現性・依存 PC・Outline 使用）と、追加時のルール | 全員 |
+| `usecases/<管理番号>.md` | 1 サービス 1 ファイルの実装リファレンス（業務シナリオ・想定インプット・観点・Dify 構成・プロンプト・検証観点・テストシナリオ・別出し・Outline・未確定）。雛形は [`usecases/_TEMPLATE.md`](./usecases/_TEMPLATE.md) | implementer・reviewer |
 
 ## 読み方
 
 1. **PM**：`feasibility-33-services.md` の §0（集計と PM 判断待ち）だけ読めば「実装に進めるか」を判断できる。個別サービスの根拠は §3 の折りたたみ。
 2. **implementer**：実装対象サービスの行（§3）→ 使うプラグイン（`plugins-and-references.md`）→ 近い参照 DSL（`templates/`）の順。DSL を新規に書くときは `plugins-and-references.md` §8 の dsl-skill を標準手段にする。
 3. **reviewer**：本ディレクトリは `tools/verify.mjs` / `tools/regress.mjs` の検証対象外（ドキュメントのみ）。diff 監査では「`docs/handoff/` が変わっていないこと」「`templates/*.yml` が出典と同一（冒頭コメント以外）であること」を見る。
+4. **実装フェーズ**：`implementation-guide.md`（方針・テスト書式・プロンプト共通ルール）→ `platform-components.md`（先に作る共通部品）→ `usecases/README.md` から担当サービスの `usecases/<管理番号>.md` へ。Outline Wiki を導入するなら `outline-wiki-usecases.md` の PM 判断（O-1〜O-9）を先に決める。
 
 ## 前提（PM 提示。再調査していないが URL は実在確認済み）
 
