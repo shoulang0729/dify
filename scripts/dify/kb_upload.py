@@ -2,13 +2,20 @@
 """dify/kb/<管理番号>/ 配下の文書を Dify のナレッジベースへ投入する（Datasets API、標準ライブラリのみ）。
 
     python3 scripts/dify/kb_upload.py KN-01
+    python3 scripts/dify/kb_upload.py --env customer-a KN-01
+    python3 scripts/dify/kb_upload.py --env cloud-master --dry-run KN-01   # KB 名だけ確認。ネットワークを呼ばない
 
 環境変数
-  DIFY_DATASET_KEY  ナレッジ API キー（必須。ログには出さない）
+  DIFY_DATASET_KEY  ナレッジ API キー（必須。ログには出さない。--dry-run では不要）
   DIFY_BASE_URL     既定 https://api.dify.ai/v1
+  DIFY_ENV          --env 未指定時の既定（さらに未指定なら cloud-master）
+
+--env <env>
+  dify/env/<env>/env.yml の knowledge.<管理番号>.name を KB 名として使う（${VAR} はプロセス環境変数で展開）。
+  env.yml が無い／論理 KB 名の定義が無い場合は、従来どおり dify/apps/<管理番号>-*.yml の app.name から作る。
 
 動作（冪等）
-  1. KB 名 "<管理番号> <サービス名>" の KB を探す。無ければ作成（indexing_technique: high_quality）
+  1. KB 名 "<管理番号> <サービス名>"（または env の論理名）の KB を探す。無ければ作成（indexing_technique: high_quality）
   2. dify/kb/<管理番号>/ の .md / .txt / .pdf を、同名文書が無いものだけアップロード
      （POST /datasets/{id}/document/create-by-file、process_rule.mode: automatic）
   3. アップロードした文書のインデックス完了を待つ（最長 --timeout 秒、既定 600）
@@ -27,15 +34,43 @@ import urllib.parse
 import urllib.request
 import uuid
 
+try:
+    import yaml
+except ImportError:  # pragma: no cover
+    yaml = None
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 KB_DIR = os.path.join(ROOT, "dify", "kb")
 APPS_DIR = os.path.join(ROOT, "dify", "apps")
+ENV_DIR = os.path.join(ROOT, "dify", "env")
 ALLOWED_EXT = {".md", ".txt", ".pdf"}
+VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 # アプリ DSL が見つからないときの予備（KB 名の後半）
 FALLBACK_NAMES = {
     "KN-01": "技術ナレッジQA",
     "DC-01": "日本本社への報告資料作成",
 }
+
+
+def expand(s):
+    if not isinstance(s, str) or "${" not in s:
+        return s
+    return VAR_RE.sub(lambda m: os.environ.get(m.group(1), ""), s)
+
+
+def kb_name_from_env(env_name, code):
+    """dify/env/<env>/env.yml の knowledge.<code>.name を返す（無ければ None）。"""
+    if yaml is None:
+        return None
+    path = os.path.join(ENV_DIR, env_name, "env.yml")
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as fh:
+        env = yaml.safe_load(fh) or {}
+    spec = (env.get("knowledge") or {}).get(code)
+    if not spec or not spec.get("name"):
+        return None
+    return expand(spec["name"])
 
 
 def log(msg):
@@ -131,9 +166,19 @@ def list_all(api, path):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("code", help="管理番号（例 KN-01）")
+    ap.add_argument("--env", default=os.environ.get("DIFY_ENV", "cloud-master"),
+                     help="dify/env/<env>/env.yml の knowledge.<管理番号>.name を KB 名に使う（既定 $DIFY_ENV または cloud-master）")
     ap.add_argument("--timeout", type=int, default=600, help="インデックス完了待ちの上限秒（既定 600）")
     ap.add_argument("--no-wait", action="store_true", help="インデックス完了を待たない")
+    ap.add_argument("--dry-run", action="store_true", help="KB 名だけ表示して終了する。ネットワークを呼ばない")
     args = ap.parse_args()
+
+    code = args.code.upper()
+    kb_name = kb_name_from_env(args.env, code) or f"{code} {service_name(code)}".strip()
+
+    if args.dry_run:
+        print(f"[dry-run] env={args.env} code={code} KB 名 '{kb_name}'（ネットワークは呼びません）")
+        return 0
 
     key = os.environ.get("DIFY_DATASET_KEY", "").strip()
     if not key:
@@ -141,7 +186,6 @@ def main():
         return 1
     base = os.environ.get("DIFY_BASE_URL", "https://api.dify.ai/v1").strip()
 
-    code = args.code.upper()
     src = os.path.join(KB_DIR, code)
     if not os.path.isdir(src):
         print(f"文書フォルダが見つかりません: {os.path.relpath(src, ROOT)}")
@@ -151,9 +195,8 @@ def main():
         print(f"投入対象（.md/.txt/.pdf）がありません: {os.path.relpath(src, ROOT)}")
         return 1
 
-    kb_name = f"{code} {service_name(code)}".strip()
     api = Api(base, key)
-    log(f"接続先 {base} / KB 名 '{kb_name}' / 文書 {len(files)} 件")
+    log(f"接続先 {base} / env={args.env} / KB 名 '{kb_name}' / 文書 {len(files)} 件")
 
     try:
         datasets = list_all(api, "/datasets")

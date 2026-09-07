@@ -26,6 +26,10 @@
  *   11.  索引の鮮度（docs/service-map.md が tools/gen-index.mjs --check と一致）＋
  *        トップ README.md の「4 区分」地図のリンク先が実在すること
  *        （設計書 docs/handoff/2026-09-07-repo-layout-v2.md §1-3・§10 Q7）
+ *   12.  環境レイヤー（dify/env/**）：schema: 1 と必須キー／秘密・実名の直値が無いこと（sk- 文字列・32 文字以上の
+ *        16 進 or base64 らしき文字列・cloud-master の既知 2 URL 以外の生 http(s):// URL）／
+ *        `render.py --env cloud-master --all --check` が通ること（python3 が無ければ warn で skip）
+ *        （設計書 docs/handoff/2026-09-07-repo-layout-v2.md §3-2・§4-2・§8 PR-2）
  *
  * データの取り出しは tools/lib/load.mjs（node:vm で js/data/** を実行順に評価）を使う。
  * grab()（正規表現抽出）は廃止。
@@ -536,6 +540,114 @@ section('11. 索引の鮮度・README の 4 区分地図');
       else {
         if (missingDirs.length) warn(`README.md の 4 区分節のディレクトリリンクで未作成のもの（後続 PR で作る想定）: ${missingDirs.join(', ')}`);
         ok(`README.md の 4 区分節のリンク先 ${links.length - missingDirs.length}/${links.length} 件が実在（残りは後続 PR で作成予定のディレクトリ）`);
+      }
+    }
+  }
+}
+
+/* ---------- 12. 環境レイヤー（dify/env/**） ---------- */
+section('12. 環境レイヤー（dify/env/**）');
+{
+  const ENV_ROOT = resolve(ROOT, 'dify/env');
+  const REQUIRED_ENVS = ['cloud-master', 'inhouse', 'customer-a'];
+  const KNOWN_CLOUD_MASTER_URLS = ['https://api.dify.ai/v1', 'https://cloud.dify.ai'];
+
+  if (!existsSync(ENV_ROOT)) {
+    fail('dify/env/ が無い');
+  } else {
+    const envDirs = readdirSync(ENV_ROOT, { withFileTypes: true })
+      .filter(d => d.isDirectory()).map(d => d.name).sort();
+    const missing = REQUIRED_ENVS.filter(e => !envDirs.includes(e));
+    if (missing.length) fail(`dify/env/ に無い環境: ${missing.join(', ')}`);
+    else ok(`dify/env/ に 3 環境が揃っている: ${envDirs.join(', ')}`);
+
+    // 12-a: README
+    if (!existsSync(resolve(ENV_ROOT, 'README.md'))) fail('dify/env/README.md が無い');
+    else ok('dify/env/README.md あり');
+
+    const REQUIRED_TOP = ['schema', 'name', 'description', 'dify', 'models', 'knowledge', 'brand', 'flags', 'variables'];
+    const REQUIRED_DIFY = ['base_url', 'console_url', 'edition', 'dsl_version'];
+    const REQUIRED_MODELS = ['chat', 'reasoning', 'embedding', 'rerank'];
+    const REQUIRED_BRAND = ['company', 'local_entity', 'sites', 'replace'];
+    const REQUIRED_FLAGS = ['cross_border', 'partner_mode', 'pipl_mask'];
+
+    // 秘密・実名らしき値の直値検出（12-b）。対象は dify/env/**/env.yml の生テキスト全体
+    const SECRET_KEY_RE = /sk-[A-Za-z0-9_-]{6,}/;
+    const HEXB64_RE = /\b[0-9a-fA-F]{32,}\b|\b[A-Za-z0-9+]{32,}={0,2}\b/;
+    const URL_RE = /https?:\/\/[^\s"'\)]+/g;
+    let schemaOk = true, secretsOk = true;
+
+    for (const envName of envDirs) {
+      const p = resolve(ENV_ROOT, envName, 'env.yml');
+      if (!existsSync(p)) { fail(`${envName}/env.yml が無い`); schemaOk = false; continue; }
+      const raw = readFileSync(p, 'utf8');
+
+      // schema / 必須キー（YAML を厳密に解釈せず、行頭キーの存在で確認。verify.mjs は JS のみで完結させるため）
+      const hasKey = (re) => re.test(raw);
+      if (!/^schema:\s*1\s*$/m.test(raw)) { fail(`${envName}/env.yml の schema が 1 でない`); schemaOk = false; }
+      for (const k of REQUIRED_TOP) {
+        if (!new RegExp(`^${k}:`, 'm').test(raw)) { fail(`${envName}/env.yml に必須キー ${k} が無い`); schemaOk = false; }
+      }
+      for (const k of REQUIRED_DIFY) {
+        if (!hasKey(new RegExp(`^\\s+${k}:`, 'm'))) { fail(`${envName}/env.yml の dify.${k} が無い`); schemaOk = false; }
+      }
+      for (const k of REQUIRED_MODELS) {
+        if (!hasKey(new RegExp(`^\\s+${k}:`, 'm'))) { fail(`${envName}/env.yml の models.${k} が無い`); schemaOk = false; }
+      }
+      for (const k of REQUIRED_BRAND) {
+        if (!hasKey(new RegExp(`^\\s+${k}:`, 'm'))) { fail(`${envName}/env.yml の brand.${k} が無い`); schemaOk = false; }
+      }
+      for (const k of REQUIRED_FLAGS) {
+        if (!hasKey(new RegExp(`\\b${k}:`, 'm'))) { fail(`${envName}/env.yml の flags.${k} が無い`); schemaOk = false; }
+      }
+      if (envName !== 'cloud-master' && !new RegExp(`^name:\\s*${envName}\\s*$`, 'm').test(raw)) {
+        fail(`${envName}/env.yml の name がディレクトリ名と不一致`);
+        schemaOk = false;
+      }
+
+      // 秘密・実名の直値
+      if (SECRET_KEY_RE.test(raw)) { fail(`${envName}/env.yml に sk- で始まる文字列がある（秘密の直値）`); secretsOk = false; }
+      // ${VAR} 由来のトークン自体はハイフンを含み HEXB64_RE に基本ヒットしないが、誤検知を避けるため
+      // '${' を含む行は対象から除外する
+      const bodyForHex = raw.split('\n').filter(l => !l.includes('${')).join('\n');
+      if (HEXB64_RE.test(bodyForHex)) {
+        fail(`${envName}/env.yml に 32 文字以上の 16 進／base64 らしき文字列がある（秘密の直値の疑い）`);
+        secretsOk = false;
+      }
+      const urls = [...raw.matchAll(URL_RE)].map(m => m[0].replace(/[,\s]+$/, ''));
+      const badUrls = envName === 'cloud-master'
+        ? urls.filter(u => !KNOWN_CLOUD_MASTER_URLS.includes(u))
+        : urls; // cloud-master 以外は生 URL があってはいけない（${DIFY_BASE_URL} 等で渡す）
+      if (badUrls.length) {
+        fail(`${envName}/env.yml に想定外の生 URL がある: ${badUrls.join(', ')}`);
+        secretsOk = false;
+      }
+    }
+    if (schemaOk) ok('全環境の env.yml が schema: 1 と必須キーを満たす');
+    if (secretsOk) ok('dify/env/**/env.yml に秘密・実名の直値なし（sk- / 32+ hex-base64 / 想定外 URL）');
+  }
+
+  // 12-c: .gitignore（Secrets / Build）
+  const gi = existsSync(resolve(ROOT, '.gitignore')) ? readFileSync(resolve(ROOT, '.gitignore'), 'utf8') : '';
+  const giNeeds = ['.env', '.env.*', '*.key', '*.pem', 'secrets/', 'dify/build/'];
+  const giMissing = giNeeds.filter(n => !gi.includes(n));
+  if (giMissing.length) fail(`.gitignore に無いパターン: ${giMissing.join(', ')}`);
+  else ok('.gitignore に Secrets / dify/build/ の除外パターンあり');
+
+  // 12-d: render.py --env cloud-master --all --check（python3 が無ければ warn で skip）
+  const renderPy = resolve(ROOT, 'scripts/dify/render.py');
+  if (!existsSync(renderPy)) {
+    fail('scripts/dify/render.py が無い');
+  } else {
+    try {
+      execFileSync('python3', [renderPy, '--env', 'cloud-master', '--all', '--check'], { cwd: ROOT, stdio: 'pipe' });
+      ok('render.py --env cloud-master --all --check が PASS（マスタとバイト一致）');
+    } catch (e) {
+      if (e && e.code === 'ENOENT') {
+        warn('python3 が無いため render.py --check を skip しました');
+      } else {
+        fail('render.py --env cloud-master --all --check が FAIL（マスタとバイト不一致、または実行エラー）: '
+          + String((e && e.stderr && e.stderr.toString()) || e.message || e).split('\n')[0]);
       }
     }
   }
