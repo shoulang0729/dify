@@ -35,7 +35,7 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 | [DC-05](./DC-05.md) | 稟議・申請書の作成と記載漏れ検出 | DC/apply | 試行版 | form | ○ | PC-01 PC-04（BPMS） PC-05 PC-13 | 読・書 |
 | [DC-06](./DC-06.md) | 輸出入・通関書類の確認 | DC/apply | 試行版 | upload | ○ | PC-03（OCR） PC-04（手冊台帳） PC-06 PC-12 PC-13 PC-14 | 読 |
 | [DC-07](./DC-07.md) | サプライヤー契約書ドラフト支援 | DC/apply | 試行版 | form | ○ | PC-05 PC-06 PC-12 PC-13 PC-14 | 読・書 |
-| [DC-08](./DC-08.md) | 週報・報告のレビューと論点指摘 | DC/report | 試行版 | upload | ○ | PC-01（`routine`/`due`） PC-03 PC-05 PC-06 PC-11 PC-13 PC-14 PC-17 | 読・書 |
+| [DC-08](./DC-08.md) | 週報・報告のレビューと論点指摘 | DC/report | 試行版 | upload | ○ | PC-01（`due` 併載） PC-03 PC-05 PC-06 PC-11 PC-13 PC-14 PC-17 | 読・書 |
 | [LG-01](./LG-01.md) | 日中翻訳（社内の言い方に揃える） | LG/trans | 提供中 | form | ◎ | PC-05 PC-06 | 読（用語集）・書（登録候補） |
 | [LG-02](./LG-02.md) | 社内用語・呼称の統一（用語集） | LG/trans | 試行版 | upload | ○ | PC-03 PC-05 PC-06 PC-13 | 読・書 |
 | [LG-03](./LG-03.md) | 現地スタッフとの認識合わせ（手順の中国語書き下し） | LG/align | 試行版 | form | ◎ | PC-01 PC-05 PC-06 PC-11 PC-13 | 読・書 |
