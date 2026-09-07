@@ -11,6 +11,8 @@
 | **reviewer** | §6 検証観点 と §7 の結果を PR で照合。§3 観点 が `../implementation-guide.md` §6 の共通ルールを弱めていないか。依存 PC の ID・名称が `../platform-components.md` と一致するか |
 | **PM** | 各ファイルの §10 未確定・リスク と、下表の「依存 PC」から先行して作る部品を決める（`../platform-components.md` 末尾）。Outline 列は `../outline-wiki-usecases.md` §2 と同じ |
 
+**実装で出た不具合は各ファイル §10 に書かず、`dify/KNOWN_ISSUES.md`（`DI-xxx`）に残す**。§10 は設計時点の未確定・リスク専用。§10 から参照するときはリンクだけ書き、症状の要約を二重に持たない。
+
 ## 一覧
 
 依存 PC は**固有のもの**だけ（PC-02 認証・PC-07 言語判定・PC-08 モデル・PC-09 評価・PC-10 個人情報・PC-16 本番 UI は全件共通のため省略）。
