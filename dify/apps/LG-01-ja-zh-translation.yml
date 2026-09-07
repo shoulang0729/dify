@@ -1,0 +1,325 @@
+# ---------------------------------------------------------------------------
+# LG-01 日中翻訳（社内の言い方に揃える） — Dify DSL（Workflow）
+# 設計    : docs/dify/usecases/LG-01.md（§2-5 の翻訳の例外＝訳文は相手言語、説明・用語対応は原文の言語。System は §5-1 を
+#           最小構成〔Code・Knowledge Retrieval 無し、用語集は貼り付け入力〕に合わせて調整。§4 の PC-06/PC-07 前提の
+#           自動用語集注入・翻訳メモリ検索・保護トークン化は「無くても動く範囲」（§8）として省略し、System 直書きで代替）
+# 参照 DSL : docs/dify/templates/01-translation-reflection-workflow.yml（直訳 → 専門家提案 → 改善訳の型。ここでは 2 段
+#           〔翻訳 → 照校〕に簡略化し、LLM ノードの変数参照 {{#node_id.var#}} をそのまま使う）
+# 構成    : Start(source_text / direction / style / glossary) → LLM①（翻訳。用語対応表・候補・登録候補を含む）
+#           → LLM②（照校。原文と一段目の訳文を比較し、訳抜け・数値・固有名詞の一致を点検、修正版と変更点を出す）
+#           → End(translation = LLM① の全文〔訳文＋用語対応・候補・登録候補〕, notes = LLM② の全文〔修正版＋変更点〕)
+# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダに合わせて UI で変更する（dify/README.md）
+# 注意    : 用語集 CSV の自動照合（PC-06）・翻訳メモリ検索（Knowledge Retrieval）・言語判定/保護トークン化（PC-07 の Code
+#           ノード）は未実装。用語集は `glossary` に貼り付けたテキストをそのまま LLM に渡す最小構成
+# ---------------------------------------------------------------------------
+app:
+  description: 'LG-01 日中翻訳（社内の言い方に揃える）。原文・方向・用途・用語集（任意）をフォームで受け、社内用語集に揃えた訳文と用語対応表・候補・登録候補を作った上で、原文と照合して修正版・変更点を返す。【インポート後】(1) LLM ノードのモデルを環境のプロバイダーに合わせて選び直す (2) 公開。'
+  icon: 🈺
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: LG-01 日中翻訳（社内の言い方に揃える）
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1757250000001-source-1757250000002-target
+      source: '1757250000001'
+      sourceHandle: source
+      target: '1757250000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: llm
+      id: 1757250000002-source-1757250000003-target
+      source: '1757250000002'
+      sourceHandle: source
+      target: '1757250000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1757250000003-source-1757250000004-target
+      source: '1757250000003'
+      sourceHandle: source
+      target: '1757250000004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 開始（フォーム）
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: 原文
+          max_length: 5000
+          options: []
+          placeholder: ''
+          required: true
+          type: paragraph
+          variable: source_text
+        - default: ''
+          hint: ''
+          label: 方向
+          max_length: 48
+          options:
+          - 自動
+          - 日本語 → 中国語
+          - 中国語 → 日本語
+          placeholder: ''
+          required: true
+          type: select
+          variable: direction
+        - default: ''
+          hint: ''
+          label: 用途
+          max_length: 48
+          options:
+          - 社内文書
+          - 現場掲示
+          - メール
+          placeholder: ''
+          required: true
+          type: select
+          variable: style
+        - default: ''
+          hint: 用語集（承認済み訳語）の貼り付け。無くても動く。PC-06 完成までの代替
+          label: 用語集（貼り付け・任意）
+          max_length: 4000
+          options: []
+          placeholder: ''
+          required: false
+          type: paragraph
+          variable: glossary
+      height: 170
+      id: '1757250000001'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: 'System は docs/dify/usecases/LG-01.md §5-1（最小構成向けに調整）。モデルは環境に合わせて変更'
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: gpt-4o-mini
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: 8a1f2c3d-4e5f-4071-9a8b-1c2d3e4f5a01
+          role: system
+          text: |-
+            あなたは青嶺精工（蘇州）の社内翻訳者です。日本語と中国語を双方向に翻訳し、社内用語集の言い方に揃えます。
+
+            方向の決め方：
+            - 「日本語 → 中国語」「中国語 → 日本語」が指定されていればそれに従う。
+            - 「自動」の場合は原文の主な言語を判定し、日本語なら中国語へ、中国語なら日本語へ訳す。
+
+            守るルール（翻訳は「相手言語へ」が例外。それ以外の出力は原文の言語で書く）：
+            - 訳文は相手言語（原文が日本語なら中国語、中国語なら日本語）で書く。用語対応表・候補・解説は原文の言語で書く。
+            - 用語集（貼り付けがあれば）の訳語を最優先で使う。用語集に「避け」「avoid」と書かれた訳語は使わない。
+            - 用語集に無い専門語は一般的な訳を当て、「用語集未登録」として一覧に挙げる。**登録はしない**（用語集管理者の承認が要る）。
+            - 訳語候補が複数あるときは併記し、用途に応じた採用理由を1行添える。黙って一つに決めない。
+            - 品番・管理番号・数値・単位・日付は原文のまま変えない。
+            - 原文に無い情報を足さない。原文の誤りに気づいても訳文は原文どおりにし「※原文確認」を付ける。
+            - 文体は用途に従う：社内文書＝規定文・敬体、現場掲示＝短文・命令形、メール＝敬体（日本語）／商務中文（中国語）。用途が変わっても用語は変えない。
+            - 原文に氏名・電話番号・メールアドレス等の個人情報が含まれる場合、用途が「現場掲示」「メール」なら訳文では [氏名][电话][邮箱] 等に置換する（社外・不特定多数が見るため）。用途が「社内文書」なら置換せずそのまま訳す。
+            - 前置きの挨拶や余計な説明は書かない。
+            出力の順：
+            1. 訳文
+            2. 用語対応表（原語 → 訳語。用語集にあれば根拠を添える）
+            3. 訳語候補が複数ある語（あれば。無ければ「該当なし」）
+            4. 用語集未登録語の登録候補（あれば。ja／zh／分類／備考の形。無ければ「該当なし」）
+        - id: 8a1f2c3d-4e5f-4071-9a8b-1c2d3e4f5a02
+          role: user
+          text: |-
+            方向：{{#1757250000001.direction#}}／用途：{{#1757250000001.style#}}
+            用語集（貼り付け・任意）：
+            {{#1757250000001.glossary#}}
+            原文：
+            {{#1757250000001.source_text#}}
+        selected: false
+        title: LLM①（翻訳）
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1757250000002'
+      position:
+        x: 382
+        y: 282
+      positionAbsolute:
+        x: 382
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: '照校（reflection）。docs/dify/templates/01-translation-reflection-workflow.yml の EXPERT_SUGGESTIONS の型を、指摘＋修正を1段でやる構成に簡略化'
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: gpt-4o-mini
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: 8a1f2c3d-4e5f-4071-9a8b-1c2d3e4f5a03
+          role: system
+          text: |-
+            あなたは日中翻訳の照校（レビュー）担当です。原文と一段目の訳文（用語対応表・候補・登録候補を含む）を比較し、次の観点だけを点検します：
+            - 訳抜け・付け足し（原文にある内容が訳文に無い、または原文に無い内容が訳文にある）
+            - 数値・単位・日付・品番・管理番号の食い違い（原文と訳文で値が変わっていないか）
+            - 固有名詞（社名・部署名・用語集の用語）の不一致（用語集の訳語からズレていないか、避けるべき訳語を使っていないか）
+
+            守るルール：
+            - 指摘した問題があれば、それを反映した「修正版の訳文」を書く。問題が無ければ「変更なし」とし、一段目の訳文をそのまま修正版として書く。
+            - 変更点は箇条書きで、原文の該当箇所 → 何をどう直したかを簡潔に書く。問題が無ければ「変更点：変更なし」とだけ書く。
+            - 原文の氏名・電話番号・メールアドレス等が訳文で [氏名][电话][邮箱] 等に置換されている場合、それは個人情報保護のための意図的な処理であり「訳抜け」として指摘・復元しない。
+            - 用語対応表・候補・登録候補は一段目のものをそのまま踏襲する（内容を変えない）。原文に無い新しい情報を足さない。
+            - 修正版の訳文は一段目の訳文と同じ言語で書く。変更点の説明は原文の言語で書く。
+            出力の順：
+            1. 修正版の訳文（該当箇所のみ直した全文。用語対応表・候補・登録候補を含む）
+            2. 区切り線 ---
+            3. 変更点（箇条書き。無ければ「変更なし」）
+        - id: 8a1f2c3d-4e5f-4071-9a8b-1c2d3e4f5a04
+          role: user
+          text: |-
+            原文：
+            {{#1757250000001.source_text#}}
+            一段目の訳文（用語対応表・候補・登録候補を含む）：
+            {{#1757250000002.text#}}
+            用語集（貼り付け・任意）：
+            {{#1757250000001.glossary#}}
+        selected: false
+        title: LLM②（照校）
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1757250000003'
+      position:
+        x: 684
+        y: 282
+      positionAbsolute:
+        x: 684
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: 'translation = LLM①（翻訳）の全文（訳文＋用語対応表・候補・登録候補）。notes = LLM②（照校）の全文（修正版の訳文＋変更点）'
+        outputs:
+        - value_selector:
+          - '1757250000002'
+          - text
+          value_type: string
+          variable: translation
+        - value_selector:
+          - '1757250000003'
+          - text
+          value_type: string
+          variable: notes
+        selected: false
+        title: 終了
+        type: end
+      height: 88
+      id: '1757250000004'
+      position:
+        x: 986
+        y: 282
+      positionAbsolute:
+        x: 986
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.9
+  rag_pipeline_variables: []
