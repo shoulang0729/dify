@@ -110,6 +110,10 @@
      コントラストが余裕なく、文字色には使えないため専用トークンを立てる） */
   --status-danger-text:   #B32100;
   --badge-due-bg:         rgba(228, 38, 0, 0.12);
+  /* NEW バッジ（SVCS[].added から自動表示）。--ntt-turquoise 由来。
+     成熟度（live/trial/concept）・期限（due）と色がぶつからない唯一のブランド色 */
+  --badge-new-bg:         rgba(0, 223, 237, 0.18);
+  --badge-new-fg:         #00636E;
 
   /* --- 分類アクセント（① サイドバー / ①②③ カード / ② 分類行・ランキング / ③ フィード） ---
      テキストにも使うため light は白・キャンバス上で 4.5:1 以上、dark はカード上で 4.5:1 以上。
@@ -200,6 +204,8 @@
   --badge-concept-fg:     #B8C3CC;
   --status-danger-text:   #FF9A80;
   --badge-due-bg:         rgba(255, 154, 128, 0.18);
+  --badge-new-bg:         rgba(0, 223, 237, 0.18);
+  --badge-new-fg:         #5EE3EF;
 
   /* --- 分類アクセント（dark）。qa は PM 判断（design-pass.md §15-7）によりアンバー --- */
   --cat-kn:      #5AACEE;  --cat-kn-bg: rgba(90, 172, 238, 0.18);
@@ -486,6 +492,20 @@
   .card .c-head { min-width: 0; }
   .card .c-top .code { margin-left: auto; flex-shrink: 0; align-self: flex-start; }
   .detail-card .d-code { margin-bottom: 6px; }
+
+  /* ===== NEW バッジ（SVCS[].added から自動表示。成熟度バッジ .badge とは別物） ===== */
+  .badge-new {
+    display: inline-flex; align-items: center; flex-shrink: 0;
+    font-family: var(--font-mono); font-size: var(--text-overline); font-weight: var(--weight-bold);
+    letter-spacing: 0.06em; padding: 1px 6px; border-radius: var(--radius-xs);
+    background: var(--badge-new-bg); color: var(--badge-new-fg);
+  }
+  /* カード右上：NEW と管理番号を 1 つのまとまりにして右端に寄せる（管理番号の右端は全カードで揃う） */
+  .card .c-top .c-code {
+    margin-left: auto; flex-shrink: 0; align-self: flex-start;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .detail-card .d-code .badge-new { margin-left: var(--space-2); }
 
   /* ===== A: 分類アクセント（色とアイコン） ===== */
   .ic { width: 20px; height: 20px; flex-shrink: 0; display: block; }
@@ -802,6 +822,13 @@
   .legend { display: flex; gap: var(--space-3); margin-left: auto; font-size: 11.5px; color: var(--text-muted); }
   .lg-i { display: inline-flex; align-items: center; gap: 5px; }
 
+  /* --- 新しく追加されたエージェント（②。新着 0 件なら帯ごと出ない） --- */
+  .dash-new .new-item { display: flex; flex-direction: column; gap: 6px; }
+  .dash-new .new-date {
+    font-family: var(--font-mono); font-size: var(--text-overline);
+    letter-spacing: 0.04em; color: var(--text-muted);
+  }
+
   /* --- よく使われているエージェント（横棒ランキング） --- */
   .use-list { border-top: 1px solid var(--border-subtle); }
   .use-row {
@@ -1110,7 +1137,17 @@ const T = {
   kindRoutine:  { ja: '定例', zh: '例行', en: 'Routine' },
   feedOpen:     { ja: '開く', zh: '打开', en: 'Open' },
   feedMine:     { ja: '担当分類', zh: '负责分类', en: 'My categories' },
-  feedRecent:   { ja: '最近使った', zh: '最近使用', en: 'Recently used' }
+  feedRecent:   { ja: '最近使った', zh: '最近使用', en: 'Recently used' },
+
+  /* ---- NEW 表示（SVCS[].added から自動。6 キー） ---- */
+  newBadge:     { ja: 'NEW', zh: 'NEW', en: 'NEW' },
+  dashNew:      { ja: '新しく追加されたエージェント', zh: '新增的智能体', en: 'Newly added agents' },
+  dashNewNote:  { ja: '追加から {n} 日間ここに表示されます', zh: '添加后 {n} 天内显示在此处', en: 'Shown here for {n} days after being added' },
+  addedOn:      { ja: '{d} 追加', zh: '{d} 添加', en: 'Added {d}' },
+  feedNewWhen:  { ja: '新着', zh: '最新', en: 'New' },
+  feedNewAgent: { ja: '新しいエージェント {code} が使えます。詳細を開くとデモを試せます。',
+                  zh: '新智能体 {code} 已可使用。打开详情即可查看演示。',
+                  en: 'A new agent, {code}, is available. Open the details to try the demo.' }
 };
 
 /* パターン定義（表示レイヤーの選択肢） */
@@ -1244,7 +1281,8 @@ const CATS = [
 
 /* st: 1 = 提供中 / 2 = 試行版 / 3 = 構想
    en は機械下訳ベースのドラフト（モック用途・要ネイティブレビュー）
-   対象顧客：在中日系製造業（中国工場）。全サービス日中どちらの入力も受ける（§2-5） */
+   対象顧客：在中日系製造業（中国工場）。全サービス日中どちらの入力も受ける（§2-5）
+   added（任意）: 追加日 'YYYY-MM-DD'。NEW_DAYS 日以内なら NEW バッジ・②新着帯・③お知らせを自動生成する（§4 の isNew） */
 const SVCS = [
   /* ---- kn: ナレッジ検索・問い合わせ ---- */
   { id: 'kn1', cat: 'kn', sub: 'tech', st: 1, tags: ['search'],
@@ -1331,7 +1369,7 @@ const SVCS = [
     desc: { ja: '取引基本契約・品質保証協定・秘密保持契約などを、契約類型と条件を指定すると社内標準条項に基づいてドラフトします。中国語の契約書と日本語対訳の同時作成、相手方案文との条項比較にも対応します。最終判断は法務レビューを前提とします。',
             zh: '指定合同类型与条件后，基于公司标准条款起草基本交易合同、质量保证协议、保密协议等。支持中文合同与日文对照同时生成、与对方版本的条款比对。最终以法务审核为准。',
             en: 'Drafts master supply agreements, quality assurance agreements and NDAs from standard clauses given the type and terms. Produces the Chinese contract with a Japanese parallel text and compares clauses against the counterparty draft. Final sign-off stays with Legal.' } },
-  { id: 'dc8', cat: 'dc', sub: 'report', st: 2, tags: ['report', 'kpi'],
+  { id: 'dc8', cat: 'dc', sub: 'report', st: 2, tags: ['report', 'kpi'], added: '2026-09-07',
     name: { ja: '報告レビュー（提出前チェック／受領後の論点整理）', zh: '汇报评审（提交前自查／收到后的要点梳理）', en: 'Report Review — Pre-submission Check and Post-receipt Framing' },
     desc: { ja: '報告種別（担当週報・組織長週報・月次報告・人事要員報告・障害報告ほか）と読み手、目的（提出前のセルフチェック／受領後の論点整理）を選ぶと、その組み合わせに合う観点で読みます。提出前は規定と照らして行を整理し、曖昧な表現や不足項目を書き手向けの助言に。受領後は要旨・確認したい論点 3〜5 件・数字のブリッジ・改善後の報告案を返し、台帳と照合して未回答・期限超過・同じ論点の再発を示します。',
             zh: '按汇报种类（担当周报、组织长周报、月度报告、人事要员报告、故障报告等）、读者与目的（提交前自查／收到后的要点梳理）选择模式。提交前对照规定整理条目，把模糊表述与缺失项目变成面向撰写者的建议；收到后返回要点摘要、需确认的议题3〜5条、数字桥接与改进后的汇报稿，并与台账核对未回答、超期与再发。',
@@ -1429,7 +1467,7 @@ const SVCS = [
     desc: { ja: '長文の報告書・仕様書・通達・メールスレッドを、目的に応じた粒度の要点サマリーに変換します。中国語の長文を日本語 1 枚に要約する、日本語の本社資料を中国語の箇条書きにするなど、言語をまたいだ要約に対応します。',
             zh: '将长篇报告、规格书、通知与邮件往来压缩为不同粒度的要点摘要。支持跨语言摘要，例如将中文长文概括为一页日文，或将日文总部资料整理为中文要点。',
             en: 'Condenses long reports, specifications, notices and email threads into summaries at your chosen level of detail. Works across languages — a one-page Japanese summary of a Chinese document, or Chinese bullet points from Japanese HQ materials.' } },
-  { id: 'gn6', cat: 'gn', sub: 'daily', st: 2, tags: ['calendar', 'kpi'],
+  { id: 'gn6', cat: 'gn', sub: 'daily', st: 2, tags: ['calendar', 'kpi'], added: '2026-09-07',
     name: { ja: '頼まれ事・放置業務の追跡', zh: '零星委托与搁置事项的跟踪', en: 'Small Task & Stalled Work Tracker' },
     desc: { ja: 'デスクの整理や週次の報告提出のような定型業務、ふと頼まれた小さな用件、PC 在庫・固定資産・倉庫整理のように後回しにされがちな業務を、ひとつずつ票にして追跡します。チャットの一言から担当・種別・大きさ・期限・繰り返しを埋めた票のドラフトを作り、期限と放置日数で並べ替えます。振られた側には今週の残件と期限、振った側には頼んだ件の進捗と止まっている理由、四半期の棚卸しには完了率と滞留の集計を返し、催促がなくても放置が表に出るようにします。間に合わないときは上長への相談メモも作ります。',
             zh: '把桌面整理、周报提交这类例行事务，临时被拜托的零星小事，以及电脑库存、固定资产、仓库整理这类容易被一再推后的事项，逐条变成任务票进行跟踪。从聊天中的一句话生成填好负责人、类别、工作量、期限与重复设置的任务票草案，并按期限与搁置天数排序。对被委托方给出本周的余件与期限，对委托方给出所托事项的进展与卡住的原因，对季度盘点给出完成率与滞留汇总，让无人催促的事项也能浮出水面。来不及时还会生成向上级请示的备忘。',
@@ -3429,6 +3467,30 @@ const svcCode = (id) => {
   return m ? `${m[1].toUpperCase()}-${pad2(m[2])}` : String(id).toUpperCase();
 };
 
+/* ---- NEW 表示（SVCS[].added。§2-3：state もデータも増やさず、その場で計算する） ----
+   DEMO_DATE に 'YYYY-MM-DD' を入れるとその日を「今日」として固定できる（デモ当日に
+   30 日を過ぎていても NEW を出し続けたいとき）。null なら実際の今日。
+   コミットする既定値は null。固定したまま main に入れないこと（verify §7 が warn する） */
+const NEW_DAYS = 30;
+const DEMO_DATE = null;   // 例: '2026-09-20'
+/** 今日（ローカル時刻）の 'YYYY-MM-DD'。DEMO_DATE があればそれを返す */
+const today = () => {
+  if (DEMO_DATE) return DEMO_DATE;
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+};
+/** 追加日からの経過日数。added が無い / 解釈できないときは null */
+const daysSince = (added) => {
+  if (typeof added !== 'string') return null;
+  const a = Date.parse(added + 'T00:00:00Z'), n = Date.parse(today() + 'T00:00:00Z');
+  if (Number.isNaN(a) || Number.isNaN(n)) return null;
+  return Math.floor((n - a) / 86400000);
+};
+/** NEW を出すか（追加日から NEW_DAYS 日以内。未来日も NEW 扱い） */
+const isNew = (x) => { const d = daysSince(x && x.added); return d !== null && d < NEW_DAYS; };
+/** 新着サービスを added の新しい順に返す（同日は SVCS の並び順を保つ＝安定ソート） */
+const newSvcs = () => SVCS.filter(isNew).sort((a, b) => (a.added < b.added ? 1 : a.added > b.added ? -1 : 0));
+
 /** 分類アイコン。size は 'ic-sm'(16) / ''(20) / 'ic-lg'(24) / 'ic-xl'(28)
     未知の分類 id でも _fallback で必ず描ける（§2-9） */
 const catIcon = (id, size) => `<svg class="ic ${size || ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${(CAT_STYLE[id] || CAT_STYLE._fallback).icon}</svg>`;
@@ -3570,6 +3632,9 @@ function renderSidebar() {
 /* ============================================================
    9. 描画 — 右ペイン
    ============================================================ */
+/** NEW バッジ 1 個。新着でなければ空文字（呼び出し側に分岐を書かない） */
+const newBadgeHTML = (x) => isNew(x) ? `<span class="badge-new">${esc(t('newBadge'))}</span>` : '';
+
 function cardHTML(x) {
   const c = catOf(x.cat), sb = subOf(x.cat, x.sub);
   return `
@@ -3580,7 +3645,7 @@ function cardHTML(x) {
         <div class="c-crumb">${esc(L(c.name))}・${esc(L(sb.name))}</div>
         <div class="c-name">${esc(L(x.name))}</div>
       </div>
-      <span class="code">${esc(svcCode(x.id))}</span>
+      <span class="c-code">${newBadgeHTML(x)}<span class="code">${esc(svcCode(x.id))}</span></span>
     </div>
     <div class="c-desc">${esc(L(x.desc))}</div>
     <div class="c-meta">
@@ -3709,7 +3774,25 @@ function dashSectionsHTML() {
       }).join('')}
     </div>`;
 
-  return `<div class="dash-duo">${recoHTML}<div class="dash-col">${freqHTML}${catsHTML}</div></div>`;
+  /* 新しく追加されたエージェント（added 降順で最新 3 件）。新着 0 件なら帯ごと出さない。
+     HOME には書かない＝データは SVCS[].added が唯一の出どころ */
+  const nw = newSvcs().slice(0, 3);
+  const newHTML = !nw.length ? '' : `
+    <div class="dash-sec dash-new">
+      <div class="sec-h">
+        <h2>${esc(t('dashNew'))}</h2>
+        <span class="sec-note">${esc(t('dashNewNote').replace('{n}', NEW_DAYS))}</span>
+      </div>
+      <div class="grid">
+        ${nw.map(x => `
+          <div class="new-item">
+            ${cardHTML(x)}
+            <div class="new-date">${esc(t('addedOn').replace('{d}', x.added))}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  return `${newHTML}<div class="dash-duo">${recoHTML}<div class="dash-col">${freqHTML}${catsHTML}</div></div>`;
 }
 
 function renderDash(el) {
@@ -3768,6 +3851,17 @@ function renderDash(el) {
     分岐で個別に呼ぶ（`t(KIND_LABEL[kind])` のような間接参照にしない） */
 const kindLabel = (kind) => kind === 'due' ? t('kindDue') : kind === 'notify' ? t('kindNotify') : t('kindRoutine');
 
+/** ③「お知らせ」に自動で足す新着行。FEED.items には書かない（データの出どころは SVCS[].added だけ）。
+    FEED.items に同じ id が既にあるものは二重表示になるので除く */
+const newFeedItems = () => {
+  const listed = new Set(FEED.items.map(i => i.id));
+  return newSvcs().filter(x => !listed.has(x.id)).map(x => {
+    const code = svcCode(x.id);
+    const fill = (o) => ({ ja: o.ja.replace('{code}', code), zh: o.zh.replace('{code}', code), en: o.en.replace('{code}', code) });
+    return { id: x.id, kind: 'notify', when: fill(T.feedNewWhen), note: fill(T.feedNewAgent) };
+  });
+};
+
 /** ③ フィード項目 1 件。左ボーダー色は種別（緊急度）で決める。管理番号は出さない（D-14） */
 function feedItemHTML(it) {
   const x = svcOf(it.id), c = catOf(x.cat);
@@ -3805,7 +3899,7 @@ function feedSectionsHTML() {
   };
   const action  = FEED.items.filter(i => i.kind === 'due');
   const routine = FEED.items.filter(i => i.kind === 'routine');
-  const notice  = FEED.items.filter(i => i.kind === 'notify');
+  const notice  = newFeedItems().concat(FEED.items.filter(i => i.kind === 'notify'));
 
   const mineHTML = `
     <div class="side-box">
@@ -3990,7 +4084,7 @@ function renderMain() {
       <button class="backlink" data-act="back"><span class="arrow"></span>${esc(t('backToList'))}</button>
       <div class="detail-card ${catClass(x.cat)}">
         <div class="d-crumb">${catIcon(x.cat)}${esc(L(c.name))}・${esc(L(sb.name))}</div>
-        <div class="code d-code">${esc(svcCode(x.id))}</div>
+        <div class="code d-code">${esc(svcCode(x.id))}${newBadgeHTML(x)}</div>
         <h1>${esc(L(x.name))}</h1>
         <div class="d-meta">
           <span class="badge ${statusClass(x.st)}">${esc(statusText(x.st))}</span>

@@ -537,6 +537,7 @@
     }
   ],
   "uiKeys": [
+    "addedOn",
     "afterLabel",
     "all",
     "allServices",
@@ -557,6 +558,8 @@
     "dashFreq",
     "dashFreqNote",
     "dashLead",
+    "dashNew",
+    "dashNewNote",
     "dashReco",
     "dashRecoNote",
     "dashWelcome",
@@ -567,6 +570,8 @@
     "feedEyebrow",
     "feedLead",
     "feedMine",
+    "feedNewAgent",
+    "feedNewWhen",
     "feedNotice",
     "feedOpen",
     "feedRecent",
@@ -582,6 +587,7 @@
     "nativeJa",
     "nativeLabel",
     "nativeZh",
+    "newBadge",
     "noResults",
     "overview",
     "personaLabel",
@@ -616,6 +622,6 @@
     "subs": 17,
     "svcs": 43,
     "tags": 43,
-    "ui": 73
+    "ui": 79
   }
 }

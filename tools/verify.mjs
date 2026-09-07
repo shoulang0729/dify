@@ -11,7 +11,7 @@
  *   3. 未定義キー参照（t('key') / T.key が T に存在するか）
  *   4. 未使用キー（T にあるがどこからも参照されない）※警告扱い（FAIL にしない）
  *   5. CSS トークン（var(--x) が定義済みか / dark ブロック存在 / コンポーネント CSS に色直値なし / --ntt-* が dark で上書きされていない）
- *   6. データ整合（SVCS の cat/sub が CATS に存在、tags が TAGS に存在、st ∈ {1,2,3}）
+ *   6. データ整合（SVCS の cat/sub が CATS に存在、tags が TAGS に存在、st ∈ {1,2,3}、added は YYYY-MM-DD）
  *   7. 共通レイヤー契約（state の必須キー / data-act 一覧 / detectLang 存在 / localStorage キー）
  *   8. Pages 設定（pages.yml の path: mock / mock/.nojekyll）
  *   9. シナリオ整合（SCENARIOS の id が SVCS に存在／template が TEMPLATES に存在／台本の無い SVCS は warn）
@@ -165,6 +165,14 @@ if (CATS && SVCS && TAGS) {
     if (!catIds.has(s.cat)) { fail(`SVCS.${s.id}: cat "${s.cat}" が CATS に無い`); bad++; }
     if (!subIds.has(s.sub)) { fail(`SVCS.${s.id}: sub "${s.sub}" が CATS に無い`); bad++; }
     if (![1, 2, 3].includes(s.st)) { fail(`SVCS.${s.id}: st=${s.st} は 1/2/3 以外`); bad++; }
+    // added（任意）：あるなら YYYY-MM-DD で、実在する日付であること（NEW 表示の入力）
+    if ('added' in s) {
+      if (typeof s.added !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s.added)) {
+        fail(`SVCS.${s.id}: added "${s.added}" が YYYY-MM-DD 形式でない`); bad++;
+      } else if (Number.isNaN(Date.parse(s.added + 'T00:00:00Z'))) {
+        fail(`SVCS.${s.id}: added "${s.added}" は実在しない日付`); bad++;
+      }
+    }
     for (const tg of s.tags) if (!(tg in TAGS)) { fail(`SVCS.${s.id}: tag "${tg}" が TAGS に無い`); bad++; }
   }
   const usedTags = new Set(SVCS.flatMap(s => s.tags));
@@ -200,6 +208,10 @@ section('7. 共通レイヤー契約');
   if (missingActs.length) fail(`data-act ハンドラが無い: ${missingActs.join(', ')}`); else ok(`data-act ${requiredActs.length} 種 OK`);
 
   if (!/function detectLang\(/.test(script)) fail('detectLang() が無い（§2-5）'); else ok('detectLang() あり');
+  const demoDate = script.match(/const DEMO_DATE = ([^;]+);/);
+  if (!demoDate) fail('DEMO_DATE が無い（NEW 表示の基準日）');
+  else if (demoDate[1].trim() !== 'null') warn(`DEMO_DATE が ${demoDate[1].trim()} に固定されている（デモ後は null に戻す）`);
+  else ok('DEMO_DATE = null（実際の今日で判定）');
   for (const k of ['mock.lang', 'mock.theme']) {
     if (!script.includes(`'${k}'`)) fail(`localStorage キー '${k}' が見当たらない（§2-6）`);
   }
