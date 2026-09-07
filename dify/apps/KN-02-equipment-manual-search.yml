@@ -1,0 +1,262 @@
+# ---------------------------------------------------------------------------
+# KN-02 設備マニュアル・取扱説明書の検索 — Dify DSL（Chatflow / advanced-chat）
+# 設計    : docs/dify/usecases/KN-02.md（System プロンプトは §5-1 を最小構成向けに調整。原文は IF/ELSE による
+#           intent 分岐と KB 4 系統〔manuals / alarm_codes / procedures / logs〕を前提にしているが、本 DSL は
+#           KN-01 と同じ最小構成〔Start → Knowledge Retrieval 1 系統 → LLM → Answer〕に合わせ、
+#           型式・アラームコードの抽出／件数集計（Code・IF/ELSE）を持たない。型式が不明なときは
+#           LLM がチャット内で聞き返す（§2「入力の欠け・曖昧さ」の定型文をそのまま採用）
+# 参照 DSL : docs/dify/templates/03-document-chat-classifier-multi-kb.yml（Knowledge Retrieval → LLM）
+#            docs/dify/templates/05-chatflow-form-input-demo.yml（advanced-chat の Start / LLM / Answer）
+# 構成    : Start(sys.query) → Knowledge Retrieval(dataset_ids は空。インポート後に UI で KB を紐づける) → LLM → Answer
+# KB      : dify/kb/KN-02/ の 3 文書（設備マニュアル抜粋・アラームコード表・保全内部規程）を 1 つの KB にまとめてアップロードする
+# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダーに合わせて UI で変更する（dify/README.md）
+# ---------------------------------------------------------------------------
+app:
+  description: 'KN-02 設備マニュアル・取扱説明書の検索。設備の型式とアラームコード（または症状）を中国語または日本語で聞くと、取扱説明書の該当ページを引いて復旧手順を要約する。【インポート後】(1) LLM ノードのモデルを環境のプロバイダーに合わせて選び直す (2) ナレッジベースを作成し dify/kb/KN-02/ の 3 文書をアップロードして Knowledge Retrieval ノードに紐づける (3) 公開。'
+  icon: 🛠️
+  icon_background: '#DCFCE7'
+  mode: advanced-chat
+  name: KN-02 設備マニュアル・取扱説明書の検索
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: |-
+      設備マニュアル・取扱説明書の検索（KN-02）です。設備の型式とアラームコード（または症状）を日本語または中国語で入力してください。取扱説明書の該当ページから復旧手順を要約します。
+      设备手册与说明书检索（KN-02）。请用中文或日文输入设备型号与报警代码（或故障现象），将从说明书中引用对应页面并总结恢复步骤。
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+    - プレス機 PX-200 でアラーム E-47 が出て止まった。どうすればいい？
+    - 原点復帰の操作ボタンはどれ？
+    - 冲床 PX-200 出现报警 E-47 停机了，该怎么处理？
+    - 原点复归的按钮是哪个？
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: 1757250000001-source-1757250000002-target
+      source: '1757250000001'
+      sourceHandle: source
+      target: '1757250000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1757250000002-source-1757250000003-target
+      source: '1757250000002'
+      sourceHandle: source
+      target: '1757250000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1757250000003-source-1757250000004-target
+      source: '1757250000003'
+      sourceHandle: source
+      target: '1757250000004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 開始
+        type: start
+        variables: []
+      height: 54
+      id: '1757250000001'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids: []
+        desc: 'インポート後に UI でナレッジベース（dify/kb/KN-02/ の 3 文書）を選び直す'
+        multiple_retrieval_config:
+          reranking_enable: false
+          reranking_mode: reranking_model
+          reranking_model:
+            model: ''
+            provider: ''
+          score_threshold: null
+          top_k: 4
+        query_variable_selector:
+        - sys
+        - query
+        retrieval_mode: multiple
+        selected: false
+        title: 知識検索（設備マニュアル・アラームコード表・保全規程）
+        type: knowledge-retrieval
+      height: 92
+      id: '1757250000002'
+      position:
+        x: 382
+        y: 282
+      positionAbsolute:
+        x: 382
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1757250000002'
+          - result
+        desc: 'System は docs/dify/usecases/KN-02.md §5-1 を最小構成向けに調整（型式抽出ノード無し、型式不明時はチャットで聞き返す）。モデルは環境に合わせて変更'
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: gpt-4o-mini
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: 8b1c2d3e-4f50-4a61-9b72-0a1b2c3d4e01
+          role: system
+          text: |-
+            あなたは青嶺精工 蘇州工場の設備保全を支援する「設備マニュアル検索」です。
+            役割：設備メーカーの取扱説明書・アラームコード表・社内保全規程から、該当ページを引いて復旧手順を要約する。
+
+            守るルール：
+            1. 回答は与えられた <context> の内容だけから作る。マニュアルに無い手順・ボタン操作・数値を補完しない。
+            2. 質問の設備型式とメタデータ・本文に記載の型式が一致する内容だけを根拠にする。型式が異なる、または一致が確認できない内容は「参考（型式が異なる／不明）」とだけ書き、手順としては書かない。
+            3. 質問に設備型式が含まれていないときは、回答を作らずに先に型式を聞き返す。
+               ja「設備の型式（例：PX-200）を教えてください。同じコードでも型式により意味が異なります。」
+               zh「请提供设备型号（例如：PX-200）。相同代码在不同型号下含义可能不同。」
+            4. 手順・意味には必ず「第 X 章 X-XX ページ（図 X-X）」を付ける。
+            5. 安全注意（非常停止・両手操作・電源遮断・金型内の確認）は省略せず、手順の先頭に置く。
+            6. 「何回出た」など件数の質問は、<context> に稼働記録・発生記録の件数が含まれているときだけそれを使う。含まれていなければ「記録なし（本サービスには稼働記録は未接続）」と書き、推測で回数を出さない。
+            7. 保全依頼票・報告書を求められたら「ドラフト」と明記し、起票は担当者が行うと 1 行添える。
+            8. マニュアルの章を丸ごと転記しない。要約と該当箇所の短い引用まで。
+            9. 言語：ユーザーの入力言語で答える。日本語なら日本語、中国語なら中国語。ページ番号・図番号・パネル表記（ORG、MODE 等）は原語のまま。
+            10. 該当が無いとき：
+               ja「該当するアラームコードが見つかりません。設備型式とコードを確認してください。パネル表示の写真があれば添えてください。」
+               zh「未找到对应的报警代码。请确认设备型号与代码。如有面板显示的照片请一并提供。」
+            11. 個人情報（電話番号・身分証番号など）は答えない。連絡先は役職（保全課長 等）までとする。
+
+            出力形式：1 行目にコードの意味（ページ付き）→ 番号付き復旧手順 → 再発時の連絡先（社内規程から）。
+        - id: 8b1c2d3e-4f50-4a61-9b72-0a1b2c3d4e02
+          role: user
+          text: |-
+            <context>
+            {{#context#}}
+            </context>
+
+            質問: {{#sys.query#}}
+        selected: false
+        title: LLM（根拠付き復旧手順）
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1757250000003'
+      position:
+        x: 684
+        y: 282
+      positionAbsolute:
+        x: 684
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1757250000003.text#}}'
+        desc: ''
+        selected: false
+        title: 回答
+        type: answer
+        variables: []
+      height: 103
+      id: '1757250000004'
+      position:
+        x: 986
+        y: 282
+      positionAbsolute:
+        x: 986
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.9
+  rag_pipeline_variables: []

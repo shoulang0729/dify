@@ -1,0 +1,348 @@
+# ---------------------------------------------------------------------------
+# NM-03 日報・実績の集計と要約 — Dify DSL（Workflow）
+# 設計    : docs/dify/usecases/NM-03.md（System は §5-1 を最小構成向けに調整。原文は Iteration による複数ファイル処理・
+#           KB（KPI 定義）・xlsx 列名の日中辞書を前提にしているが、本 DSL は Start で 1 ファイルを受け、
+#           Document Extractor で文字列化 → Code ノードで「ラベル: 数値」形式の値をすべて拾って合計・平均・件数を
+#           集計 → LLM が Code の集計結果（JSON。転記のみ）と日報備考を読んで週報文を書く、という最小構成にした）
+# 参照 DSL : docs/dify/templates/07-excel-document-extractor-echarts.yml（start(file)→document-extractor→llm→end の骨子）
+#            docs/dify/templates/02-long-document-chunk-iteration-translate.yml（code ノードの書き方：code / code_language /
+#            dependencies / outputs の形。§5-3 の JSON 構造の参考）
+# 構成    : Start(report_file file 1件／text 貼り付け（file が無いときのテスト用。file と排他）／lang select)
+#           → Document Extractor（report_file）→ Code（aggregate：Document Extractor の text と text を合わせて数値集計）
+#           → LLM（Code の JSON を転記して週報を書く。計算はしない）→ End
+# 注意    : report_file が無い場合（Service API のテスト等）は text（貼り付け）を使う。両方無い場合は Code の集計が
+#           空になり、LLM は「集計できるデータがありません」の定型で返す（§3 の「不確実時の定型文」を援用）
+# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダーに合わせて UI で変更する（dify/README.md）
+# ---------------------------------------------------------------------------
+app:
+  description: 'NM-03 日報・実績の集計と要約。当週の生産日報・品質日報・設備稼働記録（xlsx/csv、またはテキスト貼り付け）から、Code ノードが数値を集計し、LLM が日本語（または中国語）の週報ドラフトを書く。数値は Code の集計結果をそのまま転記し、LLM は計算しない。【インポート後】(1) LLM ノードのモデルを環境のプロバイダーに合わせて選び直す (2) 公開。'
+  icon: 📊
+  icon_background: '#FEF3C7'
+  mode: workflow
+  name: NM-03 日報・実績の集計と要約
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: document-extractor
+      id: 1757270000001-source-1757270000002-target
+      source: '1757270000001'
+      sourceHandle: source
+      target: '1757270000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: document-extractor
+        targetType: code
+      id: 1757270000002-source-1757270000003-target
+      source: '1757270000002'
+      sourceHandle: source
+      target: '1757270000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1757270000003-source-1757270000004-target
+      source: '1757270000003'
+      sourceHandle: source
+      target: '1757270000004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1757270000004-source-1757270000005-target
+      source: '1757270000004'
+      sourceHandle: source
+      target: '1757270000005'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 開始
+        type: start
+        variables:
+        - allowed_file_extensions: []
+          allowed_file_types:
+          - document
+          allowed_file_upload_methods:
+          - local_file
+          - remote_url
+          default: ''
+          hint: '生産日報・品質日報・設備稼働記録（xlsx/csv）を 1 ファイルずつ実行する。複数ファイルをまとめる場合はテキスト貼り付けを使う'
+          label: 日報ファイル（xlsx/csv）
+          max_length: 5
+          options: []
+          placeholder: ''
+          required: false
+          type: file
+          variable: report_file
+        - default: ''
+          hint: 'report_file が無いとき（Service API のテスト・コピー貼り付け運用）に使う。report_file と排他（両方入力された場合は両方を集計対象にする）'
+          label: 日報のテキスト貼り付け
+          max_length: 8000
+          options: []
+          placeholder: ''
+          required: false
+          type: paragraph
+          variable: text
+        - default: ja
+          hint: ''
+          label: 出力言語
+          max_length: 48
+          options:
+          - ja
+          - zh
+          placeholder: ''
+          required: true
+          type: select
+          variable: lang
+      height: 178
+      id: '1757270000001'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        is_array_file: false
+        selected: false
+        title: Document Extractor（日報ファイル）
+        type: document-extractor
+        variable_selector:
+        - '1757270000001'
+        - report_file
+      height: 92
+      id: '1757270000002'
+      position:
+        x: 382
+        y: 282
+      positionAbsolute:
+        x: 382
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "import re\nimport json\n\n\ndef main(doc_text: str, pasted_text: str) -> dict:\n\
+          \    \"\"\"抽出テキストとテキスト貼り付けを合わせ、「ラベル: 数値」の形をすべて拾って\n\
+          \    ラベルごとに件数・合計・平均を集計する。LLM には計算させず、この Code の出力を転記させる。\"\"\"\n\
+          \    src = '\\n'.join([t for t in [doc_text or '', pasted_text or ''] if t])\n\
+          \    pattern = re.compile(r'([\\u3040-\\u30ff\\u4e00-\\u9fff\\w]{2,12})\\s*[:\\uff1a]\\\
+          s*([0-9]+(?:[.,][0-9]+)?)\\s*(%|h|\\u4ef6|\\u4e2a|\\u53f0)?')\n    buckets: dict = {}\n\
+          \    for m in pattern.finditer(src):\n        label = m.group(1)\n        value\
+          \ = float(m.group(2).replace(',', ''))\n        unit = m.group(3) or ''\n     \
+          \   key = f'{label}{unit}'\n        buckets.setdefault(key, []).append(value)\n\n\
+          \    items = []\n    for key, values in buckets.items():\n        items.append({\n\
+          \            'label': key,\n            'count': len(values),\n            'sum':\
+          \ round(sum(values), 2),\n            'avg': round(sum(values) / len(values), 2),\n\
+          \            'values': values,\n        })\n\n    aggregate = {\n        'items':\
+          \ items,\n        'labels_found': len(items),\n        'source_chars': len(src),\n\
+          \    }\n    return {\n        'aggregate_json': json.dumps(aggregate, ensure_ascii=False),\n\
+          \        'source_text': src,\n        'labels_found': len(items),\n    }\n"
+        code_language: python3
+        dependencies: []
+        desc: '数値の集計のみ。合計・平均を LLM に計算させないための Code ノード（NM-03.md §3「数値はすべて Code の集計結果を転記」に対応）'
+        outputs:
+          aggregate_json:
+            children: null
+            type: string
+          labels_found:
+            children: null
+            type: number
+          source_text:
+            children: null
+            type: string
+        selected: false
+        title: Code（数値集計）
+        type: code
+        variables:
+        - value_selector:
+          - '1757270000002'
+          - text
+          variable: doc_text
+        - value_selector:
+          - '1757270000001'
+          - text
+          variable: pasted_text
+      height: 98
+      id: '1757270000003'
+      position:
+        x: 684
+        y: 282
+      positionAbsolute:
+        x: 684
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: 'System は docs/dify/usecases/NM-03.md §5-1 を最小構成向けに調整（Iteration・KB 無し。Code の集計 JSON をそのまま転記する）。モデルは環境に合わせて変更'
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: gpt-4o-mini
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: a1b2c3d4-e5f6-4708-8192-0a1b2c3d4e01
+          role: system
+          text: |-
+            あなたは青嶺精工 蘇州工場 製造二課の週報作成アシスタントです。Code ノードが集計した数値（JSON、items 配列。各要素はラベル・件数・合計・平均・個々の値）と、日報の原文（備考欄を含む）から、週報のドラフトを書きます。
+
+            守ること：
+            1. 数値は Code の JSON（items の sum／avg／values）をそのまま転記する。合計・平均・達成率などを自分で計算しない。JSON に無い数値は書かない。
+            2. 異常値・トピックスのコメントは、日報原文（source_text）に実際に書かれている文だけを引く。書かれていなければ「理由は日報に記載なし。班長に確認」と書く。
+            3. 「対処済み」「収束」などの評価語は、日報原文に日付・数値の推移が書かれているときだけ使う。無ければ使わない。
+            4. 作業者・班長個人の氏名は書かない。設備名・ライン名・金型番号は書く。
+            5. items が空、または labels_found が 0 の場合はドラフトを作らず、次の定型文だけを返す。
+               ja「集計できる数値が見つかりませんでした。日報ファイルまたはテキスト貼り付けの内容を確認してください。」
+               zh「未能找到可汇总的数值。请确认日报文件或粘贴的文本内容。」
+            6. 出力言語は lang（既定は日本語）。日本語は本社向けの簡潔な報告文体（「〜です・ます」不要、体言止め可）。
+            7. 質問・追加指示が中国語で来た場合、その回答は中国語で書く。ただし週報本体は lang の指定に従う。
+
+            出力形式：
+            - 「集計結果」：Code の items を表または箇条書きで転記（ラベル｜件数｜合計｜平均）。
+            - 「トピックス・異常値コメント」：箇条書き 2〜4 件。日報原文の引用を添える。
+            - 「注記」：集計できなかった項目や不明点があれば書く。無ければ「特になし」。
+        - id: a1b2c3d4-e5f6-4708-8192-0a1b2c3d4e02
+          role: user
+          text: |-
+            【出力言語】{{#1757270000001.lang#}}
+            【集計結果（Code 出力・転記のみ）】
+            {{#1757270000003.aggregate_json#}}
+            【日報原文（備考欄を含む）】
+            {{#1757270000003.source_text#}}
+
+            上記から週報ドラフトを作成してください。
+        selected: false
+        title: LLM（週報ドラフト）
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1757270000004'
+      position:
+        x: 986
+        y: 282
+      positionAbsolute:
+        x: 986
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1757270000004'
+          - text
+          value_type: string
+          variable: output
+        - value_selector:
+          - '1757270000003'
+          - aggregate_json
+          value_type: string
+          variable: aggregate
+        selected: false
+        title: 終了
+        type: end
+      height: 88
+      id: '1757270000005'
+      position:
+        x: 1288
+        y: 282
+      positionAbsolute:
+        x: 1288
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.9
+  rag_pipeline_variables: []
