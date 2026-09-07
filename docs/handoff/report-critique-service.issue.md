@@ -33,11 +33,13 @@ Notion 2 本（「報告ツッコミエージェント 指示書」＋「週報�
 | `mock/catalog.html` | `SCENARIOS` に `dc8` 1 件（`dc7` の直後、`lg1` の直前） | §2-2 |
 | `tools/regress.baseline.json` | `node tools/regress.mjs --update` | §2-3 |
 | `docs/handoff/service-index.md` | DC-08 行の追加、見出しの件数 41 → 42 | §2-4 |
-| `docs/dify/usecases/README.md` | 一覧に DC-08 行、集計・逆引き・波の更新 | §2-5 |
+| `docs/dify/usecases/README.md` | 一覧に DC-08 行（依存 PC 列の末尾は **`PC-17`**）、集計・逆引き（**`PC-17` の行を追加**）・波の更新 | §2-5 ＋ **§11-1** |
 | `docs/dify/outline-wiki-usecases.md` | §2 に DC-08 行、集計・件数 | §2-6 |
 | `docs/dify/README.md` / `docs/dify/implementation-guide.md` | 「41 件／41 サービス」→ 42（数値のみ） | §2-7 |
 
 3 言語（ja / zh / en）の文言と台本（ja / zh）は**すべて設計書に書いてある**。implementer は翻訳・言い換え・数字の作り直しをしない。
+
+> **先に設計書 §11 追補（2026-09-07・PM 判断 D-1 確定後）を読むこと。** `PC-17 指摘・回答台帳` の新設に伴い、§2-5 の `usecases/README.md` の記述だけが §11-1 で上書きされている（`mock/catalog.html` の指示は 1 文字も変わっていない）。
 
 ## 触らない範囲（reviewer の diff 監査基準。設計書 §3）
 
@@ -46,7 +48,9 @@ Notion 2 本（「報告ツッコミエージェント 指示書」＋「週報�
 - 描画関数・イベントハンドラ・1 つ目と 2 つ目の `<style>`・`<head>`
 - 既存 41 件の `SVCS` / `SCENARIOS` リテラル（**追加のみ。既存行の変更・削除は 0 行**）
 - `tools/verify.mjs` / `tools/regress.mjs` のコード、`CLAUDE.md`、`.claude/**`、`.github/**`
-- `docs/dify/usecases/DC-08.md`（architect 成果物）、`docs/dify/platform-components.md`、`docs/dify/feasibility-33-services.md`
+- `docs/dify/usecases/DC-08.md`（**architect 成果物**。PC-17 確定に伴う更新も済んでいる。読むだけで 1 文字も変更しない。PR には既存ファイルとして含まれる）
+- `docs/dify/platform-components.md`（**PM 判断 D-1 により architect が `PC-17 指摘・回答台帳` を追加済み**。implementer は触らず、**PR にも含めない**。reviewer は本 PR にこのファイルの差分が無いことを確認する）
+- `docs/dify/feasibility-33-services.md`（33 件時点の資料として据え置き）
 
 ## 受け入れ条件（設計書 §4）
 
@@ -81,11 +85,11 @@ Notion 2 本（「報告ツッコミエージェント 指示書」＋「週報�
 - **並列不可**：`mock/catalog.html` を触る他のお題すべて（同一ファイル・同一関数域）
 - 並列可：`docs/dify/usecases/*.md` の他サービス執筆（`usecases/README.md` の集計行のみ衝突しうる）
 
-## PM 判断待ち（設計書 §9。推奨案で実装を進めてよい）
+## PM 判断（設計書 §9 → **D-1〜D-6 すべて推奨どおりで確定**。2026-09-07。詳細は設計書 §11-3）
 
 | # | 論点 | 推奨 |
 |---|---|---|
-| D-1 | 指摘・回答台帳の PC 上の位置づけ（PC-01 拡張／新 PC-17／PC 化しない） | **新 `PC-17 指摘・回答台帳`**。承認後に architect が `platform-components.md` に追加 |
+| D-1 | 指摘・回答台帳の PC 上の位置づけ | **確定：新 `PC-17 指摘・回答台帳`**。architect が `platform-components.md` に追加済み（2026-09-07）。期限つき指摘のみ PC-01 に `due` で併載 |
 | D-2 | DC-01（月次報告ドラフト）を DC-08 に通すか | **通す**（第 2 段階。モックには導線を作らない） |
 | D-3 | 週報の提出経路（Excel アップロード／WeCom／専用フォーム） | **Excel アップロード**で開始 |
 | D-4 | 指摘台帳を Outline に置くか | **置かない**（台帳は構造化データ、Outline は改善後の報告案の下書きのみ） |
