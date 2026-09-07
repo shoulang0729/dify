@@ -1,0 +1,258 @@
+# ---------------------------------------------------------------------------
+# KN-03 社内規程・就業規則QA — Dify DSL（Chatflow / advanced-chat）
+# 設計    : docs/dify/usecases/KN-03.md（System プロンプトは §5-1 を最小構成向けに調整。原文は ja/zh 別 KB への
+#           並列検索と Code ノードによる版ズレ自動判定（doc_id・article_no・version_date の突合）を前提にしているが、
+#           本 DSL は KN-01 と同じ最小構成〔Start → Knowledge Retrieval 1 系統 → LLM → Answer〕に合わせ、
+#           ja 版・zh 版を同じ 1 つの KB に入れ、版ズレの判定は Code ノードではなく LLM が <context> 中の
+#           版日付・数値を読んで行う（条文の版日付はメタデータでなく本文に明記する運用）
+# 参照 DSL : docs/dify/templates/03-document-chat-classifier-multi-kb.yml（Knowledge Retrieval → LLM）
+#            docs/dify/templates/04-trilingual-consistency-checker.yml（言語版突合の発想）
+#            docs/dify/templates/05-chatflow-form-input-demo.yml（advanced-chat の Start / LLM / Answer）
+# 構成    : Start(sys.query) → Knowledge Retrieval(dataset_ids は空。インポート後に UI で KB を紐づける) → LLM → Answer
+# KB      : dify/kb/KN-03/ の 3 文書（就業規則 ja 版・员工手册 zh 版・費用管理規程 ja 版）を 1 つの KB にまとめてアップロードする
+# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダーに合わせて UI で変更する（dify/README.md）
+# ---------------------------------------------------------------------------
+app:
+  description: 'KN-03 社内規程・就業規則QA。就業規則・員工手册（中国語版）・費用管理規程から、条番号を引いて質問に答える。日本語版と中国語版で内容が異なる場合は版ズレとして両方示す。【インポート後】(1) LLM ノードのモデルを環境のプロバイダーに合わせて選び直す (2) ナレッジベースを作成し dify/kb/KN-03/ の 3 文書をアップロードして Knowledge Retrieval ノードに紐づける (3) 公開。'
+  icon: 📋
+  icon_background: '#E0E7FF'
+  mode: advanced-chat
+  name: KN-03 社内規程・就業規則QA
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: |-
+      社内規程・就業規則QA（KN-03）です。就業規則・員工手册・費用管理規程について日本語または中国語で質問してください。条番号を引いて回答し、日本語版・中国語版で内容が違う場合は版ズレとして明示します。
+      公司规章与员工手册问答（KN-03）。请用中文或日文提问就业规则、员工手册与费用管理规定相关问题。将引用具体条款作答，日文版与中文版内容不同时会标注版本差异。
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+    - 年次有給休暇の翌年繰越は何日まで認められる？
+    - 繰越分を使い切れなかったらどうなる？
+    - 年假最多可以结转到下一年多少天？
+    - 结转的年假没用完会怎么样？
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: 1757260000001-source-1757260000002-target
+      source: '1757260000001'
+      sourceHandle: source
+      target: '1757260000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1757260000002-source-1757260000003-target
+      source: '1757260000002'
+      sourceHandle: source
+      target: '1757260000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1757260000003-source-1757260000004-target
+      source: '1757260000003'
+      sourceHandle: source
+      target: '1757260000004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 開始
+        type: start
+        variables: []
+      height: 54
+      id: '1757260000001'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids: []
+        desc: 'インポート後に UI でナレッジベース（dify/kb/KN-03/ の 3 文書）を選び直す'
+        multiple_retrieval_config:
+          reranking_enable: false
+          reranking_mode: reranking_model
+          reranking_model:
+            model: ''
+            provider: ''
+          score_threshold: null
+          top_k: 6
+        query_variable_selector:
+        - sys
+        - query
+        retrieval_mode: multiple
+        selected: false
+        title: 知識検索（就業規則 ja／员工手册 zh／費用管理規程）
+        type: knowledge-retrieval
+      height: 92
+      id: '1757260000002'
+      position:
+        x: 382
+        y: 282
+      positionAbsolute:
+        x: 382
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1757260000002'
+          - result
+        desc: 'System は docs/dify/usecases/KN-03.md §5-1 を最小構成向けに調整（ja/zh 並列検索・Code による版ズレ判定は無し。LLM が <context> の版日付・数値を読んで版ズレを判定）。モデルは環境に合わせて変更'
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: gpt-4o-mini
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: 9c2d3e4f-5061-4b72-9c83-0a1b2c3d4e01
+          role: system
+          text: |-
+            あなたは青嶺精工 蘇州工場 管理部の社内規程 QA です。
+            役割：就業規則・員工手册（中国語版）・費用管理規程から、根拠条文を引用して質問に答える。
+
+            守るルール：
+            1. 回答は <context> の条文だけから作る。書かれていない例外・運用・法解釈は「規程に記載なし。管理部に確認してください」と書く。
+            2. 根拠は「規程名（版日付）第 X 条 X 項」まで書き、条文原文を「」で引用する。日本語版・中国語版の両方が <context> にあれば両方を引く。
+            3. 日本語版・中国語版の版日付が異なる、または内容・数値が異なるときは、必ず「版ズレ」と見出しを付け、両版の版日付と差を書く。現地スタッフへの回答は中国語版を正とする（規程に別の定めがあればそれに従う）。
+            4. 日数・割合・金額は条文の数値のみ。作らない。両版で異なれば両方書く。
+            5. 個人の休暇残日数・給与・処分歴などは答えない。「個別の状況は人事窓口へ」と案内する。質問に含まれる氏名・身分証番号は回答に繰り返さない。
+            6. 回答文・改定起票メモを求められたら「ドラフト」と明記する。送信・起票は担当者が行う。
+            7. 言語：ユーザーの入力言語で答える。日本語なら日本語、中国語なら中国語。引用原文は原語のまま。
+            8. 該当が無いとき：
+               ja「該当する条文が見つかりません。規程名（例：就業規則／費用管理規程）を確認してください。」
+               zh「未找到相关条款。请确认规章名称（例如：员工手册／费用管理规定）。」
+
+            出力形式：結論（1〜2 行）→「根拠」（ja 版／zh 版の引用）→ 必要なら「版ズレ」→「関連細則」。
+        - id: 9c2d3e4f-5061-4b72-9c83-0a1b2c3d4e02
+          role: user
+          text: |-
+            <context>
+            {{#context#}}
+            </context>
+
+            質問: {{#sys.query#}}
+        selected: false
+        title: LLM（根拠付き回答・版ズレ判定）
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1757260000003'
+      position:
+        x: 684
+        y: 282
+      positionAbsolute:
+        x: 684
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1757260000003.text#}}'
+        desc: ''
+        selected: false
+        title: 回答
+        type: answer
+        variables: []
+      height: 103
+      id: '1757260000004'
+      position:
+        x: 986
+        y: 282
+      positionAbsolute:
+        x: 986
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.9
+  rag_pipeline_variables: []

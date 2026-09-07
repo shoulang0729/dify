@@ -1,0 +1,261 @@
+# ---------------------------------------------------------------------------
+# LG-04 ビジネスメール作成（日中往復） — Dify DSL（Workflow）
+# 設計    : docs/dify/usecases/LG-04.md（System は §5-1 を最小構成〔Code・要約 LLM・if-else の CC サマリー分岐無し〕に
+#           合わせて調整。§4 の PC-07 の言語判定・数値計算〔{{calc}}〕・PC-10 の禁止情報検出 Code は「無くても動く範囲」
+#           （§8）として省略し、System 直書きのルールで代替）
+# 参照 DSL : docs/dify/templates/01-translation-reflection-workflow.yml（LLM ノードの変数参照 {{#node_id.var#}} の型）
+#            docs/dify/templates/05-chatflow-form-input-demo.yml（フォーム受けの構成の参考）
+# 構成    : Start(purpose / recipient / points / lang / tone) → LLM（件名・本文・文面のポイントを作成） → End(output)
+# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダに合わせて UI で変更する（dify/README.md）
+# 注意    : 受信メールの要約・本社 CC サマリーの分岐（if-else）・数値の差分計算（Code）・PC-10 の禁止情報の自動検出は未実装。
+#           事実を足さない・社外秘を書かないは System プロンプトのルールで担保する最小構成
+# ---------------------------------------------------------------------------
+app:
+  description: 'LG-04 ビジネスメール作成（日中往復）。目的・相手・伝えたい要点・返信言語・トーンをフォームで受け、件名・本文・文面のポイントを作る。【インポート後】(1) LLM ノードのモデルを環境のプロバイダーに合わせて選び直す (2) 公開。'
+  icon: ✉️
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: LG-04 ビジネスメール作成（日中往復）
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1757260000001-source-1757260000002-target
+      source: '1757260000001'
+      sourceHandle: source
+      target: '1757260000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1757260000002-source-1757260000003-target
+      source: '1757260000002'
+      sourceHandle: source
+      target: '1757260000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 開始（フォーム）
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: 目的
+          max_length: 48
+          options:
+          - 依頼
+          - 催促
+          - お礼
+          - 謝罪
+          - 日程調整
+          placeholder: ''
+          required: true
+          type: select
+          variable: purpose
+        - default: ''
+          hint: ''
+          label: 相手
+          max_length: 48
+          options:
+          - 本社
+          - 顧客
+          - サプライヤー
+          - 現地スタッフ
+          placeholder: ''
+          required: true
+          type: select
+          variable: recipient
+        - default: ''
+          hint: ''
+          label: 伝えたい要点（箇条書き・口語可）
+          max_length: 4000
+          options: []
+          placeholder: ''
+          required: true
+          type: paragraph
+          variable: points
+        - default: ''
+          hint: '両方を選ぶと日本語・中国語の対で返信案を作る'
+          label: 返信言語
+          max_length: 48
+          options:
+          - ja
+          - zh
+          - 両方
+          placeholder: ''
+          required: true
+          type: select
+          variable: lang
+        - default: ''
+          hint: ''
+          label: トーン
+          max_length: 48
+          options:
+          - 丁寧（標準）
+          - 最も丁寧（当局・重要案件向け）
+          - 簡潔（社内・気心の知れた相手向け）
+          placeholder: ''
+          required: true
+          type: select
+          variable: tone
+      height: 210
+      id: '1757260000001'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: 'System は docs/dify/usecases/LG-04.md §5-1（最小構成向けに調整）。モデルは環境に合わせて変更'
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: gpt-4o-mini
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: 9b2f3d4e-5f60-4182-8b9c-2d3e4f5a6b01
+          role: system
+          text: |-
+            あなたは青嶺精工（蘇州）で日本本社・中国の顧客・サプライヤー・現地スタッフとやり取りするメールを書く実務者です。
+            伝えたい要点に沿って、目的に合ったビジネスメールの件名と本文を書きます。
+
+            守るルール：
+            - 本文の結論・数字・期日・約束は「伝えたい要点」に書かれたものだけを使う。書かれていない事実を足さない。数字が必要なのに要点に無い場合は「【要確認：○○】」と書く。
+            - 数値・品番・日付は入力どおりに書く。自分で計算しない（差分・合計は要点に書かれた値のみ使う）。
+            - 相手に合わせた文体にする：本社＝日本語敬語（社内向けの丁寧さ。過度な謙譲は避ける）／顧客＝相手言語が中国語なら商務中文（感謝→本題→代替案→次のアクション）、日本語なら丁寧な日本語／サプライヤー＝丁寧だが要求は明確／現地スタッフ＝分かりやすい表現で、指示は明確に。
+            - トーンで丁寧さの度合いを調整する（最も丁寧＝当局・重要案件向けの最上級の敬語・商務中文、簡潔＝社内・気心の知れた相手向けに要点を絞る）。
+            - 返信言語が「両方」のときは、日本語と中国語の対を作る（同じ内容・同じ結論。片方だけ丁寧・片方だけ簡略にしない）。「ja」なら日本語のみ、「zh」なら中国語のみで書く。
+            - 社外向け（顧客・サプライヤー）の文面に社内単価・原価・図面番号・ECR 番号・社内限りの人名など、社外に出すべきでない情報を書かない。要点に含まれていても文面から外し、その旨を「注記」に書く。
+            - 個人情報（電話番号・身分証番号・私用メールアドレス等）は転記しない。要点に含まれていても文面に書かず、「注記」にその旨を書く。
+            - 目的に応じた型：依頼＝要件→期限→協力のお願い、催促＝経緯を責めずに現状確認→再度の期限、お礼＝具体的に何に対する感謝か、謝罪＝事実→原因（簡潔）→対応・再発防止→お詫び、日程調整＝複数の候補日→回答期限。
+            - 前置きの長い挨拶は書かない（宛名・簡潔な書き出しのみ）。
+            出力の順：
+            1. 件名
+            2. 本文（返信言語が両方なら日本語・中国語の順で両方書く）
+            3. 文面のポイント（3〜5 点。なぜその表現かを短く）
+            4. 注記（社外秘のため外した項目、個人情報のため外した項目、【要確認】箇所があれば列挙。無ければ「該当なし」）
+        - id: 9b2f3d4e-5f60-4182-8b9c-2d3e4f5a6b02
+          role: user
+          text: |-
+            目的：{{#1757260000001.purpose#}}／相手：{{#1757260000001.recipient#}}／返信言語：{{#1757260000001.lang#}}／トーン：{{#1757260000001.tone#}}
+            伝えたい要点：
+            {{#1757260000001.points#}}
+        selected: false
+        title: LLM（返信案作成）
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1757260000002'
+      position:
+        x: 382
+        y: 282
+      positionAbsolute:
+        x: 382
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1757260000002'
+          - text
+          value_type: string
+          variable: output
+        selected: false
+        title: 終了
+        type: end
+      height: 88
+      id: '1757260000003'
+      position:
+        x: 684
+        y: 282
+      positionAbsolute:
+        x: 684
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.9
+  rag_pipeline_variables: []
