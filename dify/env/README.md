@@ -80,15 +80,20 @@ OpenRouter プラグインは **customizable-model 対応**なので、一覧に
 
 | role | temperature | max_tokens | reasoning_effort | exclude_reasoning_tokens | 実機確認 |
 |---|---|---|---|---|---|
-| `chat` | 0.2 | 4096 | `low` | `true` | **未確認**（2026-09-08 時点） |
+| `chat` | 0.2 | 8192 | `low` | `true` | **未確認**（2026-09-08 時点） |
 | `reasoning` | 0.2 | 4096 | `minimal` | `true` | **未確認** |
-| `kimi` | 0.2 | 4096 | `low` | `true` | **未確認** |
+| `kimi` | 0.2 | 8192 | `low` | `true` | **未確認** |
 | `qwen_small` | 0.2 | 4096 | `minimal` | `true` | **未確認** |
 
 **なぜ入れたか**：`qwen/qwen3.8-max` が思考込みで 200〜340 秒かかり Service API が 504 になった
 （DI-010）、回答本文に `<think>…</think>` が混入した（DI-011）。`reasoning_effort` で思考量を、
 `exclude_reasoning_tokens` で思考文の露出を抑える。値の根拠と代替案は
 `docs/handoff/2026-09-08-thinking-budget-and-streaming.md` §2。
+
+**生成 role（`chat`・`kimi`）は `max_tokens` を 8192 に倍増している**（DI-014）。`exclude_reasoning_tokens: true`
+で隠した思考も `max_tokens` の completion 予算を消費するため、安全ケースなど思考が長くなる入力で
+本文が 1 字も出せずに空応答になった（DC-01 T06）。`reasoning_effort` は `low` のまま変えていない
+（品質を落とさないため）。分類・抽出用の `reasoning`・`qwen_small` は思考が短く済む用途なので 4096 のまま。
 
 **`inhouse`（Ollama）・`customer-a`（SiliconFlow）には入れていない。** これらのプラグインが
 `reasoning_effort` / `exclude_reasoning_tokens` を持つか未確認のため。**入れる前に、その環境で
