@@ -3774,7 +3774,25 @@ function dashSectionsHTML() {
       }).join('')}
     </div>`;
 
-  return `<div class="dash-duo">${recoHTML}<div class="dash-col">${freqHTML}${catsHTML}</div></div>`;
+  /* 新しく追加されたエージェント（added 降順で最新 3 件）。新着 0 件なら帯ごと出さない。
+     HOME には書かない＝データは SVCS[].added が唯一の出どころ */
+  const nw = newSvcs().slice(0, 3);
+  const newHTML = !nw.length ? '' : `
+    <div class="dash-sec dash-new">
+      <div class="sec-h">
+        <h2>${esc(t('dashNew'))}</h2>
+        <span class="sec-note">${esc(t('dashNewNote').replace('{n}', NEW_DAYS))}</span>
+      </div>
+      <div class="grid">
+        ${nw.map(x => `
+          <div class="new-item">
+            ${cardHTML(x)}
+            <div class="new-date">${esc(t('addedOn').replace('{d}', x.added))}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  return `${newHTML}<div class="dash-duo">${recoHTML}<div class="dash-col">${freqHTML}${catsHTML}</div></div>`;
 }
 
 function renderDash(el) {
@@ -3833,6 +3851,17 @@ function renderDash(el) {
     分岐で個別に呼ぶ（`t(KIND_LABEL[kind])` のような間接参照にしない） */
 const kindLabel = (kind) => kind === 'due' ? t('kindDue') : kind === 'notify' ? t('kindNotify') : t('kindRoutine');
 
+/** ③「お知らせ」に自動で足す新着行。FEED.items には書かない（データの出どころは SVCS[].added だけ）。
+    FEED.items に同じ id が既にあるものは二重表示になるので除く */
+const newFeedItems = () => {
+  const listed = new Set(FEED.items.map(i => i.id));
+  return newSvcs().filter(x => !listed.has(x.id)).map(x => {
+    const code = svcCode(x.id);
+    const fill = (o) => ({ ja: o.ja.replace('{code}', code), zh: o.zh.replace('{code}', code), en: o.en.replace('{code}', code) });
+    return { id: x.id, kind: 'notify', when: fill(T.feedNewWhen), note: fill(T.feedNewAgent) };
+  });
+};
+
 /** ③ フィード項目 1 件。左ボーダー色は種別（緊急度）で決める。管理番号は出さない（D-14） */
 function feedItemHTML(it) {
   const x = svcOf(it.id), c = catOf(x.cat);
@@ -3870,7 +3899,7 @@ function feedSectionsHTML() {
   };
   const action  = FEED.items.filter(i => i.kind === 'due');
   const routine = FEED.items.filter(i => i.kind === 'routine');
-  const notice  = FEED.items.filter(i => i.kind === 'notify');
+  const notice  = newFeedItems().concat(FEED.items.filter(i => i.kind === 'notify'));
 
   const mineHTML = `
     <div class="side-box">
