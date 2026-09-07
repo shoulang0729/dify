@@ -8,7 +8,7 @@ description: Mac（Claude Code CLI ＋ Claude in Chrome）から dify/apps の D
 
 ## 0. 前提確認（止まる条件）
 - `git status` が clean で `main` が最新（`git pull --ff-only`）
-- 環境変数：`DIFY_BASE_URL`、`DIFY_DATASET_KEY`、対象ごとの `DIFY_APP_KEY_<番号のハイフン無し>`。**値をチャットやログに出さない**。未設定なら「どのキーが無いか」だけ報告して止まる（`scripts/dify/.env.example` を `~/.config/dify/env` にコピーして埋める案内）
+- 環境変数：`DIFY_BASE_URL`、`DIFY_DATASET_KEY`、対象ごとの `DIFY_APP_KEY_<番号のハイフン無し>`。**値をチャットやログに出さない**。未設定なら「どのキーが無いか」だけ報告して止まる（`scripts/dify/env.example` を `~/.config/dify/env` にコピーして埋める案内）
 - `python3 dify/check.py` が対象の DSL で OK
 
 ## 1. アプリの取り込み（Chrome）
