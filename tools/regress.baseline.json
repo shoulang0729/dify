@@ -513,7 +513,7 @@
     },
     {
       "id": "feed",
-      "ready": false
+      "ready": true
     }
   ],
   "uiKeys": [
@@ -543,8 +543,20 @@
     "demoDone",
     "dept",
     "dropHint",
+    "feedAction",
+    "feedEyebrow",
+    "feedLead",
+    "feedMine",
+    "feedNotice",
+    "feedOpen",
+    "feedRecent",
+    "feedRoutine",
+    "feedTitle",
     "home",
     "inputPanel",
+    "kindDue",
+    "kindNotify",
+    "kindRoutine",
     "mockLabel",
     "mockNote",
     "nativeJa",
@@ -584,6 +596,6 @@
     "subs": 17,
     "svcs": 41,
     "tags": 43,
-    "ui": 61
+    "ui": 73
   }
 }

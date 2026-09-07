@@ -106,6 +106,10 @@
   --status-concept:       var(--ntt-grey-100);
   --badge-concept-bg:     rgba(148, 148, 148, 0.16);
   --badge-concept-fg:     #5A6B78;
+  /* ③ 業務フィードの期限バッジ専用（design-pass §9-3。--status-danger は白地/カード上で
+     コントラストが余裕なく、文字色には使えないため専用トークンを立てる） */
+  --status-danger-text:   #B32100;
+  --badge-due-bg:         rgba(228, 38, 0, 0.12);
 
   /* --- 分類アクセント（① サイドバー / ①②③ カード / ② 分類行・ランキング / ③ フィード） ---
      テキストにも使うため light は白・キャンバス上で 4.5:1 以上、dark はカード上で 4.5:1 以上。
@@ -194,6 +198,8 @@
   --status-concept:       #8A97A6;
   --badge-concept-bg:     rgba(164, 176, 186, 0.16);
   --badge-concept-fg:     #B8C3CC;
+  --status-danger-text:   #FF9A80;
+  --badge-due-bg:         rgba(255, 154, 128, 0.18);
 
   /* --- 分類アクセント（dark）。qa は PM 判断（design-pass.md §15-7）によりアンバー --- */
   --cat-kn:      #5AACEE;  --cat-kn-bg: rgba(90, 172, 238, 0.18);
@@ -824,6 +830,75 @@
   }
   .home-count { font-size: 12.5px; color: var(--text-secondary); margin-bottom: var(--space-4); }
 
+  /* ===== ③ 業務フィード（ホーム） =====
+     design-pass §9：ヒーロー帯は置かず薄いヘッダー。統計 4 枚も出さない
+     （数字は節ごとの .sec-count が担う） */
+  .feed-wrap { padding: 0; }
+  .feed-head {
+    background: var(--surface-card); border-bottom: 1px solid var(--border-subtle);
+    padding: var(--space-6) 36px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: var(--space-6); flex-wrap: wrap;
+  }
+  .feed-head h1 { margin: 0 0 var(--space-2); font-size: var(--text-h2); font-weight: var(--weight-bold); color: var(--text-heading); }
+  .feed-head p { margin: 0; max-width: 62ch; font-size: 13.5px; line-height: var(--leading-relaxed); color: var(--text-secondary); }
+  .feed-who { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap; }
+  .feed-who .avatar { width: 26px; height: 26px; font-size: 12px; }
+  .feed-who span { font-size: 12.5px; color: var(--text-secondary); }
+  .feed-body {
+    padding: var(--space-8) 36px var(--space-12);
+    display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--space-8); align-items: start;
+  }
+  .feed-main { min-width: 0; }
+  .feed-sec { margin-bottom: var(--space-8); }
+  .feed-side { display: flex; flex-direction: column; gap: var(--space-4); }
+
+  /* --- フィード項目：分類の顔（アイコン・色）＋種別（緊急度）の左ボーダー --- */
+  .feed-item {
+    display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: var(--space-4) var(--space-3);
+    align-items: start; width: 100%; text-align: left; font-family: inherit; cursor: pointer;
+    background: var(--surface-card); border: 1px solid var(--border-card);
+    border-left: var(--border-accent) solid var(--border-card); box-shadow: var(--shadow-sm);
+    padding: var(--space-4) var(--space-5); margin-bottom: var(--space-3);
+    transition: box-shadow var(--duration-base) var(--ease-standard), border-left-color 160ms var(--ease-standard);
+  }
+  .feed-item:hover { box-shadow: var(--shadow-md); }
+  .feed-item.due { border-left-color: var(--status-danger); }
+  .feed-item.routine { border-left-color: var(--status-info); }
+  .feed-item.notify { border-left-color: var(--status-concept); }
+  .fi-tile {
+    width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+    background: var(--cat-accent-bg); color: var(--cat-accent); border-radius: var(--radius-sm);
+  }
+  .fi-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .fi-h { display: flex; align-items: center; gap: var(--space-2); }
+  .fi-kind { font-size: var(--text-overline); font-weight: var(--weight-bold); padding: 2px var(--space-2); border-radius: var(--radius-xs); }
+  .fi-kind.due { background: var(--badge-due-bg); color: var(--status-danger-text); }
+  .fi-kind.notify { background: var(--badge-concept-bg); color: var(--badge-concept-fg); }
+  .fi-kind.routine { background: var(--badge-trial-bg); color: var(--badge-trial-fg); }
+  .fi-when { font-size: 12px; color: var(--text-secondary); }
+  .feed-item.due .fi-when { color: var(--status-danger-text); font-weight: var(--weight-bold); }
+  .fi-title { font-size: 15px; font-weight: var(--weight-bold); color: var(--text-heading); }
+  .fi-note { font-size: 12.5px; line-height: var(--leading-relaxed); color: var(--text-body); }
+  .fi-foot { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: 4px; }
+  .fi-cat { font-size: var(--text-overline); color: var(--cat-accent); font-weight: var(--weight-bold); }
+  .fi-open { margin-left: auto; font-size: 12.5px; color: var(--text-link); }
+
+  /* --- 右レール：担当分類 / 最近使った --- */
+  .side-box { background: var(--surface-card); border: 1px solid var(--border-card); box-shadow: var(--shadow-sm); padding: var(--space-4); }
+  .side-box h3 {
+    margin: 0 0 var(--space-3); font-size: 13px; font-weight: var(--weight-bold); color: var(--text-heading);
+    border-left: var(--border-accent) solid var(--action-primary); padding-left: var(--space-3);
+  }
+  .side-link {
+    display: flex; align-items: center; gap: var(--space-2); width: 100%; text-align: left;
+    border: none; border-top: 1px solid var(--border-subtle); background: transparent;
+    padding: 8px 0; font-size: 13px; color: var(--text-body); cursor: pointer; font-family: inherit;
+  }
+  .side-link .ic { color: var(--cat-accent); }
+  .side-link:hover { color: var(--text-link); }
+  .side-link .cnt { margin-left: auto; font-size: var(--text-overline); color: var(--text-muted); }
+
   @media (max-width: 1180px) {
     .demo-body { flex-direction: column; }
     .work-pane { flex: 0 0 auto; max-width: none; border-right: none; border-bottom: 1px solid var(--border-subtle); }
@@ -845,6 +920,10 @@
     .use-bar { grid-column: 1 / -1; }
     .cat-row { grid-template-columns: 36px 1fr auto; row-gap: var(--space-2); }
     .cat-bar { grid-column: 1 / -1; }
+    /* ▼ ③ 業務フィード（#42 PR-2）で追記 */
+    .feed-head { flex-direction: column; align-items: stretch; }
+    .feed-head .search { width: 100%; }
+    .feed-body { grid-template-columns: minmax(0, 1fr); }
   }
 </style>
 </head>
@@ -964,7 +1043,23 @@ const T = {
   recoWhy:      { ja: 'おすすめの理由', zh: '推荐理由', en: 'Why' },
   dashCats:     { ja: '分類から見る', zh: '按分类查看', en: 'Browse by category' },
   dashCatsNote: { ja: 'バーは成熟度の内訳（提供中／試行版／構想）', zh: '柱状条显示成熟度构成（已上线／试用版／构想）', en: 'The bar shows the maturity mix (available / trial / concept)' },
-  backHome:     { ja: 'ホームへ戻る', zh: '返回首页', en: 'Back to home' }
+  backHome:     { ja: 'ホームへ戻る', zh: '返回首页', en: 'Back to home' },
+
+  /* ---- ③ 業務フィード（12 キー） ---- */
+  feedEyebrow:  { ja: 'MY WORK', zh: 'MY WORK', en: 'MY WORK' },
+  feedTitle:    { ja: '今日の業務', zh: '今日工作', en: 'Today at work' },
+  feedLead:     { ja: '期限・通知・定例から入ります。担当している業務だけが並びます。',
+                  zh: '从期限、通知、例行工作进入，只显示与您相关的业务。',
+                  en: 'Enter from deadlines, notices and routines. Only your own work is listed.' },
+  feedAction:   { ja: '対応が必要', zh: '需要处理', en: 'Needs action' },
+  feedRoutine:  { ja: '定例の業務', zh: '例行工作', en: 'Routine work' },
+  feedNotice:   { ja: 'お知らせ', zh: '通知事项', en: 'Notices' },
+  kindDue:      { ja: '期限', zh: '期限', en: 'Due' },
+  kindNotify:   { ja: '通知', zh: '通知', en: 'Notice' },
+  kindRoutine:  { ja: '定例', zh: '例行', en: 'Routine' },
+  feedOpen:     { ja: '開く', zh: '打开', en: 'Open' },
+  feedMine:     { ja: '担当分類', zh: '负责分类', en: 'My categories' },
+  feedRecent:   { ja: '最近使った', zh: '最近使用', en: 'Recently used' }
 };
 
 /* パターン定義（表示レイヤーの選択肢） */
@@ -979,7 +1074,7 @@ const PATTERNS = [
     desc: { ja: 'よく使う・おすすめを前面に出すホーム。初めて使う利用者向け。',
             zh: '以常用与推荐为主的首页，适合初次使用的用户。',
             en: 'A home surfacing frequent and recommended agents. For first-time users.' } },
-  { id: 'feed', ready: false,
+  { id: 'feed', ready: true,
     name: { ja: '③ 業務フィード', zh: '③ 业务动态', en: '③ Work Feed' },
     desc: { ja: '自分の業務・タスク起点で入る。日常的に使う利用者向け。',
             zh: '从自身业务与任务出发，适合日常高频使用的用户。',
@@ -3040,6 +3135,58 @@ const CAT_STYLE = {
 };
 
 /* ============================================================
+   2d. ③ 業務フィードのホーム用データ
+   items は「担当者の今日の仕事」を表す疑似イベント。すべてデモ用のサンプル。
+   絶対日付は書かない（デモ日が変わっても古びないよう相対表現だけにする）
+   kind: 'due'（期限あり）/ 'routine'（定例）/ 'notify'（お知らせ）
+   タイトル・成熟度・分類は SVCS から引くので、ここには持たせない
+   ============================================================ */
+const FEED = {
+  persona: { name: { ja: '李 強', zh: '李强', en: 'Li Qiang' },
+             role: { ja: '製造二課 課長', zh: '制造二科 科长', en: 'Manufacturing Sec. 2 Manager' },
+             site: { ja: '蘇州工場', zh: '苏州工厂', en: 'Suzhou Plant' } },
+  mine:   ['qa', 'dc', 'nm'],
+  recent: ['lg1', 'dc2', 'kn1', 'gn5'],
+  items: [
+    { id: 'qa1', kind: 'due',
+      when: { ja: '本日 17:00 まで', zh: '今天 17:00 前', en: 'Today, by 17:00' },
+      note: { ja: 'ライン3 の寸法不良。顧客への提出は明日 10:00。',
+              zh: '3号线尺寸不良，明天 10:00 前需提交给客户。',
+              en: 'Dimensional defect on line 3. Due to the customer tomorrow at 10:00.' } },
+    { id: 'dc5', kind: 'due',
+      when: { ja: '明日まで', zh: '明天前', en: 'By tomorrow' },
+      note: { ja: '乾燥炉の更新稟議。金額区分が変わり差し戻しになっています。',
+              zh: '烘干炉更新审批。金额档次变更后被退回。',
+              en: 'Approval request for the drying oven. Returned because the amount tier changed.' } },
+    { id: 'qa2', kind: 'due',
+      when: { ja: '今週中', zh: '本周内', en: 'This week' },
+      note: { ja: '治具の切り替えを 9/15 に予定。先に影響範囲を確認します。',
+              zh: '计划 9/15 更换治具，需先确认影响范围。',
+              en: 'The jig changeover is planned for Sep 15. Check the impact first.' } },
+    { id: 'nm3', kind: 'routine',
+      when: { ja: '毎日 8:30', zh: '每天 8:30', en: 'Daily at 8:30' },
+      note: { ja: '前日の生産実績と不良件数を朝会用にまとめます。',
+              zh: '把前一天的产量与不良件数整理成早会材料。',
+              en: 'Summarise output and defect counts from the previous day for the morning meeting.' } },
+    { id: 'lg3', kind: 'routine',
+      when: { ja: '毎週月曜', zh: '每周一', en: 'Every Monday' },
+      note: { ja: '今週の作業変更点を現場向けの中国語に書き下します。',
+              zh: '把本周作业变更点写成现场用中文。',
+              en: 'Rewrite the changes for this week into Chinese for the shop floor.' } },
+    { id: 'kn5', kind: 'notify',
+      when: { ja: '新着', zh: '最新', en: 'New' },
+      note: { ja: '地方当局の排水基準通達が公布されました。該当手順の確認依頼が来ています。',
+              zh: '地方主管部门发布了排水标准通知，已收到相关作业确认请求。',
+              en: 'A local authority notice on wastewater limits was issued. A review of the related procedures is requested.' } },
+    { id: 'en1', kind: 'notify',
+      when: { ja: '新着', zh: '最新', en: 'New' },
+      note: { ja: '取引先の仕様書が Rev.C に更新されました。差分の確認をおすすめします。',
+              zh: '客户规格书已更新为 Rev.C，建议确认差异。',
+              en: 'A customer specification moved to Rev.C. Reviewing the differences is recommended.' } }
+  ]
+};
+
+/* ============================================================
    3. 状態（共通レイヤー）
    pattern を切り替えても選択位置は保持され、直接比較できる
    ============================================================ */
@@ -3394,6 +3541,116 @@ function renderDash(el) {
     <div class="dash-body"><div id="home-holder">${dashSectionsHTML()}</div></div>
   </div>`;
   bindHomeSearch(dashSectionsHTML);
+  el.scrollTop = 0;
+}
+
+/* ============================================================
+   9a-2. 描画 — ③ 業務フィード（ホーム）
+   design-pass §9 の適用：ヒーロー帯は置かず薄いヘッダー。フィード項目には
+   分類アイコン・色（catIcon/catClass）を付け、期限バッジは専用トークンで彩色する。
+   管理番号は出さない（PM 判断 D-14）。
+   ============================================================ */
+/** kind → ラベル文言。verify.mjs は `t('...')` のリテラル引数しか参照追跡しないため、
+    分岐で個別に呼ぶ（`t(KIND_LABEL[kind])` のような間接参照にしない） */
+const kindLabel = (kind) => kind === 'due' ? t('kindDue') : kind === 'notify' ? t('kindNotify') : t('kindRoutine');
+
+/** ③ フィード項目 1 件。左ボーダー色は種別（緊急度）で決める。管理番号は出さない（D-14） */
+function feedItemHTML(it) {
+  const x = svcOf(it.id), c = catOf(x.cat);
+  return `
+  <button class="feed-item ${it.kind} ${catClass(x.cat)}" data-act="svc" data-arg="${x.id}">
+    <span class="fi-tile">${catIcon(x.cat, 'ic-lg')}</span>
+    <span class="fi-body">
+      <span class="fi-h">
+        <span class="fi-kind ${it.kind}">${esc(kindLabel(it.kind))}</span>
+        <span class="fi-when">${esc(L(it.when))}</span>
+      </span>
+      <span class="fi-title">${esc(L(x.name))}</span>
+      <span class="fi-note">${esc(L(it.note))}</span>
+      <span class="fi-foot">
+        <span class="fi-cat">${esc(L(c.name))}</span>
+        <span class="status"><span class="dot ${statusClass(x.st)}"></span>${esc(statusText(x.st))}</span>
+        <span class="fi-open">${esc(t('feedOpen'))} ›</span>
+      </span>
+    </span>
+  </button>`;
+}
+
+/** ③ フィード：ホーム本体（検索で差し替える範囲） */
+function feedSectionsHTML() {
+  const sec = (items, title) => {
+    if (!items.length) return '';
+    return `
+    <div class="feed-sec">
+      <div class="sec-h">
+        <h2>${esc(title)}</h2>
+        <span class="sec-count">${items.length}</span>
+      </div>
+      ${items.map(feedItemHTML).join('')}
+    </div>`;
+  };
+  const action  = FEED.items.filter(i => i.kind === 'due');
+  const routine = FEED.items.filter(i => i.kind === 'routine');
+  const notice  = FEED.items.filter(i => i.kind === 'notify');
+
+  const mineHTML = `
+    <div class="side-box">
+      <h3>${esc(t('feedMine'))}</h3>
+      ${FEED.mine.map(id => {
+        const c = catOf(id);
+        return `
+        <button class="side-link ${catClass(id)}" data-act="gocat" data-arg="${id}">
+          ${catIcon(id, 'ic-sm')}<span>${esc(L(c.name))}</span>
+          <span class="cnt">${countCat(id)}</span>
+        </button>`;
+      }).join('')}
+    </div>`;
+
+  const recentHTML = `
+    <div class="side-box">
+      <h3>${esc(t('feedRecent'))}</h3>
+      ${FEED.recent.map(id => {
+        const x = svcOf(id);
+        return `
+        <button class="side-link ${catClass(x.cat)}" data-act="svc" data-arg="${x.id}">
+          ${catIcon(x.cat, 'ic-sm')}<span>${esc(L(x.name))}</span>
+        </button>`;
+      }).join('')}
+    </div>`;
+
+  return `
+  <div class="feed-body">
+    <div class="feed-main">
+      ${sec(action, t('feedAction'))}
+      ${sec(routine, t('feedRoutine'))}
+      ${sec(notice, t('feedNotice'))}
+    </div>
+    <div class="feed-side">
+      ${mineHTML}
+      ${recentHTML}
+    </div>
+  </div>`;
+}
+
+function renderFeed(el) {
+  el.innerHTML = `
+  <div class="feed-wrap" data-screen-label="業務フィード">
+    <div class="feed-head">
+      <div>
+        <div class="crumb">${esc(t('feedEyebrow'))}</div>
+        <h1>${esc(t('feedTitle'))}</h1>
+        <p>${esc(t('feedLead'))}</p>
+        <div class="feed-who">
+          <div class="avatar">${esc(L(FEED.persona.name).charAt(0))}</div>
+          <span>${esc(L(FEED.persona.name))} ／ ${esc(L(FEED.persona.role))}・${esc(L(FEED.persona.site))}</span>
+          <span class="cta-note">${esc(t('mockNote'))}</span>
+        </div>
+      </div>
+      <input class="search" id="search" placeholder="${esc(t('searchPh'))}" value="${esc(state.query)}">
+    </div>
+    <div id="home-holder">${feedSectionsHTML()}</div>
+  </div>`;
+  bindHomeSearch(feedSectionsHTML);
   el.scrollTop = 0;
 }
 
