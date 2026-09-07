@@ -5,10 +5,15 @@ Dify サーバー（標準ライブラリのみ。開発・検証用。CI には
     python3 scripts/dify/tests/mock_server.py --port 8765
 
 以下を返す：
-  POST /console/api/login                                    → access_token
-  POST /console/api/apps/imports                              → app_id（新規 or 上書き）
+  POST /console/api/login                                    → access_token（認証不要）
+  POST /console/api/apps/imports                              → app_id（新規 or 上書き）。
+      yaml_content に "MOCK_FORCE_PENDING" を含めると status: pending を返し、
+      続く POST …/imports/{id}/confirm で確定させる必要がある（Issue #114 C2・C3 の往復確認用）
+  POST /console/api/apps/imports/{id}/confirm                  → pending だった import を確定
   GET  /console/api/apps                                       → 一覧
   POST /console/api/apps/{id}/workflows/publish                → 成功
+  GET  /console/api/apps/{id}/workflows/draft                  → 下書き（無ければ空の既定値）
+  POST /console/api/apps/{id}/workflows/draft                  → 下書きを保存して返す
   GET  /v1/datasets, POST /v1/datasets                         → KB 一覧・作成
   GET  /v1/datasets/{id}/documents                              → 空（毎回アップロード対象にする）
   POST /v1/datasets/{id}/document/create-by-file                → 成功（インデックス即完了）
@@ -17,6 +22,10 @@ Dify サーバー（標準ライブラリのみ。開発・検証用。CI には
       expect（配列は先頭の候補を採用）を連結した回答を返す。expect_not を含まないことを起動時に自己検査する。
       リクエスト body の response_mode が "streaming" のときは Content-Type: text/event-stream の
       SSE で返す（回答を 3 分割 ＋ ping 1 フレームを挟む）。それ以外（未指定・"blocking"）は今までどおり JSON。
+
+**401 モード**：`/console/api/login` 以外の `console/api/*` は `Authorization: Bearer <token>` を要求する。
+ヘッダが無い、または token が `"expired-token"` のときは 401（`{"code": "unauthorized", ...}`）を返す
+（`console_api.ConsoleAuthError` の往復確認用。test_console_api.py が使う）。
 
 このスクリプトは検証専用。生成物（dify/results/** や dify/CHANGELOG.md の検証行）はコミットに含めない。
 """
@@ -58,8 +67,12 @@ def build_canned_answers():
 
 
 ANSWERS = build_canned_answers()
-STATE = {"apps": {}, "datasets": {}, "next_app": 1, "next_ds": 1, "next_doc": 1}
+STATE = {
+    "apps": {}, "datasets": {}, "next_app": 1, "next_ds": 1, "next_doc": 1,
+    "pending_imports": {}, "next_import": 1, "drafts": {},
+}
 LOCK = threading.Lock()
+EXPIRED_TOKEN = "expired-token"  # DIFY_CONSOLE_TOKEN にこの値を入れると 401 を再現できる
 
 
 def split_n(text, n):
@@ -107,6 +120,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _path(self):
         return self.path.split("?", 1)[0]
 
+    def _console_auth_ok(self):
+        """/console/api/login 以外の console API が要求する Bearer 認証。無い・"expired-token" なら False。"""
+        auth = self.headers.get("Authorization", "")
+        if not auth.startswith("Bearer "):
+            return False
+        token = auth[len("Bearer "):]
+        return bool(token) and token != EXPIRED_TOKEN
+
+    def _unauthorized(self):
+        return self._json(401, {"code": "unauthorized", "message": "Invalid or expired token."})
+
     def _sse(self, frames):
         """SSE で frames（dict の列）を data: 行として送る。HTTP/1.0 既定なので Content-Length 無しで書いて閉じる。"""
         self.send_response(200)
@@ -129,6 +153,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path == "/console/api/login":
             return self._json(200, {"result": "success", "data": {"access_token": "mock-token", "refresh_token": "mock-refresh"}})
 
+        if path.startswith("/console/api/") and not self._console_auth_ok():
+            return self._unauthorized()
+
         if path == "/console/api/apps/imports":
             with LOCK:
                 app_id = payload.get("app_id")
@@ -136,11 +163,33 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 if not app_id:
                     app_id = f"app-{STATE['next_app']}"
                     STATE["next_app"] += 1
+                if "MOCK_FORCE_PENDING" in (payload.get("yaml_content") or ""):
+                    import_id = f"imp-pending-{STATE['next_import']}"
+                    STATE["next_import"] += 1
+                    STATE["pending_imports"][import_id] = {"app_id": app_id, "name": name}
+                    return self._json(200, {"id": import_id, "status": "pending", "app_id": app_id, "app_mode": "workflow"})
                 STATE["apps"][app_id] = name
             return self._json(200, {"id": f"imp-{app_id}", "status": "completed", "app_id": app_id, "app_mode": "workflow"})
 
+        m = re.match(r"^/console/api/apps/imports/([^/]+)/confirm$", path)
+        if m:
+            import_id = m.group(1)
+            with LOCK:
+                pending = STATE["pending_imports"].pop(import_id, None)
+                if not pending:
+                    return self._json(404, {"error": f"mock: unknown import_id {import_id}"})
+                STATE["apps"][pending["app_id"]] = pending["name"]
+            return self._json(200, {"app_id": pending["app_id"], "status": "completed"})
+
         if re.match(r"^/console/api/apps/[^/]+/workflows/publish$", path):
             return self._json(200, {"result": "success"})
+
+        m = re.match(r"^/console/api/apps/([^/]+)/workflows/draft$", path)
+        if m:
+            app_id = m.group(1)
+            with LOCK:
+                STATE["drafts"][app_id] = payload
+            return self._json(200, dict(payload, app_id=app_id, result="success"))
 
         if path == "/v1/datasets":
             with LOCK:
@@ -202,10 +251,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self._path()
+        if path.startswith("/console/api/") and not self._console_auth_ok():
+            return self._unauthorized()
+
         if path == "/console/api/apps":
             with LOCK:
                 data = [{"id": k, "name": v} for k, v in STATE["apps"].items()]
             return self._json(200, {"data": data, "has_more": False})
+
+        m = re.match(r"^/console/api/apps/([^/]+)/workflows/draft$", path)
+        if m:
+            app_id = m.group(1)
+            with LOCK:
+                draft = STATE["drafts"].get(app_id) or {"graph": {"nodes": [], "edges": []}, "features": {}, "environment_variables": []}
+            return self._json(200, dict(draft, app_id=app_id))
 
         if path == "/v1/datasets":
             with LOCK:
