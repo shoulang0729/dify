@@ -95,7 +95,7 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 - 検出：`tools/verify.mjs`（`SVCS[].id` が `/^[a-z]{2}\d+$/`・変換後の番号が重複しない）＋ `tools/regress.mjs` の id 一覧（欠番の台帳）
 
 ### 2-12. 環境差分は `dify/env/<env>/env.yml` に閉じる
-- **何を**：モデル（provider/name、用途 `chat`/`reasoning`/`embedding`/`rerank`）・KB id・社名と拠点の表記・Start 変数の既定・フラグ（`cross_border`/`partner_mode`/`pipl_mask`）は env にだけ書く。マスタ DSL（`dify/apps/*.yml`）には**架空世界マスタの語と Cloud で動く既定値**（`langgenius/openrouter/openrouter` `qwen/qwen3.8-max`・`dataset_ids: []`）だけを書く。プレースホルダ（`{{…}}`）は入れない
+- **何を**：モデル（provider/name/`completion_params`、用途 `chat`/`reasoning`/`embedding`/`rerank`）・KB id・社名と拠点の表記・Start 変数の既定・フラグ（`cross_border`/`partner_mode`/`pipl_mask`）は env にだけ書く。マスタ DSL（`dify/apps/*.yml`）には**架空世界マスタの語と Cloud で動く既定値**（`langgenius/openrouter/openrouter` `qwen/qwen3.8-max`・`dataset_ids: []`）だけを書く。プレースホルダ（`{{…}}`）は入れない
 - **なぜ**：マスタ 1 本を社内・顧客 A・顧客 B へ配るため。DSL を環境ごとに fork すると差分が追えなくなる。プレースホルダを入れないのは Cloud への URL インポート（マスタをそのまま貼る）を壊さないため
 - **既定モデルを変えるときは `dify/env/**/env.yml`・マスタ DSL・`dify/env/README.md` の環境台帳を同時に変える**（`render.py --env cloud-master --all --check` が全件 PASS すること）。手順は `docs/handoff/2026-09-07-china-models-and-syncback.md` §2-3
 - **どこで検出**：`scripts/dify/render.py --env cloud-master --all --check` の出力がマスタと**バイト一致**／`tools/verify.mjs` §12（env のスキーマ・秘密や実名が無い）／`render.py --strict`（未解決の `${VAR}`・未一致の override）
