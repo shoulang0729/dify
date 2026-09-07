@@ -96,3 +96,55 @@ dify/DEPLOY.md に従って KN-01 と DC-01 を投入・テストし、結果を
 | `kb_upload.py` が `タイムアウト` | 大きい文書のインデックス中 | `--timeout 1800` で再実行（同名文書はスキップされる） |
 
 報告のしかた：エラー文（HTTP ステータス＋本文）を**そのまま**貼る。API キーは貼らない。
+
+## 5. 環境を選んでリリースする（`release.py`）
+
+`§1`〜`§4` は 1 アプリずつ手で進める手順。`scripts/dify/release.py` は **render → import → KB → test → tag → CHANGELOG** を
+1 コマンドで通す（[`env/README.md`](./env/README.md)・設計 `docs/handoff/2026-09-07-repo-layout-v2.md` §4-4）。
+
+```bash
+export DIFY_ENV=customer-a
+set -a; source ~/.config/dify/$DIFY_ENV.env; set +a
+
+# まず必ず --dry-run で確認する（ネットワークを一切呼ばない。render と、cloud なら IMPORT.md 生成だけ実行する）
+python3 scripts/dify/release.py --env $DIFY_ENV --all --dry-run
+
+# 中身に問題が無ければ本番実行（タグは push しない。CI や別 Issue で自動 push しない）
+python3 scripts/dify/release.py --env $DIFY_ENV --all
+git push origin "release/$DIFY_ENV/$(date +%Y%m%d)"   # タグの push は人が確認してから
+```
+
+### 環境ごとの経路
+
+| env の `dify.edition` | 何が起きるか |
+|---|---|
+| `cloud`（`cloud-master` など） | **自動 import しない**。`dify/build/<env>/IMPORT.md` を生成してそこで止まる。IMPORT.md の手順（raw URL または `dify/build/<env>/*.yml` のファイル選択）で Chrome から手動インポート → 公開 → API キー発行してから、続き（`kb_upload.py` / `run_tests.py`）を人が判断して実行する。Console API は Cloudflare / Cookie で壊れやすいため（Issue #3・`CLAUDE.md` §6） |
+| `selfhost`（`inhouse` / `customer-a` など） | `scripts/dify/console_api.py` で **ログイン → DSL インポート（既存アプリなら上書き、無ければ新規）→ 公開** まで自動で進み、続けて KB 投入・テストまで通す |
+
+### 手順（selfhost の本番実行）
+
+1. `render.py --env <env> --strict` → `dify/build/<env>/`
+2. ガード確認（G1 越境・G2 PIPL マスク・G3 パートナー mock。**すべて警告のみ**。DP-02 の越境マトリクスが env に入るまでは release を止めない。警告が出たら手動で確認する）
+3. `console_api.py` で import → publish
+4. KB がある番号だけ `kb_upload.py --env <env>`
+5. `run_tests.py --env <env>` → `dify/results/<env>/<番号>-<YYYYMMDD-HHMM>.md`
+6. **全件合格のときだけ** `dify/CHANGELOG.md` に 1 行追記
+7. **全件合格のときだけ** `git tag release/<env>/<YYYYMMDD>`（同日 2 回目以降は `-2` `-3` …）を**ローカルに**作る。`--no-tag` で抑止できる。**push は人が確認してから**別途行う
+
+途中で失敗したら、その段より後には進まない（`[STOP] stage=...` に出る）。**失敗時は tag も CHANGELOG も書かない。**
+
+### 環境変数（Console API 用。`scripts/dify/env.example` 参照）
+
+| 変数 | 用途 |
+|---|---|
+| `DIFY_CONSOLE_URL` | Console API の基点（selfhost のみ） |
+| `DIFY_CONSOLE_EMAIL` / `DIFY_CONSOLE_PASSWORD` | Console ログイン（selfhost のみ。**cloud では使わない**。値はログに出ない） |
+
+### `--dry-run` を必ず先に
+
+`--dry-run` は render・ガード・（cloud なら）`IMPORT.md` 生成までは実際に行い、その先（selfhost の login/import/publish・KB 投入・テスト・tag・CHANGELOG）は**実行予定のコマンドを表示するだけ**でネットワークを一切呼ばない。まず `--dry-run` で render 結果（`dify/build/<env>/render-report.md`）とガードの警告を確認してから本番実行する。
+
+### `console_api.py` について
+
+`scripts/dify/console_api.py` はセルフホスト Dify（Community 1.15.x 想定）の Console API（`login` / `import_dsl` / `list_apps` / `publish`）を 1 ファイルに閉じ込めている。**エンドポイントの形は 1.15.x の実機で未確認**（設計書 §4-4）。顧客・社内のセルフホストで初めて通すときにエラーが出たら、このファイルだけを直せばよい。
+

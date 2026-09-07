@@ -195,6 +195,8 @@ API キーは環境変数渡し（`CLAUDE.md` §2-10）。ランナーの引数�
 git ⇄ Dify の同期（Issue #3）は **v2**。Cloud は Console API が壊れやすく、セルフホスト後に着手（`CLAUDE.md` §6）。それまでは手動 export → PR、reviewer は import して動作を見る。
 **import 方向は `docs/handoff/2026-09-07-repo-layout-v2.md` §4 の `render.py`／`release.py` に統合（Issue #84）。export 方向のみ Issue #3 に残る。**
 
+import 方向の実装：`scripts/dify/render.py`（env をマスタ DSL に流し込む）と `scripts/dify/release.py`（render → import → KB 投入 → test → tag → `dify/CHANGELOG.md` まで通す）。セルフホスト（`edition: selfhost`）は `scripts/dify/console_api.py` で自動 import・公開まで進む。Cloud（`edition: cloud`）は Console API を自動で叩かず、`dify/build/<env>/IMPORT.md` の手順で Claude in Chrome に手動インポートを依頼する（§7-1 の手動 export と対称の運用）。export 方向（Dify → git、`pull.py` 相当）は未実装のまま Issue #3 に残る。
+
 ---
 
 ## 8. 関連文書

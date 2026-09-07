@@ -49,3 +49,8 @@ set -a; source ~/.config/dify/$DIFY_ENV.env; set +a
 | `rerank` | 検索結果の再ランク（空なら `reranking_enable: false`） |
 
 **`embedding` を変えたら、既存 KB は作り直しが要る**（索引ベクトルの次元・意味が変わるため）。
+
+## 環境を選んでリリースする
+
+render だけでなく import・KB 投入・テスト・tag・CHANGELOG まで通しでやるなら `scripts/dify/release.py --env <env> --all`
+（まず `--dry-run` で確認）。手順・環境変数は [`../DEPLOY.md` §5](../DEPLOY.md#5-環境を選んでリリースする)。

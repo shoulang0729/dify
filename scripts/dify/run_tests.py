@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
-"""dify/tests/<管理番号>.json のテストを Dify Service API で実行し、結果を dify/results/ に Markdown で書く。
+"""dify/tests/<管理番号>.json のテストを Dify Service API で実行し、結果を dify/results/<env>/ に Markdown で書く。
 
-    python3 scripts/dify/run_tests.py KN-01 DC-01
+    python3 scripts/dify/run_tests.py KN-01 DC-01                    # 既定 env=cloud-master
+    python3 scripts/dify/run_tests.py --env customer-a KN-01 DC-01
     python3 scripts/dify/run_tests.py --dry-run KN-01   # API を呼ばず JSON の形だけ検証
 
 環境変数
   DIFY_APP_KEY_<番号のハイフン無し>  例 DIFY_APP_KEY_KN01（アプリの Service API キー。ログに出さない）
-  DIFY_BASE_URL                     既定 https://api.dify.ai/v1
+  DIFY_BASE_URL                     未設定時は dify/env/<env>/env.yml の dify.base_url を使う（既定 https://api.dify.ai/v1）
+  DIFY_ENV                          --env 未指定時の既定（さらに未指定なら cloud-master）
+
+--env <env>
+  接続先は dify/env/<env>/env.yml の dify.base_url（${VAR} はプロセス環境変数で展開）。
+  env.yml が無い、または展開結果が空（${VAR} 未定義）なら DIFY_BASE_URL（無ければ既定 URL）にフォールバックする。
+  結果の出力先は dify/results/<env>/。
 
 テスト JSON の形（1 件）
   {"id": "KN-01 T01", "kind": "正常 ja", "mode": "chat" | "workflow",
@@ -26,13 +33,40 @@ import time
 import urllib.error
 import urllib.request
 
+try:
+    import yaml
+except ImportError:  # pragma: no cover
+    yaml = None
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TESTS_DIR = os.path.join(ROOT, "dify", "tests")
 RESULTS_DIR = os.path.join(ROOT, "dify", "results")
+ENV_DIR = os.path.join(ROOT, "dify", "env")
+VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+DEFAULT_BASE_URL = "https://api.dify.ai/v1"
 
 
 def env_key_name(code):
     return "DIFY_APP_KEY_" + re.sub(r"[^A-Za-z0-9]", "", code).upper()
+
+
+def expand(s):
+    if not isinstance(s, str) or "${" not in s:
+        return s
+    return VAR_RE.sub(lambda m: os.environ.get(m.group(1), ""), s)
+
+
+def resolve_base_url(env_name):
+    """dify/env/<env>/env.yml の dify.base_url（${VAR} 展開）。無い／空なら DIFY_BASE_URL か既定 URL。"""
+    if yaml is not None:
+        path = os.path.join(ENV_DIR, env_name, "env.yml")
+        if os.path.isfile(path):
+            with open(path, encoding="utf-8") as fh:
+                env = yaml.safe_load(fh) or {}
+            base = expand(((env.get("dify") or {}).get("base_url") or "").strip())
+            if base:
+                return base
+    return os.environ.get("DIFY_BASE_URL", DEFAULT_BASE_URL).strip()
 
 
 def call(base, key, path, body, timeout):
@@ -82,7 +116,7 @@ def cell(s, limit=160):
     return s if len(s) <= limit else s[:limit] + "…"
 
 
-def run_suite(code, base, timeout, dry):
+def run_suite(code, base, timeout, dry, results_dir):
     path = os.path.join(TESTS_DIR, f"{code}.json")
     if not os.path.exists(path):
         print(f"テスト定義がありません: {os.path.relpath(path, ROOT)}")
@@ -133,8 +167,8 @@ def run_suite(code, base, timeout, dry):
               + (f" 不足={missing}" if missing else "") + (f" 禁止語={forbidden}" if forbidden else ""))
 
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M")
-    os.makedirs(RESULTS_DIR, exist_ok=True)
-    out_path = os.path.join(RESULTS_DIR, f"{code}-{stamp}{'-dryrun' if dry else ''}.md")
+    os.makedirs(results_dir, exist_ok=True)
+    out_path = os.path.join(results_dir, f"{code}-{stamp}{'-dryrun' if dry else ''}.md")
     with open(out_path, "w", encoding="utf-8") as fh:
         fh.write(f"# {code} テスト結果 {dt.datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n")
         fh.write(f"- 定義: `dify/tests/{code}.json`（{suite.get('source', '')}）\n")
@@ -153,17 +187,21 @@ def run_suite(code, base, timeout, dry):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("codes", nargs="+", help="管理番号（例 KN-01 DC-01）")
+    ap.add_argument("--env", default=os.environ.get("DIFY_ENV", "cloud-master"),
+                     help="dify/env/<env>/env.yml の dify.base_url を接続先に使う（既定 $DIFY_ENV または cloud-master）")
     ap.add_argument("--timeout", type=int, default=180, help="1 件あたりの API タイムアウト秒（既定 180）")
     ap.add_argument("--dry-run", action="store_true", help="API を呼ばず JSON の形だけ検証")
     args = ap.parse_args()
-    base = os.environ.get("DIFY_BASE_URL", "https://api.dify.ai/v1").strip()
+    env_name = args.env
+    base = resolve_base_url(env_name)
+    results_dir = os.path.join(RESULTS_DIR, env_name)
 
     total_pass = total = 0
     config_error = False
     for code in args.codes:
         code = code.upper()
         print(f"== {code} ==")
-        r = run_suite(code, base, args.timeout, args.dry_run)
+        r = run_suite(code, base, args.timeout, args.dry_run, results_dir)
         if r is None:
             config_error = True
             continue
