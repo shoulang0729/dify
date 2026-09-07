@@ -14,52 +14,52 @@
 ## 一覧
 
 依存 PC は**固有のもの**だけ（PC-02 認証・PC-07 言語判定・PC-08 モデル・PC-09 評価・PC-10 個人情報・PC-16 本番 UI は全件共通のため省略）。
-Outline：読＝KB ソース、書＝下書きを残す、—＝使わない。デモ画面タイプはモックの `TEMPLATES`（qa／upload／form／diff／lookup）。
+Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各ファイル §9 で任意扱い、（候補）＝各ファイル §9 で「候補・未確定」、—＝使わない。各ファイル冒頭の「Outline Wiki」行と §9 を正として 2026-09-07 に突合済み。デモ画面タイプはモックの `TEMPLATES`（qa／upload／form／diff／lookup）。
 ファイルへのリンクは writer の執筆完了前でも一覧を保つため先に置いてある（未作成のリンクは 404 になる）。
 
 | 管理番号 | 名称 | 分類 | 成熟度 | 画面 | 実現性 | 依存 PC（固有） | Outline |
 |---|---|---|---|---|---|---|---|
-| [KN-01](./KN-01.md) | 技術ナレッジQA | KN/tech | 提供中 | qa | ◎ | PC-03 PC-05 | 読 |
-| [KN-02](./KN-02.md) | 設備マニュアル・取扱説明書の検索 | KN/tech | 提供中 | qa | ◎ | PC-03（OCR）PC-05 PC-14（WeCom bot） | 読 |
-| [KN-03](./KN-03.md) | 社内規程・就業規則QA | KN/rule | 提供中 | qa | ○ | PC-03 PC-05 PC-06 PC-12（版ズレ） | 読 |
-| [KN-04](./KN-04.md) | 労務・総務の社内問い合わせ対応 | KN/rule | 試行版 | qa | ○ | PC-01 PC-03 PC-05 PC-14 | 読・書（FAQ） |
-| [KN-05](./KN-05.md) | 当局通達の影響分析・マニュアル反映 | KN/rule | 試行版 | upload | ○ | PC-01 PC-03 PC-05 PC-11 PC-12 PC-14 | 読・書（改訂案） |
-| [QA-01](./QA-01.md) | 不具合原因分析・報告書（8D）作成 | QA/defect | 試行版 | upload | ○ | PC-01 PC-03 PC-04（QMS）PC-13 | 書（任意） |
-| [QA-02](./QA-02.md) | 変更点影響予測（4M変更管理） | QA/change | 構想 | diff | ○ | PC-01 PC-03 PC-04 PC-12 | 読 |
-| [QA-03](./QA-03.md) | 顧客クレーム一次回答・分類 | QA/change | 試行版 | form | ○ | PC-01 PC-04（Webhook／メール）PC-13 PC-14 | — |
-| [QA-04](./QA-04.md) | 完成車メーカー工程監査への対応資料 | QA/change | 試行版 | upload | ○ | PC-03 PC-05 PC-13 | 読 |
-| [DC-01](./DC-01.md) | 日本本社への報告資料作成 | DC/report | 提供中 | form | ◎ | PC-06 PC-13 PC-03（前月報告・任意） | 読（任意） |
-| [DC-02](./DC-02.md) | 議事録作成と次回論点整理 | DC/report | 提供中 | upload | ◎ | PC-05 PC-13 PC-08（STT） | 書 |
-| [DC-03](./DC-03.md) | 教育・OJT資料作成 | DC/site | 試行版 | upload | ◎ | PC-05 PC-06 PC-13 | 書 |
-| [DC-04](./DC-04.md) | 安全衛生・5S掲示物・改善提案の中国語化 | DC/site | 提供中 | upload | ◎ | PC-06 PC-13 | — |
-| [DC-05](./DC-05.md) | 稟議・申請書の作成と記載漏れ検出 | DC/apply | 試行版 | form | ○ | PC-01 PC-03（規程）PC-04（BPMS）PC-13 | 読 |
-| [DC-06](./DC-06.md) | 輸出入・通関書類の確認 | DC/apply | 試行版 | upload | ○ | PC-03（OCR）PC-04（手冊台帳）PC-12 PC-13 | — |
-| [DC-07](./DC-07.md) | サプライヤー契約書ドラフト支援 | DC/apply | 試行版 | form | ○ | PC-03 PC-05 PC-12 PC-13 | 読 |
-| [LG-01](./LG-01.md) | 日中翻訳（社内の言い方に揃える） | LG/trans | 提供中 | form | ◎ | PC-06 | 読（用語集）・書（登録形式） |
-| [LG-02](./LG-02.md) | 社内用語・呼称の統一（用語集） | LG/trans | 試行版 | upload | ○ | PC-03 PC-05 PC-06 | 読・書 |
-| [LG-03](./LG-03.md) | 現地スタッフとの認識合わせ（手順の中国語書き下し） | LG/align | 試行版 | form | ◎ | PC-05 PC-06 PC-11 | 書 |
+| [KN-01](./KN-01.md) | 技術ナレッジQA | KN/tech | 提供中 | qa | ◎ | PC-03 PC-05 PC-06 | 読 |
+| [KN-02](./KN-02.md) | 設備マニュアル・取扱説明書の検索 | KN/tech | 提供中 | qa | ◎ | PC-03（OCR） PC-05 PC-11 PC-14（WeCom bot） | 読 |
+| [KN-03](./KN-03.md) | 社内規程・就業規則QA | KN/rule | 提供中 | qa | ○ | PC-03 PC-05 PC-12（版ズレ） | 読・書（任意） |
+| [KN-04](./KN-04.md) | 労務・総務の社内問い合わせ対応 | KN/rule | 試行版 | qa | ○ | PC-03 PC-04 PC-05 PC-14 | 読・書（FAQ） |
+| [KN-05](./KN-05.md) | 当局通達の影響分析・マニュアル反映 | KN/rule | 試行版 | upload | ○ | PC-01 PC-03 PC-05 PC-11 PC-12 PC-13 PC-14 | 読・書（改訂案） |
+| [QA-01](./QA-01.md) | 不具合原因分析・報告書（8D）作成 | QA/defect | 試行版 | upload | ○ | PC-01 PC-03 PC-04（QMS） PC-05 PC-06 PC-13 | 読 |
+| [QA-02](./QA-02.md) | 変更点影響予測（4M変更管理） | QA/change | 構想 | diff | ○ | PC-01 PC-03 PC-04 PC-05 PC-12 PC-13 | 読 |
+| [QA-03](./QA-03.md) | 顧客クレーム一次回答・分類 | QA/change | 試行版 | form | ○ | PC-01 PC-03 PC-04（Webhook／メール） PC-05 PC-11 PC-13 PC-14 | 読 |
+| [QA-04](./QA-04.md) | 完成車メーカー工程監査への対応資料 | QA/change | 試行版 | upload | ○ | PC-01 PC-03 PC-04 PC-05 PC-13 PC-14 | 読・書（任意） |
+| [DC-01](./DC-01.md) | 日本本社への報告資料作成 | DC/report | 提供中 | form | ◎ | PC-05 PC-13 | 読・書 |
+| [DC-02](./DC-02.md) | 議事録作成と次回論点整理 | DC/report | 提供中 | upload | ◎ | PC-03 PC-05 PC-13 PC-14 | 読・書 |
+| [DC-03](./DC-03.md) | 教育・OJT資料作成 | DC/site | 試行版 | upload | ◎ | PC-03 PC-05 PC-06 PC-13 | 読・書 |
+| [DC-04](./DC-04.md) | 安全衛生・5S掲示物・改善提案の中国語化 | DC/site | 提供中 | upload | ◎ | PC-03 PC-05 PC-06 PC-13 | 読・書 |
+| [DC-05](./DC-05.md) | 稟議・申請書の作成と記載漏れ検出 | DC/apply | 試行版 | form | ○ | PC-01 PC-04（BPMS） PC-05 PC-13 | 読・書 |
+| [DC-06](./DC-06.md) | 輸出入・通関書類の確認 | DC/apply | 試行版 | upload | ○ | PC-03（OCR） PC-04（手冊台帳） PC-06 PC-12 PC-13 PC-14 | 読 |
+| [DC-07](./DC-07.md) | サプライヤー契約書ドラフト支援 | DC/apply | 試行版 | form | ○ | PC-05 PC-06 PC-12 PC-13 PC-14 | 読・書 |
+| [LG-01](./LG-01.md) | 日中翻訳（社内の言い方に揃える） | LG/trans | 提供中 | form | ◎ | PC-05 PC-06 | 読（用語集）・書（登録候補） |
+| [LG-02](./LG-02.md) | 社内用語・呼称の統一（用語集） | LG/trans | 試行版 | upload | ○ | PC-03 PC-05 PC-06 PC-13 | 読・書 |
+| [LG-03](./LG-03.md) | 現地スタッフとの認識合わせ（手順の中国語書き下し） | LG/align | 試行版 | form | ◎ | PC-01 PC-05 PC-06 PC-11 PC-13 | 読・書 |
 | [LG-04](./LG-04.md) | ビジネスメール作成（日中往復） | LG/align | 提供中 | form | ◎ | PC-06 PC-14（メール） | — |
-| [NM-01](./NM-01.md) | 見積り・原価計算 | NM/cost | 構想 | form | △ | PC-04（原価テーブル）PC-13 | — |
-| [NM-02](./NM-02.md) | 購買見積の比較 | NM/cost | 試行版 | upload | ○ | PC-03 PC-13 PC-15（市況） | — |
-| [NM-03](./NM-03.md) | 日報・実績の集計と要約 | NM/actual | 提供中 | upload | ◎ | PC-01 PC-04（データ源）PC-11 PC-13 PC-14 | — |
-| [NM-04](./NM-04.md) | 在庫・納期の問い合わせ回答 | NM/actual | 試行版 | lookup | △ | PC-04（ERP/WMS） | — |
-| [NM-05](./NM-05.md) | データ分析アシスタント | NM/actual | 試行版 | lookup | △ | PC-04（DB）PC-13 | — |
-| [EN-01](./EN-01.md) | 仕様改訂の差分検出・取引先用語対応 | EN/spec | 試行版 | diff | ○ | PC-01 PC-03（MinerU）PC-05 PC-06 PC-12 | 読（文書一覧） |
-| [EN-02](./EN-02.md) | BOM逆引き | EN/bom | 試行版 | lookup | △ | PC-04（ERP/MES） | — |
-| [EN-03](./EN-03.md) | 図面の類似検索 | EN/bom | 構想 | upload | △ | PC-03（図面 OCR）PC-08（マルチモーダル） | — |
-| [GN-01](./GN-01.md) | 経費精算チェック | GN/office | 提供中 | upload | ○ | PC-03（OCR）PC-04（履歴）PC-13 | 読（規程） |
-| [GN-02](./GN-02.md) | 請求書（発票）処理 | GN/office | 提供中 | upload | ○ | PC-01 PC-03 PC-04 PC-11 PC-13 | — |
-| [GN-03](./GN-03.md) | 受注・発注書の読み取りと登録支援 | GN/office | 試行版 | upload | ○ | PC-03 PC-04 PC-13 | — |
-| [GN-04](./GN-04.md) | スケジュール調整 | GN/daily | 試行版 | qa | △ | PC-04（カレンダー）PC-11（祝日）PC-14 | — |
-| [GN-05](./GN-05.md) | 文書要約 | GN/daily | 提供中 | upload | ◎ | PC-03 | — |
-| [PT-01](./PT-01.md) | 取引先・サプライヤーの与信・リスク監視 | PT/data | 試行版 | lookup | ○ | PC-01 PC-11 PC-14 PC-15 | — |
-| [PT-02](./PT-02.md) | 業界・材料相場リサーチ（本社報告の外部根拠） | PT/data | 試行版 | form | ○ | PC-13 PC-15 | — |
-| [PT-03](./PT-03.md) | 業界誌・技術記事アーカイブの横断検索 | PT/data | 試行版 | qa | ○ | PC-03 PC-15 PC-05（任意） | 読（任意） |
-| [PT-04](./PT-04.md) | 現地給与水準の照会と給与改定の妥当性確認 | PT/data | 構想 | lookup | △ | PC-15（PIPL 設計が本体） | — |
-| [PT-05](./PT-05.md) | 現地技術者・管理職の採用支援 | PT/service | 構想 | upload | △ | PC-03 PC-15（PIPL） | — |
-| [PT-06](./PT-06.md) | 戦略購買の立案 | PT/service | 構想 | upload | △ | PC-03 PC-13 PC-15 | — |
-| [PT-07](./PT-07.md) | RFQ 起草と購買代行への引き継ぎ | PT/service | 構想 | form | △ | PC-01 PC-04 PC-13 PC-15 | — |
-| [PT-08](./PT-08.md) | 研修プログラム化と実施代行・受講管理 | PT/service | 構想 | form | ○ | PC-05（教材）PC-11 PC-13 PC-15 | 読（教材） |
+| [NM-01](./NM-01.md) | 見積り・原価計算 | NM/cost | 構想 | form | △ | PC-04（原価テーブル） PC-06 PC-13 | 読 |
+| [NM-02](./NM-02.md) | 購買見積の比較 | NM/cost | 試行版 | upload | ○ | PC-03 PC-04 PC-06 PC-13 | 読 |
+| [NM-03](./NM-03.md) | 日報・実績の集計と要約 | NM/actual | 提供中 | upload | ◎ | PC-03 PC-06 PC-11 PC-13 PC-14 | 読・書（候補） |
+| [NM-04](./NM-04.md) | 在庫・納期の問い合わせ回答 | NM/actual | 試行版 | lookup | △ | PC-04（ERP/WMS） PC-05 PC-14 | 読 |
+| [NM-05](./NM-05.md) | データ分析アシスタント | NM/actual | 試行版 | lookup | △ | PC-04（DB） PC-05 PC-13 | 読 |
+| [EN-01](./EN-01.md) | 仕様改訂の差分検出・取引先用語対応 | EN/spec | 試行版 | diff | ○ | PC-03（MinerU） PC-05 PC-06 PC-12 PC-13 | 読・書（候補） |
+| [EN-02](./EN-02.md) | BOM逆引き | EN/bom | 試行版 | lookup | △ | PC-04（ERP/MES） PC-05 PC-13 PC-14 | 読 |
+| [EN-03](./EN-03.md) | 図面の類似検索 | EN/bom | 構想 | upload | △ | PC-03（図面 OCR） PC-04 | 読 |
+| [GN-01](./GN-01.md) | 経費精算チェック | GN/office | 提供中 | upload | ○ | PC-03（OCR） PC-04（履歴） PC-05 PC-13 PC-14 | 読 |
+| [GN-02](./GN-02.md) | 請求書（発票）処理 | GN/office | 提供中 | upload | ○ | PC-03 PC-04 PC-05 PC-11 PC-13 | 読 |
+| [GN-03](./GN-03.md) | 受注・発注書の読み取りと登録支援 | GN/office | 試行版 | upload | ○ | PC-01 PC-03 PC-04 PC-05 PC-06 PC-11 PC-13 | 読 |
+| [GN-04](./GN-04.md) | スケジュール調整 | GN/daily | 試行版 | qa | △ | PC-04（カレンダー） PC-05 PC-14 | 読 |
+| [GN-05](./GN-05.md) | 文書要約 | GN/daily | 提供中 | upload | ◎ | PC-03 PC-05 PC-06 PC-13 | 読・書（候補） |
+| [PT-01](./PT-01.md) | 取引先・サプライヤーの与信・リスク監視 | PT/data | 試行版 | lookup | ○ | PC-01 PC-05 PC-11 PC-12 PC-14 PC-15 | 読・書 |
+| [PT-02](./PT-02.md) | 業界・材料相場リサーチ（本社報告の外部根拠） | PT/data | 試行版 | form | ○ | PC-05 PC-06 PC-11 PC-13 PC-15 | 読・書 |
+| [PT-03](./PT-03.md) | 業界誌・技術記事アーカイブの横断検索 | PT/data | 試行版 | qa | ○ | PC-05（任意） PC-06 PC-13 PC-15 | 読・書 |
+| [PT-04](./PT-04.md) | 現地給与水準の照会と給与改定の妥当性確認 | PT/data | 構想 | lookup | △ | PC-04 PC-05 PC-13 PC-15（PIPL 設計が本体） | 読 |
+| [PT-05](./PT-05.md) | 現地技術者・管理職の採用支援 | PT/service | 構想 | upload | △ | PC-01 PC-03 PC-04 PC-13 PC-14 PC-15（PIPL） | 読・書（求人票のみ） |
+| [PT-06](./PT-06.md) | 戦略購買の立案 | PT/service | 構想 | upload | △ | PC-01 PC-03 PC-04 PC-05 PC-06 PC-13 PC-14 PC-15 | 読・書 |
+| [PT-07](./PT-07.md) | RFQ 起草と購買代行への引き継ぎ | PT/service | 構想 | form | △ | PC-01 PC-04 PC-05 PC-06 PC-11 PC-13 PC-14 PC-15 | 読・書 |
+| [PT-08](./PT-08.md) | 研修プログラム化と実施代行・受講管理 | PT/service | 構想 | form | ○ | PC-01 PC-03 PC-04 PC-05（教材） PC-11 PC-13 PC-14 PC-15 | 読・書 |
 
 ### 集計
 
@@ -68,8 +68,8 @@ Outline：読＝KB ソース、書＝下書きを残す、—＝使わない。�
 | 成熟度 | 提供中 **12**／試行版 **21**／構想 **8** |
 | 画面タイプ | qa 6／upload 17／form 11／diff 2／lookup 5 |
 | 実現性 | ◎ 11／○ 20（33 件中 16 ＋ PT 4）／△ 10（33 件中 6 ＋ PT 4）／× 0 |
-| Outline | 読 16（任意 3 含む）／書 8／使わない 21（重複あり） |
-| 依存の多い PC（固有分） | PC-03 文書取込 23、PC-13 ファイル出力 21、PC-04 業務連携 15、PC-05 Outline 14、PC-01 フィード 11 |
+| Outline | 読 40／書 23（確定 18・任意 2〔KN-03 QA-04〕・候補 3〔NM-03 EN-01 GN-05〕）／使わない 1（LG-04） |
+| 依存の多い PC（固有分） | PC-05 Outline 34、PC-13 ファイル出力 31、PC-03 文書取込 25、PC-04 業務連携 22、PC-06 用語集 20、PC-14 通知 19 |
 
 ## 依存 PC の逆引き（どの部品が何件を解放するか）
 
@@ -77,16 +77,16 @@ Outline：読＝KB ソース、書＝下書きを残す、—＝使わない。�
 
 | PC | 件数 | サービス |
 |---|---|---|
-| PC-01 フィードストア | 11 | KN-04 KN-05 QA-01 QA-02 QA-03 DC-05 NM-03 EN-01 GN-02 PT-01 PT-07 |
-| PC-03 文書取込パイプライン | 23 | KN-01〜05 QA-01 QA-02 QA-04 DC-01 DC-05 DC-06 DC-07 LG-02 NM-02 EN-01 EN-03 GN-01 GN-02 GN-03 GN-05 PT-03 PT-05 PT-06 |
-| PC-04 業務システム連携 | 15 | QA-01 QA-02 QA-03 DC-05 DC-06 NM-01 NM-03 NM-04 NM-05 EN-02 GN-01 GN-02 GN-03 GN-04 PT-07 |
-| PC-05 Outline Wiki 連携 | 14 | KN-01〜05 QA-04 DC-02 DC-03 DC-07 LG-02 LG-03 EN-01 PT-03 PT-08 |
-| PC-06 用語集・翻訳メモリ | 9 | KN-03 DC-01 DC-03 DC-04 LG-01 LG-02 LG-03 LG-04 EN-01 |
-| PC-11 スケジューラ | 7 | KN-05 LG-03 NM-03 GN-02 GN-04 PT-01 PT-08 |
-| PC-12 差分検出エンジン | 6 | KN-03 KN-05 QA-02 DC-06 DC-07 EN-01 |
-| PC-13 ファイル出力 | 21 | QA-01 QA-03 QA-04 DC-01〜07 NM-01 NM-02 NM-03 NM-05 GN-01 GN-02 GN-03 PT-02 PT-06 PT-07 PT-08 |
-| PC-14 通知チャネル | 8 | KN-02 KN-04 KN-05 QA-03 LG-04 NM-03 GN-04 PT-01 |
-| PC-15 パートナー連携ゲートウェイ | 9 | NM-02 PT-01〜08 |
+| PC-01 フィードストア | 13 | KN-05 QA-01〜04 DC-05 LG-03 GN-03 PT-01 PT-05〜08 |
+| PC-03 文書取込パイプライン | 25 | KN-01〜05 QA-01〜04 DC-02〜04 DC-06 LG-02 NM-02 NM-03 EN-01 EN-03 GN-01〜03 GN-05 PT-05 PT-06 PT-08 |
+| PC-04 業務システム連携 | 22 | KN-04 QA-01〜04 DC-05 DC-06 NM-01 NM-02 NM-04 NM-05 EN-02 EN-03 GN-01〜04 PT-04〜08 |
+| PC-05 Outline Wiki 連携 | 34 | KN-01〜05 QA-01〜04 DC-01〜05 DC-07 LG-01〜03 NM-04 NM-05 EN-01 EN-02 GN-01〜05 PT-01〜04 PT-06〜08 |
+| PC-06 用語集・翻訳メモリ | 20 | KN-01 QA-01 DC-03 DC-04 DC-06 DC-07 LG-01〜04 NM-01〜03 EN-01 GN-03 GN-05 PT-02 PT-03 PT-06 PT-07 |
+| PC-11 スケジューラ | 11 | KN-02 KN-05 QA-03 LG-03 NM-03 GN-02 GN-03 PT-01 PT-02 PT-07 PT-08 |
+| PC-12 差分検出エンジン | 7 | KN-03 KN-05 QA-02 DC-06 DC-07 EN-01 PT-01 |
+| PC-13 ファイル出力 | 31 | KN-05 QA-01〜04 DC-01〜07 LG-02 LG-03 NM-01〜03 NM-05 EN-01 EN-02 GN-01〜03 GN-05 PT-02〜08 |
+| PC-14 通知チャネル | 19 | KN-02 KN-04 KN-05 QA-03 QA-04 DC-02 DC-06 DC-07 LG-04 NM-03 NM-04 EN-02 GN-01 GN-04 PT-01 PT-05〜08 |
+| PC-15 パートナー連携ゲートウェイ | 8 | PT-01〜08 |
 
 ## 実装の波（`../implementation-guide.md` §3）との対応
 
