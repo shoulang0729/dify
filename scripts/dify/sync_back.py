@@ -213,7 +213,7 @@ def self_verify(code, normalized, env, env_masked, replace_table, replace_masked
     )
     identical = rendered == normalized
     rules = sorted({r[0] for r in rows}) if not identical else []
-    return identical, rules, warnings
+    return identical, rules, warnings, rendered
 
 
 # ---------------------------------------------------------------------------
@@ -250,9 +250,73 @@ def extra_keys_vs_master(master_data, normalized):
     return out
 
 
+def fmt_completion_params(cp):
+    cp = cp or {}
+    if not cp:
+        return "{}"
+    return "{" + ", ".join(f"{k}={v}" for k, v in sorted(cp.items())) + "}"
+
+
+def fmt_model_full(m):
+    """モデル差分の表示用（fmt_model と違い completion_params まで出す。秘密ではなくパラメータなので隠さない）。"""
+    m = m or {}
+    return (f"provider={m.get('provider','')} name={m.get('name','')} mode={m.get('mode','')} "
+            f"completion_params={fmt_completion_params(m.get('completion_params'))}")
+
+
+def diff_model_lines(normalized, rendered):
+    """DI-015: 自己検証（S6）が不一致のとき、モデル／completion_params の差をキーごとに
+    「マスタ=… / export=…」で並べる（マスタ＝env が要求する値＝rendered 側、export＝Cloud から
+    落ちてきたそのままの値＝normalized 側）。R1/R2（llm・分類器の model）と R3（Rerank）だけを見る。
+    dataset id（R5）は値を出さない方針のまま（既存の件数表示のみ）。"""
+    lines = []
+    exp_nodes = {n.get("id"): n for n in workflow_nodes(normalized)}
+    ren_nodes = {n.get("id"): n for n in workflow_nodes(rendered)}
+    for nid, en in exp_nodes.items():
+        rn = ren_nodes.get(nid)
+        if rn is None:
+            continue
+        ed = en.get("data") or {}
+        rd = rn.get("data") or {}
+        t = ed.get("type")
+        title = ed.get("title", "")
+
+        if t in ("llm", "question-classifier", "parameter-extractor"):
+            em = ed.get("model") or {}
+            rm = rd.get("model") or {}
+            if em != rm:
+                lines.append(
+                    f"  モデル差分: {t} '{title}'  マスタ={fmt_model_full(rm)} / export={fmt_model_full(em)}"
+                )
+                ecp = em.get("completion_params") or {}
+                rcp = rm.get("completion_params") or {}
+                for key in sorted(set(ecp) | set(rcp)):
+                    ev, rv = ecp.get(key), rcp.get(key)
+                    if ev != rv:
+                        lines.append(f"    completion_params.{key}: マスタ={rv!r} / export={ev!r}")
+
+        elif t == "knowledge-retrieval":
+            emrc = ed.get("multiple_retrieval_config")
+            rmrc = rd.get("multiple_retrieval_config")
+            if emrc is not None and rmrc is not None:
+                erm = emrc.get("reranking_model") or {}
+                rrm = rmrc.get("reranking_model") or {}
+                if erm != rrm or emrc.get("reranking_enable") != rmrc.get("reranking_enable"):
+                    lines.append(
+                        "  Rerank 差分: knowledge-retrieval '{}'  マスタ=provider={} name={} enable={} / "
+                        "export=provider={} name={} enable={}".format(
+                            title,
+                            rrm.get("provider", ""), rrm.get("model", ""), rmrc.get("reranking_enable"),
+                            erm.get("provider", ""), erm.get("model", ""), emrc.get("reranking_enable"),
+                        )
+                    )
+    return lines
+
+
 def build_summary(code, exported_path, env_name, master_data, normalized,
                    ds_total, ds_unknown, brand_hits, brand_note,
-                   dep_before, ver_before, ver_after, extra_keys):
+                   dep_before, ver_before, ver_after, extra_keys,
+                   identical=True, rules=None, model_diff_lines=None):
     lines = []
     lines.append(f"sync_back: {code} ← {exported_path} (env={env_name})")
 
@@ -301,7 +365,13 @@ def build_summary(code, exported_path, env_name, master_data, normalized,
     lines.append(f"  dataset_ids: {ds_total} 件 → [] (N1。{ds_note})")
     lines.append(f"  brand 逆置換: {brand_hits} 件 ({brand_note})")
     lines.append("  マスタに無いキー: " + ("、".join(extra_keys) if extra_keys else "なし"))
-    lines.append("  [OK] render --env cloud-master --check 相当: 恒等（マスタとバイト一致）")
+    if identical:
+        lines.append(f"  [OK] render --env {env_name} --check 相当: 恒等（マスタとバイト一致）")
+    else:
+        lines.append(f"  差が出たルール: {', '.join(rules) if rules else '不明'}")
+        for l in (model_diff_lines or []):
+            lines.append(l)
+        lines.append(f"  [NG] render --env {env_name} --check 相当: 不一致（上記のモデル／Rerank 差分を参照）")
     return "\n".join(lines)
 
 
@@ -404,29 +474,32 @@ def main():
         f"{brand_hits} 件を逆置換" if brand_hits else "一致なし"
     )
 
-    identical, rules, verify_warnings = self_verify(
+    identical, rules, verify_warnings, rendered = self_verify(
         code, normalized, env, env_masked, replace_table, replace_masked,
     )
     for w in verify_warnings:
         log("WARN: " + w)
 
-    if not identical:
-        log(
-            f"ERROR: sync_back: {code}: 正規化後も render --env {args.env} --check 相当が通りません "
-            f"（差が出たルール: {', '.join(rules) if rules else '不明'}）。"
-            "Cloud で人がモデルを変えていた場合は、dify/env/cloud-master/env.yml を直すか、"
-            "Cloud 側を DSL の指定に戻すかを人が決めてください（CLAUDE.md §2-12）。sync_back はモデルを戻しません。"
-        )
-        sys.exit(1)
-
+    # DI-015: 差分要約は自己検証の合否に関わらず必ず先に出す（--dry-run でも通常実行でも）。
     extra_keys = extra_keys_vs_master(master_data, normalized)
+    model_diff_lines = diff_model_lines(normalized, rendered) if not identical else []
 
     summary = build_summary(
         code, args.exported, args.env, master_data, normalized,
         ds_total, ds_unknown, brand_hits, brand_note,
         dep_before, ver_before, normalized.get("version"), extra_keys,
+        identical=identical, rules=rules, model_diff_lines=model_diff_lines,
     )
     log(summary)
+
+    if not identical:
+        log(
+            f"ERROR: sync_back: {code}: 正規化後も render --env {args.env} --check 相当が通りません "
+            f"（差が出たルール: {', '.join(rules) if rules else '不明'}。詳細は上の要約を参照）。"
+            "Cloud で人がモデルを変えていた場合は、dify/env/cloud-master/env.yml を直すか、"
+            "Cloud 側を DSL の指定に戻すかを人が決めてください（CLAUDE.md §2-12）。sync_back はモデルを戻しません。"
+        )
+        sys.exit(1)
 
     if args.dry_run:
         log("  [DRY-RUN] 書き込みなし")
