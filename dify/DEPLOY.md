@@ -11,6 +11,7 @@ PM の Mac（Claude Code CLI ＋ Claude in Chrome）から、`dify/apps/*.yml` �
 - Chrome で Dify Cloud にログイン済み（Claude in Chrome が同じプロファイルを使う）
 - API キーは **環境変数** で渡す（`CLAUDE.md` §2-10・§2-12）。値は commit しない・チャットに貼らない。**リポジトリ内に `.env` や `dify/env/**/env.yml` 以外の設定ファイルを作らない**（`git status` に出たら追加しないこと。`.gitignore` は `.env` `.env.*` `*.key` `*.pem` `secrets/` `dify/build/` を除外済み）
 - どの環境に投入するかは `DIFY_ENV`（既定 `cloud-master`）で決める。環境の一覧・差分は [`env/README.md`](./env/README.md)
+- Dify Cloud の **設定 → モデルプロバイダー**で **OpenRouter プラグインを追加**し、API キーを登録済み。キーは画面に入れるもので、リポジトリにも環境変数にも置かない。**プラグイン定義に載っていることと、そのアカウントで実際に呼べることは別**なので、初回は LLM ノードのモデル一覧に `qwen/qwen3.8-max` と `moonshotai/kimi-k3` が出るかを目で確認する（出なければ止めて `KNOWN_ISSUES.md` に起票）。OpenRouter は customizable-model 対応なので、一覧に無い id は手入力もできる
 
 ```bash
 # 設定ファイルは **リポジトリの外** に置く（環境ごとに 1 ファイル）
@@ -45,7 +46,7 @@ python3 scripts/dify/render.py --env $DIFY_ENV --all --strict
    - `https://raw.githubusercontent.com/shoulang0729/dify/main/dify/apps/KN-01-tech-knowledge-qa.yml`
    - `https://raw.githubusercontent.com/shoulang0729/dify/main/dify/apps/DC-01-hq-report-draft.yml`
    - `version: 0.6.0` は Cloud より古いので「古いバージョン」の警告が出ることがある → そのまま続行
-3. LLM ノードを開き、**モデル**を環境で使えるものに選び直す（既定は `openai / gpt-4o-mini`。未設定ならプロバイダー設定へ）
+3. LLM ノードを開き、**モデルが `openrouter / qwen/qwen3.8-max` になっているか確認**する（DSL の指定どおり入っていれば変更不要）。空欄・エラーならプロバイダー未設定。**勝手に別のモデルに変えない**（変えるなら env とマスタを同時に直す＝`CLAUDE.md` §2-12）
 4. 右上「公開」→「公開する」
 5. 左メニュー「API アクセス」→「API キー」→ 新規作成 → 値を環境変数へ（`DIFY_APP_KEY_KN01` / `DIFY_APP_KEY_DC01`）
 
@@ -71,6 +72,15 @@ git push
 - 失敗があっても全件回し、最後に合否を集計する（終了コード 1）。設定不備（キー未設定）は 2
 - API を呼ばず JSON だけ確かめる：`python3 scripts/dify/run_tests.py --dry-run KN-01 DC-01`
 
+### ④ 既存アプリを更新する（再インポート）
+
+マスタを直したあと、Cloud 上の既存アプリに反映する手順。
+
+1. Studio でそのアプリを開く → 右上「…」→ **「DSL をインポート」**（既存アプリを上書き更新できるかは**版によるため確認要**。2026-09-07 時点で未確認）
+2. 上書きできない版だった場合は、**新規アプリとして作成し、旧アプリの名前に `(old)` を付けて残す**（`/dify-deploy` の既定動作と同じ）。API キーは新アプリで再発行し、環境変数を差し替える
+3. どちらの場合も **再インポート後に「公開」**し、KN-01 系は**知識検索ノードの KB 紐づけをやり直す**（`dataset_ids` は空で入るため）
+4. 反映できたら `python3 scripts/dify/run_tests.py --env $DIFY_ENV <番号...>` を回し、結果を `dify/results/<env>/` に commit する
+
 ## 2. Claude Code に渡すプロンプト例（1 行）
 
 ```
@@ -92,7 +102,7 @@ dify/DEPLOY.md に従って KN-01 と DC-01 を投入・テストし、結果を
 | `HTTP 404` | アプリ未公開／URL 違い | アプリを「公開」してから再実行。`DIFY_BASE_URL` が `https://api.dify.ai/v1` か確認 |
 | `HTTP 400` に `variable ... required` | Workflow の入力変数名が DSL と違う | `dify/tests/DC-01.json` の `inputs` キー（`period` `site` `kpi_notes` `lang`）と Start ノードを照合 |
 | KB 検索 0 件・回答が定型文だけ | インデックス未完了／KB がノードに未紐づけ | ナレッジ画面で 3 文書が「利用可能」になっているか確認 → ノードに KB を追加して再公開 |
-| モデルのエラー（provider not found 等） | `openai / gpt-4o-mini` が環境に無い | LLM ノードでモデルを選び直して再公開 |
+| モデルのエラー（provider not found 等） | `openrouter` プラグイン未導入、またはそのアカウントで当該モデルが未提供 | 設定 → モデルプロバイダーで OpenRouter を追加。モデルが一覧に無ければ手入力（customizable-model）を試し、それでも駄目なら `KNOWN_ISSUES.md` に `DI-xxx` で起票して止まる |
 | インポートで「バージョンが古い」警告 | `version: 0.6.0` と Cloud の差 | 警告なら続行。**エラー**で止まる場合はエラー文をそのまま Issue に貼る |
 | `kb_upload.py` が `タイムアウト` | 大きい文書のインデックス中 | `--timeout 1800` で再実行（同名文書はスキップされる） |
 

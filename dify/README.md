@@ -62,8 +62,8 @@ python3 scripts/dify/render.py --env $DIFY_ENV --all --strict
 
 | # | KN-01 | DC-01 |
 |---|---|---|
-| 1 | LLM ノードの**モデル**を環境のプロバイダーに合わせて選び直す（既定 `openai / gpt-4o-mini`） | 同じ |
-| 2 | **ナレッジベースを作成**し `kb/KN-01/` の 3 本をアップロード → 「知識検索」ノードの **ナレッジを追加** で紐づける（DSL の `dataset_ids` は空で入っている）。スクリプトなら `python3 scripts/dify/kb_upload.py KN-01` | — |
+| 1 | LLM ノードの**モデル**が DSL の指定（`openrouter / qwen/qwen3.8-max`）どおり選ばれているか確認する。選べない場合は**プロバイダー未設定**（設定 → モデルプロバイダーで OpenRouter を追加） | 同じ |
+| 2 | **ナレッジベースを作成**し `kb/KN-01/` の 3 本をアップロード → 「知識検索」ノードの **ナレッジを追加** で紐づける（DSL の `dataset_ids` は空で入っている）。スクリプトなら `python3 scripts/dify/kb_upload.py KN-01`。**ナレッジの「検索設定」で Rerank を OFF にする**（既定 ON のままだと OpenRouter 経由の Rerank が 429 になり検索 0 件。`dify/KNOWN_ISSUES.md` DI-005）。チャンクの区切りは `\n\n`・最大 1024 字（DI-006） | — |
 | 3 | 右上「公開」 | 右上「公開」 |
 
 ## 動作確認（台本 kn1 / dc1 から各 1 問）
@@ -95,9 +95,9 @@ Dify Cloud はアプリを MCP サーバーとして公開できる（アプリ 
 - `version` は **`0.6.0`**（顧客環境 Dify 1.15 系に合わせる。Cloud には古い版として警告付きで入る）。`kind: app`
 - 参照 DSL（`docs/dify/templates/*.yml`）に無いフィールドは原則使わない。使ったものはファイル冒頭コメントか PR に書く
 - System プロンプトは `docs/dify/usecases/<管理番号>.md` §5-1 を写す。共通ルールは `docs/dify/implementation-guide.md` §6
-- モデルは `openai / gpt-4o-mini` を既定で書き、環境に合わせて UI で変える。`dependencies` は空（プラグイン識別子のハッシュを固定しないため）
+- モデルは **OpenRouter `qwen/qwen3.8-max`**（生成）を既定で書く。分類・抽出ノードを足すときは **`moonshotai/kimi-k3`**（`models.reasoning`）。既定値は `dify/env/cloud-master/env.yml` の `models` が正で、**変えるときは env とマスタを同時に**（`render.py --env cloud-master --all --check` が 12 本とも `[OK]` になること）。`dependencies` は空
 - Knowledge Retrieval の `dataset_ids` は空で置き、KB は環境側で紐づける（環境固有 id を DSL に入れない）
 - KB 用文書は `dify/kb/<管理番号>/`。架空データのみ（仮社名 青嶺精工、ペルソナは `SCENARIOS` の範囲、実在企業名・実データ禁止）
 - テストは `dify/tests/<管理番号>.json`（ID は `<管理番号> T<2 桁>`、`docs/dify/implementation-guide.md` §5）。結果は `dify/results/`
-- **環境差分は `dify/env/<env>/env.yml` に閉じる**（`CLAUDE.md` §2-12）。DSL には Cloud で動く既定値（`gpt-4o-mini`・`dataset_ids: []`）だけを書く。`python3 scripts/dify/render.py --env cloud-master --all` の出力は常にマスタとバイト一致すること（`--check` で確認できる）
+- **環境差分は `dify/env/<env>/env.yml` に閉じる**（`CLAUDE.md` §2-12）。DSL には Cloud で動く既定値（`openrouter / qwen/qwen3.8-max`・`dataset_ids: []`）だけを書く。`python3 scripts/dify/render.py --env cloud-master --all` の出力は常にマスタとバイト一致すること（`--check` で確認できる）
 - 秘密（API キー・Cookie）は置かない。設定ファイルはリポジトリの外（`~/.config/dify/<env>.env`）に置く（`.gitignore` は `.env` `.env.*` `*.key` `*.pem` `secrets/` `dify/build/` を除外済み）
