@@ -258,6 +258,9 @@ workflow:
         desc: 'System は docs/dify/usecases/NM-03.md §5-1 を最小構成向けに調整（Iteration・KB 無し。Code の集計 JSON をそのまま転記する）。モデルは環境に合わせて変更'
         model:
           completion_params:
+            exclude_reasoning_tokens: true
+            max_tokens: 4096
+            reasoning_effort: low
             temperature: 0.2
           mode: chat
           name: qwen/qwen3.8-max

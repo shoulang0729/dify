@@ -202,6 +202,9 @@ workflow:
         desc: 'System は docs/dify/usecases/GN-05.md §5-1 を最小構成向けに調整（章分割・Iteration・KB 無し。1 回の LLM 呼び出しで全文を要約する）。モデルは環境に合わせて変更'
         model:
           completion_params:
+            exclude_reasoning_tokens: true
+            max_tokens: 4096
+            reasoning_effort: low
             temperature: 0.2
           mode: chat
           name: qwen/qwen3.8-max
