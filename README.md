@@ -11,9 +11,8 @@ GitHub Pages で公開しています。
 
 | | ファイル | 公開URL | 内容 |
 |---|---|---|---|
-| ランディング | `mock/index.html` | https://shoulang0729.github.io/dify/ | 2つのモックを見比べる比較ページ |
+| デモガイド | `mock/index.html` | https://shoulang0729.github.io/dify/ | `catalog.html` の見方を説明するガイドページ |
 | モックA | `mock/catalog.html` | https://shoulang0729.github.io/dify/catalog.html | AIエージェントカタログ（左ナビ3案・一覧→詳細→チャット起動） |
-| モックB | `mock/top.html` | https://shoulang0729.github.io/dify/top.html | トップページ（レイアウト3案・カテゴリ→業務画面） |
 
 > `mock/` フォルダがサイトのルートとして公開されるため、URL に `/mock/` は含まれません。
 
