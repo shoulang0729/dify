@@ -26,6 +26,7 @@ Mac から全自動で投入・テストする手順は [`DEPLOY.md`](./DEPLOY.m
 | `../scripts/dify/run_tests.py` | `tests/<管理番号>.json` を Service API で実行し `results/<env>/` に書く（`--env` 対応） |
 | `../scripts/dify/env.example` | 環境変数の雛形（値は空） |
 | `CHANGELOG.md` | `release.py` が合格リリースごとに 1 行追記するリリース履歴 |
+| `KNOWN_ISSUES.md` | 投入・テスト・Cloud 調整で**実際に出た**不具合の記録（`DI-xxx` 連番。設計時点のリスクは `docs/dify/usecases/<番号>.md` §10） |
 
 ## 環境を選んでインポートする
 
