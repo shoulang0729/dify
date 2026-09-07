@@ -15,15 +15,28 @@ AIエージェントカタログの画面案（モック）一式です。`index
 
 ## ディレクトリ構成
 
+`catalog.html` は層ごとにファイル分割されています（Issue #77。ビルド不要・静的な `<link>`/`<script src>` のみ）。
+
 ```
 mock/
-├── index.html      デモガイド（catalog.html への導線、日／中切替）
-├── catalog.html    モックA：AIエージェントカタログ（自己完結）
-├── .nojekyll       GitHub Pages の Jekyll 処理を無効化
-└── README.md       このファイル
+├── index.html            デモガイド（catalog.html への導線、日／中切替。css/tokens.css を <link> で共有）
+├── catalog.html          モックA：AIエージェントカタログ（殻。<link>/<script src> とアプリ層のインライン <script>）
+├── css/
+│   ├── tokens.css        デザイントークン層（ブランドパレット・セマンティックトークン・light/dark）
+│   └── components.css    コンポーネント CSS
+├── js/
+│   └── data/
+│       ├── ui.js         T / PATTERNS / TAGS / TEMPLATES（UI 文言・パターン定義・タグ・デモテンプレート辞書）
+│       ├── catalog.js    CATS / SVCS（分類・サービス台帳）
+│       ├── home.js       HOME / FEED（② ダッシュボード・③ 業務フィードの疑似データ）
+│       ├── style.js      CAT_STYLE（分類アイコンの SVG path）
+│       └── scenarios/    SCENARIOS（デモ台本。大分類 8 ファイル: kn/qa/dc/lg/nm/en/gn/pt）
+├── .nojekyll             GitHub Pages の Jekyll 処理を無効化
+└── README.md             このファイル
 ```
 
-> デザイントークンは各 HTML に内包済み。外部の CSS / 画像ファイルへの依存はありません。
+> データ層・アプリ層の分割方針は `docs/handoff/2026-09-07-split-catalog.md` を参照。
+> 外部の画像ファイルへの依存はありません（アイコンはインライン SVG）。
 
 ## ローカルで確認
 
