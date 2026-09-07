@@ -178,5 +178,5 @@ git switch -c feat/<issue>-sync-back-KN-01 && git add dify/apps && git commit
 Git のマスタから `python3 scripts/dify/release.py --env inhouse --all` で作る（env 差分は `render.py` が入れるもので、
 ある環境の完成品を別環境に貼ると、その環境の値が混ざったままになる）。
 
-不具合・詰まりは `KNOWN_ISSUES.md` に `DI-xxx` で残す（§7）。
+不具合・詰まりは `KNOWN_ISSUES.md` に `DI-xxx` で残す（[`KNOWN_ISSUES.md`](./KNOWN_ISSUES.md)。§4 末尾も参照）。
 
