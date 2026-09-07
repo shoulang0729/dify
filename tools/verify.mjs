@@ -130,6 +130,27 @@ section('5. CSS トークン');
   for (const l of LANGS) {
     if (!new RegExp(`:root\\[data-lang="${l}"\\]`).test(tokenCss)) fail(`data-lang="${l}" のフォント切替が無い`);
   }
+
+  // 5-a. dark ブロックはちょうど 1 つ（複数あると --ntt-* 上書き検査が素通りする）
+  const darkCount = [...tokenCss.matchAll(/:root\[data-theme="dark"\]\s*\{/g)].length;
+  if (darkCount !== 1) fail(`:root[data-theme="dark"] ブロックが ${darkCount} 個ある（1 個にする）`);
+  else ok('dark ブロックは 1 つ');
+
+  // 5-b. 分類アクセント --cat-<id> / --cat-<id>-bg は light と dark の両方に必要（§2-2 / §2-7）
+  const lightRoot = (tokenCss.match(/:root\s*\{([\s\S]*?)\n\}/) || [, ''])[1];
+  const darkRoot  = (tokenCss.match(/:root\[data-theme="dark"\]\s*\{([\s\S]*?)\n\}/) || [, ''])[1];
+  const catTok = (css) => new Set([...css.matchAll(/(--cat-[a-z]{2}(?:-bg)?)\s*:/g)].map(m => m[1]));
+  const lc = catTok(lightRoot), dc = catTok(darkRoot);
+  const asym = [...lc].filter(v => !dc.has(v)).concat([...dc].filter(v => !lc.has(v)));
+  if (asym.length) fail(`--cat-* が light/dark 非対称: ${asym.sort().join(', ')}`);
+  else ok(`--cat-* ${lc.size} 個が light/dark 両方に定義済み`);
+  for (const base of [...lc].filter(v => !v.endsWith('-bg'))) {
+    if (!lc.has(base + '-bg')) fail(`${base} に対応する ${base}-bg が無い`);
+  }
+  // 5-c. CATS の分類 id に色トークンが無い場合は warn（顧客版差し替えを FAIL にしない。§2-9）
+  if (CATS) for (const c of CATS) {
+    if (!lc.has(`--cat-${c.id}`)) warn(`CATS.${c.id}: --cat-${c.id} が未定義（既定色 --cat-accent で描画される）`);
+  }
 }
 
 /* ---------- 6. データ整合 ---------- */

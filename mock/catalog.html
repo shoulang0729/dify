@@ -107,6 +107,31 @@
   --badge-concept-bg:     rgba(148, 148, 148, 0.16);
   --badge-concept-fg:     #5A6B78;
 
+  /* --- 分類アクセント（① サイドバー / ①②③ カード / ② 分類行・ランキング / ③ フィード） ---
+     テキストにも使うため light は白・キャンバス上で 4.5:1 以上、dark はカード上で 4.5:1 以上。
+     ブランドパレットと一致する 3 色は --ntt-* を参照する（kn / qa / en）。
+     qa は PM 判断（design-pass.md §15-7）によりアンバーに変更（赤系→amber） */
+  --cat-kn:      var(--ntt-future-blue);   /* #0071BC */
+  --cat-kn-bg:   rgba(0, 113, 188, 0.12);
+  --cat-qa:      #B45309;
+  --cat-qa-bg:   rgba(180, 83, 9, 0.12);
+  --cat-dc:      #00707C;
+  --cat-dc-bg:   rgba(0, 112, 124, 0.12);
+  --cat-lg:      #6A3FB5;
+  --cat-lg-bg:   rgba(106, 63, 181, 0.12);
+  --cat-nm:      #547000;
+  --cat-nm-bg:   rgba(84, 112, 0, 0.12);
+  --cat-en:      var(--ntt-grey-700);      /* #3D4A57 */
+  --cat-en-bg:   rgba(61, 74, 87, 0.12);
+  --cat-gn:      #1F7A46;
+  --cat-gn-bg:   rgba(31, 122, 70, 0.12);
+  --cat-pt:      #A8347A;
+  --cat-pt-bg:   rgba(168, 52, 122, 0.12);
+
+  /* 既定値。CAT_STYLE / --cat-<id> が無い分類 id が来ても壊れないためのフォールバック（§2-9） */
+  --cat-accent:    var(--action-primary);
+  --cat-accent-bg: var(--surface-selected);
+
   /* Focus ring */
   --focus-ring:           var(--ntt-future-blue-50);
 }
@@ -150,6 +175,16 @@
   --status-concept:       #8A97A6;
   --badge-concept-bg:     rgba(164, 176, 186, 0.16);
   --badge-concept-fg:     #B8C3CC;
+
+  /* --- 分類アクセント（dark）。qa は PM 判断（design-pass.md §15-7）によりアンバー --- */
+  --cat-kn:      #5AACEE;  --cat-kn-bg: rgba(90, 172, 238, 0.18);
+  --cat-qa:      #F0A64A;  --cat-qa-bg: rgba(240, 166, 74, 0.18);
+  --cat-dc:      #3FC9D8;  --cat-dc-bg: rgba(63, 201, 216, 0.18);
+  --cat-lg:      #B79BFF;  --cat-lg-bg: rgba(183, 155, 255, 0.18);
+  --cat-nm:      #A8C93F;  --cat-nm-bg: rgba(168, 201, 63, 0.18);
+  --cat-en:      #A9BACB;  --cat-en-bg: rgba(169, 186, 203, 0.18);
+  --cat-gn:      #52C98A;  --cat-gn-bg: rgba(82, 201, 138, 0.18);
+  --cat-pt:      #F07AC0;  --cat-pt-bg: rgba(240, 122, 192, 0.18);
 }
 
 /* tokens/typography.css */
@@ -325,6 +360,7 @@
   .nav-item .n-label { font-size: 13.5px; font-weight: var(--weight-bold); color: var(--text-heading); }
   .nav-item.on .n-label { color: var(--action-primary); }
   .nav-item .cnt { margin-left: auto; font-size: var(--text-overline); color: var(--text-muted); }
+  .nav-item .ic { color: var(--cat-accent); margin-right: var(--space-2); }
   .nav-sub {
     display: flex; align-items: baseline; gap: var(--space-2); width: 100%;
     padding: var(--space-2) var(--space-5) var(--space-2) 34px;
@@ -377,10 +413,11 @@
     padding: var(--space-5); cursor: pointer; display: flex; flex-direction: column; gap: 7px;
     transition: border-bottom-color 160ms var(--ease-standard), background var(--duration-fast) var(--ease-standard);
   }
-  .card:hover { border-bottom-color: var(--action-primary); }
+  .card:hover { border-bottom-color: var(--cat-accent); }
   .card .c-crumb {
     font-size: 10.5px; letter-spacing: 0.08em;
-    font-weight: var(--weight-bold); color: var(--action-primary);
+    font-weight: var(--weight-bold); color: var(--cat-accent);
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .card .c-name { font-size: 15.5px; font-weight: var(--weight-bold); color: var(--text-heading); line-height: 1.4; }
   .card .c-desc {
@@ -394,9 +431,25 @@
     font-family: var(--font-mono); font-size: var(--text-overline);
     letter-spacing: 0.04em; color: var(--text-muted); white-space: nowrap;
   }
-  .card .c-top { display: flex; align-items: baseline; gap: var(--space-2); }
+  .card .c-top { display: flex; align-items: center; gap: var(--space-2); }
+  .card .c-top .ic { color: var(--cat-accent); }
   .card .c-top .code { margin-left: auto; flex-shrink: 0; }
   .detail-card .d-code { margin-bottom: 6px; }
+
+  /* ===== A: 分類アクセント（色とアイコン） ===== */
+  .ic { width: 20px; height: 20px; flex-shrink: 0; display: block; }
+  .ic-sm { width: 16px; height: 16px; }
+  .ic-lg { width: 24px; height: 24px; }
+  .ic-xl { width: 28px; height: 28px; }
+  .cat-kn { --cat-accent: var(--cat-kn); --cat-accent-bg: var(--cat-kn-bg); }
+  .cat-qa { --cat-accent: var(--cat-qa); --cat-accent-bg: var(--cat-qa-bg); }
+  .cat-dc { --cat-accent: var(--cat-dc); --cat-accent-bg: var(--cat-dc-bg); }
+  .cat-lg { --cat-accent: var(--cat-lg); --cat-accent-bg: var(--cat-lg-bg); }
+  .cat-nm { --cat-accent: var(--cat-nm); --cat-accent-bg: var(--cat-nm-bg); }
+  .cat-en { --cat-accent: var(--cat-en); --cat-accent-bg: var(--cat-en-bg); }
+  .cat-gn { --cat-accent: var(--cat-gn); --cat-accent-bg: var(--cat-gn-bg); }
+  .cat-pt { --cat-accent: var(--cat-pt); --cat-accent-bg: var(--cat-pt-bg); }
+
   .status {
     display: inline-flex; align-items: center; gap: 5px;
     font-size: var(--text-overline); color: var(--text-secondary); margin-right: var(--space-1);
@@ -428,8 +481,9 @@
     border: 1px solid var(--border-card); padding: var(--space-10);
   }
   .detail-card .d-crumb {
+    display: flex; align-items: center; gap: var(--space-2);
     font-size: var(--text-overline); letter-spacing: 0.1em;
-    font-weight: var(--weight-bold); color: var(--action-primary); margin-bottom: var(--space-3);
+    font-weight: var(--weight-bold); color: var(--cat-accent); margin-bottom: var(--space-3);
   }
   .detail-card h1 {
     margin: 0 0 6px 0; font-size: 28px; font-weight: var(--weight-bold);
@@ -2839,6 +2893,25 @@ const HOME = {
 };
 
 /* ============================================================
+   2e. 分類の見た目（アイコン）。色は CSS の --cat-<id> 側にある
+   SVCS / CATS に埋め込まない（§2-9：顧客版の差し替えはデータ層だけ）。
+   ここに無い分類 id は _fallback と既定色 --cat-accent で描画される＝壊れない
+   アイコンは本リポジトリで書き起こしたもの。外部アイコン集は使っていない（帰属表記不要）
+   viewBox 0 0 24 24 / fill none / stroke currentColor / stroke-width 1.75
+   ============================================================ */
+const CAT_STYLE = {
+  kn: { icon: '<path d="M4 4.5h5.5A2.5 2.5 0 0 1 12 7v12a2.5 2.5 0 0 0-2.5-2.5H4z"/><path d="M20 4.5h-5.5A2.5 2.5 0 0 0 12 7v12a2.5 2.5 0 0 1 2.5-2.5H20z"/>' },
+  qa: { icon: '<path d="M12 3.2l7 2.8v5.2c0 4.3-2.9 7.9-7 9.6-4.1-1.7-7-5.3-7-9.6V6z"/><path d="M8.8 12.1l2.3 2.3 4.1-4.6"/>' },
+  dc: { icon: '<path d="M13.5 3.5H7.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8.5z"/><path d="M13.5 3.5v5h5"/><path d="M9 13h6"/><path d="M9 16.5h4"/>' },
+  lg: { icon: '<path d="M5.5 4.5h8a2 2 0 0 1 2 2v3.5a2 2 0 0 1-2 2h-4l-3.5 2.7v-2.7h-.5a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2z"/><path d="M18.5 9.5a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2H18v2.6L14.5 17h-3.2"/>' },
+  nm: { icon: '<path d="M3.5 20h17"/><path d="M7 20v-6.5"/><path d="M12 20V5.5"/><path d="M17 20v-9.5"/>' },
+  en: { icon: '<rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/><path d="M3.5 9h17"/><path d="M9 9v11.5"/><circle cx="15" cy="15" r="2.5"/>' },
+  gn: { icon: '<rect x="4" y="4.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4.5" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/>' },
+  pt: { icon: '<circle cx="9" cy="8" r="3.5"/><path d="M2.8 20v-1a4.7 4.7 0 0 1 4.7-4.7h3a4.7 4.7 0 0 1 4.7 4.7v1"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4"/><path d="M17.6 14.6A4.7 4.7 0 0 1 21.2 19v1"/>' },
+  _fallback: { icon: '<rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="12" cy="12" r="2.5"/>' }
+};
+
+/* ============================================================
    3. 状態（共通レイヤー）
    pattern を切り替えても選択位置は保持され、直接比較できる
    ============================================================ */
@@ -2880,6 +2953,12 @@ const svcCode = (id) => {
   const m = /^([a-z]+)(\d+)$/.exec(id);
   return m ? `${m[1].toUpperCase()}-${pad2(m[2])}` : String(id).toUpperCase();
 };
+
+/** 分類アイコン。size は 'ic-sm'(16) / ''(20) / 'ic-lg'(24) / 'ic-xl'(28)
+    未知の分類 id でも _fallback で必ず描ける（§2-9） */
+const catIcon = (id, size) => `<svg class="ic ${size || ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${(CAT_STYLE[id] || CAT_STYLE._fallback).icon}</svg>`;
+/** 分類アクセント色を要素に載せるクラス。未定義分類は空文字＝既定色（--cat-accent）のまま */
+const catClass = (id) => (CAT_STYLE[id] ? `cat-${id}` : '');
 
 /** 入力テキストの言語を判定（ひらがな/カタカナ→ja、漢字のみ→zh、それ以外→UI言語）
     エージェントは UI 言語と無関係に日本語・中国語どちらの入力も受け付ける */
@@ -2999,7 +3078,8 @@ function renderSidebar() {
       const open = !!state.openCats[c.id];
       const on = state.selCat === c.id && !state.selSub;
       return `
-      <button class="nav-item ${on ? 'on' : ''}" data-act="cat" data-arg="${c.id}">
+      <button class="nav-item ${on ? 'on' : ''} ${catClass(c.id)}" data-act="cat" data-arg="${c.id}">
+        ${catIcon(c.id)}
         <span class="n-label">${esc(L(c.name))}</span>
         <span class="chev ${open ? 'open' : ''}"></span>
       </button>
@@ -3018,8 +3098,9 @@ function renderSidebar() {
 function cardHTML(x) {
   const c = catOf(x.cat), sb = subOf(x.cat, x.sub);
   return `
-  <div class="card" data-act="svc" data-arg="${x.id}">
+  <div class="card ${catClass(x.cat)}" data-act="svc" data-arg="${x.id}">
     <div class="c-top">
+      ${catIcon(x.cat, 'ic-sm')}
       <div class="c-crumb">${esc(L(c.name))}・${esc(L(sb.name))}</div>
       <span class="code">${esc(svcCode(x.id))}</span>
     </div>
@@ -3280,8 +3361,8 @@ function renderMain() {
     el.innerHTML = `
     <div class="detail-wrap" data-screen-label="サービス詳細">
       <button class="backlink" data-act="back"><span class="arrow"></span>${esc(t('backToList'))}</button>
-      <div class="detail-card">
-        <div class="d-crumb">${esc(L(c.name))}・${esc(L(sb.name))}</div>
+      <div class="detail-card ${catClass(x.cat)}">
+        <div class="d-crumb">${catIcon(x.cat)}${esc(L(c.name))}・${esc(L(sb.name))}</div>
         <div class="code d-code">${esc(svcCode(x.id))}</div>
         <h1>${esc(L(x.name))}</h1>
         <div class="d-meta">
