@@ -19,3 +19,7 @@ secrets/
 
 # ---- Dify 生成物（環境別に render した DSL） ----
 dify/build/
+
+# ---- Python ----
+__pycache__/
+*.pyc
