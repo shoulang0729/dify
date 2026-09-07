@@ -493,6 +493,20 @@
   .card .c-top .code { margin-left: auto; flex-shrink: 0; align-self: flex-start; }
   .detail-card .d-code { margin-bottom: 6px; }
 
+  /* ===== NEW バッジ（SVCS[].added から自動表示。成熟度バッジ .badge とは別物） ===== */
+  .badge-new {
+    display: inline-flex; align-items: center; flex-shrink: 0;
+    font-family: var(--font-mono); font-size: var(--text-overline); font-weight: var(--weight-bold);
+    letter-spacing: 0.06em; padding: 1px 6px; border-radius: var(--radius-xs);
+    background: var(--badge-new-bg); color: var(--badge-new-fg);
+  }
+  /* カード右上：NEW と管理番号を 1 つのまとまりにして右端に寄せる（管理番号の右端は全カードで揃う） */
+  .card .c-top .c-code {
+    margin-left: auto; flex-shrink: 0; align-self: flex-start;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .detail-card .d-code .badge-new { margin-left: var(--space-2); }
+
   /* ===== A: 分類アクセント（色とアイコン） ===== */
   .ic { width: 20px; height: 20px; flex-shrink: 0; display: block; }
   .ic-sm { width: 16px; height: 16px; }
@@ -807,6 +821,13 @@
   .sec-count { font-size: var(--text-overline); color: var(--text-muted); }
   .legend { display: flex; gap: var(--space-3); margin-left: auto; font-size: 11.5px; color: var(--text-muted); }
   .lg-i { display: inline-flex; align-items: center; gap: 5px; }
+
+  /* --- 新しく追加されたエージェント（②。新着 0 件なら帯ごと出ない） --- */
+  .dash-new .new-item { display: flex; flex-direction: column; gap: 6px; }
+  .dash-new .new-date {
+    font-family: var(--font-mono); font-size: var(--text-overline);
+    letter-spacing: 0.04em; color: var(--text-muted);
+  }
 
   /* --- よく使われているエージェント（横棒ランキング） --- */
   .use-list { border-top: 1px solid var(--border-subtle); }
@@ -3611,6 +3632,9 @@ function renderSidebar() {
 /* ============================================================
    9. 描画 — 右ペイン
    ============================================================ */
+/** NEW バッジ 1 個。新着でなければ空文字（呼び出し側に分岐を書かない） */
+const newBadgeHTML = (x) => isNew(x) ? `<span class="badge-new">${esc(t('newBadge'))}</span>` : '';
+
 function cardHTML(x) {
   const c = catOf(x.cat), sb = subOf(x.cat, x.sub);
   return `
@@ -3621,7 +3645,7 @@ function cardHTML(x) {
         <div class="c-crumb">${esc(L(c.name))}・${esc(L(sb.name))}</div>
         <div class="c-name">${esc(L(x.name))}</div>
       </div>
-      <span class="code">${esc(svcCode(x.id))}</span>
+      <span class="c-code">${newBadgeHTML(x)}<span class="code">${esc(svcCode(x.id))}</span></span>
     </div>
     <div class="c-desc">${esc(L(x.desc))}</div>
     <div class="c-meta">
@@ -4031,7 +4055,7 @@ function renderMain() {
       <button class="backlink" data-act="back"><span class="arrow"></span>${esc(t('backToList'))}</button>
       <div class="detail-card ${catClass(x.cat)}">
         <div class="d-crumb">${catIcon(x.cat)}${esc(L(c.name))}・${esc(L(sb.name))}</div>
-        <div class="code d-code">${esc(svcCode(x.id))}</div>
+        <div class="code d-code">${esc(svcCode(x.id))}${newBadgeHTML(x)}</div>
         <h1>${esc(L(x.name))}</h1>
         <div class="d-meta">
           <span class="badge ${statusClass(x.st)}">${esc(statusText(x.st))}</span>
