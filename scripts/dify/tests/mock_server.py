@@ -15,6 +15,8 @@ Dify サーバー（標準ライブラリのみ。開発・検証用。CI には
   GET  /v1/datasets/{id}/documents/{batch}/indexing-status      → completed
   POST /v1/chat-messages, POST /v1/workflows/run                → dify/tests/<番号>.json の
       expect（配列は先頭の候補を採用）を連結した回答を返す。expect_not を含まないことを起動時に自己検査する。
+      リクエスト body の response_mode が "streaming" のときは Content-Type: text/event-stream の
+      SSE で返す（回答を 3 分割 ＋ ping 1 フレームを挟む）。それ以外（未指定・"blocking"）は今までどおり JSON。
 
 このスクリプトは検証専用。生成物（dify/results/** や dify/CHANGELOG.md の検証行）はコミットに含めない。
 """
@@ -60,6 +62,18 @@ STATE = {"apps": {}, "datasets": {}, "next_app": 1, "next_ds": 1, "next_doc": 1}
 LOCK = threading.Lock()
 
 
+def split_n(text, n):
+    """text を n 個にほぼ均等分割する（連結処理を実際に通すため。空文字なら空要素を n 個返す）。"""
+    length = len(text)
+    if length == 0:
+        return [""] * n
+    step = max(1, -(-length // n))  # ceil(length / n)
+    parts = [text[i:i + step] for i in range(0, length, step)]
+    while len(parts) < n:
+        parts.append("")
+    return parts[:n]
+
+
 def app_name_from_yaml(text):
     in_app = False
     for line in text.splitlines():
@@ -92,6 +106,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def _path(self):
         return self.path.split("?", 1)[0]
+
+    def _sse(self, frames):
+        """SSE で frames（dict の列）を data: 行として送る。HTTP/1.0 既定なので Content-Length 無しで書いて閉じる。"""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+        for frame in frames:
+            self.wfile.write(("data: " + json.dumps(frame, ensure_ascii=False) + "\n\n").encode("utf-8"))
+        self.wfile.flush()
 
     # -- Console API ------------------------------------------------
     def do_POST(self):
@@ -139,11 +163,39 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path == "/v1/chat-messages":
             query = payload.get("query", "")
             answer = ANSWERS["by_query"].get(query, "該当する記録が見つかりません")
+            if payload.get("response_mode") == "streaming":
+                c1, c2, c3 = split_n(answer, 3)
+                return self._sse([
+                    {"event": "message", "task_id": "t1", "message_id": "m1", "conversation_id": "c1",
+                     "answer": c1, "created_at": 0},
+                    {"event": "ping"},
+                    {"event": "message", "task_id": "t1", "message_id": "m1", "conversation_id": "c1",
+                     "answer": c2, "created_at": 0},
+                    {"event": "message", "task_id": "t1", "message_id": "m1", "conversation_id": "c1",
+                     "answer": c3, "created_at": 0},
+                    {"event": "message_end", "task_id": "t1", "id": "m1", "message_id": "m1", "conversation_id": "c1",
+                     "metadata": {"usage": {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30}}},
+                ])
             return self._json(200, {"answer": answer})
 
         if path == "/v1/workflows/run":
             kpi = (payload.get("inputs") or {}).get("kpi_notes", "")
             answer = ANSWERS["by_kpi_notes"].get(kpi, "入力してください")
+            if payload.get("response_mode") == "streaming":
+                c1, c2 = split_n(answer, 2)
+                return self._sse([
+                    {"event": "workflow_started", "task_id": "t1", "workflow_run_id": "w1",
+                     "data": {"id": "w1", "workflow_id": "wf1", "created_at": 0}},
+                    {"event": "ping"},
+                    {"event": "text_chunk", "task_id": "t1", "workflow_run_id": "w1",
+                     "data": {"text": c1, "from_variable_selector": ["1", "text"]}},
+                    {"event": "text_chunk", "task_id": "t1", "workflow_run_id": "w1",
+                     "data": {"text": c2, "from_variable_selector": ["1", "text"]}},
+                    {"event": "workflow_finished", "task_id": "t1", "workflow_run_id": "w1",
+                     "data": {"id": "w1", "workflow_id": "wf1", "status": "succeeded",
+                              "outputs": {"output": answer}, "error": None, "elapsed_time": 1.23,
+                              "total_tokens": 45, "total_steps": 3, "created_at": 0, "finished_at": 1}},
+                ])
             return self._json(200, {"data": {"outputs": {"output": answer}}})
 
         return self._json(404, {"error": f"mock: unknown path {path}"})
