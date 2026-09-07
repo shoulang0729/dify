@@ -45,6 +45,7 @@ APPS_DIR = os.path.join(ROOT, "dify", "apps")
 ENV_DIR = os.path.join(ROOT, "dify", "env")
 ALLOWED_EXT = {".md", ".txt", ".pdf"}
 VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+USER_AGENT = "dify-scripts/1.0 (+https://github.com/shoulang0729/dify)"  # Cloudflare が Python-urllib 既定 UA を 403 (1010) で弾くため
 # アプリ DSL が見つからないときの予備（KB 名の後半）
 FALLBACK_NAMES = {
     "KN-01": "技術ナレッジQA",
@@ -104,7 +105,7 @@ class Api:
 
     def _req(self, method, path, body=None, headers=None):
         url = self.base + path
-        h = {"Authorization": "Bearer " + self.key}
+        h = {"Authorization": "Bearer " + self.key, "User-Agent": USER_AGENT}
         if headers:
             h.update(headers)
         data = None

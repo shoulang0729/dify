@@ -88,6 +88,7 @@ dify/DEPLOY.md に従って KN-01 と DC-01 を投入・テストし、結果を
 | 症状 | 原因の目安 | 対処 |
 |---|---|---|
 | `HTTP 401` | キー違い（ナレッジ API キーとアプリ API キーの取り違え、コピー漏れ） | 環境変数を再設定。`echo ${DIFY_APP_KEY_KN01:+set}` で「set」と出るか確認（値は表示しない） |
+| `HTTP 403` に `error code: 1010` | Cloudflare が Python 標準の User-Agent（`Python-urllib/x`）を拒否 | スクリプトは独自の `User-Agent` を送る（`USER_AGENT` 定数）。古い版のスクリプトなら更新する。キーは無関係 |
 | `HTTP 404` | アプリ未公開／URL 違い | アプリを「公開」してから再実行。`DIFY_BASE_URL` が `https://api.dify.ai/v1` か確認 |
 | `HTTP 400` に `variable ... required` | Workflow の入力変数名が DSL と違う | `dify/tests/DC-01.json` の `inputs` キー（`period` `site` `kpi_notes` `lang`）と Start ノードを照合 |
 | KB 検索 0 件・回答が定型文だけ | インデックス未完了／KB がノードに未紐づけ | ナレッジ画面で 3 文書が「利用可能」になっているか確認 → ノードに KB を追加して再公開 |
