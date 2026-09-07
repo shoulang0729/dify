@@ -1,6 +1,6 @@
 # Dify 実装ガイド（全体方針）
 
-対象：カタログ 8 分類 42 サービス（`docs/handoff/service-index.md`）を **Dify 1.15.x（DSL 0.6.0）／セルフホスト**で実装するときの、全サービス共通の方針。
+対象：カタログ 8 分類 43 サービス（`docs/handoff/service-index.md`）を **Dify 1.15.x（DSL 0.6.0）／セルフホスト**で実装するときの、全サービス共通の方針。
 個別サービスの仕様は `usecases/<管理番号>.md`、別出しで作る共通部品は `platform-components.md`（PC-01〜16）、Outline Wiki 前提の案は `outline-wiki-usecases.md`。
 architect 成果物。**モック（`mock/**`）・`tools/**`・承認済み設計書（`docs/handoff/**`）には触れていない。**
 
@@ -200,8 +200,8 @@ git ⇄ Dify の同期（Issue #3）は **v2**。Cloud は Console API が壊れ
 | 文書 | 役割 |
 |---|---|
 | `platform-components.md` | PC-01〜16 の定義・マトリクス・先行順 |
-| `outline-wiki-usecases.md` | Outline 前提の整理・既存 42 件への影響・新規案 OW-01〜 |
-| `usecases/README.md` | 42 件の一覧と依存 PC・Outline 使用 |
+| `outline-wiki-usecases.md` | Outline 前提の整理・既存 43 件への影響・新規案 OW-01〜 |
+| `usecases/README.md` | 43 件の一覧と依存 PC・Outline 使用 |
 | `usecases/_TEMPLATE.md` | 1 サービス 1 ファイルの雛形 |
 | `feasibility-33-services.md` §0・§4 | 実現性・横断リスク・PM 判断待ち F-1〜F-8 |
 | `docs/handoff/2026-09-06-partner-usecases.md` §5 | PT-01〜08 の実現性・PIPL 注記 |

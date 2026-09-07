@@ -387,6 +387,16 @@
       ]
     },
     {
+      "id": "gn6",
+      "cat": "gn",
+      "sub": "daily",
+      "st": 2,
+      "tags": [
+        "calendar",
+        "kpi"
+      ]
+    },
+    {
       "id": "pt1",
       "cat": "pt",
       "sub": "data",
@@ -604,7 +614,7 @@
   "counts": {
     "cats": 8,
     "subs": 17,
-    "svcs": 42,
+    "svcs": 43,
     "tags": 43,
     "ui": 73
   }
