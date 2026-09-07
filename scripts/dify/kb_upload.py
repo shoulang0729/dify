@@ -15,10 +15,13 @@
   env.yml が無い／論理 KB 名の定義が無い場合は、従来どおり dify/apps/<管理番号>-*.yml の app.name から作る。
 
 動作（冪等）
-  1. KB 名 "<管理番号> <サービス名>"（または env の論理名）の KB を探す。無ければ作成（indexing_technique: high_quality）
+  1. KB 名 "<管理番号> <サービス名>"（または env の論理名）の KB を探す。無ければ作成
+     （indexing_technique: high_quality。新規作成時のみ retrieval_model.reranking_enable: false を試みる。DI-005）
   2. dify/kb/<管理番号>/ の .md / .txt / .pdf を、同名文書が無いものだけアップロード
-     （POST /datasets/{id}/document/create-by-file、process_rule.mode: automatic）
+     （POST /datasets/{id}/document/create-by-file、process_rule は custom 固定：区切り \n\n・最大 1024 字。DI-006）
   3. アップロードした文書のインデックス完了を待つ（最長 --timeout 秒、既定 600）
+
+既存 KB を再利用する経路では process_rule・retrieval_model の設定は変更しない（DI-005 は画面で確認）。
 
 終了コード: 0 成功 / 1 設定不備・API エラー / 2 インデックス未完了（タイムアウト）
 """
@@ -46,6 +49,9 @@ ENV_DIR = os.path.join(ROOT, "dify", "env")
 ALLOWED_EXT = {".md", ".txt", ".pdf"}
 VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 USER_AGENT = "dify-scripts/1.0 (+https://github.com/shoulang0729/dify)"  # Cloudflare が Python-urllib 既定 UA を 403 (1010) で弾くため
+# チャンク設定の既定（DI-006）。UI 既定の改行区切りだと条件表・箇条書きが 1 行 1 チャンクに分断されるため custom 固定にする
+CHUNK_SEPARATOR = "\n\n"
+CHUNK_MAX_TOKENS = 1024
 # アプリ DSL が見つからないときの予備（KB 名の後半）
 FALLBACK_NAMES = {
     "KN-01": "技術ナレッジQA",
@@ -72,6 +78,25 @@ def kb_name_from_env(env_name, code):
     if not spec or not spec.get("name"):
         return None
     return expand(spec["name"])
+
+
+def build_process_rule(separator, max_tokens):
+    """custom 固定の process_rule（DI-006）。UI 既定の automatic（改行区切り）は条件表・箇条書きを 1 行ずつに分断する。"""
+    return {
+        "mode": "custom",
+        "rules": {
+            "pre_processing_rules": [
+                {"id": "remove_extra_spaces", "enabled": True},
+                {"id": "remove_urls_emails", "enabled": False},
+            ],
+            "segmentation": {"separator": separator, "max_tokens": max_tokens},
+        },
+    }
+
+
+def build_retrieval_model():
+    """新規 dataset 作成時に Rerank を無効化する（DI-005）。search_method・top_k は既定のまま（触らない）。"""
+    return {"reranking_enable": False}
 
 
 def log(msg):
@@ -171,14 +196,21 @@ def main():
                      help="dify/env/<env>/env.yml の knowledge.<管理番号>.name を KB 名に使う（既定 $DIFY_ENV または cloud-master）")
     ap.add_argument("--timeout", type=int, default=600, help="インデックス完了待ちの上限秒（既定 600）")
     ap.add_argument("--no-wait", action="store_true", help="インデックス完了を待たない")
-    ap.add_argument("--dry-run", action="store_true", help="KB 名だけ表示して終了する。ネットワークを呼ばない")
+    ap.add_argument("--dry-run", action="store_true", help="KB 名・process_rule・retrieval_model だけ表示して終了する。ネットワークを呼ばない")
+    ap.add_argument("--separator", default=CHUNK_SEPARATOR, help=f"チャンク区切り（既定 {CHUNK_SEPARATOR!r}。DI-006）")
+    ap.add_argument("--max-tokens", type=int, default=CHUNK_MAX_TOKENS, help=f"チャンク最大字数（既定 {CHUNK_MAX_TOKENS}。DI-006）")
     args = ap.parse_args()
 
     code = args.code.upper()
     kb_name = kb_name_from_env(args.env, code) or f"{code} {service_name(code)}".strip()
+    process_rule = build_process_rule(args.separator, args.max_tokens)
+    retrieval_model = build_retrieval_model()
 
     if args.dry_run:
-        print(f"[dry-run] env={args.env} code={code} KB 名 '{kb_name}'（ネットワークは呼びません）")
+        print(f"[dry-run] env={args.env} code={code} KB 名 '{kb_name}'")
+        print(f"[dry-run] process_rule（新規・既存とも文書アップロード時に送信） = {json.dumps(process_rule, ensure_ascii=False)}")
+        print(f"[dry-run] retrieval_model（新規 KB 作成時のみ送信。受付確認要＝DI-005） = {json.dumps(retrieval_model, ensure_ascii=False)}")
+        print("（ネットワークは呼びません）")
         return 0
 
     key = os.environ.get("DIFY_DATASET_KEY", "").strip()
@@ -204,12 +236,23 @@ def main():
         ds = next((d for d in datasets if d.get("name") == kb_name), None)
         if ds:
             log(f"既存 KB を再利用: id={ds['id']}")
+            log("既存 KB の Rerank 設定は画面で確認すること（DI-005。retrieval_model は変更しません）")
         else:
-            ds = api.post(
-                "/datasets",
-                {"name": kb_name, "indexing_technique": "high_quality", "permission": "only_me",
-                 "description": f"{code} 用ナレッジ（dify/kb/{code}/ から scripts/dify/kb_upload.py が投入）"},
-            )
+            create_body = {
+                "name": kb_name, "indexing_technique": "high_quality", "permission": "only_me",
+                "description": f"{code} 用ナレッジ（dify/kb/{code}/ から scripts/dify/kb_upload.py が投入）",
+                "retrieval_model": retrieval_model,
+            }
+            try:
+                ds = api.post("/datasets", create_body)
+            except RuntimeError as e:
+                if "HTTP 400" in str(e):
+                    log(f"警告: POST /datasets が retrieval_model を受け付けませんでした（{e}）。retrieval_model 無しで作成します。")
+                    log("Dify の画面で「ナレッジ → 該当 KB → 検索設定」から Rerank を OFF にしてください（DI-005）。")
+                    create_body.pop("retrieval_model", None)
+                    ds = api.post("/datasets", create_body)
+                else:
+                    raise
             log(f"KB を作成: id={ds['id']}")
         ds_id = ds["id"]
 
@@ -226,7 +269,7 @@ def main():
             if fname.lower().endswith(".md"):
                 ctype = "text/markdown"
             data = json.dumps(
-                {"indexing_technique": "high_quality", "process_rule": {"mode": "automatic"}},
+                {"indexing_technique": "high_quality", "process_rule": process_rule},
                 ensure_ascii=False,
             )
             res = api.post_multipart(
