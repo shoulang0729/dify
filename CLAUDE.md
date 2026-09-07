@@ -37,13 +37,13 @@
 - 検出：`tools/verify.mjs`（直値検出・`var()` 未定義検出・dark ブロック存在）
 
 ### 2-3. 共通レイヤーの契約（パターンを増やすときの土台）
-- **データ**：`CATS`（大分類→中分類）/ `SVCS`（サービス、`cat`/`sub`/`st`/`tags`/`name`/`desc`）/ `TAGS` / `TEMPLATES`（デモ画面テンプレート 5 種 `qa`/`upload`/`form`/`diff`/`lookup` の名称・説明、3 言語）/ `SCENARIOS`（サービス id → `{ template, persona{name,role,site,native}, steps{ja,zh,en}, input?, result?, script{ja,zh} }`。**台本 `script` と `input`/`result` は ja/zh のみ**＝§2-5 の実装。`SVCS` に埋め込まず別定数）/ `HOME`（② ダッシュボード用：`frequent`〔よく使う 6 件・サンプル利用件数〕・`recommended`〔おすすめ 3 件・理由 3 言語〕。**`SVCS` に埋め込まず別定数**。参照 id は `SVCS`/`CATS` に存在すること）/ `FEED`（③ 業務フィード用：`persona`・`mine`〔担当分類 3〕・`recent`〔最近使った 4〕・`items`〔疑似イベント 7 件、`kind` は `due`/`routine`/`notify`、絶対日付は持たない〕。**`SVCS` に埋め込まず別定数**。管理番号はフィード項目に出さない）/ `CAT_STYLE`（分類 id → インライン SVG アイコン。色は CSS の `--cat-*` トークン側）
+- **データ**：`CATS`（大分類→中分類）/ `SVCS`（サービス、`cat`/`sub`/`st`/`tags`/`name`/`desc`、任意 `added`〔追加日 `YYYY-MM-DD`。`NEW_DAYS` 以内なら ①バッジ／②新着帯／③お知らせを**その場で計算**して出す。`state`・`HOME`・`FEED` には持たせない。regress の対象外〕）/ `TAGS` / `TEMPLATES`（デモ画面テンプレート 5 種 `qa`/`upload`/`form`/`diff`/`lookup` の名称・説明、3 言語）/ `SCENARIOS`（サービス id → `{ template, persona{name,role,site,native}, steps{ja,zh,en}, input?, result?, script{ja,zh} }`。**台本 `script` と `input`/`result` は ja/zh のみ**＝§2-5 の実装。`SVCS` に埋め込まず別定数）/ `HOME`（② ダッシュボード用：`frequent`〔よく使う 6 件・サンプル利用件数〕・`recommended`〔おすすめ 3 件・理由 3 言語〕。**`SVCS` に埋め込まず別定数**。参照 id は `SVCS`/`CATS` に存在すること）/ `FEED`（③ 業務フィード用：`persona`・`mine`〔担当分類 3〕・`recent`〔最近使った 4〕・`items`〔疑似イベント 7 件、`kind` は `due`/`routine`/`notify`、絶対日付は持たない〕。**`SVCS` に埋め込まず別定数**。管理番号はフィード項目に出さない）/ `CAT_STYLE`（分類 id → インライン SVG アイコン。色は CSS の `--cat-*` トークン側）
 - **状態**：`state = { pattern, lang, theme, openCats, selCat, selSub, lastCat, selSvc, view, query, log }`。`view` は `list` / `detail` / `chat` / `demo`。`log` はデモで消費した台本ターン `[{lang,q,a}]`（`log.length` が次に消費する index。言語切替後の再描画で会話を復元）
 - **遷移**：`document` の `click` ハンドラの `data-act`（`pattern`/`all`/`cat`/`sub`/`svc`/`back`/`backdetail`/`start`/`send`/`run`/`chip`/`restart`/`gocat`）。`gocat` は分類タイルから直接その分類の一覧へ（`cat` と違いトグルしない）。`start` は `SCENARIOS` にあれば `demo`、なければ従来の `chat` へ（フォールバックを残す）
 - **ホーム**：`view === 'list'` かつ `selCat`/`selSub`/`query` が全部空の状態。ここだけ `pattern` で描き分ける（① グリッド / ② `renderDash` / ③ `renderFeed`）。`detail`/`chat`/`demo` は 3 パターン完全共通
 - ルール：**表示レイヤー（`renderSidebar` / `renderMain` 内のパターン分岐）は `state` を読んで描くだけ**。パターン固有の都合で `state` の形・データ形・遷移を変えない
 - なぜ：**パターンを切り替えても選択位置が保持され、同じ業務を別の見せ方で直接比較できる**のはこの契約のおかげ。②③（ダッシュボード / 業務フィード）はこの上に乗せる
-- 検出：`tools/verify.mjs`（`state` の必須キー・`data-act` 一覧・§9 シナリオ整合：`SCENARIOS` の id が `SVCS` に存在／`template` が `TEMPLATES` に存在／型の形式。台本の無い `SVCS` は warn／§10 `HOME`・`FEED` の参照 id と 3 言語）＋ reviewer の diff 監査
+- 検出：`tools/verify.mjs`（`state` の必須キー・`data-act` 一覧・§9 シナリオ整合：`SCENARIOS` の id が `SVCS` に存在／`template` が `TEMPLATES` に存在／型の形式。台本の無い `SVCS` は warn／§10 `HOME`・`FEED` の参照 id と 3 言語／§6 `added` の形式／§7 `DEMO_DATE` が固定のまま main に入ると warn）＋ reviewer の diff 監査
 
 ### 2-4. 「モックの足場」と「プロダクト機能」を混ぜない
 - `.mockbar`（パターン選択セグメント）＝**レビュー用の足場**。本番 UI には存在しない
@@ -95,6 +95,7 @@
 node tools/verify.mjs     # 構文 / i18n 一致 / 未定義・未使用キー / CSS トークン / データ整合 / 共通レイヤー / Pages 設定 / シナリオ整合
 node tools/regress.mjs    # データ層スナップショット比較（件数・id）。FAIL = 意図しない増減
 node tools/regress.mjs --update   # 設計書に書かれた意図的なデータ変更のときだけ基準を更新
+npm test                  # 上 2 つをまとめて実行（CI の verify ワークフローと同じ）。PR では GitHub Actions の `verify` が自動で走る
 ```
 
 **1つでも FAIL、または §2 の逸脱があればマージしない。**
