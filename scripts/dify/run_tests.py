@@ -1,26 +1,35 @@
 #!/usr/bin/env python3
 """dify/tests/<管理番号>.json のテストを Dify Service API で実行し、結果を dify/results/<env>/ に Markdown で書く。
 
-    python3 scripts/dify/run_tests.py KN-01 DC-01                    # 既定 env=cloud-master
+    python3 scripts/dify/run_tests.py KN-01 DC-01                    # 既定 env=cloud-master・streaming 受信
     python3 scripts/dify/run_tests.py --env customer-a KN-01 DC-01
     python3 scripts/dify/run_tests.py --dry-run KN-01   # API を呼ばず JSON の形だけ検証
+    python3 scripts/dify/run_tests.py --blocking KN-01  # 従来の blocking 受信（セルフホスト・504 の再現確認に使う）
 
 環境変数
   DIFY_APP_KEY_<番号のハイフン無し>  例 DIFY_APP_KEY_KN01（アプリの Service API キー。ログに出さない）
   DIFY_BASE_URL                     未設定時は dify/env/<env>/env.yml の dify.base_url を使う（既定 https://api.dify.ai/v1）
   DIFY_ENV                          --env 未指定時の既定（さらに未指定なら cloud-master）
 
+接続先の優先順位: --base-url > dify/env/<env>/env.yml の dify.base_url > DIFY_BASE_URL > 既定 https://api.dify.ai/v1
+
 --env <env>
   接続先は dify/env/<env>/env.yml の dify.base_url（${VAR} はプロセス環境変数で展開）。
   env.yml が無い、または展開結果が空（${VAR} 未定義）なら DIFY_BASE_URL（無ければ既定 URL）にフォールバックする。
-  結果の出力先は dify/results/<env>/。
+  結果の出力先は <--out（既定 dify/results）>/<env>/。
+
+受信モード
+  既定は response_mode: "streaming"。Dify Cloud の Service API 前段が blocking を 120 秒前後で
+  HTTP 504 にすることがあるため（DI-010）、SSE を読んで answer / outputs を組み立てる。
+  --blocking を付けると従来どおり response_mode: "blocking" の 1 発 POST → JSON で受ける
+  （セルフホストや、504 の再現確認用の退避経路）。
 
 テスト JSON の形（1 件）
   {"id": "KN-01 T01", "kind": "正常 ja", "mode": "chat" | "workflow",
    "inputs": {...}, "query": "...",
    "expect":     ["含まれるべき語", ["どれか 1 つ含まれればよい語", "..."]],
    "expect_not": ["含まれてはいけない語"]}
-chat は POST /chat-messages（blocking）、workflow は POST /workflows/run（blocking）。
+chat は POST /chat-messages、workflow は POST /workflows/run。
 失敗しても全件実行し、最後に合否を集計する。終了コード: 全件合格 0 / 不合格あり 1 / 設定不備 2
 """
 import argparse
@@ -44,6 +53,7 @@ RESULTS_DIR = os.path.join(ROOT, "dify", "results")
 ENV_DIR = os.path.join(ROOT, "dify", "env")
 VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 DEFAULT_BASE_URL = "https://api.dify.ai/v1"
+DEFAULT_TIMEOUT = 600
 USER_AGENT = "dify-scripts/1.0 (+https://github.com/shoulang0729/dify)"  # Cloudflare が Python-urllib 既定 UA を 403 (1010) で弾くため
 
 
@@ -71,6 +81,7 @@ def resolve_base_url(env_name):
 
 
 def call(base, key, path, body, timeout):
+    """blocking 受信。1 発の POST → JSON。戻り値: (status, res_dict)"""
     req = urllib.request.Request(
         base.rstrip("/") + path,
         data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
@@ -100,6 +111,96 @@ def extract_output(mode, res):
     return json.dumps(outputs, ensure_ascii=False)
 
 
+def call_streaming(base, key, path, body, timeout, mode, t0):
+    """streaming 受信（SSE）。戻り値: (status, out, tokens, error)
+    status == 200 かつ error is None なら成功。tokens は取れなければ None。
+    t0 は呼び出し開始時刻（--timeout を超えたら打ち切る全体タイムアウトの基準）。
+    """
+    body = dict(body)
+    body["response_mode"] = "streaming"
+    req = urllib.request.Request(
+        base.rstrip("/") + path,
+        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+        method="POST",
+        headers={
+            "Authorization": "Bearer " + key,
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
+            "User-Agent": USER_AGENT,
+        },
+    )
+    try:
+        resp = urllib.request.urlopen(req, timeout=timeout)
+    except urllib.error.HTTPError as e:
+        return e.code, "", None, e.read().decode("utf-8", "replace")[:800]
+    except urllib.error.URLError as e:
+        return 0, "", None, f"接続失敗: {e.reason}"
+    except (TimeoutError, OSError) as e:
+        return 0, "", None, f"タイムアウト/通信エラー: {e}"
+
+    try:
+        content_type = resp.headers.get("Content-Type", "") or ""
+        if "text/event-stream" not in content_type:
+            # 後方互換：SSE でない応答（古い mock・blocking しか返さない実装）は本文全体を JSON として読む
+            try:
+                res = json.loads(resp.read() or b"{}")
+            except Exception as e:
+                return 0, "", None, f"JSON 解析失敗: {e}"
+            return 200, extract_output(mode, res), None, None
+
+        answer_parts, fallback_parts = [], []
+        tokens = None
+        for raw_line in resp:
+            if time.time() - t0 > timeout:
+                return 0, "", tokens, f"タイムアウト（streaming、{timeout} 秒）"
+            try:
+                line = raw_line.decode("utf-8", "replace").rstrip("\r\n")
+            except Exception:
+                continue  # パース失敗行は握りつぶす
+            if not line.startswith("data:"):
+                continue  # event: 行・コメント行・空行はここで無視
+            payload = line[len("data:"):].strip()
+            if not payload:
+                continue
+            try:
+                obj = json.loads(payload)
+            except Exception:
+                continue  # JSON パース失敗は握りつぶす
+
+            event = obj.get("event")
+            if event in ("message", "agent_message"):
+                answer_parts.append(obj.get("answer") or "")
+            elif event == "message_replace":
+                answer_parts = [obj.get("answer") or ""]
+            elif event == "message_end":
+                tokens = ((obj.get("metadata") or {}).get("usage") or {}).get("total_tokens")
+                return 200, "".join(answer_parts), tokens, None
+            elif event == "text_chunk":
+                fallback_parts.append(((obj.get("data") or {}).get("text")) or "")
+            elif event == "workflow_finished":
+                data = obj.get("data") or {}
+                tokens = data.get("total_tokens")
+                if data.get("status") == "succeeded":
+                    out = extract_output("workflow", {"data": {"outputs": data.get("outputs") or {}}})
+                    if not out and fallback_parts:
+                        out = "".join(fallback_parts)
+                    return 200, out, tokens, None
+                return 0, "", tokens, data.get("error") or "workflow が succeeded 以外で終了"
+            elif event == "error":
+                return 0, "", tokens, obj.get("message") or json.dumps(obj, ensure_ascii=False)[:400]
+            else:
+                continue  # ping・未知イベントは無視
+
+        # ループが正常終了イベント無しで終わった（接続が閉じた）
+        if mode == "chat" and answer_parts:
+            return 200, "".join(answer_parts), tokens, None
+        if fallback_parts:
+            return 200, "".join(fallback_parts), tokens, None
+        return 0, "", tokens, "終了イベント（message_end / workflow_finished）を受信せずに接続が終了した"
+    finally:
+        resp.close()
+
+
 def judge(out, expect, expect_not):
     missing, hit = [], 0
     for item in expect:
@@ -117,7 +218,7 @@ def cell(s, limit=160):
     return s if len(s) <= limit else s[:limit] + "…"
 
 
-def run_suite(code, base, timeout, dry, results_dir):
+def run_suite(code, base, timeout, dry, blocking, results_dir):
     path = os.path.join(TESTS_DIR, f"{code}.json")
     if not os.path.exists(path):
         print(f"テスト定義がありません: {os.path.relpath(path, ROOT)}")
@@ -139,31 +240,54 @@ def run_suite(code, base, timeout, dry, results_dir):
         if dry:
             ok = mode in ("chat", "workflow") and isinstance(c.get("expect", []), list)
             rows.append((cid, c.get("kind", ""), c.get("query") or json.dumps(c.get("inputs", {}), ensure_ascii=False),
-                         "(dry-run)", f"{len(c.get('expect', []))} 語", "", 0.0, "OK" if ok else "NG"))
+                         "(dry-run)", f"{len(c.get('expect', []))} 語", "", 0.0, "—", "OK" if ok else "NG"))
             passed += 1 if ok else 0
             continue
+
         t0 = time.time()
-        if mode == "chat":
-            status, res = call(base, key, "/chat-messages",
-                               {"inputs": c.get("inputs") or {}, "query": c.get("query", ""),
-                                "response_mode": "blocking", "user": "dify-tests"}, timeout)
+        tokens = None
+        if blocking:
+            if mode == "chat":
+                status, res = call(base, key, "/chat-messages",
+                                   {"inputs": c.get("inputs") or {}, "query": c.get("query", ""),
+                                    "response_mode": "blocking", "user": "dify-tests"}, timeout)
+            else:
+                status, res = call(base, key, "/workflows/run",
+                                   {"inputs": c.get("inputs") or {}, "response_mode": "blocking", "user": "dify-tests"}, timeout)
+            sec = time.time() - t0
+            if status != 200:
+                err = res.get("error") or json.dumps(res, ensure_ascii=False)[:800]
+                out, error = "", f"HTTP {status}: {err}"
+            else:
+                out, error = extract_output(mode, res), None
         else:
-            status, res = call(base, key, "/workflows/run",
-                               {"inputs": c.get("inputs") or {}, "response_mode": "blocking", "user": "dify-tests"}, timeout)
-        sec = time.time() - t0
-        if status != 200:
-            out = f"HTTP {status}: {res.get('error') or json.dumps(res, ensure_ascii=False)[:800]}"
-            rows.append((cid, c.get("kind", ""), c.get("query") or json.dumps(c.get("inputs", {}), ensure_ascii=False),
-                         out, "—", "—", sec, "ERROR"))
-            print(f"  {cid}: ERROR {out[:120]}")
+            if mode == "chat":
+                status, out, tokens, error = call_streaming(
+                    base, key, "/chat-messages",
+                    {"inputs": c.get("inputs") or {}, "query": c.get("query", ""), "user": "dify-tests"},
+                    timeout, mode, t0)
+            else:
+                status, out, tokens, error = call_streaming(
+                    base, key, "/workflows/run",
+                    {"inputs": c.get("inputs") or {}, "user": "dify-tests"},
+                    timeout, mode, t0)
+            sec = time.time() - t0
+
+        tokens_cell = str(tokens) if tokens is not None else "—"
+        input_cell = c.get("query") or json.dumps(c.get("inputs", {}), ensure_ascii=False)
+        if error:
+            row_out = error
+            rows.append((cid, c.get("kind", ""), input_cell, row_out, "—", "—", sec, tokens_cell, "ERROR"))
+            print(f"  {cid}: ERROR {row_out[:120]}")
             continue
-        out = extract_output(mode, res)
+
         hit, missing, forbidden = judge(out, c.get("expect", []), c.get("expect_not", []))
         ok = not missing and not forbidden
         passed += 1 if ok else 0
-        rows.append((cid, c.get("kind", ""), c.get("query") or json.dumps(c.get("inputs", {}), ensure_ascii=False),
-                     out, f"{hit}/{len(c.get('expect', []))}" + (f"（不足: {'; '.join(missing)}）" if missing else ""),
-                     ("検出: " + ", ".join(forbidden)) if forbidden else "なし", sec, "PASS" if ok else "FAIL"))
+        rows.append((cid, c.get("kind", ""), input_cell, out,
+                     f"{hit}/{len(c.get('expect', []))}" + (f"（不足: {'; '.join(missing)}）" if missing else ""),
+                     ("検出: " + ", ".join(forbidden)) if forbidden else "なし", sec, tokens_cell,
+                     "PASS" if ok else "FAIL"))
         print(f"  {cid}: {'PASS' if ok else 'FAIL'} ({sec:.1f}s) 期待語 {hit}/{len(c.get('expect', []))}"
               + (f" 不足={missing}" if missing else "") + (f" 禁止語={forbidden}" if forbidden else ""))
 
@@ -174,13 +298,16 @@ def run_suite(code, base, timeout, dry, results_dir):
         fh.write(f"# {code} テスト結果 {dt.datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n")
         fh.write(f"- 定義: `dify/tests/{code}.json`（{suite.get('source', '')}）\n")
         fh.write(f"- 接続先: `{base}`{'（dry-run: API 未呼び出し）' if dry else ''}\n")
+        if not dry:
+            fh.write(f"- 受信: {'blocking' if blocking else 'streaming'}\n")
         fh.write(f"- 合否: **{passed} / {len(cases)} 合格**\n\n")
-        fh.write("| ID | 種別 | 入力 | 出力（先頭） | 期待語の一致 | 禁止語 | 所要秒 | 判定 |\n|---|---|---|---|---|---|---|---|\n")
+        fh.write("| ID | 種別 | 入力 | 出力（先頭） | 期待語の一致 | 禁止語 | 所要秒 | トークン | 判定 |\n"
+                  "|---|---|---|---|---|---|---|---|---|\n")
         for r in rows:
-            fh.write(f"| {r[0]} | {r[1]} | {cell(r[2], 80)} | {cell(r[3])} | {cell(r[4], 120)} | {cell(r[5], 60)} | {r[6]:.1f} | {r[7]} |\n")
+            fh.write(f"| {r[0]} | {r[1]} | {cell(r[2], 80)} | {cell(r[3])} | {cell(r[4], 120)} | {cell(r[5], 60)} | {r[6]:.1f} | {r[7]} | {r[8]} |\n")
         fh.write("\n## 出力全文\n")
         for r in rows:
-            fh.write(f"\n### {r[0]}（{r[7]}）\n\n入力:\n\n```\n{r[2]}\n```\n\n出力:\n\n```\n{r[3]}\n```\n")
+            fh.write(f"\n### {r[0]}（{r[8]}）\n\n入力:\n\n```\n{r[2]}\n```\n\n出力:\n\n```\n{r[3]}\n```\n")
     print(f"結果: {os.path.relpath(out_path, ROOT)}  合格 {passed}/{len(cases)}")
     return passed, len(cases)
 
@@ -190,19 +317,25 @@ def main():
     ap.add_argument("codes", nargs="+", help="管理番号（例 KN-01 DC-01）")
     ap.add_argument("--env", default=os.environ.get("DIFY_ENV", "cloud-master"),
                      help="dify/env/<env>/env.yml の dify.base_url を接続先に使う（既定 $DIFY_ENV または cloud-master）")
-    ap.add_argument("--timeout", type=int, default=180, help="1 件あたりの API タイムアウト秒（既定 180）")
+    ap.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT,
+                     help=f"1 件あたりの上限秒（既定 {DEFAULT_TIMEOUT}。streaming は受信全体の上限）")
     ap.add_argument("--dry-run", action="store_true", help="API を呼ばず JSON の形だけ検証")
+    ap.add_argument("--blocking", action="store_true",
+                     help="response_mode: blocking の従来経路を使う（既定は streaming）")
+    ap.add_argument("--base-url", default=None,
+                     help="接続先を直接指定する（dify/env/<env>/env.yml の dify.base_url より優先）")
+    ap.add_argument("--out", default=None, help="結果の出力先ディレクトリ（既定 dify/results）")
     args = ap.parse_args()
     env_name = args.env
-    base = resolve_base_url(env_name)
-    results_dir = os.path.join(RESULTS_DIR, env_name)
+    base = args.base_url or resolve_base_url(env_name)
+    results_dir = os.path.join(args.out or RESULTS_DIR, env_name)
 
     total_pass = total = 0
     config_error = False
     for code in args.codes:
         code = code.upper()
         print(f"== {code} ==")
-        r = run_suite(code, base, args.timeout, args.dry_run, results_dir)
+        r = run_suite(code, base, args.timeout, args.dry_run, args.blocking, results_dir)
         if r is None:
             config_error = True
             continue
