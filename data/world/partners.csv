@@ -1,0 +1,16 @@
+code,kind,role_ja,role_zh,role_en,country,note
+K 社,customer,主要顧客（自動車部品、常熟・日本の両拠点向け）,主要客户（汽车零部件，常熟・日本两地）,Main customer (automotive parts, Changshu & Japan sites),CN/JP,台本出現 133 回（空白ゆれ「K社」8 回。README の「未統一」に記載）
+S 社,supplier,材料・塗装外注（鋼板 SPCC 供給、塗装工程外注）,材料・涂装外协（SPCC 钢板供应，涂装工序外协）,Material & paint subcontractor (SPCC sheet steel, paint process),CN,台本出現 51 回
+T 社,supplier,材料・工程の代替候補（契約条項比較の相手方）,材料・工序的替代候选（合同条款比较对象）,Alternate material/process vendor (contract comparison),CN,台本出現 43 回。ECR-25-0088 で S社からの切替を検討中
+W 社,service,物流事業者（輸送・通関）,物流公司（运输・报关）,Logistics provider (freight & customs),CN,台本出現 5 回
+A 社,supplier,設備メーカー（乾燥炉、DO-3200 型）,设备厂商（烘干炉，DO-3200 型）,Equipment vendor (drying oven, model DO-3200),未確定,台本出現 5 回。見積 RMB 1,850,000
+B 社,supplier,設備メーカー（乾燥炉、比較見積先）,设备厂商（烘干炉，比较报价对象）,Equipment vendor (drying oven, comparison quote),未確定,台本出現 3 回。見積 RMB 2,020,000
+U 社,supplier,代替鋼板供給者（S社からの切替候補、ECR-23-0041）,替代钢板供应商（S公司切换候选，ECR-23-0041）,Alternate steel supplier (ECR-23-0041),未確定,台本出現 2 回
+V 社,customer,年間取引額上限条項の相手先,年度交易额上限条款对象,Customer with annual value-cap clause,未確定,台本出現 1 回
+J 社,customer,旧顧客（取引終了、SK-1190 向け・2023 年終了）,原客户（交易已终止，SK-1190 用・2023年终止）,Former customer (discontinued 2023),未確定,台本出現 1 回
+infovendor,service,情報ベンダ（財務・信用・供給網・ニュース照会）,信息厂商（财务・信用・供应链・新闻查询）,Information vendor (finance/credit/supply-chain/news feed),,pt1/pt2 で使用。社名は付けない（PM 決定 PT-8）
+archive,service,記事アーカイブ検索サービス（業界誌・技術記事）,文章档案检索服务（行业期刊・技术文章）,Trade & technical article archive service,,pt3 で使用
+salarydb,service,人事情報サービス（現地給与水準データベース）,人事信息服务（当地薪酬数据库）,HR salary benchmark service,,pt4 で使用
+recruit,service,採用エージェント（現地技術者・管理職の紹介）,招聘代理（现地技术与管理人才推荐）,Recruiting agent (local engineers & managers),,pt5 で使用
+procure,service,購買代行（戦略購買・RFQ 引き継ぎ）,采购代理（战略采购・RFQ 交接）,Procurement agency (strategic sourcing & RFQ handoff),,pt6/pt7 で使用
+training,service,研修ベンダ（研修プログラム化・実施代行）,培训厂商（培训项目化・实施代办）,Training vendor (program design & delivery),,pt8 で使用

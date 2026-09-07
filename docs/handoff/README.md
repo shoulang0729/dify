@@ -19,6 +19,8 @@ docs/handoff/<slug>.issue.md               gh が使えないときの Issue 本
 8. PR 分割案 / 並列可否（ファイル集合が重なるか）
 9. PM 判断待ちの点（あれば。決めずに列挙）
 
+管理番号（`KN-02` など）から ①デモ台本 ②DSL ③ユースケース ④KB ④テスト を横断する索引は [`docs/service-map.md`](../service-map.md)（生成物。`npm run index` で更新）。架空世界の正本は [`data/world/`](../../data/world/README.md)。
+
 ## レーン
 - **S**：文言・余白・要素の削除/移動のみ → 設計書不要。PM が Issue に受け入れ条件を書く
 - **M/L**：それ以外 → 設計書必須

@@ -10,6 +10,9 @@
     "verify": "node tools/verify.mjs",
     "regress": "node tools/regress.mjs",
     "regress:update": "node tools/regress.mjs --update",
+    "index": "node tools/gen-index.mjs",
+    "index:check": "node tools/gen-index.mjs --check",
+    "world": "node tools/check-world.mjs",
     "test": "node tools/verify.mjs && node tools/regress.mjs"
   }
 }

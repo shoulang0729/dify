@@ -1,0 +1,8 @@
+part_no,name_ja,name_zh,name_en,customer_code,line_id,material,note
+SK-3310-A,ブラケット（鋼板・塗装）,支架（钢制・涂装）,"Bracket, steel, painted",K社 ASSY-771（シート骨格）,L3,鋼板 t1.2（材質記号は台本に記載なし）,台本出現 76 回。外形 L 型 195×80。原価 RMB 5.9（プレス 3 工程＋塗装）。不良：塗装ブツ（2024・2025）
+SK-2207-B,ブラケットB,支架B,Bracket B,K社日本向け,L1,SPCC t1.0,台本出現 41 回。M6 タップ×2、曲げ 2 か所。原価 RMB 4.1。不良：タップ不通（3 件）
+SK-3318,ステー,支撑件,Stay,K社常熟 / K社 ASSY-771,L1,未確定,台本出現 20 回。メール本文の表記ゆれ「SK-3318-A」あり（当社品番は枝番なしの SK-3318。gn.js 参照）
+SK-3310,ブラケット系（要求仕様書 Rev.C/D の対象系列）,支架系列（要求规格书 Rev.C/D 对象）,Bracket series (spec Rev.C/D scope),K社,,未確定,SK-3310-A/-C を含む系列としての表記。差分比較シナリオ（en1）で使用
+SK-3310-C,ブラケットC（新規・試作）,支架C（新品・试制）,Bracket C (new, trial),K社常熟,,未確定,内示段階の新規品番（gn.js）。量産品番ではない
+SK-1190,（旧品・生産終了、2019〜2023）,（旧品・已停产，2019〜2023）,Discontinued part (2019-2023),J社（旧顧客・取引終了）,,未確定,台本出現 8 回。外形・板厚が近似。金型 D-092 を倉庫 T-2 に保管中（equipment.csv 参照）
+ASSY-771,シート骨格アッシー（K社側の組立部品番号）,座椅骨架总成（K公司侧装配件号）,Seat frame assembly (customer-side assy no.),K社,,,当社品番ではなく客先の組立品番。構成部品として SK-3310-A・SK-3318 を使用

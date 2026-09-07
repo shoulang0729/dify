@@ -23,6 +23,9 @@
  *   8.   Pages 設定（pages.yml の path: mock / mock/.nojekyll / mock/ 直下に _ 始まりディレクトリが無い）
  *   9.   シナリオ整合（SCENARIOS の id が SVCS に存在／template が TEMPLATES に存在／id 接頭＝ファイル名／台本の無い SVCS は warn）
  *   10.  ホームデータ整合（HOME / FEED）
+ *   11.  索引の鮮度（docs/service-map.md が tools/gen-index.mjs --check と一致）＋
+ *        トップ README.md の「4 区分」地図のリンク先が実在すること
+ *        （設計書 docs/handoff/2026-09-07-repo-layout-v2.md §1-3・§10 Q7）
  *
  * データの取り出しは tools/lib/load.mjs（node:vm で js/data/** を実行順に評価）を使う。
  * grab()（正規表現抽出）は廃止。
@@ -493,6 +496,49 @@ section('10. ホームデータ整合（HOME / FEED）');
   }
 
   if (!bad) ok('HOME' + (FEED ? ' / FEED' : '') + ' の整合 OK');
+}
+
+/* ---------- 11. 索引の鮮度（docs/service-map.md）＋ README の 4 区分地図のリンク実在 ---------- */
+section('11. 索引の鮮度・README の 4 区分地図');
+{
+  // 11-a: docs/service-map.md が gen-index の出力と一致するか（設計書 §1-3・§10 Q7＝FAIL）
+  const genIndex = resolve(ROOT, 'tools/gen-index.mjs');
+  if (!existsSync(genIndex)) {
+    fail('tools/gen-index.mjs が無い');
+  } else {
+    try {
+      execFileSync(process.execPath, [genIndex, '--check'], { cwd: ROOT, stdio: 'pipe' });
+      ok('docs/service-map.md は最新（gen-index --check）');
+    } catch {
+      fail('docs/service-map.md が古い、または存在しない。`npm run index` を実行して再生成してください');
+    }
+  }
+
+  // 11-b: トップ README.md の「4 区分」表（表の行のみ。設計書 §1-4 の表の下 2 行は
+  // dify/env/README.md など PR-2 以降で作る想定のファイルへのリンクを含むため対象外）のリンク先が実在すること。
+  // 表内のリンクのうち、末尾が `/` の区分カテゴリ（例 `./dify/env/`）はロードマップ上まだ無い場合があるため warn、
+  // 具体的な入口ファイル（例 `./mock/index.html`）は fail とする
+  const readmePath = resolve(ROOT, 'README.md');
+  if (!existsSync(readmePath)) {
+    fail('README.md（トップ）が無い');
+  } else {
+    const readme = readFileSync(readmePath, 'utf8');
+    const mapSection = readme.match(/## このリポジトリの歩き方（4 区分）[\s\S]*?(?=\n## |\n---|\s*$)/);
+    if (!mapSection) {
+      fail('README.md に「## このリポジトリの歩き方（4 区分）」節が無い');
+    } else {
+      const tableLines = mapSection[0].split('\n').filter(l => l.trim().startsWith('|'));
+      const links = [...tableLines.join('\n').matchAll(/\]\(\.\/([^)]+)\)/g)].map(m => m[1]);
+      const missingDirs = links.filter(l => l.endsWith('/') && !existsSync(resolve(ROOT, l)));
+      const missingFiles = links.filter(l => !l.endsWith('/') && !existsSync(resolve(ROOT, l)));
+      if (links.length === 0) fail('README.md の 4 区分節にリンクが 1 つも無い');
+      else if (missingFiles.length) fail(`README.md の 4 区分節の入口ファイルへのリンクが実在しない: ${missingFiles.join(', ')}`);
+      else {
+        if (missingDirs.length) warn(`README.md の 4 区分節のディレクトリリンクで未作成のもの（後続 PR で作る想定）: ${missingDirs.join(', ')}`);
+        ok(`README.md の 4 区分節のリンク先 ${links.length - missingDirs.length}/${links.length} 件が実在（残りは後続 PR で作成予定のディレクトリ）`);
+      }
+    }
+  }
 }
 
 /* ---------- 結果 ---------- */
