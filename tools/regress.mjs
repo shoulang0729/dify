@@ -14,20 +14,14 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadMock } from './lib/load.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const HTML = resolve(ROOT, 'mock/catalog.html');
 const BASE = resolve(ROOT, 'tools/regress.baseline.json');
 const update = process.argv.includes('--update');
 
-const html = readFileSync(HTML, 'utf8');
-const script = (html.match(/<script>\s*([\s\S]*?)<\/script>\s*<\/body>/) || [, ''])[1];
-function grab(name) {
-  const m = script.match(new RegExp(`const ${name} = (\\[[\\s\\S]*?\\n\\]|\\{[\\s\\S]*?\\n\\});`));
-  return m ? Function(`"use strict"; return (${m[1]});`)() : null;
-}
-
-const CATS = grab('CATS') || [], SVCS = grab('SVCS') || [], TAGS = grab('TAGS') || {}, PATTERNS = grab('PATTERNS') || [], T = grab('T') || {};
+const { data } = loadMock(ROOT);
+const CATS = data.CATS || [], SVCS = data.SVCS || [], TAGS = data.TAGS || {}, PATTERNS = data.PATTERNS || [], T = data.T || {};
 
 /** 比較対象のスナップショット（順序も含める：メニューの並びは意味がある） */
 const snapshot = {

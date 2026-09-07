@@ -5,28 +5,35 @@
  * 使い方:  node tools/verify.mjs
  * 終了コード: 0 = 全 PASS / 1 = 1つ以上 FAIL
  *
- * チェック項目:
- *   1. JS 構文（<script> を抽出して node --check）
- *   2. i18n キー集合の一致（T / TAGS / PATTERNS / CATS / SVCS が ja/zh/en を全て持ち、空でない。en にかな残りなし）
- *   3. 未定義キー参照（t('key') / T.key が T に存在するか）
- *   4. 未使用キー（T にあるがどこからも参照されない）※警告扱い（FAIL にしない）
- *   5. CSS トークン（mock/css/tokens.css・mock/css/components.css を直接読む。var(--x) が定義済みか / dark ブロック存在 / コンポーネント CSS に色直値なし / --ntt-* が dark で上書きされていない）
+ * チェック項目（設計書 docs/handoff/2026-09-07-split-catalog.md §4-2。PR-B でファイル分割対応）:
+ *   1.   JS 構文（各 JS ファイルを個別に node --check）
+ *   1-A. （新規）二重宣言：全 JS を <script src> の順に連結して node --check
+ *   1-B. （新規）読み込み契約：実ファイル存在／相対パスのみ／scenarios タグ集合＝ディレクトリの *.js 集合／
+ *        読み込み順／catalog.html に <style> が 0 個
+ *   2.   i18n キー集合の一致（T / TAGS / PATTERNS / CATS / SVCS / TEMPLATES が ja/zh/en を全て持ち、空でない。en にかな残りなし）
+ *   3.   未定義キー参照（t('key') / T.key が T に存在するか。全 JS ファイルの連結テキストを対象）
+ *   4.   未使用キー（T にあるがどこからも参照されない）※警告扱い（FAIL にしない）
+ *   5.   CSS トークン（mock/css/tokens.css・mock/css/components.css を直接読む。var(--x) が定義済みか / dark ブロック存在 / コンポーネント CSS に色直値なし / --ntt-* が dark で上書きされていない）
  *   5-A. index.html のトークン非コピー（mock/index.html が css/tokens.css を <link> し、トークン定義のコピーを持たない）
- *   6. データ整合（SVCS の cat/sub が CATS に存在、tags が TAGS に存在、st ∈ {1,2,3}、added は YYYY-MM-DD）
- *   7. 共通レイヤー契約（state の必須キー / data-act 一覧 / detectLang 存在 / localStorage キー）
- *   8. Pages 設定（pages.yml の path: mock / mock/.nojekyll）
- *   9. シナリオ整合（SCENARIOS の id が SVCS に存在／template が TEMPLATES に存在／台本の無い SVCS は warn）
+ *   6.   データ整合（SVCS の cat/sub が CATS に存在、tags が TAGS に存在、st ∈ {1,2,3}、added は YYYY-MM-DD、管理番号重複なし）
+ *   7.   共通レイヤー契約（state の必須キー / data-act 一覧 / detectLang 存在 / localStorage キー）。
+ *        対象は js/app.js + js/render.js + js/events.js（あれば）＋ catalog.html のインライン <script>（PR-C 前提）
+ *   8.   Pages 設定（pages.yml の path: mock / mock/.nojekyll / mock/ 直下に _ 始まりディレクトリが無い）
+ *   9.   シナリオ整合（SCENARIOS の id が SVCS に存在／template が TEMPLATES に存在／id 接頭＝ファイル名／台本の無い SVCS は warn）
+ *   10.  ホームデータ整合（HOME / FEED）
+ *
+ * データの取り出しは tools/lib/load.mjs（node:vm で js/data/** を実行順に評価）を使う。
+ * grab()（正規表現抽出）は廃止。
  */
-import { readFileSync, existsSync, writeFileSync, unlinkSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, unlinkSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { resolve, dirname } from 'node:path';
+import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadMock } from './lib/load.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const HTML = resolve(ROOT, 'mock/catalog.html');
-const INDEX_HTML = resolve(ROOT, 'mock/index.html');
-const TOKENS_CSS = resolve(ROOT, 'mock/css/tokens.css');
-const COMPONENTS_CSS = resolve(ROOT, 'mock/css/components.css');
+const MOCK = resolve(ROOT, 'mock');
+const HTML = resolve(MOCK, 'catalog.html');
 const LANGS = ['ja', 'zh', 'en'];
 
 let fails = 0, warns = 0;
@@ -36,38 +43,104 @@ const warn = (m) => { warns++; console.log('⚠️ ', m); };
 const section = (t) => console.log(`\n── ${t} ──`);
 
 if (!existsSync(HTML)) { fail(`not found: ${HTML}`); process.exit(1); }
-const html = readFileSync(HTML, 'utf8');
 
-/* ---------- 抽出 ---------- */
-const scriptMatch = html.match(/<script>\s*([\s\S]*?)<\/script>\s*<\/body>/);
-const script = scriptMatch ? scriptMatch[1] : '';
-const tokenCss = existsSync(TOKENS_CSS) ? readFileSync(TOKENS_CSS, 'utf8') : '';           // トークン定義（:root 群）
-const componentCss = existsSync(COMPONENTS_CSS) ? readFileSync(COMPONENTS_CSS, 'utf8') : ''; // コンポーネント CSS
+const mock = loadMock(ROOT);
+const { html, indexHtml, cssLinks, scriptSrcs, tokenCss, componentCss, jsSources, dataSources, appSources, data, vmErrors } = mock;
+const { T, PATTERNS, TAGS, TEMPLATES, CATS, SVCS, CAT_STYLE, HOME, FEED, SCENARIOS } = data;
 
-/** ソース中の `const NAME = <literal>;` を安全に評価して取り出す */
-function grab(name) {
-  const re = new RegExp(`const ${name} = (\\[[\\s\\S]*?\\n\\]|\\{[\\s\\S]*?\\n\\});`);
-  const m = script.match(re);
-  if (!m) return null;
-  try { return Function(`"use strict"; return (${m[1]});`)(); }
-  catch (e) { fail(`${name}: リテラル評価に失敗 — ${e.message}`); return null; }
+// 全 JS（データ層 + アプリ層）の連結テキスト。§3/4（未定義・未使用キー参照）と §1-A（二重宣言）で使う
+const allJsInOrder = [...dataSources, ...appSources];
+const allJsText = allJsInOrder.map(f => f.src).join('\n');
+// アプリ層（state/data-act/detectLang/localStorage）だけの連結テキスト。§7 で使う
+const appText = appSources.map(f => f.src).join('\n');
+
+/* ---------- 1. JS 構文（ファイルごと） ---------- */
+section('1. JS 構文（ファイルごと）');
+if (vmErrors.length) { for (const e of vmErrors) fail(`js/data/**: ${e}`); }
+{
+  let bad = 0;
+  for (const f of allJsInOrder) {
+    const isRealFile = existsSync(resolve(MOCK, f.path));
+    const tmp = isRealFile ? resolve(MOCK, f.path) : resolve(ROOT, 'tools/.verify-tmp-inline.js');
+    if (!isRealFile) writeFileSync(tmp, f.src);
+    try { execFileSync(process.execPath, ['--check', tmp], { stdio: 'pipe' }); }
+    catch (e) { fail(`node --check FAIL: ${f.path}\n` + String(e.stderr || e.message)); bad++; }
+    finally { if (!isRealFile && existsSync(tmp)) unlinkSync(tmp); }
+  }
+  if (!bad && allJsInOrder.length) ok(`node --check PASS（${allJsInOrder.length} ファイル）`);
+  if (!allJsInOrder.length) fail('JS ファイルが 1 つも見つからない');
 }
 
-/* ---------- 1. JS 構文 ---------- */
-section('1. JS 構文');
-if (!script) fail('<script> ブロックが見つからない');
-else {
-  const tmp = resolve(ROOT, 'tools/.verify-tmp.js');
-  writeFileSync(tmp, script);
-  try { execFileSync(process.execPath, ['--check', tmp], { stdio: 'pipe' }); ok('node --check PASS'); }
-  catch (e) { fail('node --check FAIL\n' + String(e.stderr || e.message)); }
-  finally { unlinkSync(tmp); }
+/* ---------- 1-A. 二重宣言（全 JS を連結して node --check） ---------- */
+section('1-A. 二重宣言（全 JS 連結）');
+{
+  const tmp = resolve(ROOT, 'tools/.verify-tmp-concat.js');
+  writeFileSync(tmp, allJsText);
+  try { execFileSync(process.execPath, ['--check', tmp], { stdio: 'pipe' }); ok('全 JS 連結 node --check PASS（二重宣言なし）'); }
+  catch (e) { fail('全 JS 連結 node --check FAIL（二重宣言などの可能性）\n' + String(e.stderr || e.message)); }
+  finally { if (existsSync(tmp)) unlinkSync(tmp); }
+}
+
+/* ---------- 1-B. 読み込み契約 ---------- */
+section('1-B. 読み込み契約');
+{
+  let bad = 0;
+  // ① 実ファイルが存在
+  for (const src of scriptSrcs) {
+    if (!existsSync(resolve(MOCK, src))) { fail(`<script src="${src}">: 実ファイルが無い`); bad++; }
+  }
+  // ② パスが相対（先頭 / も ../ も禁止）
+  for (const src of scriptSrcs) {
+    if (src.startsWith('/') || src.includes('../')) { fail(`<script src="${src}">: 相対パスでない`); bad++; }
+  }
+  if (!bad) ok(`<script src> ${scriptSrcs.length} 本すべて実ファイル・相対パス`);
+
+  // ③ js/data/scenarios/ のタグ集合＝ディレクトリの *.js 集合
+  const scenDir = resolve(MOCK, 'js/data/scenarios');
+  if (!existsSync(scenDir)) { fail('mock/js/data/scenarios/ が無い'); bad++; }
+  else {
+    const dirFiles = new Set(readdirSync(scenDir).filter(f => f.endsWith('.js')));
+    const taggedFiles = new Set(scriptSrcs.filter(s => s.startsWith('js/data/scenarios/')).map(s => basename(s)));
+    const missingFromTags = [...dirFiles].filter(f => !taggedFiles.has(f));
+    const missingFromDir = [...taggedFiles].filter(f => !dirFiles.has(f));
+    if (missingFromTags.length) { fail(`scenarios/ にあるが <script src> に無い: ${missingFromTags.join(', ')}`); bad++; }
+    if (missingFromDir.length) { fail(`<script src> にあるが scenarios/ に無い: ${missingFromDir.join(', ')}`); bad++; }
+    if (!missingFromTags.length && !missingFromDir.length) ok(`scenarios/ の *.js ${dirFiles.size} 個 ＝ <script src> のタグ集合`);
+  }
+
+  // ④ 読み込み順が data/ui → data/catalog → data/home → data/style → data/scenarios/*（設計順）→（app/render/events。PR-C 以降）
+  const scenarioOrder = ['kn', 'qa', 'dc', 'lg', 'nm', 'en', 'gn', 'pt'];
+  const expectedDataOrder = [
+    'js/data/ui.js', 'js/data/catalog.js', 'js/data/home.js', 'js/data/style.js',
+    ...scenarioOrder.map(p => `js/data/scenarios/${p}.js`)
+  ];
+  const actualDataOrder = scriptSrcs.filter(s => s.startsWith('js/data/'));
+  if (JSON.stringify(actualDataOrder) !== JSON.stringify(expectedDataOrder)) {
+    fail(`<script src> の順序が設計書 §2-1 と異なる:\n   期待: ${expectedDataOrder.join(' → ')}\n   実際: ${actualDataOrder.join(' → ')}`);
+    bad++;
+  } else ok('<script src> の順序が設計書 §2-1 と一致（data/ui → data/catalog → data/home → data/style → data/scenarios/*）');
+  // app/render/events が存在する場合（PR-C 以降）は data/* の後ろに来ていること
+  const appTags = scriptSrcs.filter(s => !s.startsWith('js/data/'));
+  const lastDataIdx = Math.max(...expectedDataOrder.map(s => scriptSrcs.indexOf(s)));
+  for (const s of appTags) {
+    if (scriptSrcs.indexOf(s) < lastDataIdx) { fail(`<script src="${s}">: データ層より前に読み込まれている`); bad++; }
+  }
+
+  // ⑤ catalog.html に <style> ブロックが 0 個（PR-A の帰結。PR-B でも維持を再確認）
+  const styleCount = [...html.matchAll(/<style>/g)].length;
+  if (styleCount !== 0) { fail(`catalog.html に <style> ブロックが ${styleCount} 個残っている`); bad++; }
+
+  // js/data/** に document・localStorage・関数呼び出し（純粋なリテラル以外）が無いこと
+  for (const f of dataSources) {
+    const body = f.src;
+    if (/\bdocument\./.test(body)) { fail(`${f.path}: document 参照がある（純粋なリテラルのみの制約に違反）`); bad++; }
+    if (/\blocalStorage\b/.test(body)) { fail(`${f.path}: localStorage 参照がある（純粋なリテラルのみの制約に違反）`); bad++; }
+  }
+  if (!bad) ok('js/data/** は純粋なリテラル宣言のみ（document / localStorage なし）');
 }
 
 /* ---------- 2. i18n キー集合 ---------- */
 section('2. i18n キー集合（ja / zh / en）');
-const T = grab('T'), TAGS = grab('TAGS'), PATTERNS = grab('PATTERNS'), CATS = grab('CATS'), SVCS = grab('SVCS');
-const TEMPLATES = grab('TEMPLATES'), SCENARIOS = grab('SCENARIOS');
 const kana = /[぀-ヿ]/;
 let i18nBad = 0;
 const checkML = (obj, label) => {
@@ -101,8 +174,8 @@ if (i18nBad === 0 && T && TAGS && PATTERNS && CATS && SVCS && TEMPLATES && SCENA
 section('3. 未定義キー参照 / 4. 未使用キー');
 if (T) {
   const refs = new Set();
-  for (const m of script.matchAll(/\bt\(\s*'([A-Za-z0-9_]+)'\s*\)/g)) refs.add(m[1]);
-  for (const m of script.matchAll(/\bT\.([A-Za-z0-9_]+)\b/g)) refs.add(m[1]);
+  for (const m of allJsText.matchAll(/\bt\(\s*'([A-Za-z0-9_]+)'\s*\)/g)) refs.add(m[1]);
+  for (const m of allJsText.matchAll(/\bT\.([A-Za-z0-9_]+)\b/g)) refs.add(m[1]);
   const undef = [...refs].filter(k => !(k in T));
   if (undef.length) fail(`未定義キー参照: ${undef.join(', ')}`); else ok(`未定義キー参照なし（参照 ${refs.size} 件）`);
   const unused = Object.keys(T).filter(k => !refs.has(k));
@@ -111,9 +184,12 @@ if (T) {
 
 /* ---------- 5. CSS トークン ---------- */
 section('5. CSS トークン');
-if (!existsSync(TOKENS_CSS)) fail(`not found: ${TOKENS_CSS}`);
-if (!existsSync(COMPONENTS_CSS)) fail(`not found: ${COMPONENTS_CSS}`);
 {
+  const TOKENS_CSS = resolve(MOCK, 'css/tokens.css');
+  const COMPONENTS_CSS = resolve(MOCK, 'css/components.css');
+  if (!existsSync(TOKENS_CSS)) fail(`not found: ${TOKENS_CSS}`);
+  if (!existsSync(COMPONENTS_CSS)) fail(`not found: ${COMPONENTS_CSS}`);
+
   const defined = new Set([...tokenCss.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map(m => m[1]));
   const used = new Set([...(tokenCss + componentCss).matchAll(/var\((--[a-z0-9-]+)/gi)].map(m => m[1]));
   const undef = [...used].filter(v => !defined.has(v));
@@ -157,21 +233,20 @@ if (!existsSync(COMPONENTS_CSS)) fail(`not found: ${COMPONENTS_CSS}`);
     if (!lc.has(`--cat-${c.id}`)) warn(`CATS.${c.id}: --cat-${c.id} が未定義（既定色 --cat-accent で描画される）`);
   }
 
-  // 5-d（旧 1-B⑤・一部）. catalog.html に <style> ブロックが 0 個
+  // 5-d. catalog.html に <style> ブロックが 0 個
   const styleCount = [...html.matchAll(/<style>/g)].length;
   if (styleCount !== 0) fail(`catalog.html に <style> ブロックが ${styleCount} 個残っている（css/*.css に分離すること）`);
   else ok('catalog.html に <style> ブロックなし');
 
-  // 5-e（旧 1-B①②・一部）. <link rel="stylesheet"> 2 本が tokens → components の順で実在ファイルを相対パスで指す
-  const linkHrefs = [...html.matchAll(/<link\s+rel="stylesheet"\s+href="([^"]+)">/g)].map(m => m[1]);
+  // 5-e. <link rel="stylesheet"> 2 本が tokens → components の順で実在ファイルを相対パスで指す
   const expectedHrefs = ['css/tokens.css', 'css/components.css'];
-  if (linkHrefs.join(',') !== expectedHrefs.join(',')) {
-    fail(`catalog.html の <link rel="stylesheet"> が想定と異なる: [${linkHrefs.join(', ')}]（期待: [${expectedHrefs.join(', ')}]）`);
+  if (cssLinks.join(',') !== expectedHrefs.join(',')) {
+    fail(`catalog.html の <link rel="stylesheet"> が想定と異なる: [${cssLinks.join(', ')}]（期待: [${expectedHrefs.join(', ')}]）`);
   } else {
     let linkBad = 0;
-    for (const href of linkHrefs) {
+    for (const href of cssLinks) {
       if (href.startsWith('/') || href.includes('../')) { fail(`<link href="${href}">: 相対パスでない（先頭 / や ../ を含む）`); linkBad++; }
-      if (!existsSync(resolve(ROOT, 'mock', href))) { fail(`<link href="${href}">: 実ファイルが無い`); linkBad++; }
+      if (!existsSync(resolve(MOCK, href))) { fail(`<link href="${href}">: 実ファイルが無い`); linkBad++; }
     }
     if (!linkBad) ok('catalog.html の <link rel="stylesheet"> 2 本（tokens → components）が実在ファイルを相対パスで指している');
   }
@@ -179,15 +254,17 @@ if (!existsSync(COMPONENTS_CSS)) fail(`not found: ${COMPONENTS_CSS}`);
 
 /* ---------- 5-A. index.html のトークン非コピー ---------- */
 section('5-A. index.html のトークン非コピー');
-if (!existsSync(INDEX_HTML)) fail(`not found: ${INDEX_HTML}`);
-else {
-  const indexHtml = readFileSync(INDEX_HTML, 'utf8');
-  if (!/<link\s+rel="stylesheet"\s+href="css\/tokens\.css">/.test(indexHtml)) {
-    fail('index.html に <link rel="stylesheet" href="css/tokens.css"> が無い');
-  } else ok('index.html が css/tokens.css を <link> している');
-  if (/--ntt-[a-z0-9-]+\s*:/i.test(indexHtml)) {
-    fail('index.html にトークン定義のコピー（--ntt-* の定義行）が残っている');
-  } else ok('index.html にトークン定義のコピーなし');
+{
+  const INDEX_HTML = resolve(MOCK, 'index.html');
+  if (!existsSync(INDEX_HTML)) fail(`not found: ${INDEX_HTML}`);
+  else {
+    if (!/<link\s+rel="stylesheet"\s+href="css\/tokens\.css">/.test(indexHtml)) {
+      fail('index.html に <link rel="stylesheet" href="css/tokens.css"> が無い');
+    } else ok('index.html が css/tokens.css を <link> している');
+    if (/--ntt-[a-z0-9-]+\s*:/i.test(indexHtml)) {
+      fail('index.html にトークン定義のコピー（--ntt-* の定義行）が残っている');
+    } else ok('index.html にトークン定義のコピーなし');
+  }
 }
 
 /* ---------- 6. データ整合 ---------- */
@@ -231,7 +308,7 @@ if (CATS && SVCS && TAGS) {
 /* ---------- 7. 共通レイヤー契約 ---------- */
 section('7. 共通レイヤー契約');
 {
-  const stateM = script.match(/const state = \{([\s\S]*?)\};/);
+  const stateM = appText.match(/const state = \{([\s\S]*?)\};/);
   const required = ['pattern', 'lang', 'theme', 'openCats', 'selCat', 'selSub', 'lastCat', 'selSvc', 'view', 'query'];
   if (!stateM) fail('const state = {…} が見つからない');
   else {
@@ -239,20 +316,20 @@ section('7. 共通レイヤー契約');
     const missing = required.filter(k => !keys.has(k));
     if (missing.length) fail(`state に必須キーが無い: ${missing.join(', ')}`); else ok(`state 必須キー ${required.length} 件 OK`);
   }
-  const acts = new Set([...script.matchAll(/act === '([a-z]+)'/g)].map(m => m[1]));
+  const acts = new Set([...appText.matchAll(/act === '([a-z]+)'/g)].map(m => m[1]));
   const requiredActs = ['pattern', 'all', 'cat', 'sub', 'svc', 'back', 'backdetail', 'start', 'send', 'run', 'chip', 'restart', 'gocat'];
   const missingActs = requiredActs.filter(a => !acts.has(a));
   if (missingActs.length) fail(`data-act ハンドラが無い: ${missingActs.join(', ')}`); else ok(`data-act ${requiredActs.length} 種 OK`);
 
-  if (!/function detectLang\(/.test(script)) fail('detectLang() が無い（§2-5）'); else ok('detectLang() あり');
-  const demoDate = script.match(/const DEMO_DATE = ([^;]+);/);
+  if (!/function detectLang\(/.test(appText)) fail('detectLang() が無い（§2-5）'); else ok('detectLang() あり');
+  const demoDate = appText.match(/const DEMO_DATE = ([^;]+);/);
   if (!demoDate) fail('DEMO_DATE が無い（NEW 表示の基準日）');
   else if (demoDate[1].trim() !== 'null') warn(`DEMO_DATE が ${demoDate[1].trim()} に固定されている（デモ後は null に戻す）`);
   else ok('DEMO_DATE = null（実際の今日で判定）');
   for (const k of ['mock.lang', 'mock.theme']) {
-    if (!script.includes(`'${k}'`)) fail(`localStorage キー '${k}' が見当たらない（§2-6）`);
+    if (!appText.includes(`'${k}'`)) fail(`localStorage キー '${k}' が見当たらない（§2-6）`);
   }
-  if (script.includes(`'mock.lang'`) && script.includes(`'mock.theme'`)) ok('localStorage キー mock.lang / mock.theme OK');
+  if (appText.includes(`'mock.lang'`) && appText.includes(`'mock.theme'`)) ok('localStorage キー mock.lang / mock.theme OK');
   if (!/class="mockbar"/.test(html)) fail('.mockbar（レビュー用足場）が無い（§2-4）');
   if (!/id="lang-select"/.test(html) || !/id="theme-btn"/.test(html)) fail('ヘッダーの言語/テーマ切替が無い（§2-4）');
   if (/class="mockbar"/.test(html) && /id="lang-select"/.test(html)) ok('足場（.mockbar）とプロダクト機能（言語/テーマ）が両方存在');
@@ -265,7 +342,21 @@ section('8. Pages 設定');
   if (!existsSync(wf)) fail('pages.yml が無い');
   else if (!/path:\s*mock\b/.test(readFileSync(wf, 'utf8'))) fail('pages.yml の upload path が mock ではない（§2-8）');
   else ok('pages.yml: path: mock');
-  if (!existsSync(resolve(ROOT, 'mock/.nojekyll'))) fail('mock/.nojekyll が無い'); else ok('mock/.nojekyll あり');
+  if (!existsSync(resolve(MOCK, '.nojekyll'))) fail('mock/.nojekyll が無い'); else ok('mock/.nojekyll あり');
+
+  // mock/ 配下（サブディレクトリ含む）に _ 始まりのディレクトリが無いこと
+  const underscoreDirs = [];
+  const walk = (dir, rel) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const childRel = rel ? `${rel}/${entry.name}` : entry.name;
+      if (entry.name.startsWith('_')) underscoreDirs.push(childRel);
+      walk(resolve(dir, entry.name), childRel);
+    }
+  };
+  walk(MOCK, '');
+  if (underscoreDirs.length) fail(`mock/ 配下に _ 始まりのディレクトリ: ${underscoreDirs.join(', ')}`);
+  else ok('mock/ 配下に _ 始まりのディレクトリなし');
 }
 
 /* ---------- 9. シナリオ整合（SCENARIOS ⇔ SVCS ⇔ TEMPLATES） ---------- */
@@ -326,6 +417,17 @@ if (SCENARIOS && SVCS && TEMPLATES) {
   const noScript = SVCS.filter(s => !SCENARIOS[s.id]).map(s => s.id);
   if (noScript.length) warn(`台本の無い SVCS ${noScript.length} 件: ${noScript.join(', ')}`);
   if (!bad) ok(`SCENARIOS ${Object.keys(SCENARIOS).length} 件の整合 OK`);
+
+  // 9-A（新規）: 各シナリオ id の接頭 2 文字＝置かれているファイル名（js/data/scenarios/<接頭>.js）
+  let prefixBad = 0;
+  for (const f of dataSources) {
+    if (!f.path.startsWith('js/data/scenarios/')) continue;
+    const expectedPrefix = basename(f.path, '.js');
+    for (const m of f.src.matchAll(/^\s*([a-z]+)\d+:\s*\{/gm)) {
+      if (m[1] !== expectedPrefix) { fail(`${f.path}: id 接頭 "${m[1]}" がファイル名 "${expectedPrefix}" と不一致`); prefixBad++; }
+    }
+  }
+  if (!prefixBad) ok('シナリオ id の接頭 2 文字がすべて配置先ファイル名と一致');
 } else {
   fail('SCENARIOS / SVCS / TEMPLATES のいずれかが取得できない');
 }
@@ -333,12 +435,11 @@ if (SCENARIOS && SVCS && TEMPLATES) {
 /* ---------- 10. ホームデータ整合（HOME / FEED） ---------- */
 section('10. ホームデータ整合（HOME / FEED）');
 {
-  const HOME = grab('HOME'), FEED = grab('FEED');
   const svcIds = SVCS ? new Set(SVCS.map(s => s.id)) : new Set();
   const catIds = CATS ? new Set(CATS.map(c => c.id)) : new Set();
   let bad = 0;
 
-  if (!HOME) { fail('HOME が取得できない（grab() の正規表現に合わない書き方の可能性）'); bad++; }
+  if (!HOME) { fail('HOME が取得できない'); bad++; }
   else {
     if (!Array.isArray(HOME.frequent) || HOME.frequent.length < 1) { fail('HOME.frequent: 1件以上必要'); bad++; }
     else {
@@ -360,7 +461,7 @@ section('10. ホームデータ整合（HOME / FEED）');
     }
   }
 
-  // FEED（③）は PR-2 で実装。存在すれば整合を検査する
+  // FEED（③）
   if (FEED) {
     if (!Array.isArray(FEED.mine) || FEED.mine.some(id => !catIds.has(id))) { fail('FEED.mine: CATS に存在しない id を含む'); bad++; }
     if (!Array.isArray(FEED.recent)) { fail('FEED.recent: 配列が必要'); bad++; }
