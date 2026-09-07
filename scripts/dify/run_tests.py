@@ -44,6 +44,7 @@ RESULTS_DIR = os.path.join(ROOT, "dify", "results")
 ENV_DIR = os.path.join(ROOT, "dify", "env")
 VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 DEFAULT_BASE_URL = "https://api.dify.ai/v1"
+USER_AGENT = "dify-scripts/1.0 (+https://github.com/shoulang0729/dify)"  # Cloudflare が Python-urllib 既定 UA を 403 (1010) で弾くため
 
 
 def env_key_name(code):
@@ -74,7 +75,7 @@ def call(base, key, path, body, timeout):
         base.rstrip("/") + path,
         data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
         method="POST",
-        headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
+        headers={"Authorization": "Bearer " + key, "Content-Type": "application/json", "User-Agent": USER_AGENT},
     )
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
