@@ -6,16 +6,18 @@ PM の Mac（Claude Code CLI ＋ Claude in Chrome）から、`dify/apps/*.yml` �
 
 ## 0. 前提
 
-- Mac に Python 3（標準ライブラリのみ使用。追加パッケージ不要）と `git`
+- Mac に Python 3 と `git`。`kb_upload.py` / `run_tests.py` は標準ライブラリのみで動く。**`render.py` / `check.py` は PyYAML が要る**（`pip3 install pyyaml`）
 - Claude Code CLI でこのリポジトリを clone 済み（`git clone https://github.com/shoulang0729/dify.git && cd dify`）
 - Chrome で Dify Cloud にログイン済み（Claude in Chrome が同じプロファイルを使う）
-- API キーは **環境変数** で渡す（`CLAUDE.md` §2-10）。値は commit しない・チャットに貼らない。**リポジトリ内に `.env` を作らない**（`git status` に出たら追加しないこと）
+- API キーは **環境変数** で渡す（`CLAUDE.md` §2-10・§2-12）。値は commit しない・チャットに貼らない。**リポジトリ内に `.env` や `dify/env/**/env.yml` 以外の設定ファイルを作らない**（`git status` に出たら追加しないこと。`.gitignore` は `.env` `.env.*` `*.key` `*.pem` `secrets/` `dify/build/` を除外済み）
+- どの環境に投入するかは `DIFY_ENV`（既定 `cloud-master`）で決める。環境の一覧・差分は [`env/README.md`](./env/README.md)
 
 ```bash
-# 設定ファイルは **リポジトリの外** に置く（このリポの .gitignore は .env を除外していない。誤 commit 防止）
-mkdir -p ~/.config/dify && cp scripts/dify/.env.example ~/.config/dify/env
-# ~/.config/dify/env を編集して値を入れたら
-set -a; source ~/.config/dify/env; set +a
+# 設定ファイルは **リポジトリの外** に置く（環境ごとに 1 ファイル）
+mkdir -p ~/.config/dify && cp scripts/dify/env.example ~/.config/dify/cloud-master.env
+# ~/.config/dify/cloud-master.env を編集して値を入れたら
+export DIFY_ENV=cloud-master
+set -a; source ~/.config/dify/$DIFY_ENV.env; set +a
 # または直接
 export DIFY_BASE_URL=https://api.dify.ai/v1
 export DIFY_DATASET_KEY=...                 # ナレッジ API キー（Studio → ナレッジ → 右上 API → API キー）
@@ -23,11 +25,21 @@ export DIFY_APP_KEY_KN01=...                # KN-01 アプリの Service API キ
 export DIFY_APP_KEY_DC01=...                # DC-01 アプリの Service API キー
 ```
 
-環境変数名の規則：`DIFY_APP_KEY_<管理番号のハイフン無し>`（`KN-01` → `DIFY_APP_KEY_KN01`）。
+環境変数名の規則：`DIFY_APP_KEY_<管理番号のハイフン無し>`（`KN-01` → `DIFY_APP_KEY_KN01`）。社内・顧客環境向けの追加変数は [`scripts/dify/env.example`](../scripts/dify/env.example) を参照。
 
 ## 1. 手順
 
-### ① アプリの取り込み（Chrome）
+**`DIFY_ENV=cloud-master`（既定）のとき**は render 不要。マスタの raw URL をそのまま貼れる（① そのまま）。
+**社内・顧客環境（`inhouse` / `customer-a` 等）のとき**は、先に `render.py` でその環境向けの DSL を `dify/build/<env>/` に作る：
+
+```bash
+python3 scripts/dify/render.py --env $DIFY_ENV --all --strict
+```
+
+- Cloud（セルフホストでない環境）は Studio の「DSL ファイルをインポート」→ **ローカルファイル** タブで `dify/build/$DIFY_ENV/*.yml` を選ぶ（① の 1〜2 の代わり）
+- `--strict` は `${VAR}` の未定義・`models.overrides` の不一致などを exit 1 で検出する（値はログに出さない）。詳しくは [`env/README.md`](./env/README.md)
+
+### ① アプリの取り込み（Chrome。`cloud-master` の場合）
 1. Studio → 「アプリを作成」→ **「DSL ファイルをインポート」** → **URL** タブ
 2. raw URL を貼って「作成」
    - `https://raw.githubusercontent.com/shoulang0729/dify/main/dify/apps/KN-01-tech-knowledge-qa.yml`
@@ -39,9 +51,12 @@ export DIFY_APP_KEY_DC01=...                # DC-01 アプリの Service API キ
 
 ### ② ナレッジの投入（KN-01 のみ）
 ```bash
-python3 scripts/dify/kb_upload.py KN-01
+python3 scripts/dify/kb_upload.py --env $DIFY_ENV KN-01
+# KB 名だけ確認したいとき（ネットワークを呼ばない）
+python3 scripts/dify/kb_upload.py --env $DIFY_ENV --dry-run KN-01
 ```
-- KB `KN-01 技術ナレッジQA` を作成（あれば再利用）し、`dify/kb/KN-01/` の 3 文書をアップロード → インデックス完了まで待つ（数分）
+- KB 名は `dify/env/$DIFY_ENV/env.yml` の `knowledge.KN-01.name`（`cloud-master` なら `KN-01 技術ナレッジQA`）
+- あれば再利用・無ければ作成し、`dify/kb/KN-01/` の 3 文書をアップロード → インデックス完了まで待つ（数分）
 - 同名文書はスキップ（再実行しても二重登録しない）
 - 完了したら **Chrome**：KN-01 のアプリを開く → 「知識検索」ノード → **ナレッジを追加** → `KN-01 技術ナレッジQA` を選択 → 保存 → **再公開**
 

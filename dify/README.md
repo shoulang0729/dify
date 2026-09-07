@@ -5,21 +5,46 @@
 
 Mac から全自動で投入・テストする手順は [`DEPLOY.md`](./DEPLOY.md)。ここでは **何があるか・手でインポートする手順・規約** だけ書く。
 
+環境ごとの差分（モデル・KB・社名・拠点・フラグ）は `dify/apps/*.yml` に直接書かず [`dify/env/<env>/env.yml`](./env/) **1 枚**に閉じ込める。マスタは常に 1 本で、社内・顧客環境へは [`scripts/dify/render.py`](../scripts/dify/render.py) が流し込む（[`dify/env/README.md`](./env/README.md)）。
+
 ## ファイル
 
 | パス | 内容 |
 |---|---|
 | `apps/KN-01-tech-knowledge-qa.yml` | **KN-01 技術ナレッジQA**。Chatflow（`advanced-chat`）。Start → Knowledge Retrieval → LLM → Answer |
 | `apps/DC-01-hq-report-draft.yml` | **DC-01 日本本社への報告資料作成**。Workflow。Start（フォーム 4 変数）→ LLM → End |
+| `env/<env>/env.yml` | **環境レイヤー**（`cloud-master` / `inhouse` / `customer-a`）。モデル・KB・社名・拠点・フラグの環境差分（[`env/README.md`](./env/README.md)） |
 | `kb/KN-01/*.md` | KN-01 用のダミー文書 3 本（架空・青嶺精工 蘇州工場。台本 `SCENARIOS.kn1` の数値と一致） |
 | `tests/<管理番号>.json` | Service API で流すテスト（`docs/dify/usecases/*.md` §7 から正常 ja／正常 zh／境界／安全の 4 件） |
 | `results/` | `scripts/dify/run_tests.py` の出力先（`<管理番号>-<YYYYMMDD-HHMM>.md`） |
-| `check.py` | DSL の構造チェック（砂箱用。PyYAML 必要） |
-| `../scripts/dify/kb_upload.py` | `kb/<管理番号>/` を Datasets API で KB に投入（標準ライブラリのみ） |
+| `build/<env>/` | `render.py` の生成物（**`.gitignore` 対象。commit しない**） |
+| `check.py` | DSL の構造チェック（砂箱用。PyYAML 必要。`dify/apps/*.yml` だけでなく `dify/build/<env>/*.yml` にも使える） |
+| `../scripts/dify/render.py` | `env/<env>/env.yml` をマスタ DSL に流し込み `build/<env>/` に出力（[下記「環境を選んでインポートする」](#環境を選んでインポートする)） |
+| `../scripts/dify/kb_upload.py` | `kb/<管理番号>/` を Datasets API で KB に投入（標準ライブラリのみ。`--env` 対応） |
 | `../scripts/dify/run_tests.py` | `tests/<管理番号>.json` を Service API で実行し `results/` に書く |
-| `../scripts/dify/.env.example` | 環境変数の雛形（値は空） |
+| `../scripts/dify/env.example` | 環境変数の雛形（値は空） |
 
-## インポート手順（手動）
+## 環境を選んでインポートする
+
+`dify/apps/*.yml` は **マスタ**（PM の Dify Cloud、`cloud-master` の既定値で動く 1 本）。社内環境・顧客環境へ配るときは、
+その環境の差分を `dify/env/<env>/env.yml` に置き、`render.py` でマスタに流し込んでから使う（詳しくは [`env/README.md`](./env/README.md)）。
+
+```bash
+# マスタと同じ内容が出る（cloud-master は render しなくても動く。以下は確認用）
+python3 scripts/dify/render.py --env cloud-master --all --check
+
+# 社内・顧客環境向けに実際にファイルを生成する（dify/build/<env>/ へ。.gitignore 対象）
+export DIFY_ENV=customer-a
+set -a; source ~/.config/dify/$DIFY_ENV.env; set +a
+python3 scripts/dify/render.py --env $DIFY_ENV --all --strict
+```
+
+- **`cloud-master`**：render は恒等（出力＝マスタとバイト一致）。マスタの raw URL をそのまま貼ってインポートできる（下記）。ビルドは不要
+- **その他の env × Cloud**：Dify の「DSL ファイルをインポート」は**ローカルファイルのアップロード**にも対応しているので、`dify/build/<env>/*.yml` をファイル選択で入れる
+- **その他の env × セルフホスト**：`scripts/dify/console_api.py`（PR-3 で追加予定）または画面から `dify/build/<env>/*.yml` をインポートする
+- `--strict` を付けると `${VAR}` の未定義・`models.overrides` の不一致などを exit 1 で検出する（値はログに出さない）
+
+## インポート手順（手動・cloud-master）
 
 1. Dify Cloud → **Studio** → 「アプリを作成」→ **「DSL ファイルをインポート」**
 2. **URL** タブを選び、raw URL を貼る → 「作成」
@@ -70,4 +95,5 @@ Dify Cloud はアプリを MCP サーバーとして公開できる（アプリ 
 - Knowledge Retrieval の `dataset_ids` は空で置き、KB は環境側で紐づける（環境固有 id を DSL に入れない）
 - KB 用文書は `dify/kb/<管理番号>/`。架空データのみ（仮社名 青嶺精工、ペルソナは `SCENARIOS` の範囲、実在企業名・実データ禁止）
 - テストは `dify/tests/<管理番号>.json`（ID は `<管理番号> T<2 桁>`、`docs/dify/implementation-guide.md` §5）。結果は `dify/results/`
-- 秘密（API キー・Cookie）は置かない。設定ファイルはリポジトリの外（`~/.config/dify/env`）に置く（`.gitignore` は現状 `.env` を除外していない → 追加は別 PR）
+- **環境差分は `dify/env/<env>/env.yml` に閉じる**（`CLAUDE.md` §2-12）。DSL には Cloud で動く既定値（`gpt-4o-mini`・`dataset_ids: []`）だけを書く。`python3 scripts/dify/render.py --env cloud-master --all` の出力は常にマスタとバイト一致すること（`--check` で確認できる）
+- 秘密（API キー・Cookie）は置かない。設定ファイルはリポジトリの外（`~/.config/dify/<env>.env`）に置く（`.gitignore` は `.env` `.env.*` `*.key` `*.pem` `secrets/` `dify/build/` を除外済み）

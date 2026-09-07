@@ -5,6 +5,8 @@
 
 AIエージェントカタログの画面案（モック）一式です。`index.html` はデモガイド（日／中切替）で、`catalog.html` の見方を説明した上でカタログへ移動できます。
 
+> このフォルダは **①デモ**（GitHub Pages 公開物）です。4 区分の全体像はトップ [`README.md`](../README.md)、管理番号から①〜④を横断する索引は [`docs/service-map.md`](../docs/service-map.md)、デモに使う架空世界の正本は [`data/world/`](../data/world/) を参照。
+
 ## 収録モック
 
 | | 画面 | 内容 |
