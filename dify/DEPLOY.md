@@ -1,0 +1,82 @@
+# dify/DEPLOY.md — Mac から Dify Cloud へ投入・テストする手順（全自動運用向け）
+
+PM の Mac（Claude Code CLI ＋ Claude in Chrome）から、`dify/apps/*.yml` を Dify Cloud（`cloud.dify.ai`）に取り込み、
+ナレッジを投入し、`dify/tests/*.json` を Service API で流して結果を `dify/results/` に残すまでの手順。
+インポートの画面操作そのものは [`README.md`](./README.md) にある。ここは **順番とコマンド** だけ書く。
+
+## 0. 前提
+
+- Mac に Python 3（標準ライブラリのみ使用。追加パッケージ不要）と `git`
+- Claude Code CLI でこのリポジトリを clone 済み（`git clone https://github.com/shoulang0729/dify.git && cd dify`）
+- Chrome で Dify Cloud にログイン済み（Claude in Chrome が同じプロファイルを使う）
+- API キーは **環境変数** で渡す（`CLAUDE.md` §2-10）。値は commit しない・チャットに貼らない
+
+```bash
+cp scripts/dify/.env.example .env          # .env は .gitignore 済み
+# .env を編集して値を入れたら
+set -a; source .env; set +a
+# または直接
+export DIFY_BASE_URL=https://api.dify.ai/v1
+export DIFY_DATASET_KEY=...                 # ナレッジ API キー（Studio → ナレッジ → 右上 API → API キー）
+export DIFY_APP_KEY_KN01=...                # KN-01 アプリの Service API キー（アプリ → API アクセス）
+export DIFY_APP_KEY_DC01=...                # DC-01 アプリの Service API キー
+```
+
+環境変数名の規則：`DIFY_APP_KEY_<管理番号のハイフン無し>`（`KN-01` → `DIFY_APP_KEY_KN01`）。
+
+## 1. 手順
+
+### ① アプリの取り込み（Chrome）
+1. Studio → 「アプリを作成」→ **「DSL ファイルをインポート」** → **URL** タブ
+2. raw URL を貼って「作成」
+   - `https://raw.githubusercontent.com/shoulang0729/dify/main/dify/apps/KN-01-tech-knowledge-qa.yml`
+   - `https://raw.githubusercontent.com/shoulang0729/dify/main/dify/apps/DC-01-hq-report-draft.yml`
+   - `version: 0.6.0` は Cloud より古いので「古いバージョン」の警告が出ることがある → そのまま続行
+3. LLM ノードを開き、**モデル**を環境で使えるものに選び直す（既定は `openai / gpt-4o-mini`。未設定ならプロバイダー設定へ）
+4. 右上「公開」→「公開する」
+5. 左メニュー「API アクセス」→「API キー」→ 新規作成 → 値を環境変数へ（`DIFY_APP_KEY_KN01` / `DIFY_APP_KEY_DC01`）
+
+### ② ナレッジの投入（KN-01 のみ）
+```bash
+python3 scripts/dify/kb_upload.py KN-01
+```
+- KB `KN-01 技術ナレッジQA` を作成（あれば再利用）し、`dify/kb/KN-01/` の 3 文書をアップロード → インデックス完了まで待つ（数分）
+- 同名文書はスキップ（再実行しても二重登録しない）
+- 完了したら **Chrome**：KN-01 のアプリを開く → 「知識検索」ノード → **ナレッジを追加** → `KN-01 技術ナレッジQA` を選択 → 保存 → **再公開**
+
+### ③ テスト実行と結果の commit
+```bash
+python3 scripts/dify/run_tests.py KN-01 DC-01
+git add dify/results/*.md
+git commit -m "test(dify): KN-01 / DC-01 Service API テスト結果"
+git push
+```
+- 結果は `dify/results/<管理番号>-<YYYYMMDD-HHMM>.md`（入力／出力／期待語の一致／禁止語／所要秒／判定の表＋出力全文）
+- 失敗があっても全件回し、最後に合否を集計する（終了コード 1）。設定不備（キー未設定）は 2
+- API を呼ばず JSON だけ確かめる：`python3 scripts/dify/run_tests.py --dry-run KN-01 DC-01`
+
+## 2. Claude Code に渡すプロンプト例（1 行）
+
+```
+dify/DEPLOY.md に従って KN-01 と DC-01 を投入・テストし、結果を dify/results/ に commit して push。エラーは Issue #82 にコメント。API キーは環境変数から読み、値は出力しない
+```
+
+## 3. Claude in Chrome に頼む文面例
+
+- 取り込み：「Dify Cloud の Studio で『アプリを作成』→『DSL ファイルをインポート』→ URL タブに `https://raw.githubusercontent.com/shoulang0729/dify/main/dify/apps/KN-01-tech-knowledge-qa.yml` を貼って作成。LLM ノードのモデルを使えるものに変えて公開し、『API アクセス』で API キーを 1 つ発行して、その値を **画面で見せるだけ**（チャットには貼らない）」
+- KB 紐づけ：「KN-01 技術ナレッジQA のアプリを開き、『知識検索』ノードのナレッジに『KN-01 技術ナレッジQA』を追加して保存、右上から再公開」
+- 動作確認：「KN-01 のプレビューで『SUS304 の Φ8 深穴（深さ 60mm）ドリル加工、推奨条件を教えて』と送り、回答に TR-2024-007 と 0.06 mm/rev が含まれるか教えて」
+
+## 4. トラブル時
+
+| 症状 | 原因の目安 | 対処 |
+|---|---|---|
+| `HTTP 401` | キー違い（ナレッジ API キーとアプリ API キーの取り違え、コピー漏れ） | 環境変数を再設定。`echo ${DIFY_APP_KEY_KN01:+set}` で「set」と出るか確認（値は表示しない） |
+| `HTTP 404` | アプリ未公開／URL 違い | アプリを「公開」してから再実行。`DIFY_BASE_URL` が `https://api.dify.ai/v1` か確認 |
+| `HTTP 400` に `variable ... required` | Workflow の入力変数名が DSL と違う | `dify/tests/DC-01.json` の `inputs` キー（`period` `site` `kpi_notes` `lang`）と Start ノードを照合 |
+| KB 検索 0 件・回答が定型文だけ | インデックス未完了／KB がノードに未紐づけ | ナレッジ画面で 3 文書が「利用可能」になっているか確認 → ノードに KB を追加して再公開 |
+| モデルのエラー（provider not found 等） | `openai / gpt-4o-mini` が環境に無い | LLM ノードでモデルを選び直して再公開 |
+| インポートで「バージョンが古い」警告 | `version: 0.6.0` と Cloud の差 | 警告なら続行。**エラー**で止まる場合はエラー文をそのまま Issue に貼る |
+| `kb_upload.py` が `タイムアウト` | 大きい文書のインデックス中 | `--timeout 1800` で再実行（同名文書はスキップされる） |
+
+報告のしかた：エラー文（HTTP ステータス＋本文）を**そのまま**貼る。API キーは貼らない。
