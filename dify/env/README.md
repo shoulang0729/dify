@@ -43,7 +43,7 @@ set -a; source ~/.config/dify/$DIFY_ENV.env; set +a
 
 | env | edition | 接続先の種類 | モデルプロバイダ | chat | reasoning | embedding | rerank | 外部到達 | 確認状態 | 確認日 | 根拠 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| `cloud-master` | cloud | Dify Cloud（PM のワークスペース） | `langgenius/openrouter/openrouter` | `qwen/qwen3.8-max` | `moonshotai/kimi-k3` | （空＝ワークスペース既定） | （空＝無効） | OpenRouter に出られる | **確認済**（PM の契約） | 2026-09-07 | Issue #82 のコメント／`docs/handoff/2026-09-07-china-models-and-syncback.md` §1-1 |
+| `cloud-master` | cloud | Dify Cloud（PM のワークスペース） | `langgenius/openrouter/openrouter` | `qwen/qwen3.8-max` | `moonshotai/kimi-k3` | （空＝ワークスペース既定） | （空＝無効） | OpenRouter に出られる | **確認済**（PM の契約） | 2026-09-07 | Issue #82 のコメント／`docs/handoff/2026-09-07-china-models-and-syncback.md` §1-1／`completion_params` は 2026-09-08 追加（`docs/handoff/2026-09-08-thinking-budget-and-streaming.md` §2）。**パラメータの実機確認は未了** |
 | `inhouse` | selfhost | 社内セルフホスト（Community 1.15.x 想定） | `langgenius/ollama/ollama` | `${INHOUSE_CHAT_MODEL}` | `${INHOUSE_REASON_MODEL}` | `${INHOUSE_EMBED_MODEL}` | （空＝無効） | 外部 API に出られるか**未確認** | **未確認** | — | PM 談（2026-09-07）「Ollama とかだと思う」 |
 | `customer-a` | selfhost | 顧客 A（中国拠点） | `langgenius/siliconflow/siliconflow` | `Qwen/Qwen3.5-397B-A17B` | `Pro/moonshotai/Kimi-K2.6` | `BAAI/bge-m3` | `BAAI/bge-reranker-v2-m3` | 越境 `deny`（`flags.cross_border`）。国外 API へは出さない前提 | **未確認** | — | DP-01 (a)／`decisions-pending.md` |
 
@@ -70,6 +70,29 @@ set -a; source ~/.config/dify/$DIFY_ENV.env; set +a
 OpenRouter プラグインは **customizable-model 対応**なので、一覧に無いモデル id もモデル設定画面で手入力して使える。
 
 **API キーとベース URL は Dify の「設定 → モデルプロバイダー」に入れるもので、`env.yml` にも DSL にも書かない**（`CLAUDE.md` §2-10）。`env.yml` に URL を書くと `tools/verify.mjs` §12 が FAIL する。
+
+## モデルパラメータ（`completion_params`）
+
+`env.yml` の `models.<role>.completion_params` は、`render.py` の R1（`llm` ノード）と R2
+（`question-classifier` / `parameter-extractor`）で DSL に流し込まれる。**マスタ DSL の
+`completion_params` は `cloud-master` の値と一致させる**（一致していないと
+`render.py --env cloud-master --all --check` が落ち、`tools/verify.mjs` §12 も落ちる）。
+
+| role | temperature | max_tokens | reasoning_effort | exclude_reasoning_tokens | 実機確認 |
+|---|---|---|---|---|---|
+| `chat` | 0.2 | 4096 | `low` | `true` | **未確認**（2026-09-08 時点） |
+| `reasoning` | 0.2 | 4096 | `minimal` | `true` | **未確認** |
+| `kimi` | 0.2 | 4096 | `low` | `true` | **未確認** |
+| `qwen_small` | 0.2 | 4096 | `minimal` | `true` | **未確認** |
+
+**なぜ入れたか**：`qwen/qwen3.8-max` が思考込みで 200〜340 秒かかり Service API が 504 になった
+（DI-010）、回答本文に `<think>…</think>` が混入した（DI-011）。`reasoning_effort` で思考量を、
+`exclude_reasoning_tokens` で思考文の露出を抑える。値の根拠と代替案は
+`docs/handoff/2026-09-08-thinking-budget-and-streaming.md` §2。
+
+**`inhouse`（Ollama）・`customer-a`（SiliconFlow）には入れていない。** これらのプラグインが
+`reasoning_effort` / `exclude_reasoning_tokens` を持つか未確認のため。**入れる前に、その環境で
+`render.py --env <env> --all` の出力を実機にインポートして通ることを確かめる。**
 
 `embedding` は `cloud-master` だけ空（KB 作成時のモデル指定はワークスペース既定に任せる）。**Rerank は有効にしない**（DP-40・DI-005）。
 
