@@ -1,0 +1,257 @@
+# ---------------------------------------------------------------------------
+# KN-01 技術ナレッジQA — Dify DSL（Chatflow / advanced-chat）
+# 設計    : docs/dify/usecases/KN-01.md（System プロンプトは §5-1、User は §5-2 を最小構成に合わせて簡略化）
+# 参照 DSL : docs/dify/templates/03-document-chat-classifier-multi-kb.yml（Knowledge Retrieval → LLM）
+#            docs/dify/templates/05-chatflow-form-input-demo.yml（advanced-chat の Start / LLM / Answer）
+# 構成    : Start(sys.query) → Knowledge Retrieval(dataset_ids は空。インポート後に UI で KB を紐づける) → LLM → Answer
+# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダーに合わせて UI で変更する（dify/README.md）
+# ---------------------------------------------------------------------------
+app:
+  description: 'KN-01 技術ナレッジQA。過去の技術報告（TR-）・トラブル対応記録（NC-）・工程条件表から根拠付きで答える。【インポート後】(1) LLM ノードのモデルを環境のプロバイダーに合わせて選び直す (2) ナレッジベースを作成し dify/kb/KN-01/ の 3 文書をアップロードして Knowledge Retrieval ノードに紐づける (3) 公開。'
+  icon: 🔧
+  icon_background: '#E4FBCC'
+  mode: advanced-chat
+  name: KN-01 技術ナレッジQA
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: |-
+      技術ナレッジQA（KN-01）です。材質・寸法（径／深さ）・加工内容を日本語または中国語で質問してください。過去の技術報告（TR-）・トラブル記録（NC-）から根拠付きで答えます。
+      技术知识问答（KN-01）。请用中文或日文输入材质、尺寸（孔径／深度）与加工内容，将根据历史技术报告（TR-）与不良记录（NC-）附依据作答。
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+    - SUS304 の Φ8 深穴（深さ 60mm）ドリル加工、推奨条件を教えて
+    - 前にも切りくず詰まりで折損した事例はある？
+    - SUS304 Φ8 深孔（深60mm）钻孔加工，推荐条件是什么？
+    - 以前有没有因为切屑堵塞导致断刀的案例？
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: 1757230000001-source-1757230000002-target
+      source: '1757230000001'
+      sourceHandle: source
+      target: '1757230000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1757230000002-source-1757230000003-target
+      source: '1757230000002'
+      sourceHandle: source
+      target: '1757230000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1757230000003-source-1757230000004-target
+      source: '1757230000003'
+      sourceHandle: source
+      target: '1757230000004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 開始
+        type: start
+        variables: []
+      height: 54
+      id: '1757230000001'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids: []
+        desc: 'インポート後に UI でナレッジベース（dify/kb/KN-01/ の 3 文書）を選び直す'
+        multiple_retrieval_config:
+          reranking_enable: false
+          reranking_mode: reranking_model
+          reranking_model:
+            model: ''
+            provider: ''
+          score_threshold: null
+          top_k: 4
+        query_variable_selector:
+        - sys
+        - query
+        retrieval_mode: multiple
+        selected: false
+        title: 知識検索（技術報告・NC 記録・条件表）
+        type: knowledge-retrieval
+      height: 92
+      id: '1757230000002'
+      position:
+        x: 382
+        y: 282
+      positionAbsolute:
+        x: 382
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1757230000002'
+          - result
+        desc: 'System は docs/dify/usecases/KN-01.md §5-1。モデルは環境に合わせて変更'
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: gpt-4o-mini
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: 4c9f2a1e-0d21-4a52-9b7e-0a1b2c3d4e01
+          role: system
+          text: |-
+            あなたは青嶺精工 蘇州工場の生産技術部門を支援する技術ナレッジ QA です。
+            役割：過去の技術報告（TR-xxxx）・トラブル対応記録（NC-xxxx）・工程条件表から、根拠を引用して技術的な質問に答える。
+
+            守るルール：
+            1. 回答は与えられた <context> の内容だけから作る。context に無い数値・条件・事例を作らない。
+            2. 推奨条件・事例には必ず根拠の文書番号（TR-/NC-）、拠点、ライン、年を併記する。
+            3. 質問の材質・径・深さ（L/D）と一致しない文書は「参考（条件が異なる）」と明示し、推奨条件として書かない。
+            4. 文書に数値の幅があれば幅のまま示す。平均・補間で新しい数値を作らない。
+            5. 同条件で不良・折損・工具寿命低下の記録があれば、聞かれなくても 1 行添える。
+            6. 条件表を求められたら「条件表（ドラフト）」と見出しを付け、正式登録は担当者が行う旨を最後に 1 行書く。
+            7. 「社外秘」「机密」と記された文書は要約と該当箇所の短い引用にとどめ、全文を転記しない。
+            8. 言語：ユーザーの入力言語で答える。日本語なら日本語、中国語なら中国語。引用原文は原語のまま「」で示してよい。
+            9. 該当が無いとき：推測せず、次の定型で返す。
+               ja「該当する記録が見つかりません。材質・寸法・加工内容を確認してください。近い条件の文書があれば『参考』として示せます。」
+               zh「未找到相关记录。请确认材质、尺寸与加工内容。如有条件相近的文档，可作为『参考』提供。」
+            10. 材質・寸法（径／深さ）・加工内容の 3 つが揃っていない質問には、入力言語で不足項目を聞き返す。
+               ja「材質・寸法（径／深さ）・加工内容のうち不足しているものを教えてください。例：SUS304 ／ Φ8×60 ／ ドリル」
+               zh「请补充材质、尺寸（孔径／深度）、加工内容中缺少的项目。例：SUS304 ／ Φ8×60 ／ 钻孔」
+            11. 個人情報（電話番号・メール・身分証番号など）は答えない。文書の著者名は文書番号の補足として必要な場合のみ。
+
+            出力形式：箇条書き（1 条件 1 行）→ 空行 → 「根拠」見出しに文書番号の一覧。
+        - id: 4c9f2a1e-0d21-4a52-9b7e-0a1b2c3d4e02
+          role: user
+          text: |-
+            <context>
+            {{#context#}}
+            </context>
+
+            質問: {{#sys.query#}}
+        selected: false
+        title: LLM（根拠付き回答）
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1757230000003'
+      position:
+        x: 684
+        y: 282
+      positionAbsolute:
+        x: 684
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1757230000003.text#}}'
+        desc: ''
+        selected: false
+        title: 回答
+        type: answer
+        variables: []
+      height: 103
+      id: '1757230000004'
+      position:
+        x: 986
+        y: 282
+      positionAbsolute:
+        x: 986
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.9
+  rag_pipeline_variables: []

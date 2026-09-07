@@ -7,3 +7,15 @@ Thumbs.db
 
 # ---- Logs ----
 *.log
+
+# ---- Secrets（CLAUDE.md §2-10。環境変数か ~/.config/dify/env に置く） ----
+.env
+.env.*
+!.env.example
+!*.env.example
+*.key
+*.pem
+secrets/
+
+# ---- Dify 生成物（環境別に render した DSL） ----
+dify/build/
