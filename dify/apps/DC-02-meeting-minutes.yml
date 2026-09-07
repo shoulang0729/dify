@@ -5,7 +5,7 @@
 # 参照 DSL : docs/dify/templates/07-excel-document-extractor-echarts.yml（start → llm → end の骨子）
 #            docs/dify/templates/01-translation-reflection-workflow.yml（LLM ノードの変数参照 {{#node_id.var#}}）
 # 構成    : Start(transcript_text / meeting_title / lang) → LLM → End(output = LLM の text)
-# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダーに合わせて UI で変更する（dify/README.md）
+# モデル   : openrouter / qwen/qwen3.8-max を既定（dify/env/cloud-master/env.yml の models.chat）。変えるときは env とマスタを同時に（dify/README.md）
 # 注意    : 最小構成のため、録音・ホワイトボード写真の取込（PC-03）と Outline 連携（PC-05）は持たない。
 #           文字起こし・メモのテキストのみを受ける。期限は本文の表現をそのまま使い、絶対日付への換算はしない
 #           （meeting_date 変数を持たないため）。
@@ -150,8 +150,8 @@ workflow:
           completion_params:
             temperature: 0.2
           mode: chat
-          name: gpt-4o-mini
-          provider: langgenius/openai/openai
+          name: qwen/qwen3.8-max
+          provider: langgenius/openrouter/openrouter
         prompt_template:
         - id: 8e3f1c2a-6b72-4d18-9a0e-1b2c3d4e5f01
           role: system

@@ -6,7 +6,7 @@
 #            docs/dify/templates/03-document-chat-classifier-multi-kb.yml（knowledge-retrieval → llm の骨子。KN-01 で採用済み）
 # 構成    : Start(claim_text / claim_file / lang) → Document Extractor(claim_file) → Knowledge Retrieval(規程KB)
 #           → LLM → End(output = LLM の text)
-# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダーに合わせて UI で変更する（dify/README.md）
+# モデル   : openrouter / qwen/qwen3.8-max を既定（dify/env/cloud-master/env.yml の models.chat）。変えるときは env とマスタを同時に（dify/README.md）
 # 注意    : claim_text・claim_file はどちらか一方の入力を想定（どちらも required: false）。file が無いときは
 #           Document Extractor の出力が空文字になる想定（Dify 側の実際の挙動は未確認。CLAUDE.md 不安な点として
 #           PR に記載）。金額・差額の計算は行わない（原文の値を転記するだけ）。
@@ -234,8 +234,8 @@ workflow:
           completion_params:
             temperature: 0.2
           mode: chat
-          name: gpt-4o-mini
-          provider: langgenius/openai/openai
+          name: qwen/qwen3.8-max
+          provider: langgenius/openrouter/openrouter
         prompt_template:
         - id: 1a2b3c4d-8e94-4f30-9c2a-3d4e5f6a7b01
           role: system

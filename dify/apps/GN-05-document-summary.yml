@@ -11,7 +11,7 @@
 #           （要旨／論点／アクション）／lang select）→ Document Extractor（doc_file）→ LLM（GN-05.md §5-1）→ End
 # 注意    : doc_file が無い場合（Service API のテスト等）は text（貼り付け）を使う。両方無い場合は Document
 #           Extractor の出力が空になり、LLM は「本文を抽出できません」の定型で返す（GN-05.md §2 を援用）
-# モデル   : openai / gpt-4o-mini を既定。環境のプロバイダーに合わせて UI で変更する（dify/README.md）
+# モデル   : openrouter / qwen/qwen3.8-max を既定（dify/env/cloud-master/env.yml の models.chat）。変えるときは env とマスタを同時に（dify/README.md）
 # ---------------------------------------------------------------------------
 app:
   description: 'GN-05 文書要約。長文（通達・報告書等の PDF/docx、またはテキスト貼り付け）を、目的（要旨／論点／アクション）と出力言語に合わせて要約する。原文にページ番号があれば要点に付ける。【インポート後】(1) LLM ノードのモデルを環境のプロバイダーに合わせて選び直す (2) 公開。'
@@ -204,8 +204,8 @@ workflow:
           completion_params:
             temperature: 0.2
           mode: chat
-          name: gpt-4o-mini
-          provider: langgenius/openai/openai
+          name: qwen/qwen3.8-max
+          provider: langgenius/openrouter/openrouter
         prompt_template:
         - id: b2c3d4e5-f607-4819-9203-0a1b2c3d4e01
           role: system
