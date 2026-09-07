@@ -20,17 +20,20 @@ AIエージェントカタログの画面案（モック）一式です。`index
 ```
 mock/
 ├── index.html            デモガイド（catalog.html への導線、日／中切替。css/tokens.css を <link> で共有）
-├── catalog.html          モックA：AIエージェントカタログ（殻。<link>/<script src> とアプリ層のインライン <script>）
+├── catalog.html          モックA：AIエージェントカタログ（殻。<link> 2 本と <script src> 15 本のみ）
 ├── css/
 │   ├── tokens.css        デザイントークン層（ブランドパレット・セマンティックトークン・light/dark）
 │   └── components.css    コンポーネント CSS
 ├── js/
-│   └── data/
-│       ├── ui.js         T / PATTERNS / TAGS / TEMPLATES（UI 文言・パターン定義・タグ・デモテンプレート辞書）
-│       ├── catalog.js    CATS / SVCS（分類・サービス台帳）
-│       ├── home.js       HOME / FEED（② ダッシュボード・③ 業務フィードの疑似データ）
-│       ├── style.js      CAT_STYLE（分類アイコンの SVG path）
-│       └── scenarios/    SCENARIOS（デモ台本。大分類 8 ファイル: kn/qa/dc/lg/nm/en/gn/pt）
+│   ├── data/
+│   │   ├── ui.js         T / PATTERNS / TAGS / TEMPLATES（UI 文言・パターン定義・タグ・デモテンプレート辞書）
+│   │   ├── catalog.js    CATS / SVCS（分類・サービス台帳）
+│   │   ├── home.js       HOME / FEED（② ダッシュボード・③ 業務フィードの疑似データ）
+│   │   ├── style.js      CAT_STYLE（分類アイコンの SVG path）
+│   │   └── scenarios/    SCENARIOS（デモ台本。大分類 8 ファイル: kn/qa/dc/lg/nm/en/gn/pt）
+│   ├── app.js            state / 定数ヘルパー / detectLang / デモ制御 / 設定の永続化（起動時 assert を含む）
+│   ├── render.js         renderChrome 〜 renderMain / *HTML / renderAll（描画）
+│   └── events.js         click ハンドラ / 言語・テーマの listener / 起動
 ├── .nojekyll             GitHub Pages の Jekyll 処理を無効化
 └── README.md             このファイル
 ```
