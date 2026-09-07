@@ -161,3 +161,32 @@ git push origin "release/$DIFY_ENV/$(date +%Y%m%d)"   # タグの push は人が
 
 `scripts/dify/console_api.py` はセルフホスト Dify（Community 1.15.x 想定）の Console API（`login` / `import_dsl` / `list_apps` / `publish`）を 1 ファイルに閉じ込めている。**エンドポイントの形は 1.15.x の実機で未確認**（設計書 §4-4）。顧客・社内のセルフホストで初めて通すときにエラーが出たら、このファイルだけを直せばよい。
 
+## 6. Cloud での修正を Git に戻す（`sync_back.py`）
+
+**マスタは Git、Cloud は編集場所。** Dify Cloud の画面でプロンプトやノードを直したら、そのままにせず必ず Git のマスタに戻す。
+戻していない変更は、社内・顧客環境へのリリース（§5）に一切反映されない。
+
+```bash
+# 1) Chrome：対象アプリ → 右上「…」→「DSL をエクスポート」→ ~/Downloads に落ちる
+# 2) 正規化してマスタへ書き戻す（ネットワークは呼ばない）
+python3 scripts/dify/sync_back.py ~/Downloads/KN-01*.yml --env cloud-master
+#    まず中身だけ見たいとき
+python3 scripts/dify/sync_back.py ~/Downloads/KN-01*.yml --dry-run
+# 3) 検証
+python3 dify/check.py
+python3 scripts/dify/render.py --env cloud-master --all --check     # 12 本すべて [OK] マスタとバイト一致
+# 4) 差分を読んで PR（プロンプト差分は必ず人が読む）
+git switch -c feat/<issue>-sync-back-KN-01 && git add dify/apps && git commit
+```
+
+`sync_back.py` が自動で戻すもの：`dataset_ids` → `[]`（環境固有 id をマスタに入れない）／`dependencies` → `[]`／`version` → `0.6.0`／
+ブランド語彙の逆置換（`cloud-master` は対象なし）。**モデルは戻さない**：Cloud で人がモデルを変えていた場合は exit 1 で止まるので、
+`dify/env/cloud-master/env.yml` を直すか、Cloud 側を DSL の指定に戻すかを**人が決める**（`CLAUDE.md` §2-12）。
+
+**他環境（`inhouse` / `customer-a`）からの逆流は非対応**（exit 2）。それらの DSL には KB id・顧客ブランド語・環境固有モデルが
+焼き込まれていて、逆写像が一意にならないため。**別のセルフホストへ展開するときも、エクスポートしたファイルを持ち込まない**。
+Git のマスタから `python3 scripts/dify/release.py --env inhouse --all` で作る（env 差分は `render.py` が入れるもので、
+ある環境の完成品を別環境に貼ると、その環境の値が混ざったままになる）。
+
+不具合・詰まりは `KNOWN_ISSUES.md` に `DI-xxx` で残す（[`KNOWN_ISSUES.md`](./KNOWN_ISSUES.md)。§4 末尾も参照）。
+

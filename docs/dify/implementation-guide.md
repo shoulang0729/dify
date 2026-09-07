@@ -176,7 +176,7 @@ API キーは環境変数渡し（`CLAUDE.md` §2-10）。ランナーの引数�
 
 1. `usecases/<管理番号>.md` §4・§5 を仕様として [dsl-skill](https://github.com/yzmw123/dify-workflow-dsl-skill) に渡す：`Use $dify-workflow-dsl to create this workflow for Dify 1.15.0 using DSL 0.6.0.`
 2. `python3 scripts/validate_dsl.py --strict --target-version 0.6.0 <file>.yml` で検証
-3. Dify に import → モデル・KB・tool 認可を選び直す → 動作確認 → **export し直したものを正**とする（tool ノード識別子は顧客環境の export からコピー。捏造しない）
+3. Dify に import → モデル・KB・tool 認可を選び直す → 動作確認 → **export し直したものを正**とする（tool ノード識別子は顧客環境の export からコピー。捏造しない）→ **`python3 scripts/dify/sync_back.py <export>.yml` でマスタ `dify/apps/` に書き戻す**（`dify/DEPLOY.md` §6）
 4. 参照 DSL（`templates/01〜08`）は**構成の参考**として読む。そのまま import して直す方式は取らない（`templates/README.md`）
 
 ### 7-2. 置き場と命名
@@ -196,6 +196,8 @@ git ⇄ Dify の同期（Issue #3）は **v2**。Cloud は Console API が壊れ
 **import 方向は `docs/handoff/2026-09-07-repo-layout-v2.md` §4 の `render.py`／`release.py` に統合（Issue #84）。export 方向のみ Issue #3 に残る。**
 
 import 方向の実装：`scripts/dify/render.py`（env をマスタ DSL に流し込む）と `scripts/dify/release.py`（render → import → KB 投入 → test → tag → `dify/CHANGELOG.md` まで通す）。セルフホスト（`edition: selfhost`）は `scripts/dify/console_api.py` で自動 import・公開まで進む。Cloud（`edition: cloud`）は Console API を自動で叩かず、`dify/build/<env>/IMPORT.md` の手順で Claude in Chrome に手動インポートを依頼する（§7-1 の手動 export と対称の運用）。export 方向（Dify → git、`pull.py` 相当）は未実装のまま Issue #3 に残る。
+
+Cloud → git の**手動 export 経路**は `scripts/dify/sync_back.py` で正規化して取り込む（Issue #3 に残るのは Console API による**自動**取得のみ）。
 
 ---
 
