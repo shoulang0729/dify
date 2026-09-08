@@ -47,9 +47,14 @@ function renderSidebar() {
   if (state.pattern !== 'nav') { el.innerHTML = ''; return; }
   el.innerHTML = `
   <nav class="side" data-screen-label="階層ナビ">
-    <button class="nav-item ${!state.selCat && !state.selSub ? 'on' : ''}" data-act="all">
+    <button class="nav-item ${!state.selCat && !state.selSub && !state.favOnly ? 'on' : ''}" data-act="all">
       <span class="n-label">${esc(t('allServices'))}</span>
       <span class="cnt">${visSvcs().length}</span>
+    </button>
+    <button class="nav-item fav-nav ${state.favOnly ? 'on' : ''}" data-act="favlist">
+      <svg class="ic ic-sm" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${favStarPath(true)}</svg>
+      <span class="n-label">${esc(t('favTitle'))}</span>
+      <span class="cnt">${favList().length}</span>
     </button>
     <div class="nav-divider"></div>
     ${visCats().map(c => {
@@ -76,10 +81,55 @@ function renderSidebar() {
 /** NEW バッジ 1 個。新着でなければ空文字（呼び出し側に分岐を書かない） */
 const newBadgeHTML = (x) => isNew(x) ? `<span class="badge-new">${esc(t('newBadge'))}</span>` : '';
 
+/* ---- お気に入り（星）ボタン（設計書 2026-09-08-favorites.md §3-1・§3-5・§3-6） ----
+   塗り/輪郭という「形」で on/off を区別する（色だけに頼らない）。既存トークンのみ使用（--action-primary / --text-secondary）。
+   toggleFav 後の書き換えは syncFavButtons() が担い、renderAll()/renderMain() は呼ばない（§3-8：一覧のスクロール位置を飛ばさない）。 */
+const favStarPath = (on) => `<path d="M12 3.5l2.6 5.6 6.1.6-4.6 4.2 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.2 6.1-.6z"
+    fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"></path>`;
+/** カード右上のアイコンのみの星ボタン（28×28、中の SVG 18×18） */
+function favBtnHTML(x) {
+  const on = isFav(x.id), label = on ? t('favRemove') : t('favAdd');
+  const aria = (on ? t('favRemoveAria') : t('favAddAria')).replace('{name}', L(x.name));
+  return `
+  <button class="fav-btn ${on ? 'on' : ''}" data-act="fav" data-arg="${x.id}"
+    aria-pressed="${on}" aria-label="${esc(aria)}" title="${esc(label)}">
+    <svg class="ic-star" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${favStarPath(on)}</svg>
+  </button>`;
+}
+/** 詳細画面用：文字ラベル付きのトグル（.btn-ghost。§3-5） */
+function favToggleHTML(x) {
+  const on = isFav(x.id), label = on ? t('favRemove') : t('favAdd');
+  const aria = (on ? t('favRemoveAria') : t('favAddAria')).replace('{name}', L(x.name));
+  return `
+  <button class="btn-ghost fav-toggle ${on ? 'on' : ''}" data-act="fav" data-arg="${x.id}"
+    aria-pressed="${on}" aria-label="${esc(aria)}" title="${esc(label)}">
+    <svg class="ic-star" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${favStarPath(on)}</svg>
+    <span class="fav-label">${esc(label)}</span>
+  </button>`;
+}
+/** toggleFav 後、画面上のすべての星ボタン（カード・詳細）を書き換える。renderAll()/renderMain() は呼ばない（§3-8） */
+function syncFavButtons(id) {
+  const x = svcOf(id);
+  const on = isFav(id);
+  const label = on ? t('favRemove') : t('favAdd');
+  const aria = (on ? t('favRemoveAria') : t('favAddAria')).replace('{name}', L(x.name));
+  document.querySelectorAll(`[data-act="fav"][data-arg="${id}"]`).forEach((btn) => {
+    btn.classList.toggle('on', on);
+    btn.setAttribute('aria-pressed', String(on));
+    btn.setAttribute('aria-label', aria);
+    btn.setAttribute('title', label);
+    const svg = btn.querySelector('svg');
+    if (svg) svg.innerHTML = favStarPath(on);
+    const labelEl = btn.querySelector('.fav-label');
+    if (labelEl) labelEl.textContent = label;
+  });
+}
+
 function cardHTML(x) {
   const c = catOf(x.cat), sb = subOf(x.cat, x.sub);
   return `
   <div class="card ${catClass(x.cat)}" data-act="svc" data-arg="${x.id}">
+    ${favBtnHTML(x)}
     <div class="c-top">
       <span class="c-tile">${catIcon(x.cat)}</span>
       <div class="c-head">
@@ -96,8 +146,19 @@ function cardHTML(x) {
   </div>`;
 }
 
-function gridHTML(list) {
-  if (!list.length) return `<div class="empty">${esc(t('noResults'))}</div>`;
+/** ① お気に入り一覧が 0 件・検索語なしのときの専用の空状態（noResults とは別物。§3-6） */
+const favEmptyHTML = () => `
+  <div class="empty fav-empty">
+    <div class="fav-empty-title">${esc(t('favEmpty'))}</div>
+    <div class="fav-empty-hint">${esc(t('favEmptyHint'))}</div>
+  </div>`;
+/** list ビューの #grid-holder 用：favOnly かつ検索語なしで 0 件のときだけ favEmptyHTML() を差し込む。
+    検索語がある状態で 0 件のときは既存の noResults のまま（§3-6） */
+const listEmptyOverride = (list) => (state.favOnly && !state.query.trim() && !list.length) ? favEmptyHTML() : undefined;
+
+/** サービスカードのグリッド。emptyHTML は任意（渡さなければ既定の noResults。§3-6 の実装メモ） */
+function gridHTML(list, emptyHTML) {
+  if (!list.length) return emptyHTML || `<div class="empty">${esc(t('noResults'))}</div>`;
   return `<div class="grid">${list.map(cardHTML).join('')}</div>`;
 }
 
@@ -477,15 +538,19 @@ function renderMain() {
   const pat = PATTERNS.find(p => p.id === state.pattern);
   if (pat && !pat.ready) { el.innerHTML = todoHTML(pat); return; }
 
-  /* ▼ 追加：ホーム（絞り込みなしの list）だけパターンで描き分ける */
-  const atHome = !state.selCat && !state.selSub && !state.query.trim();
+  /* ▼ 追加：ホーム（絞り込みなしの list）だけパターンで描き分ける。favOnly（お気に入り一覧）は
+     分類でも中分類でもない横断ビューなので、②③ の home-holder ではなく通常の list-view で描く */
+  const atHome = !state.selCat && !state.selSub && !state.query.trim() && !state.favOnly;
   if (state.view === 'list' && atHome && state.pattern === 'dash') { renderDash(el); return; }
   if (state.view === 'list' && atHome && state.pattern === 'feed') { renderFeed(el); return; }
   /* ▲ 追加ここまで */
 
   if (state.view === 'list') {
     let title = t('allServices'), crumb = 'AI AGENT CATALOG';
-    if (state.selSub) {
+    if (state.favOnly) {
+      title = t('favTitle');
+      crumb = t('home') + ' ／ ' + t('favTitle');
+    } else if (state.selSub) {
       const c = catOf(state.selCat), sb = subOf(state.selCat, state.selSub);
       title = L(sb.name);
       crumb = t('home') + ' ／ ' + L(c.name) + ' ／ ' + L(sb.name);
@@ -506,13 +571,13 @@ function renderMain() {
         </div>
         <input class="search" id="search" placeholder="${esc(t('searchPh'))}" value="${esc(state.query)}">
       </div>
-      <div id="grid-holder">${gridHTML(list)}</div>
+      <div id="grid-holder">${gridHTML(list, listEmptyOverride(list))}</div>
     </div>`;
     const search = document.getElementById('search');
     search.addEventListener('input', () => {
       state.query = search.value;
       const l = filtered();
-      document.getElementById('grid-holder').innerHTML = gridHTML(l);
+      document.getElementById('grid-holder').innerHTML = gridHTML(l, listEmptyOverride(l));
       document.getElementById('count').textContent = countText(l.length);
     });
 
@@ -558,6 +623,7 @@ function renderMain() {
         </ol>` : ''}
         <div class="cta-row">
           <button class="btn-primary" data-act="start">${esc(scn ? t('startDemo') : t('startUse'))}</button>
+          ${favToggleHTML(x)}
           <span class="cta-note">${esc(t('mockNote'))}</span>
         </div>
       </div>

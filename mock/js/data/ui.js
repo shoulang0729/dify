@@ -104,7 +104,28 @@ const T = {
   feedNewWhen:  { ja: '新着', zh: '最新', en: 'New' },
   feedNewAgent: { ja: '新しいエージェント {code} が使えます。詳細を開くとデモを試せます。',
                   zh: '新智能体 {code} 已可使用。打开详情即可查看演示。',
-                  en: 'A new agent, {code}, is available. Open the details to try the demo.' }
+                  en: 'A new agent, {code}, is available. Open the details to try the demo.' },
+
+  /* ---- お気に入り（設計書 2026-09-08-favorites.md §5。9 キー） ---- */
+  favTitle:      { ja: 'お気に入り', zh: '收藏', en: 'Favorites' },
+  favAdd:        { ja: 'お気に入りに追加', zh: '添加到收藏', en: 'Add to favorites' },
+  favRemove:     { ja: 'お気に入りから外す', zh: '取消收藏', en: 'Remove from favorites' },
+  favAddAria:    { ja: '{name} をお気に入りに追加',
+                   zh: '将「{name}」添加到收藏',
+                   en: 'Add {name} to favorites' },
+  favRemoveAria: { ja: '{name} をお気に入りから外す',
+                   zh: '将「{name}」从收藏中移除',
+                   en: 'Remove {name} from favorites' },
+  favEmpty:      { ja: 'お気に入りはまだありません。',
+                   zh: '还没有收藏的服务。',
+                   en: 'No favorites yet.' },
+  favEmptyHint:  { ja: 'カード右上の星印を押すと、ここに集まります。',
+                   zh: '点击卡片右上角的星标，即可收藏到这里。',
+                   en: 'Press the star at the top right of a card to collect it here.' },
+  favSeeAll:     { ja: 'すべて見る（{n}）', zh: '查看全部（{n}）', en: 'See all ({n})' },
+  favNote:       { ja: '自分で選んだエージェント',
+                   zh: '您自己收藏的智能体',
+                   en: 'Agents you picked yourself' }
 };
 
 /* ============================================================

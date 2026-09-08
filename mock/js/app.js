@@ -43,6 +43,8 @@ const state = {
   selSvc: null,
   view: 'list',          // 'list' | 'detail' | 'chat' | 'demo'
   query: '',
+  fav: { mfg: [], fin: [] },   // 業種ごとのお気に入り（SVCS[].id の配列。localStorage 'mock.fav' に保存。設計書 2026-09-08-favorites.md §2-2）
+  favOnly: false,              // list ビューで「お気に入りだけ」を表示中か（保存しない＝リロードでホームに戻る）
   log: []                // デモで消費した台本ターン [{ lang: 'ja'|'zh', q: string, a: string }]
 };
 
@@ -124,8 +126,23 @@ function detectLang(s) {
 }
 const countText = (n) => state.lang === 'en' ? (n + t('countUnit')) : (n + t('countUnit'));
 
+/* ---- お気に入り（設計書 2026-09-08-favorites.md §2）----
+   利用者ごとの状態。js/data/** には置かない（SVCS/HOME/FEED を汚さない＝added と同じ流儀）。
+   業種をまたがない（state.fav[state.industry]）。表示順は常に SVCS のカタログ順（favList() の 1 本に集約）。 */
+const favIds = () => state.fav[state.industry] || (state.fav[state.industry] = []);
+const isFav = (id) => favIds().includes(id);
+/** 現在業種で見えるお気に入りサービスをカタログ順で返す。件数・①一覧・②帯・③レールはすべてこれ 1 本を使う */
+const favList = () => visSvcs().filter(x => favIds().includes(x.id));
+/** あれば取り除き、無ければ末尾に足す。savePrefs() は呼び出し側（events.js）で呼ぶ */
+function toggleFav(id) {
+  const ids = favIds();
+  const i = ids.indexOf(id);
+  if (i >= 0) ids.splice(i, 1); else ids.push(id);
+}
+
 function filtered() {
   let list = visSvcs();
+  if (state.favOnly) list = list.filter(x => isFav(x.id));
   if (state.selSub) list = list.filter(x => x.sub === state.selSub);
   else if (state.selCat) list = list.filter(x => x.cat === state.selCat);
   const q = state.query.trim().toLowerCase();
@@ -176,11 +193,30 @@ function loadPrefs() {
     if (lang && ['ja', 'zh', 'en'].includes(lang)) state.lang = lang;
     if (theme && ['light', 'dark'].includes(theme)) state.theme = theme;
   } catch (e) { /* プライベートモード等では既定値のまま */ }
+
+  /* ---- mock.fav（お気に入り。設計書 2026-09-08-favorites.md §2-5）----
+     既存 2 キーの try とは別ブロックにする：mock.fav が壊れていても mock.lang / mock.theme の読み込みに影響させない */
+  try {
+    const raw = localStorage.getItem('mock.fav');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const indIds = new Set(INDUSTRIES.map(i => i.id));
+        for (const key of Object.keys(parsed)) {
+          if (!indIds.has(key)) continue;      // 業種キーは INDUSTRIES の id のみ受け入れる
+          const arr = parsed[key];
+          if (!Array.isArray(arr)) continue;   // 形が違えば何もしない（既定の空リストのまま）
+          state.fav[key] = arr.filter(v => typeof v === 'string').slice(0, 200); // 1 業種 200 件で切る（安全弁）
+        }
+      }
+    }
+  } catch (e) { /* 壊れていても例外を投げず既定の空リストで起動する */ }
 }
 function savePrefs() {
   try {
     localStorage.setItem('mock.lang', state.lang);
     localStorage.setItem('mock.theme', state.theme);
+    localStorage.setItem('mock.fav', JSON.stringify(state.fav));
   } catch (e) { /* 保存できなくても動作に影響なし */ }
 }
 function applyPrefs() {
