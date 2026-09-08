@@ -38,6 +38,37 @@ export DIFY_APP_KEY_DC01=...                # DC-01 アプリの Service API キ
 `export -p`。値がツール出力・ログ・チャットに 1 度でも出たら**そのキーは漏れたものとして扱う**
 （Dify の画面で再発行する。手順は §4 の表の最終行）。
 
+### ブラウザ操作が要るとき（Claude in Chrome が無い環境）
+
+Cloud の投入・公開は §5 の Console API 経路（`cloud_deploy.py`）で完結するので、**通常はブラウザ操作は不要**。
+`console_token` の取得と、Console API が使えないときの逃げ道としてだけブラウザを使う。
+
+Claude in Chrome が無い環境（VS Code 拡張の Claude Code など）では **Playwright MCP** を足すと、
+同じ画面操作を Claude Code から行える。
+
+    claude mcp add --scope user playwright -- npx -y @playwright/mcp@latest --user-data-dir ~/.config/dify/pw-profile
+
+- `--user-data-dir` を固定するとログイン状態が残る（毎回ログインし直さなくてよい）
+- **初回だけ人がログインする**：Playwright が開いたウィンドウで `https://cloud.dify.ai` にログインし、
+  そのウィンドウを閉じずに次の指示を出す。2 回目以降は同じプロファイルが再利用される
+- **ログイン情報・トークンをチャットに貼らない**（`CLAUDE.md` §2-10）。エージェントには「画面で操作して」とだけ頼む
+
+#### `console_token` の取り方（Console API 経路の前提。人が 1 回だけ行う）
+
+1. Chrome で `https://cloud.dify.ai` にログイン
+2. 開発者ツール（⌥⌘I）→ **Application** タブ → 左の **Local Storage** → `https://cloud.dify.ai`
+3. キー `console_token` の値をコピー
+4. `~/.config/dify/cloud-master.env` の `DIFY_CONSOLE_TOKEN=` の右に貼って保存（**リポジトリの中には置かない**）
+
+```bash
+export DIFY_ENV=cloud-master
+set -a; source ~/.config/dify/$DIFY_ENV.env; set +a
+[ -n "${DIFY_CONSOLE_TOKEN:-}" ] && echo set || echo unset   # 値は表示しない
+```
+
+トークンには期限がある。`cloud_deploy.py` が exit 3（認証エラー）で止まったら、この手順でもう一度取り直す。
+**値をチャット・ログ・Issue・結果ファイルに貼らない。**
+
 ## 1. 手順
 
 **`DIFY_ENV=cloud-master`（既定）のとき**は render 不要。マスタの raw URL をそのまま貼れる（① そのまま）。
@@ -49,6 +80,24 @@ python3 scripts/dify/render.py --env $DIFY_ENV --all --strict
 
 - Cloud（セルフホストでない環境）は Studio の「DSL ファイルをインポート」→ **ローカルファイル** タブで `dify/build/$DIFY_ENV/*.yml` を選ぶ（① の 1〜2 の代わり）
 - `--strict` は `${VAR}` の未定義・`models.overrides` の不一致などを exit 1 で検出する（値はログに出さない）。詳しくは [`env/README.md`](./env/README.md)
+
+### ブラウザ不要の経路（推奨。`DIFY_CONSOLE_TOKEN` があるとき）
+
+`console_token`（§0）を取ってあれば、ブラウザを開かずに投入・公開できる。まず `--dry-run` で確認する：
+
+```bash
+python3 scripts/dify/cloud_deploy.py --env $DIFY_ENV --all --dry-run
+python3 scripts/dify/cloud_deploy.py --env $DIFY_ENV --all
+```
+
+- 同じ番号を 2 回流してもアプリは増えない（`apps.<番号>.id` か名前一致で既存アプリを上書きする）
+- 新規作成された番号は、表示された書き戻し断片を `dify/env/$DIFY_ENV/env.yml` の `apps:` に**人が**貼る
+  （`--write-env` を使う場合も `git diff` を見せてから commit する）
+- `DIFY_CONSOLE_TOKEN` が未設定なら exit 2 で止まり §0 の取り方を案内する。401/403 なら exit 3 で止まり取り直し手順が出る
+- 詳しいオプションは §5 と `python3 scripts/dify/cloud_deploy.py --help`
+- `scripts/dify/release.py --env $DIFY_ENV --all` を使う場合も、`DIFY_CONSOLE_TOKEN` が set なら import 段でこの経路が自動で使われる（§5）
+
+**`DIFY_CONSOLE_TOKEN` が無いとき**は、以降の ①〜④（Chrome、または §0 の Playwright MCP）の画面手順で進める。
 
 ### ① アプリの取り込み（Chrome。`cloud-master` の場合）
 1. Studio → 「アプリを作成」→ **「DSL ファイルをインポート」** → **URL** タブ
@@ -119,9 +168,14 @@ git push
 dify/DEPLOY.md に従って KN-01 と DC-01 を投入・テストし、結果を dify/results/ に commit して push。エラーは Issue #82 にコメント。API キーは環境変数から読み、値は出力しない
 ```
 
-## 3. Claude in Chrome に頼む文面例
+## 3. ブラウザに頼む文面例（Claude in Chrome / Playwright MCP のどちらでも同じ）
 
-- 取り込み：「Dify Cloud の Studio で『アプリを作成』→『DSL ファイルをインポート』→ URL タブに `https://raw.githubusercontent.com/shoulang0729/dify/main/dify/apps/KN-01-tech-knowledge-qa.yml` を貼って作成。LLM ノードのモデルを使えるものに変えて公開し、『API アクセス』で API キーを 1 つ発行して、その値を **画面で見せるだけ**（チャットには貼らない）」
+§1 の Console API 経路（`cloud_deploy.py`）が使えないときの代替。**操作内容は両者で同じ**なので、
+Claude in Chrome がある環境ではそのまま、無い環境では §0 の Playwright MCP を入れてから同じ文面を使う。
+Playwright MCP のときは、あらかじめ同じプロファイルで Dify Cloud にログインしておくこと。
+
+- 取り込み：「Dify Cloud の Studio で『アプリを作成』→『DSL ファイルをインポート』→ URL タブに `https://raw.githubusercontent.com/shoulang0729/dify/main/dify/apps/KN-01-tech-knowledge-qa.yml` を貼って作成。LLM ノードのモデルが `openrouter / qwen/qwen3.8-max` になっているか確認して公開し、『API アクセス』で API キーを 1 つ発行して、その値を **画面で見せるだけ**（チャットには貼らない）」
+- 既存アプリの更新：「対象アプリを開き、アプリ名横の『…』→『DSL をインポート』→ ローカルの `dify/apps/<番号>-*.yml` を選んで『上書きしてインポート』。終わったら右上から公開」
 - KB 紐づけ：「KN-01 技術ナレッジQA のアプリを開き、『知識検索』ノードのナレッジに『KN-01 技術ナレッジQA』を追加して保存、右上から再公開」
 - 動作確認：「KN-01 のプレビューで『SUS304 の Φ8 深穴（深さ 60mm）ドリル加工、推奨条件を教えて』と送り、回答に TR-2024-007 と 0.06 mm/rev が含まれるか教えて」
 
@@ -167,8 +221,17 @@ git push origin "release/$DIFY_ENV/$(date +%Y%m%d)"   # タグの push は人が
 
 | env の `dify.edition` | 何が起きるか |
 |---|---|
-| `cloud`（`cloud-master` など） | **自動 import しない**。`dify/build/<env>/IMPORT.md` を生成してそこで止まる。IMPORT.md の手順（raw URL または `dify/build/<env>/*.yml` のファイル選択）で Chrome から手動インポート → 公開 → API キー発行してから、続き（`kb_upload.py` / `run_tests.py`）を人が判断して実行する。Console API は Cloudflare / Cookie で壊れやすいため（Issue #3・`CLAUDE.md` §6） |
-| `selfhost`（`inhouse` / `customer-a` など） | `scripts/dify/console_api.py` で **ログイン → DSL インポート（既存アプリなら上書き、無ければ新規）→ 公開** まで自動で進み、続けて KB 投入・テストまで通す |
+| `cloud`（`cloud-master` など） | `dify/build/<env>/IMPORT.md` を生成（証跡・手動フォールバック用）。**`DIFY_CONSOLE_TOKEN` が set かつ `--no-console-import` でなければ**、続けて `scripts/dify/cloud_deploy.py` の関数を呼んで自動インポート・公開まで進み、そのまま KB 投入・テストへ続く。**トークン未設定、または `--no-console-import` 指定のとき**は従来どおりそこで止まり、IMPORT.md の手順（raw URL または `dify/build/<env>/*.yml` のファイル選択）で Chrome（または §0 の Playwright MCP）から手動インポート → 公開 → API キー発行してから、続き（`kb_upload.py` / `run_tests.py`）を人が判断して実行する |
+| `selfhost`（`inhouse` / `customer-a` など） | `scripts/dify/console_api.py` で **ログイン → DSL インポート（既存アプリなら上書き、無ければ新規）→ 公開** まで自動で進み、続けて KB 投入・テストまで通す（**変更なし**） |
+
+`--no-console-import` を付けると、`DIFY_CONSOLE_TOKEN` があっても cloud 経路は常に IMPORT.md による手動インポート待ちになる。
+
+### 手順（cloud・トークンありの自動実行）
+
+1. `render.py --env <env> --strict` → `dify/build/<env>/`
+2. ガード確認（selfhost と同じ。すべて警告のみ）
+3. `IMPORT.md` を生成 → `cloud_deploy.py` の関数で **app_id 解決 → インポート（既存なら上書き）→ 公開**（`--stop-on-error` 相当の挙動ではなく、1 件失敗したら `[STOP] stage=3-import` でそこまでで止まる。`dify/env/<env>/env.yml` の `apps:` に新規 app_id が無ければ、表示された断片を人が貼る）
+4〜7. selfhost と同じ（KB → test → tag → CHANGELOG）
 
 ### 手順（selfhost の本番実行）
 
@@ -186,16 +249,17 @@ git push origin "release/$DIFY_ENV/$(date +%Y%m%d)"   # タグの push は人が
 
 | 変数 | 用途 |
 |---|---|
-| `DIFY_CONSOLE_URL` | Console API の基点（selfhost のみ） |
+| `DIFY_CONSOLE_TOKEN` | Cloud のトークン認証（§0 の取り方）。set なら `release.py`／`cloud_deploy.py` が自動でこれを使う。値はログに出ない |
+| `DIFY_CONSOLE_URL` | Console API の基点（未設定なら env.yml の `dify.console_url`。`cloud-master` は `https://cloud.dify.ai`） |
 | `DIFY_CONSOLE_EMAIL` / `DIFY_CONSOLE_PASSWORD` | Console ログイン（selfhost のみ。**cloud では使わない**。値はログに出ない） |
 
 ### `--dry-run` を必ず先に
 
-`--dry-run` は render・ガード・（cloud なら）`IMPORT.md` 生成までは実際に行い、その先（selfhost の login/import/publish・KB 投入・テスト・tag・CHANGELOG）は**実行予定のコマンドを表示するだけ**でネットワークを一切呼ばない。まず `--dry-run` で render 結果（`dify/build/<env>/render-report.md`）とガードの警告を確認してから本番実行する。
+`--dry-run` は render・ガード・（cloud なら）`IMPORT.md` 生成までは実際に行い、その先（selfhost の login/import/publish・cloud の Console API 自動インポート・KB 投入・テスト・tag・CHANGELOG）は**実行予定のコマンドを表示するだけ**でネットワークを一切呼ばない。`DIFY_CONSOLE_TOKEN` が set の状態でも `--dry-run` は Console API を呼ばない。まず `--dry-run` で render 結果（`dify/build/<env>/render-report.md`）とガードの警告を確認してから本番実行する。
 
 ### `console_api.py` について
 
-`scripts/dify/console_api.py` はセルフホスト Dify（Community 1.15.x 想定）の Console API（`login` / `import_dsl` / `list_apps` / `publish`）を 1 ファイルに閉じ込めている。**エンドポイントの形は 1.15.x の実機で未確認**（設計書 §4-4）。顧客・社内のセルフホストで初めて通すときにエラーが出たら、このファイルだけを直せばよい。
+`scripts/dify/console_api.py` は Console API の共通クライアント（`login` / `import_dsl` / `list_apps` / `publish` / `confirm_import` / `get_draft` / `update_draft`）を 1 ファイルに閉じ込めている。**selfhost は email/password ログイン、Cloud は `DIFY_CONSOLE_TOKEN` によるトークン認証**（`client_from_env()`）。**エンドポイントの形は実機で一部未確認**（設計書 `docs/handoff/2026-09-08-cloud-console-deploy.md` §1-2 の確認要 C1〜C9）。エラーが出たら、このファイルだけを直せばよい形にしてある。
 
 ## 6. Cloud での修正を Git に戻す（`sync_back.py`）
 
@@ -208,7 +272,8 @@ git push origin "release/$DIFY_ENV/$(date +%Y%m%d)"   # タグの push は人が
 python3 scripts/dify/sync_back.py ~/Downloads/KN-01*.yml --env cloud-master
 #    まず中身だけ見たいとき
 python3 scripts/dify/sync_back.py ~/Downloads/KN-01*.yml --dry-run
-# 3) 検証
+# 3) 検証（DIFY_DATASET_ID_* を source していない素の shell で。
+#    export された shell だと knowledge.*.id が焼き込まれ、[DIFF] になる。§5・env/README.md）
 python3 dify/check.py
 python3 scripts/dify/render.py --env cloud-master --all --check     # 12 本すべて [OK] マスタとバイト一致
 # 4) 差分を読んで PR（プロンプト差分は必ず人が読む）

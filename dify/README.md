@@ -21,7 +21,8 @@ Mac から全自動で投入・テストする手順は [`DEPLOY.md`](./DEPLOY.m
 | `check.py` | DSL の構造チェック（砂箱用。PyYAML 必要。`dify/apps/*.yml` だけでなく `dify/build/<env>/*.yml` にも使える） |
 | `../scripts/dify/render.py` | `env/<env>/env.yml` をマスタ DSL に流し込み `build/<env>/` に出力（[下記「環境を選んでインポートする」](#環境を選んでインポートする)） |
 | `../scripts/dify/release.py` | render → import → KB → test → tag → CHANGELOG を通しで実行（[`DEPLOY.md` §5](./DEPLOY.md#5-環境を選んでリリースする)） |
-| `../scripts/dify/console_api.py` | セルフホストの Console API（login / import_dsl / list_apps / publish）を閉じ込めたクライアント。`release.py` の selfhost 経路から呼ばれる |
+| `../scripts/dify/console_api.py` | Console API 共通クライアント（login / import_dsl / list_apps / publish / confirm_import / get_draft / update_draft）。selfhost は email/password、Cloud は `DIFY_CONSOLE_TOKEN` のトークン認証（`client_from_env()`）。`release.py`・`cloud_deploy.py` から呼ばれる |
+| `../scripts/dify/cloud_deploy.py` | `DIFY_CONSOLE_TOKEN` があれば、ブラウザを使わず Cloud（または Console API が使えるセルフホスト）へ新規／上書きインポート・公開する（[`DEPLOY.md` §1](./DEPLOY.md#1-手順)） |
 | `../scripts/dify/kb_upload.py` | `kb/<管理番号>/` を Datasets API で KB に投入（標準ライブラリのみ。`--env` 対応） |
 | `../scripts/dify/run_tests.py` | `tests/<管理番号>.json` を Service API で実行し `results/<env>/` に書く（`--env` 対応） |
 | `../scripts/dify/env.example` | 環境変数の雛形（値は空） |
@@ -48,6 +49,7 @@ python3 scripts/dify/render.py --env $DIFY_ENV --all --strict
 - **その他の env × セルフホスト**：`scripts/dify/console_api.py`（`release.py` から呼ばれる）または画面から `dify/build/<env>/*.yml` をインポートする
 - `--strict` を付けると `${VAR}` の未定義・`models.overrides` の不一致などを exit 1 で検出する（値はログに出さない）
 - **`render` から先（import・KB・test・tag・CHANGELOG）まで通しでやるなら** `scripts/dify/release.py --env <env> --all`（まず `--dry-run` で確認。[`DEPLOY.md` §5](./DEPLOY.md#5-環境を選んでリリースする)）
+- **`DIFY_CONSOLE_TOKEN` があれば、下の手動手順の代わりに `python3 scripts/dify/cloud_deploy.py --env <env> --all` の 1 本でブラウザ不要でインポート・公開できる**（[`DEPLOY.md` §1](./DEPLOY.md#1-手順)）
 
 ## インポート手順（手動・cloud-master）
 
