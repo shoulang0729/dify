@@ -1,6 +1,6 @@
 # Dify 実装ガイド（全体方針）
 
-対象：カタログ 8 分類 43 サービス（`docs/handoff/service-index.md`）を **Dify 1.15.x（DSL 0.6.0）／セルフホスト**で実装するときの、全サービス共通の方針。
+対象：カタログ 13 分類 67 サービス（`docs/handoff/service-index.md`）を **Dify 1.15.x（DSL 0.6.0）／セルフホスト**で実装するときの、全サービス共通の方針。
 個別サービスの仕様は `usecases/<管理番号>.md`、別出しで作る共通部品は `platform-components.md`（PC-01〜16）、Outline Wiki 前提の案は `outline-wiki-usecases.md`。
 architect 成果物。**モック（`mock/**`）・`tools/**`・承認済み設計書（`docs/handoff/**`）には触れていない。**
 
@@ -71,7 +71,7 @@ Scope B スライド 12-13「判断・調査は Dify、承認・実行は BPMS�
 
 ## 3. 実装の順序
 
-成熟度（`st`）の順に進める：**提供中 12 → 試行版 21 → 構想 8**。同じ成熟度の中では「必要な共通部品が少ないもの」から。
+成熟度（`st`）の順に進める：**提供中 12 → 試行版 29 → 構想 26**。同じ成熟度の中では「必要な共通部品が少ないもの」から。
 
 | 波 | サービス | 前提となる PC | 備考 |
 |---|---|---|---|
@@ -80,6 +80,8 @@ Scope B スライド 12-13「判断・調査は Dify、承認・実行は BPMS�
 | **W3 試行版・文書系** | KN-04 KN-05 QA-01 QA-04 DC-03 DC-05 DC-07 LG-02 LG-03 EN-01 NM-02 GN-03 | ＋PC-05（Outline）PC-12（差分）PC-14（通知）PC-01（フィード） | 台本のデータ前提（§0-2）を KB に入れてから |
 | **W4 試行版・システム連携** | QA-03 DC-06 NM-04 NM-05 EN-02 GN-04 PT-01 PT-02 PT-03 | ＋PC-04（QMS/ERP/WMS API）PC-15（パートナー GW） | 照会 API が無ければ「アップロード→抽出」に落とす |
 | **W5 構想** | QA-02 NM-01 EN-03 PT-04 PT-05 PT-06 PT-07 PT-08 | ＋PC-04（原価テーブル・ECR）PC-08（マルチモーダル）PC-10（PIPL 設計） | 顧客判断・契約が先。DSL は雛形まで |
+
+**この表はまだ 41 件（W1 8 + W2 4 + W3 12 + W4 9 + W5 8）しかカバーしていない。** 未割り当ては 26 件：金融版カタログの新分類 RS（5）・CV（4）・FA（5）・PO（4）・EG（1）＝19 件、および KN-06〜08（3）・DC-08〜09（2）・GN-06〜07（2）。どの波に入れるかは設計判断のため Issue #190 で扱う。
 
 共通部品の先行順は `platform-components.md` 末尾。**W1 の前に PC-08・PC-07・PC-10・PC-09 の 4 つは最低限（設定と手順書）で用意する。**
 
@@ -209,7 +211,7 @@ Cloud → git の**手動 export 経路**は `scripts/dify/sync_back.py` で正�
 |---|---|
 | `platform-components.md` | PC-01〜16 の定義・マトリクス・先行順 |
 | `outline-wiki-usecases.md` | Outline 前提の整理・既存 43 件への影響・新規案 OW-01〜 |
-| `usecases/README.md` | 43 件の一覧と依存 PC・Outline 使用 |
+| `usecases/README.md` | 67 件の一覧と依存 PC・Outline 使用 |
 | `usecases/_TEMPLATE.md` | 1 サービス 1 ファイルの雛形 |
 | `feasibility-33-services.md` §0・§4 | 実現性・横断リスク・PM 判断待ち F-1〜F-8 |
 | `docs/handoff/2026-09-06-partner-usecases.md` §5 | PT-01〜08 の実現性・PIPL 注記 |

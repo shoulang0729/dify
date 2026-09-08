@@ -345,7 +345,7 @@ def build_arg_parser():
     ap.add_argument("codes", nargs="*", help="管理番号（例 KN-01 DC-01）。--all と併用不可")
     ap.add_argument("--env", default=os.environ.get("DIFY_ENV") or "cloud-master",
                      help="dify/env/<env>/env.yml（既定 $DIFY_ENV、無ければ cloud-master）")
-    ap.add_argument("--all", action="store_true", help="dify/apps/*.yml すべて（12 本）")
+    ap.add_argument("--all", action="store_true", help="dify/apps/*.yml すべて")
     ap.add_argument("--app-id", action="append", default=[], metavar="<番号>=<id>",
                      help="app_id を明示（複数指定可）")
     ap.add_argument("--bind-kb", choices=["dsl", "draft", "none"], default="dsl",

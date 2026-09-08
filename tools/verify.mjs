@@ -10,7 +10,8 @@
  *   1-A. （新規）二重宣言：全 JS（データ層＋アプリ層）を <script src> の順に連結して node --check
  *   1-B. （新規）読み込み契約：実ファイル存在／相対パスのみ／scenarios タグ集合＝ディレクトリの *.js 集合／
  *        読み込み順が data/ui → data/catalog → data/home → data/style → data/scenarios/* → app → render → events／
- *        <script src> 15 本・インライン <script> 0 個／catalog.html に <style> が 0 個
+ *        <script src> の本数は実ディレクトリから計算（data 4 + scenarios <業種ごとの台本ファイル数> + app/render/events 3）・
+ *        インライン <script> 0 個／catalog.html に <style> が 0 個
  *   2.   i18n キー集合の一致（T / TAGS / PATTERNS / CATS / SVCS / TEMPLATES が ja/zh/en を全て持ち、空でない。en にかな残りなし）
  *   3.   未定義キー参照（t('key') / T.key が T に存在するか。全 JS ファイルの連結テキストを対象）
  *   4.   未使用キー（T にあるがどこからも参照されない）※警告扱い（FAIL にしない）
