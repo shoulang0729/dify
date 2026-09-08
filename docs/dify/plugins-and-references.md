@@ -27,7 +27,7 @@
 
 | 名称 | 版 | 何に使えるか | 対象 id | 注意点 |
 |---|---|---|---|---|
-| `datasources/firecrawl_datasource` / `jina_datasource` / `tavily_datasource` | 0.2.13 / 0.0.10 / 0.1.10 | Knowledge Pipeline の Web クロール入口。当局（NFRA・税務・海関・蘇州市）の通達ページを定期取り込み | **kn5** gn5 | いずれも海外 SaaS。中国当局サイトへの到達性と、対象サイトの利用規約を確認。国内サイトは `http-request` で直接取得する方が確実な場合あり |
+| `datasources/firecrawl_datasource` / `jina_datasource` / `tavily_datasource` | 0.2.13 / 0.0.10 / 0.1.10 | Knowledge Pipeline の Web クロール入口。当局（外貨管理・税関・税務・蘇州市）の通達ページを定期取り込み | **kn5** gn5 | いずれも海外 SaaS。中国当局サイトへの到達性と、対象サイトの利用規約を確認。国内サイトは `http-request` で直接取得する方が確実な場合あり |
 | `datasources/brightdata_datasource` | 0.1.10 | 反 bot 対策込みのスクレイプ | kn5（代替） | 同上 |
 | `tools/searxng` | — | 自前ホストのメタ検索（`Awesome-Dify-Workflow` の「搜索大师」が使用） | kn5 nm2（市況） | 自前運用が要る |
 | `tools/google` / `bing` / `duckduckgo` / `perplexity` | — | Web 検索 | nm2（市況の裏取り） | 中国本土からの到達性 |
