@@ -65,6 +65,26 @@ def expand(s):
     return VAR_RE.sub(lambda m: os.environ.get(m.group(1), ""), s)
 
 
+def embedding_from_env(env_name):
+    """dify/env/<env>/env.yml の models.embedding を (provider, name) で返す（未設定なら (None, None)）。
+
+    cloud-master は空（ワークスペース既定に任せる）。inhouse / customer-a のように
+    値が入っている環境では、KB 作成時に埋め込みモデルを明示する（DI-001）。
+    """
+    if yaml is None:
+        return None, None
+    path = os.path.join(ENV_DIR, env_name, "env.yml")
+    if not os.path.isfile(path):
+        return None, None
+    with open(path, encoding="utf-8") as fh:
+        env = yaml.safe_load(fh) or {}
+    emb = ((env.get("models") or {}).get("embedding")) or {}
+    provider, name = expand(emb.get("provider") or ""), expand(emb.get("name") or "")
+    if provider and name:
+        return provider, name
+    return None, None
+
+
 def kb_name_from_env(env_name, code):
     """dify/env/<env>/env.yml の knowledge.<code>.name を返す（無ければ None）。"""
     if yaml is None:
@@ -255,6 +275,11 @@ def main():
                 "description": f"{code} 用ナレッジ（dify/kb/{code}/ から scripts/dify/kb_upload.py が投入）",
                 "retrieval_model": retrieval_model,
             }
+            emb_provider, emb_name = embedding_from_env(args.env)
+            if emb_provider and emb_name:
+                create_body["embedding_model_provider"] = emb_provider
+                create_body["embedding_model"] = emb_name
+                log(f"埋め込みモデルを指定: {emb_provider} / {emb_name}（env.yml の models.embedding。DI-001）")
             try:
                 ds = api.post("/datasets", create_body)
             except RuntimeError as e:
