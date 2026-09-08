@@ -185,9 +185,14 @@ jobs:
       - name: Stage results and guard changed paths
         run: |
           set -euo pipefail
-          # 生成物の置き場だけを対象にステージする（dify/state/ は W2 で導入予定。
-          # いま生成されなくてもガードのパターンには含めておく）。
-          git add -A -- dify/results/ dify/state/ 2>/dev/null || true
+          # 生成物の置き場だけを対象にステージする。
+          # 注意：git add は複数 pathspec のうち 1 つでも存在しないと全体が失敗する。
+          # dify/state/ は W2 で導入予定でまだ無いため、必ず 1 つずつ add する
+          # （まとめて書くと dify/results/ までステージされない。実測で確認済み）。
+          for p in dify/results/ dify/state/; do
+            [ -d "$p" ] || continue
+            git add -A -- "$p"
+          done
 
           changed="$(git diff --cached --name-only)"
           if [ -z "$changed" ]; then
