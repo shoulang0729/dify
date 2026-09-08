@@ -59,6 +59,7 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 - チャット入力は `detectLang()` で **入力言語（ja/zh）を判定し、UI 言語と無関係にその言語で返答**する
 - 「日中対応」を**サービスの区別タグにしない**（全サービスの前提だから）
 - 検出：`tools/verify.mjs`（`detectLang` の存在）＋ reviewer
+- 実装側（`dify/**`）の応答言語の契約は `docs/dify/implementation-guide.md` §6-1、機械検証は `dify/tests/*.json` の `expect_lang` と `scripts/dify/run_tests.py`
 
 ### 2-6. `localStorage` キーは許可集合。いまは `mock.lang` / `mock.theme` / `mock.fav` の 3 つだけ
 - **既存キーの改名・転用は禁止**（変えるとレビュー参加者の設定が飛ぶ）。**新しいキーを足すのは PM 判断**で、足したら**この節の一覧と `tools/verify.mjs` の許可集合を同時に更新する**
