@@ -42,6 +42,8 @@ import time
 import urllib.error
 import urllib.request
 
+from lang_check import judge_lang  # 同ディレクトリ。sys.path はスクリプト自身の場所で解決される
+
 try:
     import yaml
 except ImportError:  # pragma: no cover
@@ -213,6 +215,22 @@ def judge(out, expect, expect_not):
     return hit, missing, forbidden
 
 
+def check_lang_schema(c):
+    """§4-4 のスキーマ検査（--dry-run 用）。expect_lang の欠落・値域外・
+    mixed/none なのに lang_note が空、を NG にする。戻り値: (ok: bool, detail: str)"""
+    lang = c.get("expect_lang")
+    if lang not in ("ja", "zh", "mixed", "none"):
+        return False, f"expect_lang が不正または欠落（{lang!r}）"
+    if lang in ("mixed", "none"):
+        note = c.get("lang_note")
+        if not isinstance(note, str) or not note.strip():
+            return False, f"expect_lang={lang} には lang_note が必須"
+    allow = c.get("lang_allow", []) or []
+    if not isinstance(allow, list) or not all(isinstance(x, str) for x in allow):
+        return False, "lang_allow は文字列の配列であること"
+    return True, "OK"
+
+
 def cell(s, limit=160):
     s = (s or "").replace("|", "\\|").replace("\n", " ")
     return s if len(s) <= limit else s[:limit] + "…"
@@ -238,9 +256,11 @@ def run_suite(code, base, timeout, dry, blocking, results_dir):
         mode = c.get("mode", default_mode)
         cid = c.get("id", "?")
         if dry:
-            ok = mode in ("chat", "workflow") and isinstance(c.get("expect", []), list)
+            lang_schema_ok, lang_schema_detail = check_lang_schema(c)
+            ok = mode in ("chat", "workflow") and isinstance(c.get("expect", []), list) and lang_schema_ok
+            lang_cell = "(dry-run)" if lang_schema_ok else f"NG: {lang_schema_detail}"
             rows.append((cid, c.get("kind", ""), c.get("query") or json.dumps(c.get("inputs", {}), ensure_ascii=False),
-                         "(dry-run)", f"{len(c.get('expect', []))} 語", "", 0.0, "—", "OK" if ok else "NG"))
+                         "(dry-run)", f"{len(c.get('expect', []))} 語", "", lang_cell, 0.0, "—", "OK" if ok else "NG"))
             passed += 1 if ok else 0
             continue
 
@@ -277,19 +297,21 @@ def run_suite(code, base, timeout, dry, blocking, results_dir):
         input_cell = c.get("query") or json.dumps(c.get("inputs", {}), ensure_ascii=False)
         if error:
             row_out = error
-            rows.append((cid, c.get("kind", ""), input_cell, row_out, "—", "—", sec, tokens_cell, "ERROR"))
+            rows.append((cid, c.get("kind", ""), input_cell, row_out, "—", "—", "—", sec, tokens_cell, "ERROR"))
             print(f"  {cid}: ERROR {row_out[:120]}")
             continue
 
         hit, missing, forbidden = judge(out, c.get("expect", []), c.get("expect_not", []))
-        ok = not missing and not forbidden
+        lang_ok, lang_detail = judge_lang(out, c.get("expect_lang"), c.get("lang_allow") or [])
+        ok = not missing and not forbidden and lang_ok
         passed += 1 if ok else 0
         rows.append((cid, c.get("kind", ""), input_cell, out,
                      f"{hit}/{len(c.get('expect', []))}" + (f"（不足: {'; '.join(missing)}）" if missing else ""),
-                     ("検出: " + ", ".join(forbidden)) if forbidden else "なし", sec, tokens_cell,
+                     ("検出: " + ", ".join(forbidden)) if forbidden else "なし", lang_detail, sec, tokens_cell,
                      "PASS" if ok else "FAIL"))
         print(f"  {cid}: {'PASS' if ok else 'FAIL'} ({sec:.1f}s) 期待語 {hit}/{len(c.get('expect', []))}"
-              + (f" 不足={missing}" if missing else "") + (f" 禁止語={forbidden}" if forbidden else ""))
+              + (f" 不足={missing}" if missing else "") + (f" 禁止語={forbidden}" if forbidden else "")
+              + (f" 応答言語={lang_detail}" if not lang_ok else ""))
 
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M")
     os.makedirs(results_dir, exist_ok=True)
@@ -301,13 +323,13 @@ def run_suite(code, base, timeout, dry, blocking, results_dir):
         if not dry:
             fh.write(f"- 受信: {'blocking' if blocking else 'streaming'}\n")
         fh.write(f"- 合否: **{passed} / {len(cases)} 合格**\n\n")
-        fh.write("| ID | 種別 | 入力 | 出力（先頭） | 期待語の一致 | 禁止語 | 所要秒 | トークン | 判定 |\n"
-                  "|---|---|---|---|---|---|---|---|---|\n")
+        fh.write("| ID | 種別 | 入力 | 出力（先頭） | 期待語の一致 | 禁止語 | 応答言語 | 所要秒 | トークン | 判定 |\n"
+                  "|---|---|---|---|---|---|---|---|---|---|\n")
         for r in rows:
-            fh.write(f"| {r[0]} | {r[1]} | {cell(r[2], 80)} | {cell(r[3])} | {cell(r[4], 120)} | {cell(r[5], 60)} | {r[6]:.1f} | {r[7]} | {r[8]} |\n")
+            fh.write(f"| {r[0]} | {r[1]} | {cell(r[2], 80)} | {cell(r[3])} | {cell(r[4], 120)} | {cell(r[5], 60)} | {cell(r[6], 100)} | {r[7]:.1f} | {r[8]} | {r[9]} |\n")
         fh.write("\n## 出力全文\n")
         for r in rows:
-            fh.write(f"\n### {r[0]}（{r[8]}）\n\n入力:\n\n```\n{r[2]}\n```\n\n出力:\n\n```\n{r[3]}\n```\n")
+            fh.write(f"\n### {r[0]}（{r[9]}）\n\n入力:\n\n```\n{r[2]}\n```\n\n出力:\n\n```\n{r[3]}\n```\n")
     print(f"結果: {os.path.relpath(out_path, ROOT)}  合格 {passed}/{len(cases)}")
     return passed, len(cases)
 

@@ -150,8 +150,11 @@ git push
 - 受信は **streaming**（`response_mode: streaming`）が既定。Dify Cloud の前段が blocking を
   **120 秒で HTTP 504** にするため（DI-010）。`--timeout` の既定は 600 秒
 - 従来の blocking で試したいときは `--blocking`（セルフホストや、504 の再現確認に使う）
-- 結果は `dify/results/<管理番号>-<YYYYMMDD-HHMM>.md`（入力／出力／期待語の一致／禁止語／所要秒／トークン／判定の表＋出力全文）
+- 結果は `dify/results/<管理番号>-<YYYYMMDD-HHMM>.md`（入力／出力／期待語の一致／禁止語／応答言語／所要秒／トークン／判定の表＋出力全文）
 - 結果の表には**所要秒とトークン数**が入る（`message_end` / `workflow_finished` の usage 由来。取れないときは `—`）
+- 結果の表には**応答言語**の列も入る（`expect_lang` に対する `scripts/dify/lang_check.py` の判定。値は `OK` / `NG: …` / `—`。
+  設計: `docs/handoff/2026-09-08-response-language-contract.md` §4。判定は `judge()`（期待語・禁止語）とは独立で、
+  地の文の言語が壊れているだけでも判定は FAIL になる）
 - 失敗があっても全件回し、最後に合否を集計する（終了コード 1）。設定不備（キー未設定）は 2
 - API を呼ばず JSON だけ確かめる：`python3 scripts/dify/run_tests.py --dry-run KN-01 DC-01`
 - 接続先を直接指定したいときは `--base-url`、結果の出力先を変えたいときは `--out`

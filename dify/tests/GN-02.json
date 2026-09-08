@@ -13,8 +13,16 @@
         "invoice_file": null
       },
       "query": "",
-      "expect": ["invoice_no", "0250812", "vendor_name", "amount_incl_tax"],
-      "expect_not": []
+      "expect": [
+        "invoice_no",
+        "0250812",
+        "vendor_name",
+        "amount_incl_tax"
+      ],
+      "expect_not": [],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "GN-02 T02",
@@ -25,8 +33,16 @@
         "invoice_file": null
       },
       "query": "",
-      "expect": ["0250815", "0250826", "invoice_no", "amount_incl_tax"],
-      "expect_not": []
+      "expect": [
+        "0250815",
+        "0250826",
+        "invoice_no",
+        "amount_incl_tax"
+      ],
+      "expect_not": [],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "GN-02 T04",
@@ -37,8 +53,22 @@
         "invoice_file": null
       },
       "query": "",
-      "expect": [["読み取れません", "読み取れない", "不明", "記載されていません"], ["発票番号", "invoice_no"]],
-      "expect_not": []
+      "expect": [
+        [
+          "読み取れません",
+          "読み取れない",
+          "不明",
+          "記載されていません"
+        ],
+        [
+          "発票番号",
+          "invoice_no"
+        ]
+      ],
+      "expect_not": [],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "GN-02 T06",
@@ -49,8 +79,16 @@
         "invoice_file": null
       },
       "query": "",
-      "expect": ["个人名"],
-      "expect_not": ["6222021234567890123", "张三"]
+      "expect": [
+        "个人名"
+      ],
+      "expect_not": [
+        "6222021234567890123",
+        "张三"
+      ],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     }
   ]
 }

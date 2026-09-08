@@ -28,7 +28,10 @@
           "20〜100"
         ]
       ],
-      "expect_not": []
+      "expect_not": [],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "GN-05 T02",
@@ -46,7 +49,10 @@
         "p.22",
         "第12条"
       ],
-      "expect_not": []
+      "expect_not": [],
+      "expect_lang": "zh",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "GN-05 T03",
@@ -67,7 +73,10 @@
       "expect_not": [
         "## ",
         "要点"
-      ]
+      ],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "GN-05 T04",
@@ -90,7 +99,10 @@
       "expect_not": [
         "13900001234",
         "陈处长"
-      ]
+      ],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     }
   ]
 }
