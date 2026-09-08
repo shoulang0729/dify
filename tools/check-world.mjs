@@ -14,8 +14,10 @@
  * 業種（mfg / fin）ごとに data/world/<業種>/ のマスタと走査対象を対にして回す。
  * 走査対象の振り分け:
  *   - mock/js/data/scenarios/**（台本）: パスに `/scenarios/fin/` を含むものが fin、それ以外は mfg
- *     （現時点では fin 側の台本ディレクトリが無いため、fin の走査対象は 0 件になる。
- *      PR-1 で `scenarios/mfg/` `scenarios/fin/` に分かれたら自動的に効くようになる）
+ *     （`scenarios/mfg/`・`scenarios/fin/` それぞれのディレクトリ配下が丸ごとそのまま対応する業種の
+ *      走査対象になる。台本データ本体は `window.SCENARIOS[業種][svcId]` の 2 階層で、構造化データ
+ *      （W1/W2/W3/W9 の persona 走査）はこのディレクトリ分けと対で `data.SCENARIOS[ind]` を直接
+ *      参照する。Issue #133 コメント2）
  *   - dify/kb/**・dify/tests/**・docs/dify/usecases/**: ファイルパスから管理番号
  *     （`[A-Z]{2}-\d+`）を抜き、FIN_ONLY_CODES（金融専用の分類コード）に含まれれば fin、
  *     それ以外は mfg。PO/EG のような業種横断コードは、現時点ではまだ実ファイルが
@@ -29,7 +31,9 @@
  *   W3 拠点：company.md の拠点表にない拠点表記
  *   W4 社名：正式名称（ja/zh/en）の表記が company.md と一致するか。英名が使われていない
  *   W5 取引先記号：partners.csv / clients.csv に無い記号、表記ゆれ
- *   W6 文書番号：calendar.md の体系に合わない書式
+ *   W6 文書番号：calendar.md の「文書番号の体系」表をパースして得た書式（knownPatterns）に
+ *      合わない書式、および表に登録の無い接頭辞（Issue #133）。パース規則は
+ *      parseCalendarPatterns()/segToRegexFrag() のコメントを参照
  *   W7 品番・設備：products.csv/equipment.csv に無いコード（fin は設備を持たないため skip）。
  *      管理番号形式（^[A-Z]{2}-\d{2}$）と衝突するコード
  *   W8 KPI：kpi.csv の指標名が出ているのに値が基準値・目標・前月のどれとも一致しない
@@ -85,6 +89,92 @@ function readMd(dir, name) {
   return existsSync(p) ? readFileSync(p, 'utf8') : '';
 }
 
+/* ---------- W6: calendar.md の「文書番号の体系」表 → knownPatterns（Issue #133） ---------- */
+/*
+ * data/world/<業種>/calendar.md の「## 文書番号の体系」表が正本（CLAUDE.md §2-13）。
+ * 表の 1 列目（書式）はバックティック `...` で囲まれた文字列（1 セルに「または」で複数の
+ * 書式が入っていることがある。例: `RFQ-YYYY-NNN` または `RFQ-YY-NNN`）。
+ *
+ * 書式文字列は '-' で分割し、最初のセグメント（先頭の '-' より前）は常に接頭辞として
+ * 文字どおり扱う（例: `TR`・`8D`・`C`）。2 セグメント目以降は、同じ文字が連続する
+ * 「ラン」単位でプレースホルダを解決する：
+ *   - `Y` / `M` / `D` / `N` の連続 n 文字 → `\d{n}`（年・月・日・通番などの数字プレースホルダ。
+ *     例: `YYYY`→`\d{4}`、`NNN`→`\d{3}`、`YYMM`→`\d{2}\d{2}`、`MMDD`→`\d{2}\d{2}`）
+ *   - `X` の連続 n 文字 → `[A-Z]{n}`（英大文字プレースホルダ。例: `WS-XX-NNN` の `XX`）
+ *   - `Q` / `L` の 1 文字 → リテラル文字として扱う（プレースホルダではなく、書式そのものの一部。
+ *     `QR-YYYY-QN-NN` の `Q` は「四半期」の頭文字、`PC-LN-YYYY-NNN` の `L` は「ライン」の頭文字。
+ *     実例 `QR-2026-Q2-05` / `PC-L3-2026-014` で確認済み。この 2 文字は現時点の表で実際に
+ *     使われている literal marker を明示的に列挙したもの。表に新しい 1 文字マーカーが増えたら
+ *     ここに追記する）
+ *   - `<N 桁>`（例: `<4 桁>`） → `\d{N}`
+ *   - `<A〜Z>`（英字範囲） → `[A-Z]`
+ *   - 数字はそのままリテラル（例: `C-26NN-X` の `26`）
+ *   - 上記のどれにも当てはまらない文字（未知のプレースホルダ）が出てきたら、黙って無視せず
+ *     warn する（該当セグメントはリテラル扱いにフォールバックしつつ報告する）
+ *   - 表の行としてパースできない行（バックティックのセグメントが 1 つしかない等）も同様に warn する
+ */
+function escLit(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function segToRegexFrag(seg, patStr, warn) {
+  let m;
+  if ((m = seg.match(/^<(\d+)\s*桁>$/))) return `\\d{${m[1]}}`;
+  if ((m = seg.match(/^<([A-Za-z])〜([A-Za-z])>$/))) return `[${m[1]}-${m[2]}]`;
+  let out = '';
+  let i = 0;
+  while (i < seg.length) {
+    const c = seg[i];
+    let j = i;
+    while (j < seg.length && seg[j] === c) j++;
+    const n = j - i;
+    if (/[0-9]/.test(c)) {
+      out += escLit(seg.slice(i, j));
+    } else if (c === 'X') {
+      out += n > 1 ? `[A-Z]{${n}}` : '[A-Z]';
+    } else if ('YMDN'.includes(c)) {
+      out += n > 1 ? `\\d{${n}}` : '\\d';
+    } else if (n === 1 && 'QL'.includes(c)) {
+      out += escLit(c);
+    } else {
+      warn(`calendar.md の書式 "${patStr}" に規則にない文字 '${c}' を含むセグメント "${seg}"（リテラル扱いにフォールバック）`);
+      out += escLit(seg.slice(i, j));
+    }
+    i = j;
+  }
+  return out;
+}
+
+function patternStrToRegex(patStr, warn) {
+  const segs = patStr.split('-');
+  if (segs.length < 2) { warn(`calendar.md の書式 "${patStr}" をパースできなかった（セグメントが1つしかない）`); return null; }
+  const prefix = escLit(segs[0]);
+  const rest = segs.slice(1).map(s => segToRegexFrag(s, patStr, warn));
+  return { prefix: segs[0], re: new RegExp(`^${prefix}-${rest.join('-')}$`) };
+}
+
+// calendar.md の「## 文書番号の体系」表を走査し { patterns: RegExp[] } を返す。
+// 見出しのある表だけを対象にする（「世界の今日」節などの本文中のバックティックは拾わない）。
+function parseCalendarPatterns(md, warn) {
+  const idx = md.indexOf('## 文書番号の体系');
+  const body = idx >= 0 ? md.slice(idx) : '';
+  const patterns = [];
+  for (const line of body.split('\n')) {
+    const m = line.match(/^\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|$/);
+    if (!m) continue;
+    const col0 = m[1];
+    if (!col0.includes('`')) continue; // ヘッダ行・区切り行
+    const patStrs = [...col0.matchAll(/`([^`]+)`/g)].map(x => x[1]);
+    if (!patStrs.length) { warn(`calendar.md の表の行をパースできなかった: ${line.trim()}`); continue; }
+    for (const patStr of patStrs) {
+      const parsed = patternStrToRegex(patStr, warn);
+      if (parsed) patterns.push(parsed);
+    }
+  }
+  if (!patterns.length) warn('calendar.md の「文書番号の体系」表から書式を1件も抽出できなかった');
+  return patterns;
+}
+
 /* ---------- 走査対象の準備（全体を 1 回だけ読み、業種ごとに振り分ける） ---------- */
 const mock = loadMock(ROOT);
 
@@ -102,10 +192,6 @@ function walkFiles(dir, exts) {
 function extractCode(pathStr) {
   const m = pathStr.match(/\b([A-Z]{2})-\d+/);
   return m ? m[1] : null;
-}
-function scenarioIdCode(svcId) {
-  const m = svcId.match(/^([a-z]+)/);
-  return m ? m[1].toUpperCase() : null;
 }
 function codeBelongsTo(code, ind) {
   if (!code) return ind === 'mfg'; // 不明なものは既定で mfg 扱い（従来どおりの検査対象）
@@ -154,17 +240,12 @@ function runIndustryChecks(ind) {
 
   const { data } = mock;
 
-  // このデータ層（SCENARIOS/FEED）はまだ業種で分かれていない（PR-1 の作業）。
-  // サービス id の先頭コードで業種を推定して振り分ける。
+  // SCENARIOS は業種切替（#120）で SCENARIOS[業種][svcId] の 2 階層になっている
+  // （mock/js/data/scenarios/<業種>/<分類>.js が window.SCENARIOS[業種] に直接登録する。
+  // Issue #133 コメント2）。台本ファイルの置き場所そのものが業種の正なので、
+  // id の先頭コードによる推定（旧 scenarioIdCode/codeBelongsTo）は不要。
   function scenariosFor() {
-    const out = {};
-    if (data.SCENARIOS) {
-      for (const id in data.SCENARIOS) {
-        const code = scenarioIdCode(id);
-        if (codeBelongsTo(code, ind)) out[id] = data.SCENARIOS[id];
-      }
-    }
-    return out;
+    return (data.SCENARIOS && data.SCENARIOS[ind]) || {};
   }
   const scenarios = scenariosFor();
   // FEED は現時点で単一（業種別に分かれていない）。fin 側にはまだ無いものとして扱う
@@ -288,28 +369,45 @@ function runIndustryChecks(ind) {
   }
 
   /* ---------------------------------------------------------- */
-  section(`[${ind}] W6. 文書番号：calendar.md の体系に合わない書式`);
+  section(`[${ind}] W6. 文書番号：calendar.md の体系に合わない書式・未登録の接頭辞`);
   {
-    const knownPatterns = ind === 'mfg' ? [
-      /^TR-\d{4}-\d{3}$/, /^NC-\d{4}-\d{4}$/, /^8D-\d{2}-\d{4}$/, /^ECR-\d{2}-\d{4}$/,
-      /^RFQ-\d{4}-\d{3}$/, /^RFQ-\d{2}-\d{3}$/, /^PO-\d{4}-\d{3}$/, /^C-\d{4}-\d{3}$/,
-      /^C-\d{4}-[A-Z]$/, /^RG-\d{2}-\d{4}$/, /^CL-\d{2}-\d{4}$/, /^QR-\d{4}-Q\d-\d{2}$/,
-      /^WS-[A-Z]{2}-\d{3}$/, /^PC-L\d-\d{4}-\d{3}$/, /^CM-\d{2}$/, /^QC-\d{2}$/,
-      /^VST-\d{4}-\d{3}$/
-    ] : [
-      /^RNG-\d{4}-\d{4}$/, /^CRD-\d{2}-\d{4}$/, /^NTF-\d{4}-\d{3}$/,
-      /^MTG-\d{4}-\d{4}$/, /^CLM-\d{2}-\d{4}$/, /^IRR-\d{4}-\d{3}$/,
-      /^VST-\d{4}-\d{3}$/
-    ];
-    const docPrefixes = ind === 'mfg'
-      ? /^(TR|NC|8D|ECR|RFQ|PO|C|RG|CL|QR|WS|CM|QC)-|^PC-L\d-/
-      : /^(RNG|CRD|NTF|MTG|CLM|IRR)-/;
-    const candidates = new Set((allText.match(/\b[A-Z]{1,4}(-[A-Za-z0-9]{2,4}){1,3}\b/g) || []));
+    // knownPatterns は calendar.md の「文書番号の体系」表から組み立てる（ハードコードしない。
+    // Issue #133）。パース規則は parseCalendarPatterns() 付近のコメントを参照
+    const parsed = parseCalendarPatterns(calendarMd, (msg) => report(msg));
+    const knownPatterns = parsed.map(p => p.re);
+    // calendar.md に登録済みの単独英字接頭辞（現状 mfg の `C` のみ）。単独英字＋数字は
+    // 大半が文書番号ではなく、金型・アラーム・様式番号などの別体系（下記 note 参照）なので、
+    // 未登録として warn するのはこの許可集合に無いものだけに絞る
+    const singleCharPrefixes = new Set(parsed.filter(p => p.prefix.length === 1).map(p => p.prefix));
+
+    // 台本 JS ファイルのブロックコメント（ファイル冒頭の設計メタ情報）は架空世界の文書番号ではなく
+    // 実際の設計 PR ラベル（例: `PR-4a`）を参照することがあるため、W6 の走査対象からは除く
+    const w6Text = texts
+      .map(f => (f.src && f.src.endsWith('.js')) ? f.text.replace(/\/\*[\s\S]*?\*\//g, '') : f.text)
+      .join('\n');
+
+    // 候補抽出：末尾セグメントが 1 文字のものも拾う（`{2,4}` → `{1,4}`。Issue #133 コメント2。
+    // `C-2509-A` のような `-A` 1 文字セグメントを見落とさないため）。
+    // 境界は `\b` ではなく否定先読み／後読みにする：`VST-2026-021_v3_ja.pdf` のような
+    // アンダースコア結合のファイル名で `\b` がバックトラックし、`VST-2026` のように
+    // 途中で切り詰められた偽の候補を拾ってしまうのを防ぐ
+    const CANDIDATE_RE = /(?<![A-Za-z0-9_])[A-Z]{1,4}(?:-[A-Za-z0-9]{1,4}){1,3}(?![A-Za-z0-9_-])/g;
+    const candidates = new Set(w6Text.match(CANDIDATE_RE) || []);
     let unknown = 0;
     for (const c of candidates) {
-      if (!docPrefixes.test(c)) continue;
-      if (!/\d/.test(c)) continue;
-      if (!knownPatterns.some(re => re.test(c))) { unknown++; if (unknown <= 10) report(`calendar.md のどの書式にも一致しない文書番号らしき文字列: ${c}`); }
+      if (!/\d/.test(c)) continue; // 数字を含まないものは文書番号ではない（英単語のハイフン結合等）
+      // 管理番号形式（§2-11 `^[A-Z]{2}-\d{2}$`）は文書番号とは別の採番体系（KN-01 等）。
+      // calendar.md 側にこの形の書式は無いため、除外しないと全件が「未登録」扱いになってしまう
+      if (/^[A-Z]{2}-\d{2}$/.test(c)) continue;
+      const prefix = c.split('-')[0];
+      // 品番・設備コード（W7 が products.csv/equipment.csv と突き合わせる別体系。例: PX-200・SK-3310-A）
+      // は文書番号ではないため W6 の対象外
+      if (/^(SK|PX|DO|ASSY|QS|J)$/.test(prefix)) continue;
+      // 単独英字接頭辞（未登録）は、金型・アラーム・様式番号や社内メモの略号（例: D-118・E-47・
+      // F-12・B-1）である可能性が高く、calendar.md が扱う「文書番号」の体系とは別物と見なして
+      // 対象外にする（calendar.md に登録済みの単独英字接頭辞は上の singleCharPrefixes で拾う）
+      if (prefix.length === 1 && !singleCharPrefixes.has(prefix)) continue;
+      if (!knownPatterns.some(re => re.test(c))) { unknown++; if (unknown <= 10) report(`calendar.md のどの書式にも一致しない文書番号らしき文字列（未登録の接頭辞の可能性）: ${c}`); }
     }
     if (unknown > 10) console.log(`   ほか ${unknown - 10} 件`);
     if (!unknown) ok('文書番号は calendar.md の体系に一致（該当なしを含む）');
