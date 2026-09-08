@@ -1,6 +1,6 @@
 # docs/dify — Dify 実装可能性の突合と参照資料
 
-顧客版カタログ（7 分類・33 サービス、`docs/handoff/2026-09-06-customer-catalog-data.md`）と
+顧客版カタログ（13 分類・67 サービス、`docs/handoff/2026-09-06-customer-catalog-data.md`）と
 担当者デモ台本（`docs/handoff/2026-09-06-demo-scenarios.md`）について、
 **「その業務シナリオは Dify で実際に作れるか」** を Dify の公式機能・公式プラグイン・コミュニティ資産と突合した結果と、
 以後の実装フェーズで**積極的に使う**プラグイン・事例・参照 DSL を置く場所。
@@ -16,11 +16,11 @@ architect（設計）成果物。**アプリコード（`mock/**` `tools/**`）�
 | [`plugins-and-references.md`](./plugins-and-references.md) | 目的別の公式プラグイン／データソース／モデル／観測／DSL 生成支援／事例のカタログ（どのサービス id で使うか付き） | implementer |
 | [`templates/README.md`](./templates/README.md) | 保存した参照 DSL 8 本の一覧（出典・ライセンス・`version`・雛形候補サービス）と、URL のみ記録したもの | implementer |
 | `templates/*.yml` | 参照 DSL 本体（外部出典・無改変。冒頭にコメントで出典・ライセンス・雛形候補を追記） | implementer |
-| [`implementation-guide.md`](./implementation-guide.md) | **実装フェーズの全体方針**：アーキテクチャ図・Scope B の役割分担（Dify＝処理役、承認は BPMS）・実装順（提供中 12 → 試行版 21 → 構想 8）・テストシナリオの書式（`KN-02 T01`、6 種別、Langfuse データセット）・プロンプト共通ルール・DSL 運用 | PM・implementer・reviewer |
+| [`implementation-guide.md`](./implementation-guide.md) | **実装フェーズの全体方針**：アーキテクチャ図・Scope B の役割分担（Dify＝処理役、承認は BPMS）・実装順（提供中 12 → 試行版 29 → 構想 26）・テストシナリオの書式（`KN-02 T01`、6 種別、Langfuse データセット）・プロンプト共通ルール・DSL 運用 | PM・implementer・reviewer |
 | [`platform-components.md`](./platform-components.md) | **別出しが必要な共通部品 PC-01〜PC-16**（フィードストア・認証・文書取込・業務連携・Outline・用語集・言語判定・モデル・評価・PIPL・スケジューラ・差分・ファイル出力・通知・パートナー GW・本番 UI）。部品×分類マトリクスと先行して作る順 | PM・implementer |
 | [`outline-wiki-usecases.md`](./outline-wiki-usecases.md) | **Outline Wiki 前提**の整理（ソース確認済みの API／Webhook／権限）、既存 43 件への影響（読む／書く）、新規ユースケース案 `OW-01〜10`（統合案つき）、PM 判断待ち O-1〜O-9 | PM・architect |
 | [`decisions-pending.md`](./decisions-pending.md) | **PM 判断待ちの集約**（39 項目）：各 `usecases/*.md` §10・`outline-wiki-usecases.md` §4 O-1〜9・`platform-components.md`・`feasibility-33-services.md` F-1〜8 の判断事項をテーマ別（越境・モデル／業務システム・外部 API／Outline／成熟度／PIPL・告知／共通部品の方式／責任範囲・運用）に統合。関係する管理番号・PC、architect 推奨、決める人（PM／顧客法務／顧客 IT） | PM |
-| [`usecases/README.md`](./usecases/README.md) | **43 サービスの一覧**（管理番号・成熟度・実現性・依存 PC・Outline 使用）と、追加時のルール | 全員 |
+| [`usecases/README.md`](./usecases/README.md) | **67 サービスの一覧**（管理番号・成熟度・実現性・依存 PC・Outline 使用）と、追加時のルール | 全員 |
 | `usecases/<管理番号>.md` | 1 サービス 1 ファイルの実装リファレンス（業務シナリオ・想定インプット・観点・Dify 構成・プロンプト・検証観点・テストシナリオ・別出し・Outline・未確定）。雛形は [`usecases/_TEMPLATE.md`](./usecases/_TEMPLATE.md) | implementer・reviewer |
 
 `usecases/` は**③ユースケース**（設計書 `docs/handoff/2026-09-07-repo-layout-v2.md` §1 の 4 区分）、実際に Dify へ入れる資材（DSL・環境定義・スクリプト）は `dify/`（②）、ダミーデータは `data/world`・`dify/kb`（④）に置く。

@@ -1,6 +1,6 @@
 # Dify 実装ガイド（全体方針）
 
-対象：カタログ 8 分類 43 サービス（`docs/handoff/service-index.md`）を **Dify 1.15.x（DSL 0.6.0）／セルフホスト**で実装するときの、全サービス共通の方針。
+対象：カタログ 13 分類 67 サービス（`docs/handoff/service-index.md`）を **Dify 1.15.x（DSL 0.6.0）／セルフホスト**で実装するときの、全サービス共通の方針。
 個別サービスの仕様は `usecases/<管理番号>.md`、別出しで作る共通部品は `platform-components.md`（PC-01〜16）、Outline Wiki 前提の案は `outline-wiki-usecases.md`。
 architect 成果物。**モック（`mock/**`）・`tools/**`・承認済み設計書（`docs/handoff/**`）には触れていない。**
 
@@ -71,7 +71,7 @@ Scope B スライド 12-13「判断・調査は Dify、承認・実行は BPMS�
 
 ## 3. 実装の順序
 
-成熟度（`st`）の順に進める：**提供中 12 → 試行版 21 → 構想 8**。同じ成熟度の中では「必要な共通部品が少ないもの」から。
+成熟度（`st`）の順に進める：**提供中 12 → 試行版 29 → 構想 26**。同じ成熟度の中では「必要な共通部品が少ないもの」から。
 
 | 波 | サービス | 前提となる PC | 備考 |
 |---|---|---|---|
@@ -209,7 +209,7 @@ Cloud → git の**手動 export 経路**は `scripts/dify/sync_back.py` で正�
 |---|---|
 | `platform-components.md` | PC-01〜16 の定義・マトリクス・先行順 |
 | `outline-wiki-usecases.md` | Outline 前提の整理・既存 43 件への影響・新規案 OW-01〜 |
-| `usecases/README.md` | 43 件の一覧と依存 PC・Outline 使用 |
+| `usecases/README.md` | 67 件の一覧と依存 PC・Outline 使用 |
 | `usecases/_TEMPLATE.md` | 1 サービス 1 ファイルの雛形 |
 | `feasibility-33-services.md` §0・§4 | 実現性・横断リスク・PM 判断待ち F-1〜F-8 |
 | `docs/handoff/2026-09-06-partner-usecases.md` §5 | PT-01〜08 の実現性・PIPL 注記 |
