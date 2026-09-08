@@ -129,16 +129,14 @@ function cardHTML(x) {
   const c = catOf(x.cat), sb = subOf(x.cat, x.sub);
   return `
   <div class="card ${catClass(x.cat)}" data-act="svc" data-arg="${x.id}">
+    ${favBtnHTML(x)}
     <div class="c-top">
       <span class="c-tile">${catIcon(x.cat)}</span>
       <div class="c-head">
         <div class="c-crumb">${esc(L(c.name))}・${esc(L(sb.name))}</div>
         <div class="c-name">${esc(L(x.name))}</div>
       </div>
-      <span class="c-top-tail">
-        <span class="c-code">${newBadgeHTML(x)}<span class="code">${esc(svcCode(x.id))}</span></span>
-        ${favBtnHTML(x)}
-      </span>
+      <span class="c-code">${newBadgeHTML(x)}<span class="code">${esc(svcCode(x.id))}</span></span>
     </div>
     <div class="c-desc">${esc(L(x.desc))}</div>
     <div class="c-meta">

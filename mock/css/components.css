@@ -213,12 +213,18 @@
   }
   .detail-card .d-code .badge-new { margin-left: var(--space-2); }
 
-  /* ===== お気に入り（星ボタン。設計書 2026-09-08-favorites.md §3-1） =====
-     塗り/輪郭という「形」で on/off を区別する（色だけに頼らない）。既存トークンのみ使用。 */
-  .card .c-top .c-top-tail {
-    margin-left: auto; flex-shrink: 0; display: flex; align-items: flex-start; gap: var(--space-2);
-  }
+  /* ===== お気に入り（星ボタン。設計書 2026-09-08-favorites.md §3-1／PM 指摘 2026-09-08 #1） =====
+     塗り/輪郭という「形」で on/off を区別する（色だけに頼らない）。既存トークンのみ使用。
+     カード右上に「絶対配置」して、通常のフローの幅を一切消費しない（.c-head / .c-name を元の幅に戻すため。
+     .c-top に padding-right は足さない＝星の追加前とまったく同じ折り返し幅になる）。
+     .c-code（NEW＋管理番号）は既存宣言で align-self: flex-start のため行の最上段に来ており、
+     カード右上に固定した星と同じ帯にいる。そこで .c-code だけを margin-top で少し下げ、
+     星の縦の帯（カード上端から 28px 分）を避けて重なりを無くす（追記のみ。既存宣言は書き換えない。
+     .c-head 側の横幅には影響しない＝折り返し件数は変わらない）。 */
+  .card { position: relative; }
+  .card .c-top .c-code { margin-top: 20px; }
   .fav-btn {
+    position: absolute; top: var(--space-2); right: var(--space-2);
     width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
     border: none; background: transparent; border-radius: var(--radius-sm); color: var(--text-secondary);
     transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);

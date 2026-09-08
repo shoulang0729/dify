@@ -56,6 +56,14 @@ document.addEventListener('click', (e) => {
       const count = document.getElementById('count');
       if (count) count.textContent = countText(l.length);
     }
+    // 再描画で #grid-holder / #home-holder ごと作り直すため、押した星の DOM ノード自体は
+    // 作り直されて別物になる。同じサービスの星が残っていればそこへフォーカスを戻す
+    // （PM 指摘 2026-09-08 #2：Tab をやり直さなくても連続してお気に入りを付け外せるようにする。
+    //   favOnly の一覧から外して対象が消えた場合など、見つからなければ何もしない＝自然な挙動）
+    const same = document.querySelector(`[data-act="fav"][data-arg="${arg}"]`);
+    // { preventScroll: true }: 素の focus() は画面外の要素を可視範囲に自動スクロールしてしまい、
+    // 「一覧のスクロール位置が飛ばない」という既存の工夫（§3-8）を壊す。フォーカスだけ移し、スクロールはさせない
+    if (same) same.focus({ preventScroll: true });
   }
   else if (act === 'favlist') {
     state.favOnly = true; state.selCat = null; state.selSub = null; state.query = ''; state.view = 'list';
