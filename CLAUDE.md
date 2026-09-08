@@ -157,3 +157,22 @@ npm run world             # data/world/ と台本・文書の食い違いを報�
 - **ユースケース化の段取り**：`/usecase`（`.claude/commands/usecase.md`）。Notion DB「ユースケース候補」の状態 `候補` → `確認中` → `設計中` → `実装中` → `公開済み`。統廃合は 5 軸（分類・タグ・ペルソナ・入出力・出口）の一致数で判定。Notion 原文はコミットしない（§2-10）
 - **リファクタリング P2（#77）**で `catalog.html` を層ごとに分割済み（`css/tokens.css`・`components.css`・`js/data/**`・`js/app.js`・`render.js`・`events.js`）。P3 候補：`?v=` キャッシュスタンプの機械検証、`tools/bundle.mjs`（単一ファイル生成）、`scenarios/` の 1 サービス 1 ファイル化。構成 v2（#84）は `docs/handoff/2026-09-07-repo-layout-v2.md`
 - **`top.html` の扱い**：バンドル済みで手編集不可。②③ が `catalog.html` に入ったので **削除（PR-3）**。トップ `index.html` はデモガイド（#45）
+
+---
+
+## §7 実行場所の切り分け（どこで回せるか）
+
+作業には 3 つの実行場所がある。**Issue と PR には `run:*` ラベルを必ず 1 つ付ける。**
+
+| ラベル | 実行場所 | 回せるもの |
+|---|---|---|
+| `run:cloud` | クラウド（Claude Code on the web） | 設計・実装・レビュー・デモ・文書。ネットワークを使わない検証すべて |
+| `run:runner` | GitHub ホストランナー（`workflow_dispatch` → `dify-ops.yml`） | KB 投入（`kb_upload.py`）・テスト実行（`run_tests.py`）。Environment `dify-cloud-master` の承認が要る |
+| `run:mac` | PM の Mac（ブラウザのログイン済みセッションが要る） | DSL の投入・上書き・公開・KB 紐づけ・API キー発行・DSL エクスポート・モデル設定の確認 |
+
+- 判定基準は `docs/handoff/2026-09-08-execution-split-and-runner.md` §1-1 の操作表（O1〜O10）
+- **`run:*` は 1 つだけ。2 つ付くのは Issue を分割する合図**
+- **設計値と実機の事実をファイルで分ける**：設計＝`dify/apps/`・`dify/kb/`・`dify/tests/`・`dify/env/<env>/env.yml`（人が書く。クラウド可）／実機の事実＝`dify/state/<env>.yml`・`dify/results/**`（機械だけが書く。手で編集しない）
+- **実機側の自動 PR は `dify/results/**` と `dify/state/**` 以外を書かない**（ワークフローが機械で検査する）。`docs/service-map.md` の再生成はクラウド側だけが行う
+- **秘密**：GitHub に置いてよいのは `cloud-master` の Service / Datasets API キーだけ（Environment secret `dify-cloud-master`）。**Dify のログイン情報・セッション Cookie は Mac から出さない**（§2-10）
+- **公開リポジトリなのでセルフホストランナーは `workflow_dispatch` 限定・`--ephemeral`・専用ユーザーで動かす**（`docs/handoff/2026-09-08-execution-split-and-runner.md` §4-2 の S1〜S7）
