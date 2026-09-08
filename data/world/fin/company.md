@@ -6,7 +6,7 @@ This company, its people and all figures are fictional and unrelated to any real
 
 出典：`docs/handoff/2026-09-08-finance-catalog.md` §7-2（PM 確定値）。
 このファイルは正本。台本・KB 文書・テストはここにある値だけを使う（`data/world/README.md` のルール）。
-**製造業マスタ（`data/world/company.md` ほか）の語は 1 つも流用しない**（独立した語彙）。
+**製造業マスタ（`data/world/mfg/company.md` ほか）の語は 1 つも流用しない**（独立した語彙）。
 
 ## 社名
 
