@@ -303,3 +303,77 @@ Git のマスタから `python3 scripts/dify/release.py --env inhouse --all` で
 
 不具合・詰まりは `KNOWN_ISSUES.md` に `DI-xxx` で残す（[`KNOWN_ISSUES.md`](./KNOWN_ISSUES.md)。§4 末尾も参照）。
 
+## 7. GitHub ホストランナーで KB 投入・テストを回す（`dify-ops.yml`。W1）
+
+設計: `docs/handoff/2026-09-08-execution-split-and-runner.md`（W1 の節・§2「実行環境は 3 つある」）。
+**Mac が要らない操作（O5 KB 投入・O6 テスト実行）は、GitHub の `workflow_dispatch` から回せる。**
+Mac の前に座らずに `kb_upload.py` / `run_tests.py` を実行し、結果を PR として受け取れる。
+
+### どの操作がどこで回せるか（§1-1 の再掲）
+
+| ラベル | 実行場所 | 回せる操作 |
+|---|---|---|
+| `run:cloud` | クラウド（Claude Code on the web） | 設計・実装・レビュー・デモ・文書。ネットワークを使わない検証すべて |
+| `run:runner` | GitHub ホストランナー（`workflow_dispatch` → `dify-ops.yml`） | O5 KB 投入（`kb_upload.py`）・O6 テスト実行（`run_tests.py`）。Environment `dify-cloud-master` の承認が要る |
+| `run:mac` | PM の Mac（ブラウザのログイン済みセッションが要る） | O1〜O4・O7・O8・O10（DSL の投入・上書き・公開・KB 紐づけ・API キー発行・DSL エクスポート・モデル設定の確認） |
+
+**`run:*` は Issue・PR に必ず 1 つ付ける。** 判定基準は `docs/handoff/2026-09-08-execution-split-and-runner.md` §1-1 の操作表（O1〜O10）。
+
+### 実行のしかた（PM）
+
+1. GitHub の Actions タブ → `dify-ops` ワークフロー → **Run workflow**
+2. 入力
+   - `op`：`kb_upload`（KB 投入のみ）／`run_tests`（テスト実行のみ）／`both`（両方）
+   - `codes`：管理番号を空白区切り（例 `KN-01 DC-01`）。`^[A-Z]{2}-[0-9]{2}( [A-Z]{2}-[0-9]{2})*$` に一致しない値は検証ステップで即失敗する
+   - `env`：`cloud-master`（当面これだけ）
+3. Environment `dify-cloud-master` に **required reviewers** が設定されていれば、ここでジョブが一時停止し、承認待ちになる。**PM が承認するまでキーには一切触れない**
+4. 承認後、ジョブが `kb_upload.py` / `run_tests.py` を実行する。結果は
+   - Job Summary（合否の要約。値は出さない）
+   - `dify/results/<env>/<番号>-<YYYYMMDD-HHMM>.md`（テスト実行時のみ生成）を **`bot/dify-ops-<run_id>` ブランチに push → 自動で PR 作成**
+5. **PR のマージは人が行う**（`main` への直 push はしない。CLAUDE.md §5）。中身を読んでから squash マージする
+
+### 変更パスガード（load-bearing）
+
+push の直前に、ステージされたファイルがすべて次のどちらかに一致するかを機械で検査する。1 つでも外れたら **push せずにジョブを失敗させる**。
+
+```
+^dify/results/[^/]+/[^/]+\.md$
+^dify/state/[^/]+\.yml$
+```
+
+`dify/state/` は W2 で導入予定（いまは生成されない）。**実機側の自動 PR が `docs/service-map.md`・`mock/**`・`dify/apps/**` などを書き換えて紛れ込ませることを構造的に防ぐ**（#121 の「生成物の二重生成」対策）。
+
+### 秘密の扱い
+
+- キーは **Environment secret `dify-cloud-master`**（`DIFY_DATASET_KEY`・`DIFY_APP_KEY_<番号>` 12 本）に置く。**PM が GitHub の UI で登録する**（このワークフローはキーの値に一切触れない）
+- ワークフローはキーの**値**をログに出さない（`set -x` 不使用、`env` / `printenv` 不使用）。「設定されているか」だけを確認する
+- `run_tests.py` のエラー出力にはキーは含まれない（API のエラー本文だけ。実装を確認済み）
+- 失敗しても Dify 側に副作用は無い（`kb_upload.py` は冪等・同名文書スキップ、`run_tests.py` は読み取りのみ）
+
+### 実機の到達性（A1）はまだ確認していない
+
+設計書の A1（`run_tests.py --env cloud-master KN-01` を実際に 1 本流し、Cloudflare 1010 も 401 も出ないことを確認する）は、
+**Environment secret の登録が PM の作業待ちのため、この PR の時点では未実施**。ワークフローは作成済みだが、
+**PM が secret と Environment の承認者を設定したあとに、初回実行として A1 を行う**。到達できなければ DI として起票する。
+
+### ラベル規約（3 分類）
+
+Issue・PR には次の 3 分類のいずれか **1 つだけ**を `run:*` ラベルとして付ける（判定は §1-1 の操作表）。
+
+| ラベル | 意味 |
+|---|---|
+| `run:cloud` | クラウドだけで完結する（O1〜O10 をどれも含まない） |
+| `run:runner` | (b)(c) だけが要る（O5・O6）。ホストランナーで回せる |
+| `run:mac` | (a) ブラウザのログイン済みセッションが要る（O1〜O4・O7・O8・O10 のいずれか） |
+
+**`run:mac` の Issue は必ず「Mac が要る操作」を本文に O1〜O10 の番号で列挙する。** 列挙できないなら `run:mac` ではない。
+2 つ付くのは Issue を分割する合図。
+
+### PM が GitHub の UI で設定すること（ワークフローでは設定できない）
+
+- Settings → Environments → `dify-cloud-master` を作成 → **Required reviewers** に PM を追加 → **Deployment branches** を `main` のみに制限
+- Settings → Environments → `dify-cloud-master` → Secrets に `DIFY_DATASET_KEY`・`DIFY_APP_KEY_<番号>`（12 本）を登録
+- 任意：Settings → Environments → `dify-cloud-master` → Variables に `DIFY_BASE_URL`（秘密ではない。既定 `https://api.dify.ai/v1`）
+- Settings → Actions → General → Fork pull request workflows from outside collaborators → **Require approval for all outside collaborators**
+- ラベル `run:cloud` / `run:runner` / `run:mac` を Issues → Labels で作成（無くてもワークフローは動くが、PR への自動付与ができない）
+

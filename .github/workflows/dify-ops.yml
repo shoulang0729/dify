@@ -1,0 +1,277 @@
+name: dify-ops
+
+# W1（#121）：KB 投入（kb_upload.py）とテスト実行（run_tests.py）を GitHub ホストランナーで回す。
+# 設計書: docs/handoff/2026-09-08-execution-split-and-runner.md（W1 の節・§9 セルフホストランナーの安全性）
+#
+# 重要：トリガは workflow_dispatch だけ。pull_request 系・push 系は絶対に付けない
+# （fork PR や push から secrets を含むこのワークフローが起動しないようにするため）。
+on:
+  workflow_dispatch:
+    inputs:
+      op:
+        description: "実行する操作"
+        required: true
+        type: choice
+        options:
+          - kb_upload
+          - run_tests
+          - both
+        default: run_tests
+      codes:
+        description: "対象の管理番号（空白区切り、例: KN-01 DC-01）"
+        required: true
+        type: string
+      env:
+        description: "投入・接続先の環境（当面 cloud-master のみ）"
+        required: true
+        type: choice
+        options:
+          - cloud-master
+        default: cloud-master
+
+# 既定は read only。書き込みが要るジョブだけ job 単位で上げる（CLAUDE.md 準拠：permissions は最小）。
+permissions:
+  contents: read
+
+jobs:
+  ops:
+    runs-on: ubuntu-latest
+    # Environment `dify-cloud-master` に required reviewers（PM）を付けるのは GitHub UI 側の設定。
+    # ワークフローはこの environment を宣言するだけで、承認が済むまでここで止まる。
+    environment: dify-cloud-master
+    permissions:
+      contents: write        # 結果ブランチの push
+      pull-requests: write   # 結果 PR の作成
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Python dependencies
+        run: pip install pyyaml
+
+      # 入力は env: 経由でのみ参照する（${{ inputs.* }} を run: の本文に直接書かない）。
+      # これにより workflow_dispatch の入力文字列がそのまま shell スクリプトとして
+      # 解釈されることを防ぐ（コマンドインジェクション対策）。choice 型でも API 経由の
+      # 呼び出しでは任意文字列が来うるため、ここで正規表現により再検証する。
+      - name: Validate inputs
+        env:
+          OP: ${{ inputs.op }}
+          CODES: ${{ inputs.codes }}
+          ENV_NAME: ${{ inputs.env }}
+        run: |
+          set -euo pipefail
+          case "$OP" in
+            kb_upload|run_tests|both) ;;
+            *) echo "::error::op の値が不正です: $OP"; exit 1 ;;
+          esac
+          if ! [[ "$CODES" =~ ^[A-Z]{2}-[0-9]{2}(\ [A-Z]{2}-[0-9]{2})*$ ]]; then
+            echo "::error::codes の形式が不正です（例: KN-01 DC-01）: $CODES"
+            exit 1
+          fi
+          case "$ENV_NAME" in
+            cloud-master) ;;
+            *) echo "::error::env の値が不正です: $ENV_NAME"; exit 1 ;;
+          esac
+          echo "検証 OK: op=$OP codes=$CODES env=$ENV_NAME"
+
+      # キーの値は一切出力しない。「設定されているか」だけを確認する。
+      # set -x は使わない。env / printenv は使わない。
+      - name: Check secrets presence (values are never printed)
+        env:
+          DIFY_DATASET_KEY: ${{ secrets.DIFY_DATASET_KEY }}
+          CODES: ${{ inputs.codes }}
+        run: |
+          set -euo pipefail
+          [ -n "${DIFY_DATASET_KEY:-}" ] && echo "DIFY_DATASET_KEY: set" || echo "DIFY_DATASET_KEY: unset（kb_upload で必要）"
+          for code in $CODES; do
+            var="DIFY_APP_KEY_${code//-/}"
+            if [ -n "${!var:-}" ]; then
+              echo "$var: set"
+            else
+              echo "$var: unset（run_tests で $code を使う場合は必要）"
+            fi
+          done
+        # per-code の app key は次のステップで env: に列挙して渡す（GitHub Actions は
+        # secrets.<name> を実行時に動的合成できないため、使いうるものを列挙する）
+
+      - name: Run kb_upload.py / run_tests.py
+        id: run
+        env:
+          OP: ${{ inputs.op }}
+          CODES: ${{ inputs.codes }}
+          ENV_NAME: ${{ inputs.env }}
+          DIFY_DATASET_KEY: ${{ secrets.DIFY_DATASET_KEY }}
+          DIFY_BASE_URL: ${{ vars.DIFY_BASE_URL }}
+          # 12 本の Service API キー（dify/apps/*.yml の管理番号ぶん）。無いものは空文字のまま
+          # スクリプト側が「未設定」として扱う（値は出力しない）。新しいアプリを足したら
+          # この一覧にも 1 行足す（dify/DEPLOY.md §7 に運用メモあり）。
+          DIFY_APP_KEY_DC01: ${{ secrets.DIFY_APP_KEY_DC01 }}
+          DIFY_APP_KEY_DC02: ${{ secrets.DIFY_APP_KEY_DC02 }}
+          DIFY_APP_KEY_DC04: ${{ secrets.DIFY_APP_KEY_DC04 }}
+          DIFY_APP_KEY_GN01: ${{ secrets.DIFY_APP_KEY_GN01 }}
+          DIFY_APP_KEY_GN02: ${{ secrets.DIFY_APP_KEY_GN02 }}
+          DIFY_APP_KEY_GN05: ${{ secrets.DIFY_APP_KEY_GN05 }}
+          DIFY_APP_KEY_KN01: ${{ secrets.DIFY_APP_KEY_KN01 }}
+          DIFY_APP_KEY_KN02: ${{ secrets.DIFY_APP_KEY_KN02 }}
+          DIFY_APP_KEY_KN03: ${{ secrets.DIFY_APP_KEY_KN03 }}
+          DIFY_APP_KEY_LG01: ${{ secrets.DIFY_APP_KEY_LG01 }}
+          DIFY_APP_KEY_LG04: ${{ secrets.DIFY_APP_KEY_LG04 }}
+          DIFY_APP_KEY_NM03: ${{ secrets.DIFY_APP_KEY_NM03 }}
+        run: |
+          set -euo pipefail
+          overall_rc=0
+
+          {
+            echo "## dify-ops 実行結果"
+            echo
+            echo "- 操作: \`$OP\`"
+            echo "- 対象: \`$CODES\`"
+            echo "- 環境: \`$ENV_NAME\`"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          run_kb() {
+            for code in $CODES; do
+              if [ ! -d "dify/kb/$code" ]; then
+                echo "- KB \`$code\`: スキップ（dify/kb/$code が無い）" >> "$GITHUB_STEP_SUMMARY"
+                continue
+              fi
+              echo "== kb_upload.py $code =="
+              if python3 scripts/dify/kb_upload.py --env "$ENV_NAME" "$code"; then
+                echo "- KB \`$code\`: OK" >> "$GITHUB_STEP_SUMMARY"
+              else
+                rc=$?
+                echo "- KB \`$code\`: 失敗（exit $rc）" >> "$GITHUB_STEP_SUMMARY"
+                overall_rc=1
+              fi
+            done
+          }
+
+          run_tests_op() {
+            echo "== run_tests.py $CODES =="
+            if python3 scripts/dify/run_tests.py --env "$ENV_NAME" $CODES; then
+              echo "- run_tests: 全件合格" >> "$GITHUB_STEP_SUMMARY"
+            else
+              rc=$?
+              if [ "$rc" -eq 2 ]; then
+                echo "- run_tests: 設定不備（exit 2。API キー未設定などを確認）" >> "$GITHUB_STEP_SUMMARY"
+              else
+                echo "- run_tests: 不合格あり（exit $rc）" >> "$GITHUB_STEP_SUMMARY"
+              fi
+              overall_rc=1
+            fi
+          }
+
+          case "$OP" in
+            kb_upload) run_kb ;;
+            run_tests) run_tests_op ;;
+            both) run_kb; run_tests_op ;;
+          esac
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "OVERALL_RC=$overall_rc" >> "$GITHUB_ENV"
+          # このステップ自体は失敗させない。結果の合否はサマリと生成される
+          # dify/results/**/*.md（PR の diff）で判断する（設計書 §4-3）。
+          exit 0
+
+      # push の直前に、ステージ済みファイルがすべて許容パターンに一致するかを確認する。
+      # 1 つでも外れたら push せずに失敗させる（#121「生成物の二重生成」対策。load-bearing）。
+      - name: Stage results and guard changed paths
+        run: |
+          set -euo pipefail
+          # 生成物の置き場だけを対象にステージする（dify/state/ は W2 で導入予定。
+          # いま生成されなくてもガードのパターンには含めておく）。
+          git add -A -- dify/results/ dify/state/ 2>/dev/null || true
+
+          changed="$(git diff --cached --name-only)"
+          if [ -z "$changed" ]; then
+            echo "変更なし。push しません。" >> "$GITHUB_STEP_SUMMARY"
+            echo "HAS_CHANGES=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          echo "$changed" > /tmp/dify-ops-changed.txt
+
+          bad=0
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            if ! [[ "$f" =~ ^dify/results/[^/]+/[^/]+\.md$ ]] && ! [[ "$f" =~ ^dify/state/[^/]+\.yml$ ]]; then
+              echo "::error::変更パスガード違反（許容パターン外）: $f"
+              bad=1
+            fi
+          done < /tmp/dify-ops-changed.txt
+
+          if [ "$bad" -eq 1 ]; then
+            {
+              echo ""
+              echo "**変更パスガードに違反したため push していません。** dify/results/<env>/*.md・dify/state/<env>.yml 以外が生成されています。"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "HAS_CHANGES=true" >> "$GITHUB_ENV"
+          echo "変更パスガード: OK（$(echo "$changed" | wc -l) 件）" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit, push, and open PR
+        if: env.HAS_CHANGES == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OP: ${{ inputs.op }}
+          CODES: ${{ inputs.codes }}
+          ENV_NAME: ${{ inputs.env }}
+          BRANCH: bot/dify-ops-${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          git config user.name "dify-ops-bot"
+          git config user.email "dify-ops-bot@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git commit \
+            -m "dify-ops(${ENV_NAME}): ${OP} ${CODES}" \
+            -m "Run: ${RUN_URL}" \
+            -m "Co-Authored-By: dify-ops-bot <dify-ops-bot@users.noreply.github.com>"
+          git push -u origin "$BRANCH"
+
+          {
+            echo "## dify-ops 自動実行結果"
+            echo
+            echo "- 操作: \`${OP}\`"
+            echo "- 対象: \`${CODES}\`"
+            echo "- 環境: \`${ENV_NAME}\`"
+            echo "- 実行ログ: ${RUN_URL}"
+            echo
+            echo "GitHub ホストランナー（\`workflow_dispatch\` → \`dify-ops.yml\`）による自動実行です。"
+            echo "**このワークフローは main への直 push を行いません。マージは人が内容を読んでから行ってください**（CLAUDE.md §5）。"
+            echo
+            echo "### 変更ファイル"
+            echo
+            echo '```'
+            cat /tmp/dify-ops-changed.txt
+            echo '```'
+            echo
+            echo "詳しい合否は上の実行ログの Job Summary、または本 PR の diff（\`dify/results/**\`）を参照。"
+          } > /tmp/dify-ops-pr-body.md
+
+          gh pr create \
+            --title "dify-ops(${ENV_NAME}): ${OP} ${CODES}" \
+            --body-file /tmp/dify-ops-pr-body.md \
+            --base main \
+            --head "$BRANCH"
+          # run:runner ラベルが登録済みなら付ける（無ければスキップ。W1 では必須にしない）
+          gh pr edit "$BRANCH" --add-label run:runner 2>/dev/null || true
+
+      - name: Fail the job if any operation failed
+        if: always()
+        run: |
+          set -euo pipefail
+          rc="${OVERALL_RC:-0}"
+          if [ "$rc" != "0" ]; then
+            echo "::error::kb_upload / run_tests のいずれかが失敗しました（詳細は Job Summary と PR の結果ファイルを参照）。"
+            exit 1
+          fi
