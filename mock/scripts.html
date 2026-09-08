@@ -1,535 +1,77 @@
 <!DOCTYPE html>
-<html lang="ja" data-theme="light" data-lang="ja">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>台本レビュー ／ 脚本审阅 — AIエージェントカタログ</title>
-<link rel="stylesheet" href="css/tokens.css">
-<link rel="stylesheet" href="css/components.css">
+<title>移転しました ／ 已迁移 ／ This page has moved</title>
+<!--
+  このリポジトリ（A / shoulang0729/dify）はアーカイブです。
+  デモと開発は会社アカウントのリポジトリ（B）へ移転しました。
+
+  移行先 URL の定義はこの 1 行（<meta http-equiv="refresh"> の content 属性）だけです。
+  変更するときはこの行の "url=" の後ろだけ書き換えてください。
+  <link rel="canonical">・本文中のリンク・JS によるリダイレクトは、すべてこの meta タグから
+  実行時に読み取って組み立てます（tools/verify.mjs のアーカイブ検査もこの行を見ています）。
+-->
+<meta http-equiv="refresh" content="0; url=https://toshioiinuma-ntt.github.io/ndit.dify/scripts.html">
 <style>
-  /* mock/scripts.html 専用スタイル。色はすべて var(--…) のみ。
-     tokens.css は変更しない。components.css の既存クラスも変更しない（新規クラスのみ追加）。
-     Issue #120。設計は architect ではなく implementer 判断（S 相当の表示専用ページ）。 */
-
-  /* components.css は 1 画面アプリ（.app が 100vh・overflow:hidden）を前提にしているため、
-     このページ（縦に長い一覧＋印刷対応）ではページ全体をスクロールできるように上書きする。
-     components.css 自体は編集しない（後勝ちの別ルールで上書き）。 */
-  html, body { height: auto; overflow: visible; }
-  body { overflow: visible; }
-
-  /* ---- ヘッダー（.hdr は components.css を再利用） ---- */
-  .hdr .t1 { flex-shrink: 1; }
-  .hdr .right .backlink { font-size: 12.5px; white-space: nowrap; }
-
-  /* ---- 絞り込みバー ---- */
-  .sc-controls {
-    display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; row-gap: var(--space-2);
-    padding: var(--space-3) var(--space-6);
-    background: var(--surface-sunken); border-bottom: 1px solid var(--border-subtle);
-    position: sticky; top: 0; z-index: 5;
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Noto Sans SC", sans-serif;
+    background: #f5f6f8; color: #1a1f2b;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
   }
-  .sc-controls .seglabel { font-size: var(--text-overline); color: var(--text-secondary); }
-  .sc-controls .sc-count { margin-left: auto; font-size: 12.5px; color: var(--text-secondary); }
-
-  /* ---- 目次 ---- */
-  .sc-toc {
-    padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);
-    background: var(--surface-card);
+  main {
+    max-width: 640px; width: 100%;
+    background: #ffffff; border: 1px solid #dde1e8; border-radius: 8px;
+    padding: 32px 36px; line-height: 1.7;
   }
-  .sc-toc h2 {
-    margin: 0 0 var(--space-3); font-size: var(--text-body); font-weight: var(--weight-bold);
-    color: var(--text-heading);
-  }
-  .sc-toc-group { margin-bottom: var(--space-4); }
-  .sc-toc-group:last-child { margin-bottom: 0; }
-  .sc-toc-ind {
-    font-size: var(--text-overline); letter-spacing: 0.08em; font-weight: var(--weight-bold);
-    color: var(--action-primary); margin-bottom: 6px;
-  }
-  .sc-toc-list {
-    margin: 0; padding: 0; list-style: none;
-    display: flex; flex-wrap: wrap; gap: 6px;
-  }
-  .sc-toc-list a {
-    display: inline-flex; align-items: center; gap: 6px; font-size: 12px;
-    padding: 4px 9px; border: 1px solid var(--border-card); border-radius: var(--radius-pill);
-    color: var(--text-body); text-decoration: none; background: var(--surface-canvas);
-    transition: border-color var(--duration-fast) var(--ease-standard);
-  }
-  .sc-toc-list a:hover { border-color: var(--action-primary); color: var(--text-link); }
-  .sc-toc-list a .code { color: var(--text-muted); }
-  .sc-toc-list a.is-noscript { opacity: 0.6; }
-
-  /* ---- 本体 ---- */
-  .sc-main { padding: var(--space-6) var(--space-6) var(--space-12); max-width: 1040px; margin: 0 auto; }
-  .sc-industry { margin-bottom: var(--space-10); }
-  .sc-industry-h {
-    display: flex; align-items: baseline; gap: var(--space-3);
-    font-size: var(--text-h2); font-weight: var(--weight-bold); color: var(--text-heading);
-    margin: 0 0 var(--space-2); padding-bottom: var(--space-2);
-    border-bottom: var(--border-accent) solid var(--action-primary);
-  }
-  .sc-industry-h .sc-industry-desc { font-size: 12.5px; font-weight: var(--weight-regular); color: var(--text-secondary); }
-  .sc-cat { margin: var(--space-6) 0; }
-  .sc-cat-h {
-    display: flex; align-items: center; gap: var(--space-2);
-    font-size: var(--text-body); font-weight: var(--weight-bold); color: var(--cat-accent);
-    margin: 0 0 var(--space-3);
-  }
-  .sc-cat-h .ic { color: var(--cat-accent); }
-  .sc-cat-h .sc-cat-count { font-size: 11.5px; font-weight: var(--weight-regular); color: var(--text-muted); }
-
-  .sc-svc {
-    background: var(--surface-card); border: 1px solid var(--border-card);
-    border-bottom: var(--border-accent) solid var(--cat-accent);
-    padding: var(--space-5) var(--space-6); margin-bottom: var(--space-4);
-    scroll-margin-top: 128px;
-  }
-  .sc-svc.is-hidden { display: none; }
-  .sc-svc-head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-2); }
-  .sc-svc-name { margin: 0; font-size: 17px; font-weight: var(--weight-bold); color: var(--text-heading); }
-  .sc-svc-meta { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-4); }
-  .sc-noscript {
-    font-size: 13px; color: var(--text-muted); border: 1px dashed var(--border-default);
-    padding: var(--space-3) var(--space-4); background: var(--surface-sunken); margin: 0;
-  }
-
-  .sc-block-label {
-    font-size: var(--text-overline); letter-spacing: 0.06em; font-weight: var(--weight-bold);
-    color: var(--text-heading); margin: var(--space-4) 0 var(--space-2);
-  }
-  .sc-block-label:first-of-type { margin-top: 0; }
-
-  .sc-turns { display: flex; flex-direction: column; gap: var(--space-4); }
-  .sc-turn { border-top: 1px solid var(--border-subtle); padding-top: var(--space-3); }
-  .sc-turn:first-child { border-top: none; padding-top: 0; }
-  .sc-turn-num {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 20px; height: 20px; border-radius: 50%; background: var(--surface-sunken);
-    color: var(--text-secondary); font-size: 11px; font-weight: var(--weight-bold); margin-bottom: 6px;
-  }
-  .sc-turn-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
-  .sc-turn-col { min-width: 0; }
-  .sc-lang-chip {
-    display: inline-flex; font-family: var(--font-mono); font-size: 10.5px; font-weight: var(--weight-bold);
-    letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px;
-  }
-  .sc-turn-col .msg-row { margin-bottom: 8px; }
-  .sc-turn-col .bubble { max-width: 100%; font-size: 13px; }
-
-  .sc-io { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-top: var(--space-4); }
-  .sc-io-col .panel { margin-bottom: var(--space-3); }
-  .sc-io-col .panel:last-child { margin-bottom: 0; }
-
-  @media (max-width: 700px) {
-    .sc-turn-cols, .sc-io { grid-template-columns: 1fr; }
-  }
-  @media (max-width: 480px) {
-    .sc-controls { padding: var(--space-2) var(--space-4); }
-    .sc-toc, .sc-main { padding-left: var(--space-4); padding-right: var(--space-4); }
-    .sc-svc { padding: var(--space-4); }
-  }
-
-  @media print {
-    .hdr, .sc-controls, .sc-toc { display: none; }
-    .sc-svc.is-hidden { display: block; }
-    .sc-svc { break-inside: avoid; border-color: #0000; }
-    .sc-turn { break-inside: avoid; }
-    .sc-turn-cols, .sc-io { grid-template-columns: 1fr 1fr; }
-  }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  p { margin: 0 0 14px; font-size: 14px; }
+  .lang-block { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px dashed #dde1e8; }
+  .lang-block:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  a.dest { display: inline-block; word-break: break-all; font-weight: bold; }
+  .note { font-size: 12px; color: #6b7280; margin-top: 18px; }
 </style>
 </head>
 <body>
-
-<header class="hdr">
-  <div class="brand">
-    <span class="brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 3.5H7.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8.5z"/><path d="M13.5 3.5v5h5"/><path d="M9 13h6"/><path d="M9 16.5h4"/></svg>
-    </span>
-    <span class="wordmark" id="sc-title">台本レビュー</span>
+<main>
+  <div class="lang-block">
+    <h1>台本レビューページは移転しました</h1>
+    <p>このリポジトリ（A）はアーカイブになりました。デモと開発は会社アカウントのリポジトリ（B）へ移転しています。数秒で自動的に新しい台本レビューページへ移動します。自動で移動しない場合は、下のリンクをクリックしてください。</p>
   </div>
-  <div class="vline"></div>
-  <div class="t1" id="sc-sub">全サービスの台本を 1 か所で確認する</div>
-  <div class="right">
-    <div class="ctrl">
-      <select class="lang-select" id="lang-select" aria-label="Language">
-        <option value="ja">日本語</option>
-        <option value="zh">中文</option>
-      </select>
-      <button class="theme-btn" id="theme-btn" aria-label="Theme"></button>
-    </div>
-    <a class="backlink" href="index.html"><span class="arrow" style="transform:rotate(45deg)"></span><span id="sc-link-guide">ガイドへ</span></a>
-    <a class="backlink" href="catalog.html"><span id="sc-link-catalog">カタログへ</span><span class="arrow" style="transform:rotate(225deg)"></span></a>
+  <div class="lang-block">
+    <h1>脚本审阅页面已迁移</h1>
+    <p>本仓库（A）已归档。演示与后续开发已迁移至公司账号下的仓库（B）。页面将在数秒内自动跳转到新的脚本审阅页面。如未自动跳转，请点击下方链接。</p>
   </div>
-</header>
-
-<div class="sc-controls" role="group" aria-label="絞り込み">
-  <span class="seglabel" id="sc-f-ind-label">業種:</span>
-  <div class="seg" id="sc-ind-filter"></div>
-  <span class="seglabel" id="sc-f-cat-label">分類:</span>
-  <select class="lang-select" id="sc-cat-filter"></select>
-  <span class="sc-count" id="sc-count"></span>
-</div>
-
-<nav class="sc-toc" id="sc-toc" aria-label="目次"></nav>
-
-<main class="sc-main" id="sc-main"></main>
-
-<!-- データ層（catalog.html と同じ順序・同じファイル。複製しない） -->
-<script src="js/data/ui.js"></script>
-<script src="js/data/catalog.js"></script>
-<script src="js/data/home.js"></script>
-<script src="js/data/style.js"></script>
-<script src="js/data/scenarios/mfg/kn.js"></script>
-<script src="js/data/scenarios/mfg/qa.js"></script>
-<script src="js/data/scenarios/mfg/dc.js"></script>
-<script src="js/data/scenarios/mfg/lg.js"></script>
-<script src="js/data/scenarios/mfg/nm.js"></script>
-<script src="js/data/scenarios/mfg/en.js"></script>
-<script src="js/data/scenarios/mfg/gn.js"></script>
-<script src="js/data/scenarios/mfg/pt.js"></script>
-<script src="js/data/scenarios/fin/kn.js"></script>
-<script src="js/data/scenarios/fin/rs.js"></script>
-<script src="js/data/scenarios/fin/cv.js"></script>
-<script src="js/data/scenarios/fin/fa.js"></script>
-<script src="js/data/scenarios/fin/dc.js"></script>
-<script src="js/data/scenarios/fin/gn.js"></script>
-<script src="js/data/scenarios/fin/po.js"></script>
-<script src="js/data/scenarios/fin/eg.js"></script>
-
-<!-- 表示専用スクリプト。js/data/** は読むだけで一切変更しない。app.js/render.js/events.js は読み込まない
-     （このページは state / data-act の共通レイヤーに参加しない、独立した閲覧用ページ）。 -->
+  <div class="lang-block">
+    <h1>The script review page has moved</h1>
+    <p>This repository (A) is now archived. The demo and ongoing development have moved to the company account repository (B). You will be redirected to the new script review page automatically in a moment. If not, please click the link below.</p>
+  </div>
+  <p><a class="dest" id="dest-link" href="#">https://toshioiinuma-ntt.github.io/ndit.dify/scripts.html</a></p>
+  <p class="note">shoulang0729/dify (A) → toshioiinuma-ntt/ndit.dify (B)</p>
+</main>
 <script>
-'use strict';
 (function () {
-  // ---- 言語 / テーマの初期値（mock.lang / mock.theme を共有。キーは変更しない） ----
-  var scLang = 'ja';
-  var scTheme = 'light';
-  try {
-    var storedLang = localStorage.getItem('mock.lang');
-    if (storedLang === 'zh') scLang = 'zh'; // en の場合も含め既定は ja（index.html と同じ挙動）
-    var storedTheme = localStorage.getItem('mock.theme');
-    if (storedTheme === 'dark') scTheme = 'dark';
-  } catch (e) { /* localStorage 不可でも既定値で動作 */ }
+  var meta = document.querySelector('meta[http-equiv="refresh" i]');
+  var content = meta ? meta.getAttribute('content') || '' : '';
+  var m = content.match(/url=(.+)$/i);
+  var dest = m ? m[1].trim() : '';
+  if (!dest) return;
 
-  var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
-  var L = function (obj) { return (obj && (obj[scLang] != null ? obj[scLang] : obj.ja)) || ''; };
-  var pad2 = function (n) { return String(n).padStart(2, '0'); };
-  var svcCode = function (id) {
-    var m = /^([a-z]+)(\d+)$/.exec(id);
-    return m ? (m[1].toUpperCase() + '-' + pad2(m[2])) : String(id).toUpperCase();
-  };
-  var statusClass = function (st) { return st === 1 ? 'live' : st === 2 ? 'trial' : 'concept'; };
+  // <link rel="canonical"> は meta タグの値から実行時に組み立てる（値の定義を 2 か所に持たない）
+  var canonical = document.createElement('link');
+  canonical.setAttribute('rel', 'canonical');
+  canonical.setAttribute('href', dest);
+  document.head.appendChild(canonical);
 
-  // このページだけの表示文言（レビュー用の見出し類。ja/zh のみ＝index.html と同じ流儀。英語なし）
-  var ST = {
-    title:      { ja: '台本レビュー', zh: '脚本审阅' },
-    sub:        { ja: '全サービスの台本を 1 か所で確認する', zh: '在一处查看全部服务的脚本' },
-    guide:      { ja: 'ガイドへ', zh: '返回指南' },
-    catalog:    { ja: 'カタログへ', zh: '前往目录' },
-    indLabel:   { ja: '業種:', zh: '行业:' },
-    catLabel:   { ja: '分類:', zh: '分类:' },
-    indAll:     { ja: 'すべて', zh: '全部' },
-    catAll:     { ja: 'すべての分類', zh: '所有分类' },
-    toc:        { ja: '目次（管理番号 → クリックで開く）', zh: '目录（管理编号 → 点击跳转）' },
-    countFmt:   { ja: '{n} 件中 {v} 件を表示（台本あり {s} ・台本なし {ns}）',
-                  zh: '共 {n} 项，显示 {v} 项（有脚本 {s} ・无脚本 {ns}）' },
-    screenType: { ja: '画面タイプ', zh: '界面类型' },
-    persona:    { ja: '担当者', zh: '使用者' },
-    native:     { ja: '母語', zh: '母语' },
-    nativeJa:   { ja: '日本語', zh: '日语' },
-    nativeZh:   { ja: '中国語', zh: '中文' },
-    steps:      { ja: '利用の流れ', zh: '使用流程' },
-    conv:       { ja: '会話（台本）', zh: '对话（脚本）' },
-    input:      { ja: '入力', zh: '输入' },
-    result:     { ja: '結果', zh: '结果' },
-    noScript:   { ja: '台本なし（デモは汎用チャット応答にフォールバックします）', zh: '暂无脚本（演示将回退为通用聊天应答）' },
-    before:     { ja: '旧', zh: '旧版' },
-    after:      { ja: '新', zh: '新版' },
-    status1:    { ja: '提供中', zh: '已上线' },
-    status2:    { ja: '試行版', zh: '试用版' },
-    status3:    { ja: '構想', zh: '构想' }
-  };
-  var t = function (key) { return L(ST[key]); };
-  var statusText = function (st) { return st === 1 ? t('status1') : st === 2 ? t('status2') : t('status3'); };
+  var a = document.getElementById('dest-link');
+  if (a) { a.setAttribute('href', dest); a.textContent = dest; }
 
-  var industryLabel = function (indId) {
-    var ind = INDUSTRIES.filter(function (i) { return i.id === indId; })[0];
-    return ind ? L(ind.name) : indId;
-  };
-
-  // ---- アンカー id（共有サービスは業種で区別。単独サービスは管理番号そのまま＝#KN-01 で開ける） ----
-  function anchorId(svc, indId) {
-    var code = svcCode(svc.id);
-    return svc.industries.length > 1 ? (code + '-' + indId) : code;
-  }
-
-  function resultHTML(r) {
-    var head = '<div class="kv"><div class="k">' + esc(r.title) + '</div></div>';
-    if (r.columns) {
-      return head + '<table class="tbl"><thead><tr>' +
-        r.columns.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') +
-        '</tr></thead><tbody>' +
-        r.rows.map(function (row) { return '<tr>' + row.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') +
-        '</tbody></table>';
-    }
-    return head + r.items.map(function (it) {
-      return '<div class="kv"><div class="k">' + esc(it.k) + '</div><div class="v">' + esc(it.v) + '</div></div>';
-    }).join('');
-  }
-
-  function inputHTML(scn, lang) {
-    var inp = scn.input[lang];
-    if (scn.template === 'upload') {
-      return inp.files.map(function (f) { return '<span class="file">📄 ' + esc(f) + '</span>'; }).join(' ');
-    }
-    if (scn.template === 'form') {
-      return inp.fields.map(function (f) {
-        return '<div class="field"><label>' + esc(f.label) + '</label><div class="val">' + esc(f.value) + '</div></div>';
-      }).join('');
-    }
-    if (scn.template === 'diff') {
-      return '<div class="diff-in"><span class="file">📄 ' + esc(ST.before[lang]) + '：' + esc(inp.left) +
-        '</span><span>⇄</span><span class="file">📄 ' + esc(ST.after[lang]) + '：' + esc(inp.right) + '</span></div>';
-    }
-    if (scn.template === 'lookup') {
-      return '<div class="field"><div class="val">🔍 ' + esc(inp.query) + '</div></div>';
-    }
-    return '';
-  }
-
-  function ioHTML(scn) {
-    if (!scn.input || !scn.result) return '';
-    var cols = ['ja', 'zh'].map(function (lang) {
-      return '<div class="sc-io-col" data-lang="' + lang + '">' +
-        '<div class="sc-lang-chip">' + lang.toUpperCase() + '</div>' +
-        '<div class="panel"><div class="panel-h">' + esc(ST.input[lang]) + '</div>' + inputHTML(scn, lang) + '</div>' +
-        '<div class="panel result"><div class="panel-h">' + esc(ST.result[lang]) + '</div>' + resultHTML(scn.result[lang]) + '</div>' +
-        '</div>';
-    }).join('');
-    return '<div class="sc-block-label">' + esc(t('input')) + ' / ' + esc(t('result')) + '</div><div class="sc-io">' + cols + '</div>';
-  }
-
-  function turnsHTML(scn) {
-    var ja = scn.script.ja, zh = scn.script.zh;
-    var rows = ja.map(function (turnJa, i) {
-      var turnZh = zh[i];
-      var col = function (lang, turn) {
-        return '<div class="sc-turn-col" data-lang="' + lang + '">' +
-          '<div class="sc-lang-chip">' + lang.toUpperCase() + '</div>' +
-          '<div class="msg-row user"><div class="bubble">' + esc(turn.q) + '</div></div>' +
-          '<div class="msg-row"><div class="bubble">' + esc(turn.a) + '</div></div>' +
-          '</div>';
-      };
-      return '<div class="sc-turn"><div class="sc-turn-num">' + (i + 1) + '</div>' +
-        '<div class="sc-turn-cols">' + col('ja', turnJa) + col('zh', turnZh) + '</div></div>';
-    }).join('');
-    return '<div class="sc-block-label">' + esc(t('conv')) + '</div><div class="sc-turns">' + rows + '</div>';
-  }
-
-  function svcHTML(svc, indId) {
-    var id = anchorId(svc, indId);
-    var scn = (SCENARIOS[indId] || {})[svc.id];
-    var head = '<div class="sc-svc-head">' +
-      '<span class="code">' + esc(svcCode(svc.id)) + '</span>' +
-      '<span class="badge ' + statusClass(svc.st) + '">' + esc(statusText(svc.st)) + '</span>' +
-      (svc.industries.length > 1 ? '<span class="tag">' + esc(industryLabel(indId)) + '</span>' : '') +
-      '<h3 class="sc-svc-name">' + esc(L(svc.name)) + '</h3>' +
-      '</div>';
-    if (!scn) {
-      return '<article class="sc-svc" id="' + id + '" data-industry="' + indId + '" data-cat="' + svc.cat + '" data-noscript="1">' +
-        head + '<p class="sc-noscript">' + esc(t('noScript')) + '</p></article>';
-    }
-    var meta = '<div class="sc-svc-meta"><span class="tpl-badge" title="' + esc(t('screenType')) + '">' +
-      esc(L(TEMPLATES[scn.template].name)) + '</span></div>';
-    var persona = '<div class="sc-block-label">' + esc(t('persona')) + '</div>' +
-      '<div class="persona"><div class="avatar">' + esc(L(scn.persona.name).charAt(0)) + '</div><div>' +
-      '<div class="p-name">' + esc(L(scn.persona.name)) + '</div>' +
-      '<div class="p-role">' + esc(L(scn.persona.role)) + ' ／ ' + esc(L(scn.persona.site)) + '</div>' +
-      '<div class="p-native">' + esc(t('native')) + '：' + esc(scn.persona.native === 'ja' ? t('nativeJa') : t('nativeZh')) + '</div>' +
-      '</div></div>';
-    var steps = '<div class="sc-block-label">' + esc(t('steps')) + '</div>' +
-      '<ol class="steps">' + scn.steps[scLang].map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>';
-    return '<article class="sc-svc" id="' + id + '" data-industry="' + indId + '" data-cat="' + svc.cat + '">' +
-      head + meta + persona + steps + turnsHTML(scn) + (scn.template !== 'qa' ? ioHTML(scn) : '') +
-      '</article>';
-  }
-
-  // ---- 業種 → 分類 → サービス の順に走査（同じサービスが複数業種にまたがる場合はその都度出す） ----
-  function buildOccurrences() {
-    var list = [];
-    INDUSTRIES.forEach(function (ind) {
-      CATS.filter(function (c) { return c.industries.indexOf(ind.id) >= 0; }).forEach(function (cat) {
-        SVCS.filter(function (s) { return s.cat === cat.id && s.industries.indexOf(ind.id) >= 0; }).forEach(function (svc) {
-          list.push({ ind: ind, cat: cat, svc: svc });
-        });
-      });
-    });
-    return list;
-  }
-
-  var occurrences = buildOccurrences();
-
-  function renderToc() {
-    var groups = {};
-    var order = [];
-    occurrences.forEach(function (o) {
-      if (!groups[o.ind.id]) { groups[o.ind.id] = []; order.push(o.ind.id); }
-      groups[o.ind.id].push(o);
-    });
-    var html = '<h2>' + esc(t('toc')) + '</h2>';
-    order.forEach(function (indId) {
-      html += '<div class="sc-toc-group"><div class="sc-toc-ind">' + esc(industryLabel(indId)) + '</div><ul class="sc-toc-list">';
-      groups[indId].forEach(function (o) {
-        var hasScript = !!(SCENARIOS[indId] || {})[o.svc.id];
-        html += '<li><a href="#' + anchorId(o.svc, indId) + '" class="' + (hasScript ? '' : 'is-noscript') + '" data-goto-industry="' + indId + '" data-goto-cat="' + o.cat.id + '">' +
-          '<span class="code">' + esc(svcCode(o.svc.id)) + '</span>' + esc(L(o.svc.name)) + '</a></li>';
-      });
-      html += '</ul></div>';
-    });
-    document.getElementById('sc-toc').innerHTML = html;
-  }
-
-  function renderMain() {
-    var byInd = {};
-    var indOrder = [];
-    occurrences.forEach(function (o) {
-      if (!byInd[o.ind.id]) { byInd[o.ind.id] = {}; indOrder.push(o.ind.id); }
-      if (!byInd[o.ind.id][o.cat.id]) byInd[o.ind.id][o.cat.id] = { cat: o.cat, svcs: [] };
-      byInd[o.ind.id][o.cat.id].svcs.push(o.svc);
-    });
-    var html = indOrder.map(function (indId) {
-      var ind = INDUSTRIES.filter(function (i) { return i.id === indId; })[0];
-      var catsHtml = Object.keys(byInd[indId]).map(function (catId) {
-        var group = byInd[indId][catId];
-        var svcsHtml = group.svcs.map(function (svc) { return svcHTML(svc, indId); }).join('');
-        return '<section class="sc-cat" data-cat="' + catId + '">' +
-          '<h4 class="sc-cat-h cat-' + catId + '">' +
-          '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (CAT_STYLE[catId] || CAT_STYLE._fallback).icon + '</svg>' +
-          esc(L(group.cat.name)) + '<span class="sc-cat-count">(' + group.svcs.length + ')</span></h4>' +
-          svcsHtml + '</section>';
-      }).join('');
-      return '<section class="sc-industry" data-industry="' + indId + '">' +
-        '<div class="sc-industry-h">' + esc(L(ind.name)) + '<span class="sc-industry-desc">' + esc(L(ind.desc)) + '</span></div>' +
-        catsHtml + '</section>';
-    }).join('');
-    document.getElementById('sc-main').innerHTML = html;
-  }
-
-  function renderControls() {
-    var indBtns = '<button type="button" class="on" data-ind="all">' + esc(t('indAll')) + '</button>' +
-      INDUSTRIES.map(function (i) { return '<button type="button" data-ind="' + i.id + '">' + esc(L(i.name)) + '</button>'; }).join('');
-    document.getElementById('sc-ind-filter').innerHTML = indBtns;
-
-    var seen = {}; var catOpts = ['<option value="all">' + esc(t('catAll')) + '</option>'];
-    CATS.forEach(function (c) {
-      if (seen[c.id]) return; seen[c.id] = true;
-      catOpts.push('<option value="' + c.id + '">' + esc(L(c.abbr)) + '</option>');
-    });
-    document.getElementById('sc-cat-filter').innerHTML = catOpts.join('');
-  }
-
-  var filterInd = 'all', filterCat = 'all';
-
-  function applyFilters() {
-    var shown = 0, withScript = 0, noScript = 0;
-    var articles = document.querySelectorAll('.sc-svc');
-    for (var i = 0; i < articles.length; i++) {
-      var el = articles[i];
-      var matchInd = filterInd === 'all' || el.getAttribute('data-industry') === filterInd;
-      var matchCat = filterCat === 'all' || el.getAttribute('data-cat') === filterCat;
-      var visible = matchInd && matchCat;
-      el.classList.toggle('is-hidden', !visible);
-      if (visible) {
-        shown++;
-        if (el.getAttribute('data-noscript') === '1') noScript++; else withScript++;
-      }
-    }
-    var sections = document.querySelectorAll('.sc-industry');
-    for (var j = 0; j < sections.length; j++) {
-      var sec = sections[j];
-      var anyVisible = sec.querySelectorAll('.sc-svc:not(.is-hidden)').length > 0;
-      sec.style.display = anyVisible ? '' : 'none';
-    }
-    var catSections = document.querySelectorAll('.sc-cat');
-    for (var k = 0; k < catSections.length; k++) {
-      var cs = catSections[k];
-      var anyVisibleCat = cs.querySelectorAll('.sc-svc:not(.is-hidden)').length > 0;
-      cs.style.display = anyVisibleCat ? '' : 'none';
-    }
-    var total = occurrences.length;
-    var countTpl = ST.countFmt[scLang] || ST.countFmt.ja;
-    document.getElementById('sc-count').textContent = countTpl
-      .replace('{n}', total).replace('{v}', shown).replace('{s}', withScript).replace('{ns}', noScript);
-  }
-
-  function bindControls() {
-    document.getElementById('sc-ind-filter').addEventListener('click', function (e) {
-      var btn = e.target.closest('button[data-ind]');
-      if (!btn) return;
-      filterInd = btn.getAttribute('data-ind');
-      var btns = document.querySelectorAll('#sc-ind-filter button');
-      for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('on', btns[i] === btn);
-      applyFilters();
-    });
-    document.getElementById('sc-cat-filter').addEventListener('change', function (e) {
-      filterCat = e.target.value;
-      applyFilters();
-    });
-    document.getElementById('sc-toc').addEventListener('click', function (e) {
-      var a = e.target.closest('a[data-goto-industry]');
-      if (!a) return;
-      // 目次からは絞り込みを解除してから遷移する（フィルタで隠れて飛べない事故を防ぐ）
-      filterInd = 'all'; filterCat = 'all';
-      var btns = document.querySelectorAll('#sc-ind-filter button');
-      for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('on', btns[i].getAttribute('data-ind') === 'all');
-      document.getElementById('sc-cat-filter').value = 'all';
-      applyFilters();
-    });
-  }
-
-  function applyLangTheme() {
-    var root = document.documentElement;
-    root.setAttribute('data-lang', scLang);
-    root.setAttribute('lang', scLang);
-    root.setAttribute('data-theme', scTheme);
-    document.getElementById('lang-select').value = scLang;
-    var btn = document.getElementById('theme-btn');
-    btn.textContent = scTheme === 'dark' ? '☀' : '☾';
-    document.title = (scLang === 'zh' ? '脚本审阅 ／ 台本レビュー' : '台本レビュー ／ 脚本审阅') + ' — AIエージェントカタログ';
-    document.getElementById('sc-title').textContent = t('title');
-    document.getElementById('sc-sub').textContent = t('sub');
-    document.getElementById('sc-link-guide').textContent = t('guide');
-    document.getElementById('sc-link-catalog').textContent = t('catalog');
-    document.getElementById('sc-f-ind-label').textContent = t('indLabel');
-    document.getElementById('sc-f-cat-label').textContent = t('catLabel');
-  }
-
-  function rerenderAll() {
-    applyLangTheme();
-    renderControls();
-    // フィルタボタンの選択状態を復元
-    var indBtns = document.querySelectorAll('#sc-ind-filter button');
-    for (var i = 0; i < indBtns.length; i++) indBtns[i].classList.toggle('on', indBtns[i].getAttribute('data-ind') === filterInd);
-    document.getElementById('sc-cat-filter').value = filterCat;
-    renderToc();
-    renderMain();
-    bindControls();
-    applyFilters();
-  }
-
-  document.getElementById('lang-select').addEventListener('change', function (e) {
-    scLang = e.target.value;
-    try { localStorage.setItem('mock.lang', scLang); } catch (e2) { /* 保存できなくても表示は切り替わる */ }
-    rerenderAll();
-  });
-  document.getElementById('theme-btn').addEventListener('click', function () {
-    scTheme = scTheme === 'dark' ? 'light' : 'dark';
-    try { localStorage.setItem('mock.theme', scTheme); } catch (e2) { /* 保存できなくても表示は切り替わる */ }
-    applyLangTheme();
-  });
-
-  rerenderAll();
+  // meta refresh に加えて JS でも遷移させる（meta refresh がブロックされる環境向け）
+  location.replace(dest);
 })();
 </script>
 </body>

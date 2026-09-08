@@ -248,7 +248,7 @@ reviewer の**逐語照合**（今日の 2 回で最も効いた点）：
 | | |
 |---|---|
 | 入力 | マージ済み main |
-| 出力 | `https://shoulang0729.github.io/dify/` の反映確認 ／ `CLAUDE.md` §6 の件数 1 行更新 |
+| 出力 | Pages の反映確認（2026-09 以降はリポジトリ B `toshioiinuma-ntt/ndit.dify` の `https://toshioiinuma-ntt.github.io/ndit.dify/`。移行前は `https://shoulang0729.github.io/dify/`） ／ `CLAUDE.md` §6 の件数 1 行更新 |
 | 判断者 | reviewer（Pages）／**PM（`CLAUDE.md`）** |
 | 停止条件 | Pages に出ない → reviewer が報告 |
 | 目安 | 10 分 |

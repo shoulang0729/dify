@@ -222,7 +222,7 @@ mock/** / tools/** / CLAUDE.md / .claude/** / 既存の設計書
 >
 > **Playwright 目視**：設計書の「目視」節の項目を、**P1 / P2 / P3 × ライト / ダーク × ja / zh / en** で確認する。
 >
-> 全 PASS かつ逸脱なしなら squash マージしてブランチを削除し、Pages 反映（`https://shoulang0729.github.io/dify/`）を確認して報告して。reject なら「何が・どこで・設計書のどの記述と食い違うか」を具体的に。**自分で直さないこと。**
+> 全 PASS かつ逸脱なしなら squash マージしてブランチを削除し、Pages 反映（2026-09 以降はリポジトリ B `toshioiinuma-ntt/ndit.dify` の `https://toshioiinuma-ntt.github.io/ndit.dify/`。移行前は `https://shoulang0729.github.io/dify/`）を確認して報告して。reject なら「何が・どこで・設計書のどの記述と食い違うか」を具体的に。**自分で直さないこと。**
 
 **停止条件**：reject されたら理由を PM に報告し、**自動で再実装ループに入らずに指示を待つ**。
 
@@ -254,7 +254,7 @@ PR URL：
   #<C> CLAUDE.md §6 件数更新
 PM メモ：
   Q1 対象者＝…／Q2 目的＝…／Q3 観点＝…／Q4 出口＝…
-  デモ：https://shoulang0729.github.io/dify/ → <分類名> → <XX-NN>
+  デモ：https://toshioiinuma-ntt.github.io/ndit.dify/ → <分類名> → <XX-NN>（移行前は https://shoulang0729.github.io/dify/）
 ```
 
 書き込み権限が無ければ、上の文面を PM に渡して手動更新を依頼する。
@@ -302,7 +302,7 @@ Issue:  #<番号>（または docs/handoff/<slug>.issue.md）
 PR:     A #<番号> docs → squash マージ済み / B #<番号> mock → squash マージ済み
 verify: PASS / FAIL   regress: PASS / 差分 <n> 行（設計書と一致・不一致）
 件数:   <8 分類 17 中分類 N サービス（提供中 a／試行版 b／構想 c）>
-公開:   https://shoulang0729.github.io/dify/ 反映確認 済 / 未
+公開:   https://toshioiinuma-ntt.github.io/ndit.dify/ 反映確認 済 / 未（移行前は https://shoulang0729.github.io/dify/）
 Notion: 書き戻し 済 / 文面を PM に提示
 CLAUDE.md §6: PM 更新待ち（<変更前> → <変更後>）
 PM判断待ち: （あれば）

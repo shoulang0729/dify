@@ -20,6 +20,17 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = resolve(ROOT, 'tools/regress.baseline.json');
 const update = process.argv.includes('--update');
 
+/* ---------- アーカイブモード（mock/.archived がある＝A はアーカイブ済み） ----------
+ * 設計書: docs/handoff/2026-09-08-migrate-to-company-repo.md。
+ * マーカーが無いときはこの if を通らないので、以降の通常ロジックは 1 バイトも変わらない。
+ * マーカーがあるとき（mock/js/data/** が無い＝データ層が無い）は --update も含めて
+ * 常にスキップし、exit 0 で終える。
+ */
+if (existsSync(resolve(ROOT, 'mock/.archived'))) {
+  console.log('📦 mock/.archived を検出（アーカイブモード）: データ層が無いため regress をスキップします');
+  process.exit(0);
+}
+
 const { data } = loadMock(ROOT);
 const CATS = data.CATS || [], SVCS = data.SVCS || [], TAGS = data.TAGS || {}, PATTERNS = data.PATTERNS || [], T = data.T || {};
 const INDUSTRIES = data.INDUSTRIES || [];

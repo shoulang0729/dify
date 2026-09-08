@@ -1,316 +1,77 @@
 <!DOCTYPE html>
-<html lang="ja" data-theme="light" data-lang="ja">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AIエージェント カタログ ― デモの見方 ／ AI智能体目录 ― 演示指南</title>
-<script>
-(function () {
-  var doc = document.documentElement;
-  var lang = 'ja';
-  var theme = 'light';
-  try {
-    var storedLang = localStorage.getItem('mock.lang');
-    if (storedLang === 'zh') lang = 'zh';
-    var storedTheme = localStorage.getItem('mock.theme');
-    if (storedTheme === 'dark') theme = 'dark';
-  } catch (e) { /* localStorage 不可でも既定値（ja / light）で動作 */ }
-  doc.setAttribute('data-lang', lang);
-  doc.setAttribute('lang', lang);
-  doc.setAttribute('data-theme', theme);
-})();
-</script>
-<link rel="stylesheet" href="css/tokens.css">
+<title>移転しました ／ 已迁移 ／ This page has moved</title>
+<!--
+  このリポジトリ（A / shoulang0729/dify）はアーカイブです。
+  デモと開発は会社アカウントのリポジトリ（B）へ移転しました。
+
+  移行先 URL の定義はこの 1 行（<meta http-equiv="refresh"> の content 属性）だけです。
+  変更するときはこの行の "url=" の後ろだけ書き換えてください。
+  <link rel="canonical">・本文中のリンク・JS によるリダイレクトは、すべてこの meta タグから
+  実行時に読み取って組み立てます（tools/verify.mjs のアーカイブ検査もこの行を見ています）。
+-->
+<meta http-equiv="refresh" content="0; url=https://toshioiinuma-ntt.github.io/ndit.dify/">
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; min-height: 100%; }
   body {
-    font-family: var(--font-ui, var(--font-jp));
-    background: var(--surface-canvas); color: var(--text-body);
-    -webkit-font-smoothing: antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Noto Sans SC", sans-serif;
+    background: #f5f6f8; color: #1a1f2b;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
   }
-  a { color: var(--text-link); }
-  a:hover { color: var(--text-link-hover); }
-  code { font-family: var(--font-mono); font-size: 0.92em; background: var(--surface-sunken); border: 1px solid var(--border-subtle); border-radius: var(--radius-xs); padding: 1px 5px; }
-
-  html[data-lang="ja"] .zh { display: none; }
-  html[data-lang="zh"] .ja { display: none; }
-
-  /* ===== ヘッダー ===== */
-  .hdr {
-    display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;
-    padding: var(--space-3) var(--space-5);
-    background: var(--surface-header); border-bottom: 1px solid var(--border-subtle);
+  main {
+    max-width: 640px; width: 100%;
+    background: #ffffff; border: 1px solid #dde1e8; border-radius: 8px;
+    padding: 32px 36px; line-height: 1.7;
   }
-  .hdr .wordmark {
-    display: inline-flex; align-items: center; justify-content: center; height: 30px; padding: 0 14px;
-    border: 1px dashed var(--border-default); border-radius: var(--radius-sm);
-    font-weight: var(--weight-bold); font-size: 13px; letter-spacing: var(--tracking-wide);
-    color: var(--text-muted);
-  }
-  .hdr .right { margin-left: auto; display: flex; align-items: center; gap: var(--space-1); }
-  .langtoggle { display: flex; gap: var(--space-1); }
-  .langtoggle button {
-    font-family: inherit; font-size: 12.5px; color: var(--text-body); cursor: pointer;
-    background: var(--surface-card); border: 1px solid var(--border-default);
-    border-radius: var(--radius-sm); padding: 6px 12px;
-    transition: border-color var(--duration-fast) var(--ease-standard);
-  }
-  .langtoggle button:hover { border-color: var(--action-primary); }
-  html[data-lang="ja"] .langtoggle button[data-lang-btn="ja"],
-  html[data-lang="zh"] .langtoggle button[data-lang-btn="zh"] {
-    background: var(--action-primary); color: var(--text-on-brand); border-color: var(--action-primary);
-    font-weight: var(--weight-bold);
-  }
-
-  /* ===== 本文 ===== */
-  .guide { max-width: 800px; margin: 0 auto; padding: var(--space-10) var(--space-5) var(--space-12); }
-  .eyebrow { font-size: var(--text-overline); letter-spacing: var(--tracking-overline); font-weight: var(--weight-bold); color: var(--action-primary); text-transform: uppercase; }
-  h1 { margin: var(--space-2) 0 var(--space-3); font-size: var(--text-h1); font-weight: var(--weight-bold); color: var(--text-heading); letter-spacing: var(--tracking-tight); line-height: var(--leading-snug); }
-  .lead { font-size: var(--text-body); color: var(--text-secondary); line-height: var(--leading-relaxed); }
-  .lead strong { color: var(--text-body); }
-
-  /* ---- 概要スタッツ（PM 要望：数字を一目で。§ ではなく guide 独自のカード） ---- */
-  .stats { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-6); }
-  .stat {
-    flex: 1 1 130px; min-width: 108px;
-    background: var(--surface-card); border: 1px solid var(--border-card); border-bottom: var(--border-accent) solid var(--action-primary);
-    padding: var(--space-3) var(--space-4);
-  }
-  .stat .stat-n { font-size: 24px; font-weight: var(--weight-bold); color: var(--text-heading); line-height: 1.2; }
-  .stat .stat-l { font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; }
-
-  .cta-row { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-6); }
-  .cta {
-    display: inline-flex; align-items: center; gap: var(--space-2);
-    background: var(--action-primary); color: var(--text-on-brand); text-decoration: none;
-    font-size: var(--text-body-sm); font-weight: var(--weight-bold);
-    padding: 10px 22px; border-radius: var(--radius-md);
-    transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
-  }
-  .cta:hover { background: var(--action-primary-hover); color: var(--text-on-brand); }
-  .cta.secondary {
-    background: transparent; color: var(--text-link); border: 1px solid var(--border-brand);
-  }
-  .cta.secondary:hover { background: var(--surface-hover); color: var(--text-link-hover); }
-
-  section.step { margin-top: var(--space-10); padding-top: var(--space-8); border-top: 1px solid var(--border-subtle); }
-  section.step h2 { margin: 0 0 var(--space-3); font-size: var(--text-h3); font-weight: var(--weight-bold); color: var(--text-heading); }
-  section.step p { font-size: var(--text-body-sm); line-height: var(--leading-relaxed); color: var(--text-body); margin: 0 0 var(--space-3); }
-  section.step ul, section.step ol { margin: 0; padding-left: 1.4em; font-size: var(--text-body-sm); line-height: var(--leading-relaxed); color: var(--text-body); }
-  section.step li { margin: 0 0 var(--space-2); }
-  section.step li:last-child { margin-bottom: 0; }
-  section.step strong { color: var(--text-heading); }
-
-  dl.deftable { margin: 0; }
-  dl.deftable dt { font-size: var(--text-body-sm); font-weight: var(--weight-bold); color: var(--text-heading); margin-top: var(--space-3); }
-  dl.deftable dt:first-child { margin-top: 0; }
-  dl.deftable dd { margin: 2px 0 0; font-size: var(--text-body-sm); line-height: var(--leading-relaxed); color: var(--text-secondary); }
-
-  /* ---- 業種の切替例（§2）。会社ロゴは catalog.html の .brand-mark と同じ見せ方（アイコン＋破線ボックスの社名） ---- */
-  .ind-example { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin: var(--space-4) 0 var(--space-5); }
-  .ind-chip {
-    display: inline-flex; align-items: center; gap: var(--space-2);
-    padding: 8px 14px; border: 1px dashed var(--border-default); border-radius: var(--radius-sm);
-    background: var(--surface-sunken);
-  }
-  .ind-chip .ind-icon { display: inline-flex; width: 30px; height: 22px; color: var(--text-link); flex-shrink: 0; }
-  .ind-chip .ind-icon svg { width: 100%; height: 100%; }
-  .ind-chip .ind-name { font-weight: var(--weight-bold); font-size: 13px; color: var(--text-heading); }
-  .ind-example .arrow { font-size: 18px; color: var(--text-muted); }
-
-  footer.guidefoot { margin-top: var(--space-10); padding-top: var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-caption); color: var(--text-muted); line-height: var(--leading-relaxed); }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  p { margin: 0 0 14px; font-size: 14px; }
+  .lang-block { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px dashed #dde1e8; }
+  .lang-block:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  a.dest { display: inline-block; word-break: break-all; font-weight: bold; }
+  .note { font-size: 12px; color: #6b7280; margin-top: 18px; }
 </style>
 </head>
 <body>
-<header class="hdr">
-  <span class="wordmark">AIエージェントカタログ <span class="ja">― デモガイド</span><span class="zh">― 演示指南</span></span>
-  <div class="right">
-    <div class="langtoggle">
-      <button type="button" data-lang-btn="ja">日本語</button>
-      <button type="button" data-lang-btn="zh">中文</button>
-    </div>
+<main>
+  <div class="lang-block">
+    <h1>このデモは移転しました</h1>
+    <p>このリポジトリ（A）はアーカイブになりました。デモと開発は会社アカウントのリポジトリ（B）へ移転しています。数秒で自動的に新しいページへ移動します。自動で移動しない場合は、下のリンクをクリックしてください。</p>
   </div>
-</header>
-
-<main class="guide">
-  <div class="eyebrow">Concept Mock</div>
-  <h1>
-    <span class="ja">AIエージェント カタログ ― デモの見方</span>
-    <span class="zh">AI智能体目录 ― 演示指南</span>
-  </h1>
-  <p class="lead ja">このサイトは、在中日系企業向け AIエージェント カタログの<strong>画面案（モック）</strong>です。会社名「青嶺精工」「碧洋銀行」は仮の名前、応答は台本、数字はサンプルです。実際の AI 処理・社内データ連携は行っていません。</p>
-  <p class="lead zh">本站是面向在华日资企业的 AI 智能体目录的<strong>界面方案（演示模型）</strong>。公司名"青岭精工""碧洋银行"均为虚构，回答为预设脚本，数字均为示例。不进行真实的 AI 处理，也不连接任何公司数据。</p>
-
-  <div class="stats" aria-hidden="false">
-    <div class="stat"><div class="stat-n">2</div><div class="stat-l ja">業種</div><div class="stat-l zh">行业</div></div>
-    <div class="stat"><div class="stat-n">13</div><div class="stat-l ja">分類</div><div class="stat-l zh">分类</div></div>
-    <div class="stat"><div class="stat-n">66</div><div class="stat-l ja">サービス</div><div class="stat-l zh">项服务</div></div>
-    <div class="stat"><div class="stat-n">5</div><div class="stat-l ja">画面タイプ</div><div class="stat-l zh">界面类型</div></div>
-    <div class="stat"><div class="stat-n">3</div><div class="stat-l ja">表示パターン</div><div class="stat-l zh">展示模式</div></div>
+  <div class="lang-block">
+    <h1>本演示已迁移</h1>
+    <p>本仓库（A）已归档。演示与后续开发已迁移至公司账号下的仓库（B）。页面将在数秒内自动跳转。如未自动跳转，请点击下方链接。</p>
   </div>
-
-  <div class="cta-row">
-    <a class="cta ja" href="catalog.html">カタログを開く</a>
-    <a class="cta zh" href="catalog.html">打开目录</a>
-    <a class="cta secondary ja" href="scripts.html">台本をまとめて読む</a>
-    <a class="cta secondary zh" href="scripts.html">查看全部脚本</a>
+  <div class="lang-block">
+    <h1>This page has moved</h1>
+    <p>This repository (A) is now archived. The demo and ongoing development have moved to the company account repository (B). You will be redirected automatically in a moment. If not, please click the link below.</p>
   </div>
-
-  <section class="step">
-    <h2 class="ja">1. 画面の構成</h2>
-    <h2 class="zh">1. 界面构成</h2>
-    <ul class="ja">
-      <li><strong>上のグレー帯</strong>（業種の切替／① 階層ナビ・② ダッシュボード・③ 業務フィードの切替）は、見せ方を比較するための<strong>検討用の切替</strong>です。本番の画面には出ません。</li>
-      <li><strong>その下が実画面</strong>です。ヘッダー右の <strong>言語（日／中／英）</strong> と <strong>テーマ（ライト／ダーク）</strong> は本番にも残る機能です。</li>
-      <li>言語切替で変わるのは<strong>メニューやラベルの表示だけ</strong>です。エージェント本体は日本語・中国語どちらの入力も受け付けます（後述）。</li>
-    </ul>
-    <ul class="zh">
-      <li><strong>顶部灰色条</strong>（行业切换／① 层级导航・② 仪表盘・③ 业务动态的切换）是用于比较展示方式的<strong>评审用切换</strong>，正式界面中不会出现。</li>
-      <li><strong>其下方为正式界面</strong>。页眉右侧的<strong>语言（日／中／英）</strong>与<strong>主题（浅色／深色）</strong>是正式版也会保留的功能。</li>
-      <li>切换语言只改变<strong>菜单与标签的显示语言</strong>。智能体本身同时接受日语和中文输入（见后文）。</li>
-    </ul>
-  </section>
-
-  <section class="step">
-    <h2 class="ja">2. 業種について</h2>
-    <h2 class="zh">2. 关于行业</h2>
-    <p class="ja">このモックは <strong>2 つの業種</strong>を切り替えて見せます。上のグレー帯の「業種」セグメントで選びます。</p>
-    <p class="zh">本演示可切换<strong>两个行业</strong>。可在顶部灰色条的「行业」分段中选择。</p>
-    <div class="ind-example">
-      <span class="ind-chip">
-        <span class="ind-icon" aria-hidden="true"><svg viewBox="0 0 32 24"><path d="M2 19 8.5 8 13 14.5 19.5 4 30 19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 22 9 14 13.5 18 20 10 30 22" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/></svg></span>
-        <span class="ind-name"><span class="ja">青嶺精工（製造）</span><span class="zh">青岭精工（制造）</span></span>
-      </span>
-      <span class="arrow">⇄</span>
-      <span class="ind-chip">
-        <span class="ind-icon" aria-hidden="true"><svg viewBox="0 0 32 24"><path d="M3 19h26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 13c2-4 6-4 8 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19 13c2-4 6-4 8 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-        <span class="ind-name"><span class="ja">碧洋銀行（金融）</span><span class="zh">碧洋银行（金融）</span></span>
-      </span>
-    </div>
-    <ul class="ja">
-      <li><strong>製造</strong>：青嶺精工（在中日系製造業・中国工場）。生産現場・品質・貿易実務などを中心に <strong>10 分類・48 サービス</strong>。</li>
-      <li><strong>金融</strong>：碧洋銀行（在中日系銀行・中国拠点）。情報収集・審査・決算などを中心に <strong>8 分類・28 サービス</strong>。</li>
-      <li>業種を切り替えると、左の分類・サービス一覧に加えて、<strong>ヘッダーの会社ロゴと社名も入れ替わります</strong>（上図はその 2 社のロゴ）。</li>
-      <li>「社内問い合わせ受付」など <strong>10 サービスは業種を問わない汎用機能</strong>で、管理番号を変えずに両方の業種に表示されます（例：<code>KN-04</code> は製造でも金融でも同じ番号）。</li>
-    </ul>
-    <ul class="zh">
-      <li><strong>制造</strong>：青岭精工（在华日资制造业・中国工厂）。以生产现场、质量、贸易实务等为中心，共 <strong>10 个分类・48 项服务</strong>。</li>
-      <li><strong>金融</strong>：碧洋银行（在华日资银行・中国网点）。以信息收集、审查、结账等为中心，共 <strong>8 个分类・28 项服务</strong>。</li>
-      <li>切换行业后，除左侧的分类与服务列表外，<strong>页眉的公司标志与公司名称也会一并切换</strong>（上图为两家公司的标志）。</li>
-      <li>「内部咨询受理」等 <strong>10 项为不区分行业的通用功能</strong>，管理编号保持不变，会同时出现在两个行业中（例如 <code>KN-04</code> 在制造与金融中编号相同）。</li>
-    </ul>
-  </section>
-
-  <section class="step">
-    <h2 class="ja">3. デモの手順</h2>
-    <h2 class="zh">3. 演示步骤</h2>
-    <ol class="ja">
-      <li>左の分類を開き、<strong>サービスカード</strong>を選びます。カードには管理番号（例 <code>KN-02</code>）・成熟度・タグが付いています。</li>
-      <li><strong>詳細画面</strong>で、想定する担当者（ペルソナ）・利用の流れ・画面タイプを確認します。</li>
-      <li><strong>「デモを見る」</strong>を押すと業務デモ画面に移ります。</li>
-      <li>【日】【中】のチップを押すか、自由に入力して送信します。数秒の「考え中」のあと、エージェントが返答します。</li>
-      <li>アップロード／フォーム型の画面では<strong>「実行」</strong>を押すと、結果（ドラフト・差分・照会結果など）が表示されます。</li>
-      <li><strong>「最初から」</strong>でデモをやり直せます。<strong>「← 詳細へ戻る」</strong>で戻れます。</li>
-    </ol>
-    <ol class="zh">
-      <li>展开左侧分类，选择一张<strong>服务卡片</strong>。卡片上带有管理编号（如 <code>KN-02</code>）、成熟度和标签。</li>
-      <li>在<strong>详情页</strong>确认预设的使用者（人物画像）、使用流程和界面类型。</li>
-      <li>点击<strong>「查看演示」</strong>进入业务演示界面。</li>
-      <li>点击【日】【中】提示按钮，或自由输入后发送。等待数秒“思考中”后，智能体给出回答。</li>
-      <li>上传／表单类界面点击<strong>「执行」</strong>，会显示结果（草稿、差异、查询结果等）。</li>
-      <li>点击<strong>「重新开始」</strong>可重做演示，点击<strong>「← 返回详情」</strong>可返回。</li>
-    </ol>
-  </section>
-
-  <section class="step">
-    <h2 class="ja">4. 5 つの画面タイプ</h2>
-    <h2 class="zh">4. 五种界面类型</h2>
-    <dl class="deftable ja">
-      <dt>QAチャット型</dt><dd>質問に答える。聞いて、根拠付きの答えを受け取る（技術ナレッジ・規程・当局通達など）</dd>
-      <dt>アップロード→結果型</dt><dd>ファイルを渡して、整理された結果を受け取る（文書・図面・帳票の要約・抽出・チェック結果）</dd>
-      <dt>フォーム入力→ドラフト生成型</dt><dd>条件を埋めて、ドラフトを受け取る（報告書・申請書・メールのドラフトなど）</dd>
-      <dt>差分比較型</dt><dd>新旧 2 版を比べて、変わった箇所と影響を受け取る</dd>
-      <dt>照会（データ引き）型</dt><dd>キーを入れて、システムのデータを引く（在庫・納期・給与水準など）</dd>
-    </dl>
-    <dl class="deftable zh">
-      <dt>问答对话型</dt><dd>回答问题。提问后获得附依据的回答（技术知识、规章制度、监管通告等）</dd>
-      <dt>上传→结果型</dt><dd>上传文件后获得整理好的结果（文档、图纸、单据的摘要、提取和检查结果）</dd>
-      <dt>表单输入→草案生成型</dt><dd>填写条件后获得草案（报告、申请书、邮件等的草稿）</dd>
-      <dt>差异比较型</dt><dd>对比新旧文档，指出变更之处及其影响</dd>
-      <dt>查询（数据检索）型</dt><dd>输入关键字，检索系统数据（库存、交期、薪资水平等）</dd>
-    </dl>
-  </section>
-
-  <section class="step">
-    <h2 class="ja">5. 言語について</h2>
-    <h2 class="zh">5. 关于语言</h2>
-    <p class="ja">メニューの言語は日／中／英から選べますが、<strong>エージェントへの入力は日本語でも中国語でもかまいません</strong>。入力した言語で返答します（メニューが英語でも、日本語で聞けば日本語で返ります）。日中対応はすべてのサービスの前提です。</p>
-    <p class="zh">菜单语言可选日／中／英，但<strong>向智能体输入时使用日语或中文均可</strong>，智能体会以输入的语言回答（即使菜单为英文，用日语提问也会以日语回答）。日中双语是所有服务的基本前提。</p>
-  </section>
-
-  <section class="step">
-    <h2 class="ja">6. 成熟度バッジ</h2>
-    <h2 class="zh">6. 成熟度标识</h2>
-    <dl class="deftable ja">
-      <dt>提供中</dt><dd>すぐ使える想定。標準的な Dify の機能で実現できる</dd>
-      <dt>試行版</dt><dd>一部の部署で試しながら整える想定。社内データの整備や連携が必要</dd>
-      <dt>構想</dt><dd>将来の候補。外部パートナーとの連携や個人情報の扱いなど、前提の整理が必要</dd>
-    </dl>
-    <dl class="deftable zh">
-      <dt>已提供</dt><dd>可立即使用。可用 Dify 的标准功能实现</dd>
-      <dt>试行版</dt><dd>先在部分部门试用并完善。需要整理公司数据或建立连接</dd>
-      <dt>构想中</dt><dd>未来候选。需要先理清与外部合作方的对接、个人信息处理等前提</dd>
-    </dl>
-    <p class="ja">※ デモは成熟度に関係なく <strong>66 サービスすべて</strong>で動きます（応答は台本）。Dify 上での本実装は<strong>「提供中」12 件</strong>から進めており、2026-09-07 時点で 2 件（KN-01・DC-01）を投入済み、残りを順次投入します。試行版・構想はいまはデモのみで、Dify 実装の対象ではありません。</p>
-    <p class="zh">※ 演示对<strong>全部 66 项服务</strong>均可运行，与成熟度无关（回答为预设脚本）。Dify 上的正式实现从<strong>「已提供」12 项</strong>开始推进，截至 2026-09-07 已投入 2 项（KN-01・DC-01），其余项目将陆续投入。试行版与构想中的服务目前仅作演示，不在 Dify 实现范围内。</p>
-  </section>
-
-  <section class="step">
-    <h2 class="ja">7. 管理番号とフィードバックのお願い</h2>
-    <h2 class="zh">7. 管理编号与反馈方式</h2>
-    <p class="ja">各サービスには <strong><code>KN-02</code></strong> のような管理番号が付いています（分類 2 文字 ＋ 通番）。業種をまたいで表示される共通サービスも番号は同じです（§2）。ご意見は <strong>「番号 ＋ 画面 ＋ 内容」</strong> でお知らせください。例：「KN-05 のデモ、中国語の 2 往復目の回答が長い」「DC-01 の結果パネルに宛先を足したい」</p>
-    <p class="zh">每项服务都带有类似 <strong><code>KN-02</code></strong> 的管理编号（2 位分类码 ＋ 序号）。跨行业出现的通用服务编号也保持一致（见第 2 节）。反馈时请按<strong>「编号 ＋ 界面 ＋ 内容」</strong>告知。例：“KN-05 的演示中，中文第 2 轮回答太长”“希望在 DC-01 的结果面板中增加收件人”</p>
-  </section>
-
-  <section class="step">
-    <h2 class="ja">8. 表示パターン</h2>
-    <h2 class="zh">8. 展示模式</h2>
-    <p class="ja">上のグレー帯で 3 つの見せ方を切り替えられます。<strong>① 階層ナビ</strong>は分類から探す標準の入口。<strong>② ダッシュボード</strong>は全体像・よく使うサービスを前面に出すホーム（管理者向け）。<strong>③ 業務フィード</strong>は担当者の今日の仕事から入る画面。どこから入っても、詳細・デモ画面は共通です。</p>
-    <p class="zh">可通过顶部灰色条切换三种展示方式。<strong>① 层级导航</strong>是按分类查找的标准入口；<strong>② 仪表盘</strong>是突出整体概况与常用服务的首页（面向管理者）；<strong>③ 业务动态</strong>是从担当者当天的工作切入的界面。无论从何处进入，详情与演示界面都是相同的。</p>
-  </section>
-
-  <section class="step">
-    <h2 class="ja">9. 台本をまとめて確認する</h2>
-    <h2 class="zh">9. 集中查看全部脚本</h2>
-    <p class="ja">各サービスのデモは 1 件ずつ開いて確認できますが、全サービスの台本をまとめてレビューしたいときは <a href="scripts.html">台本レビューページ</a> が便利です。管理番号ごとにアンカーが振ってあるので、URL の末尾に <code>#KN-01</code> のように付けると該当サービスへ直接ジャンプできます。日本語・中国語の台本を並べて読めるので、対訳のチェックにも使えます。</p>
-    <p class="zh">各服务的演示可以逐个打开查看，但如果想一次性审阅全部服务的脚本，可以使用<a href="scripts.html">脚本审阅页面</a>。每项服务都设有以管理编号命名的锚点，只需在网址末尾加上如 <code>#KN-01</code> 即可直接跳转到对应服务。日文与中文脚本并排显示，也便于核对译文。</p>
-    <div class="cta-row">
-      <a class="cta secondary ja" href="scripts.html">台本レビューページを開く</a>
-      <a class="cta secondary zh" href="scripts.html">打开脚本审阅页面</a>
-    </div>
-  </section>
-
-  <footer class="guidefoot">
-    <p class="ja">本ページと各画面はコンセプト確認用のモックです。応答はすべて台本、数値はサンプルであり、実在の企業・人物・データとは関係ありません。</p>
-    <p class="zh">本页及各界面均为概念确认用的演示模型。所有回答均为预设脚本，数值均为示例，与真实的企业、人物、数据无关。</p>
-  </footer>
+  <p><a class="dest" id="dest-link" href="#">https://toshioiinuma-ntt.github.io/ndit.dify/</a></p>
+  <p class="note">shoulang0729/dify (A) → toshioiinuma-ntt/ndit.dify (B)</p>
 </main>
-
 <script>
 (function () {
-  function setLang(l) {
-    var doc = document.documentElement;
-    doc.setAttribute('data-lang', l);
-    doc.setAttribute('lang', l);
-    try { localStorage.setItem('mock.lang', l); } catch (e) { /* 保存できなくても表示は切り替わる */ }
-  }
-  var btns = document.querySelectorAll('[data-lang-btn]');
-  for (var i = 0; i < btns.length; i++) {
-    btns[i].addEventListener('click', (function (btn) {
-      return function () { setLang(btn.getAttribute('data-lang-btn')); };
-    })(btns[i]));
-  }
+  var meta = document.querySelector('meta[http-equiv="refresh" i]');
+  var content = meta ? meta.getAttribute('content') || '' : '';
+  var m = content.match(/url=(.+)$/i);
+  var dest = m ? m[1].trim() : '';
+  if (!dest) return;
+
+  // <link rel="canonical"> は meta タグの値から実行時に組み立てる（値の定義を 2 か所に持たない）
+  var canonical = document.createElement('link');
+  canonical.setAttribute('rel', 'canonical');
+  canonical.setAttribute('href', dest);
+  document.head.appendChild(canonical);
+
+  var a = document.getElementById('dest-link');
+  if (a) { a.setAttribute('href', dest); a.textContent = dest; }
+
+  // meta refresh に加えて JS でも遷移させる（meta refresh がブロックされる環境向け）
+  location.replace(dest);
 })();
 </script>
 </body>

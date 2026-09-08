@@ -31,12 +31,14 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 - なぜ：言語切替で一部だけ別言語が残る事故を防ぐ。`L(obj)` は `obj[lang] ?? obj.ja` にフォールバックするので**欠落は静かに日本語が出て気づけない**
 - 検出：`tools/verify.mjs`（キー欠落・空値・`en` にかな残り）
 - ルール：**追加は3言語同時**。英語はモック用ドラフトでよいが**空にしない**
+- ※このリポジトリ（A）は 2026-09 にアーカイブ。`mock/js/data/**` の正本は B（`toshioiinuma-ntt/ndit.dify`）にある（§2-8）
 
 ### 2-2. 色はセマンティックトークンのみ。ブランドパレットは不変
 - 対象：**`mock/css/components.css`** に **`#RRGGBB` の直値を書かない**。必ず `var(--surface-*|--text-*|--border-*|--action-*|--status-*|--badge-*)`
 - **`mock/css/tokens.css`** の `--ntt-*`（NTT DATA ブランドパレット）は**変更禁止**。ダーク対応は同ファイルの `:root[data-theme="dark"]` で**セマンティック層だけ**上書き（**dark ブロックは 1 つだけ**）。**`mock/index.html` は同じ `tokens.css` を `<link>` で参照する。トークンをコピーしない**
 - なぜ：直値が1つ入ると、その箇所だけダークで浮く／ブランド色がズレる
 - 検出：`tools/verify.mjs`（直値検出・`var()` 未定義検出・dark ブロック存在）
+- ※このリポジトリ（A）は 2026-09 にアーカイブ。`mock/css/**` の正本は B（`toshioiinuma-ntt/ndit.dify`）にある（§2-8）
 
 ### 2-3. 共通レイヤーの契約（パターンを増やすときの土台）
 - **置き場**：`mock/js/data/ui.js`（`T`/`PATTERNS`/`TAGS`/`TEMPLATES`）・`catalog.js`（`CATS`/`SVCS`）・`home.js`（`HOME`/`FEED`）・`style.js`（`CAT_STYLE`）・`scenarios/<分類>.js`（`SCENARIOS`。大分類ごと 8 ファイル、`window.SCENARIOS` に `Object.assign` で登録）。**`js/data/**` は純粋なリテラル宣言のみ**（`document`・`localStorage`・関数呼び出しを書かない。verify が vm で実行して読むため）。`state` とヘルパーは `mock/js/app.js`、描画は `mock/js/render.js`、click ハンドラと起動は `mock/js/events.js`。**読み込み順は `catalog.html` の `<script src>` の並びが唯一の正**（`data/ui → data/catalog → data/home → data/style → data/scenarios/* → app → render → events`）。古典的スクリプトのまま（`type="module"` にしない＝`file://` 対応）
@@ -47,33 +49,40 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 - ルール：**表示レイヤー（`renderSidebar` / `renderMain` 内のパターン分岐）は `state` を読んで描くだけ**。パターン固有の都合で `state` の形・データ形・遷移を変えない
 - なぜ：**パターンを切り替えても選択位置が保持され、同じ業務を別の見せ方で直接比較できる**のはこの契約のおかげ。②③（ダッシュボード / 業務フィード）はこの上に乗せる
 - 検出：`tools/verify.mjs`（`state` の必須キー・`data-act` 一覧・§9 シナリオ整合：`SCENARIOS` の id が `SVCS` に存在／`template` が `TEMPLATES` に存在／型の形式。台本の無い `SVCS` は warn／§10 `HOME`・`FEED` の参照 id と 3 言語／§6 `added` の形式／§7 `DEMO_DATE` が固定のまま main に入ると warn）＋ reviewer の diff 監査
+- ※このリポジトリ（A）は 2026-09 にアーカイブ。この共通レイヤー（`mock/js/app.js`・`render.js`・`events.js`・`data/**`）の正本は B（`toshioiinuma-ntt/ndit.dify`）にある（§2-8）
 
 ### 2-4. 「モックの足場」と「プロダクト機能」を混ぜない
 - `.mockbar`（パターン選択セグメント）＝**レビュー用の足場**。本番 UI には存在しない
 - ヘッダー右の **言語切替（日/中/英）と テーマ切替** ＝**プロダクト機能**。本番にも残る
 - なぜ：顧客に「上のグレー帯は検討用、実画面はその下」と説明できる構成を保つ
 - 検出：reviewer の diff 監査
+- ※このリポジトリ（A）は 2026-09 にアーカイブ。`.mockbar` を含む実物の画面は B（`toshioiinuma-ntt/ndit.dify`）で見られる（§2-8）
 
 ### 2-5. 言語切替はメニュー表示のみ。エージェント本体は日中どちらの入力も受ける
 - 言語切替が変えるのは**メニュー・ラベルの表示言語だけ**
 - チャット入力は `detectLang()` で **入力言語（ja/zh）を判定し、UI 言語と無関係にその言語で返答**する
 - 「日中対応」を**サービスの区別タグにしない**（全サービスの前提だから）
 - 検出：`tools/verify.mjs`（`detectLang` の存在）＋ reviewer
+- ※このリポジトリ（A）は 2026-09 にアーカイブ。`detectLang()` を含む `mock/js/app.js` の正本は B（`toshioiinuma-ntt/ndit.dify`）にある（§2-8）
 
 ### 2-6. `localStorage` キーは許可集合。いまは `mock.lang` / `mock.theme` / `mock.fav` の 3 つだけ
 - **既存キーの改名・転用は禁止**（変えるとレビュー参加者の設定が飛ぶ）。**新しいキーを足すのは PM 判断**で、足したら**この節の一覧と `tools/verify.mjs` の許可集合を同時に更新する**
 - `mock.fav` はお気に入り（業種ごと `{mfg:[…], fin:[…]}`）。**壊れた値が入っていても他の設定を巻き添えにしない**よう、キーごとに別の try で読み書きする
 - 検出：`tools/verify.mjs`（アプリ層に現れる `mock.*` のリテラルが許可集合の部分集合であること。4 つ目を書くと FAIL する）
+- ※このリポジトリ（A）は 2026-09 にアーカイブ。この許可集合を実際に読み書きするデモの正本は B（`toshioiinuma-ntt/ndit.dify`）にある（§2-8）
 
 ### 2-7. 成熟度 `st` は 1 / 2 / 3（提供中 / 試行版 / 構想）
 - 追加するなら `statusText` / `statusClass` / `.dot.*` / `.badge.*` / トークン（light・dark）を**同時に**
 - 検出：`tools/verify.mjs`（`st` の値域）
+- ※このリポジトリ（A）は 2026-09 にアーカイブ。`SVCS[].st` を持つデータ層の正本は B（`toshioiinuma-ntt/ndit.dify`）にある（§2-8）
 
-### 2-8. Pages の公開方式
-- `.github/workflows/pages.yml` は **`path: mock`** で `mock/` を**サイトのルート**として公開。URL に `/mock/` は**含まれない**（`https://shoulang0729.github.io/dify/`）
-- **`mock/css/**`・`mock/js/**` も公開対象**。`catalog.html`/`index.html` からの参照は**相対パスのみ**（先頭 `/`・`../` 禁止＝`file://` でも開ける）。`mock/` 配下に `_` 始まりのディレクトリを作らない
-- `mock/.nojekyll` 必須
-- **`mock/` ＝ 4 区分の①デモ。改名しない**（`localStorage` の `mock.lang`/`mock.theme` と過去 Issue/PR のリンクが load-bearing）
+### 2-8. Pages の公開方式（A はアーカイブ。デモ・開発の正本は B）
+- **2026-09 に、デモと開発の正本は会社アカウントのリポジトリ B（`toshioiinuma-ntt/ndit.dify`）へ移った。このリポジトリ（A / `shoulang0729/dify`）は履歴の保管庫としてアーカイブされている**。移行手順は `docs/handoff/2026-09-08-migrate-to-company-repo.md`
+- A の `mock/` から `css/**`・`js/**`（デモ本体・データ層）は削除済み。`mock/index.html`・`mock/catalog.html`・`mock/scripts.html` の 3 ファイルは、B の対応ページへ**リダイレクトするだけの単一ファイル**（`<meta http-equiv="refresh">` ＋ JS ＋ クリック可能なリンクを ja/zh/en 併記）。移行先 URL は各ファイルの `<meta http-equiv="refresh">` の `content` 属性の 1 か所にだけ書く（他はそこから読み取る）
+- `.github/workflows/pages.yml` は**変更していない**（**`path: mock`** のまま）。URL は変わらず `https://shoulang0729.github.io/dify/` で、そこを開くと B の新 URL（`https://toshioiinuma-ntt.github.io/ndit.dify/`）へ自動で転送される
+- `mock/.nojekyll` は必須のまま
+- **`mock/.archived` マーカー**があると `tools/verify.mjs`／`tools/regress.mjs` は**アーカイブ用の検査だけ**を行う（リダイレクト 3 ページが新 URL を指すか・`.nojekyll`・`pages.yml` の `path: mock`・`_` 始まりディレクトリの禁止、に加えて `dify/**`＝§12 環境レイヤーは無変更のため検査を継続する。i18n・CSS トークン・共通レイヤー・シナリオ整合・索引の鮮度など mock のデータ層が前提の検査はスキップする）。`regress.mjs` はスキップして exit 0。**マーカーが無いときの挙動は変えていない**
+- **`mock/` ＝ 4 区分の①デモの置き場という位置づけは変えない（改名しない）**。中身は上記のとおりリダイレクトのみ
 - 検出：`tools/verify.mjs`
 
 ### 2-9. 顧客版カタログへの差し替えは「データ層だけ」
@@ -81,6 +90,7 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 - 変更前後の**件数と id 一覧を設計書に書く**（reviewer が `regress.mjs` の差分と照合）
 - `SVCS[].id` は管理番号（§2-11、例 `KN-02`）として**顧客に見える**。差し替え時も **id を改名しない**（不要になったら欠番、新規は新 id）
 - 検出：`tools/regress.mjs`
+- ※このリポジトリ（A）は 2026-09 にアーカイブ。`CATS`/`SVCS`/`TAGS` の正本は B（`toshioiinuma-ntt/ndit.dify`）にある（§2-8）。`regress.mjs` は `mock/.archived` があるとスキップする
 
 ### 2-10. シークレットを置かない
 - Dify のトークン／Cookie／API キーは**環境変数渡し**。コミット・チャット貼り付け禁止

@@ -53,6 +53,239 @@ const fail = (m) => { fails++; console.log('❌', m); };
 const warn = (m) => { warns++; console.log('⚠️ ', m); };
 const section = (t) => console.log(`\n── ${t} ──`);
 
+/* ---------- §8 Pages 設定・§12 環境レイヤーの検査本体（関数化） ----------
+ * 通常モードでは元の位置（§8・§12）から呼ばれる。アーカイブモードでもこの 2 つだけ再利用する
+ * （§8＝Pages 設定はリダイレクト後も同じ形で検査、§12＝dify/** は無変更のため検査を継続。docs/handoff/2026-09-08-migrate-to-company-repo.md）。
+ */
+function checkPagesConfig() {
+  const wf = resolve(ROOT, '.github/workflows/pages.yml');
+  if (!existsSync(wf)) fail('pages.yml が無い');
+  else if (!/path:\s*mock\b/.test(readFileSync(wf, 'utf8'))) fail('pages.yml の upload path が mock ではない（§2-8）');
+  else ok('pages.yml: path: mock');
+  if (!existsSync(resolve(MOCK, '.nojekyll'))) fail('mock/.nojekyll が無い'); else ok('mock/.nojekyll あり');
+
+  // mock/ 配下（サブディレクトリ含む）に _ 始まりのディレクトリが無いこと
+  const underscoreDirs = [];
+  const walk = (dir, rel) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const childRel = rel ? `${rel}/${entry.name}` : entry.name;
+      if (entry.name.startsWith('_')) underscoreDirs.push(childRel);
+      walk(resolve(dir, entry.name), childRel);
+    }
+  };
+  walk(MOCK, '');
+  if (underscoreDirs.length) fail(`mock/ 配下に _ 始まりのディレクトリ: ${underscoreDirs.join(', ')}`);
+  else ok('mock/ 配下に _ 始まりのディレクトリなし');
+}
+
+function checkEnvLayer() {
+  const ENV_ROOT = resolve(ROOT, 'dify/env');
+  const REQUIRED_ENVS = ['cloud-master', 'inhouse', 'customer-a'];
+  const KNOWN_CLOUD_MASTER_URLS = ['https://api.dify.ai/v1', 'https://cloud.dify.ai'];
+
+  if (!existsSync(ENV_ROOT)) {
+    fail('dify/env/ が無い');
+  } else {
+    const envDirs = readdirSync(ENV_ROOT, { withFileTypes: true })
+      .filter(d => d.isDirectory()).map(d => d.name).sort();
+    const missing = REQUIRED_ENVS.filter(e => !envDirs.includes(e));
+    if (missing.length) fail(`dify/env/ に無い環境: ${missing.join(', ')}`);
+    else ok(`dify/env/ に 3 環境が揃っている: ${envDirs.join(', ')}`);
+
+    // 12-a: README
+    if (!existsSync(resolve(ENV_ROOT, 'README.md'))) fail('dify/env/README.md が無い');
+    else ok('dify/env/README.md あり');
+
+    const REQUIRED_TOP = ['schema', 'name', 'description', 'dify', 'models', 'knowledge', 'brand', 'flags', 'variables', 'apps'];
+    const REQUIRED_DIFY = ['base_url', 'console_url', 'edition', 'dsl_version'];
+    const REQUIRED_MODELS = ['chat', 'reasoning', 'embedding', 'rerank'];
+    const REQUIRED_BRAND = ['company', 'local_entity', 'sites', 'replace'];
+    const REQUIRED_FLAGS = ['cross_border', 'partner_mode', 'pipl_mask'];
+
+    // 秘密・実名らしき値の直値検出（12-b）。対象は dify/env/**/env.yml の生テキスト全体
+    const SECRET_KEY_RE = /sk-[A-Za-z0-9_-]{6,}/;
+    const HEXB64_RE = /\b[0-9a-fA-F]{32,}\b|\b[A-Za-z0-9+]{32,}={0,2}\b/;
+    const URL_RE = /https?:\/\/[^\s"'\)]+/g;
+    let schemaOk = true, secretsOk = true;
+
+    for (const envName of envDirs) {
+      const p = resolve(ENV_ROOT, envName, 'env.yml');
+      if (!existsSync(p)) { fail(`${envName}/env.yml が無い`); schemaOk = false; continue; }
+      const raw = readFileSync(p, 'utf8');
+
+      // schema / 必須キー（YAML を厳密に解釈せず、行頭キーの存在で確認。verify.mjs は JS のみで完結させるため）
+      const hasKey = (re) => re.test(raw);
+      if (!/^schema:\s*1\s*$/m.test(raw)) { fail(`${envName}/env.yml の schema が 1 でない`); schemaOk = false; }
+      for (const k of REQUIRED_TOP) {
+        if (!new RegExp(`^${k}:`, 'm').test(raw)) { fail(`${envName}/env.yml に必須キー ${k} が無い`); schemaOk = false; }
+      }
+      for (const k of REQUIRED_DIFY) {
+        if (!hasKey(new RegExp(`^\\s+${k}:`, 'm'))) { fail(`${envName}/env.yml の dify.${k} が無い`); schemaOk = false; }
+      }
+      for (const k of REQUIRED_MODELS) {
+        if (!hasKey(new RegExp(`^\\s+${k}:`, 'm'))) { fail(`${envName}/env.yml の models.${k} が無い`); schemaOk = false; }
+      }
+      for (const k of REQUIRED_BRAND) {
+        if (!hasKey(new RegExp(`^\\s+${k}:`, 'm'))) { fail(`${envName}/env.yml の brand.${k} が無い`); schemaOk = false; }
+      }
+      for (const k of REQUIRED_FLAGS) {
+        if (!hasKey(new RegExp(`\\b${k}:`, 'm'))) { fail(`${envName}/env.yml の flags.${k} が無い`); schemaOk = false; }
+      }
+      if (envName !== 'cloud-master' && !new RegExp(`^name:\\s*${envName}\\s*$`, 'm').test(raw)) {
+        fail(`${envName}/env.yml の name がディレクトリ名と不一致`);
+        schemaOk = false;
+      }
+
+      // 秘密・実名の直値
+      if (SECRET_KEY_RE.test(raw)) { fail(`${envName}/env.yml に sk- で始まる文字列がある（秘密の直値）`); secretsOk = false; }
+      // ${VAR} 由来のトークン自体はハイフンを含み HEXB64_RE に基本ヒットしないが、誤検知を避けるため
+      // '${' を含む行は対象から除外する
+      const bodyForHex = raw.split('\n').filter(l => !l.includes('${')).join('\n');
+      if (HEXB64_RE.test(bodyForHex)) {
+        fail(`${envName}/env.yml に 32 文字以上の 16 進／base64 らしき文字列がある（秘密の直値の疑い）`);
+        secretsOk = false;
+      }
+      const urls = [...raw.matchAll(URL_RE)].map(m => m[0].replace(/[,\s]+$/, ''));
+      const badUrls = envName === 'cloud-master'
+        ? urls.filter(u => !KNOWN_CLOUD_MASTER_URLS.includes(u))
+        : urls; // cloud-master 以外は生 URL があってはいけない（${DIFY_BASE_URL} 等で渡す）
+      if (badUrls.length) {
+        fail(`${envName}/env.yml に想定外の生 URL がある: ${badUrls.join(', ')}`);
+        secretsOk = false;
+      }
+    }
+    if (schemaOk) ok('全環境の env.yml が schema: 1 と必須キーを満たす');
+    if (secretsOk) ok('dify/env/**/env.yml に秘密・実名の直値なし（sk- / 32+ hex-base64 / 想定外 URL）');
+
+    // 12-e: apps:（Cloud/セルフホストのアプリ id。管理番号は dify/apps/*.yml と 1:1。Issue #114 PR-2）
+    const APPS_DIR = resolve(ROOT, 'dify/apps');
+    const appCodesOnDisk = existsSync(APPS_DIR)
+      ? [...new Set(readdirSync(APPS_DIR).filter(f => f.endsWith('.yml')).map(f => f.split('-').slice(0, 2).join('-')))].sort()
+      : [];
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let appsOk = true;
+    for (const envName of envDirs) {
+      const p = resolve(ENV_ROOT, envName, 'env.yml');
+      if (!existsSync(p)) continue; // 既に上で fail 済み
+      const raw = readFileSync(p, 'utf8');
+      const lines = raw.split('\n');
+      const startIdx = lines.findIndex(l => /^apps:\s*$/.test(l));
+      if (startIdx === -1) { fail(`${envName}/env.yml に apps: ブロックが無い`); appsOk = false; continue; }
+
+      const entries = {};
+      for (let i = startIdx + 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (/^\S/.test(line)) break; // 次のトップレベルキーでブロック終端
+        if (line.trim() === '' || line.trim().startsWith('#')) continue;
+        const m = line.match(/^\s+([A-Za-z0-9_-]+):\s*\{\s*id:\s*(.+?)\s*\}\s*(#.*)?$/);
+        if (!m) { fail(`${envName}/env.yml の apps: に解釈できない行がある: ${line.trim()}`); appsOk = false; continue; }
+        entries[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
+      }
+
+      const codes = Object.keys(entries);
+      const badCode = codes.filter(c => !/^[A-Z]{2}-\d{2}$/.test(c));
+      if (badCode.length) { fail(`${envName}/env.yml の apps: に管理番号の形式でないキーがある: ${badCode.join(', ')}`); appsOk = false; }
+
+      const missing = appCodesOnDisk.filter(c => !codes.includes(c));
+      const extra = codes.filter(c => !appCodesOnDisk.includes(c));
+      if (missing.length) { fail(`${envName}/env.yml の apps: に無い管理番号（dify/apps/*.yml にはある）: ${missing.join(', ')}`); appsOk = false; }
+      if (extra.length) { fail(`${envName}/env.yml の apps: に dify/apps/*.yml に無い管理番号がある: ${extra.join(', ')}`); appsOk = false; }
+
+      for (const [code, idVal] of Object.entries(entries)) {
+        const isNull = idVal === 'null';
+        const isVar = /^\$\{[A-Za-z_][A-Za-z0-9_]*\}$/.test(idVal);
+        const isUuid = UUID_RE.test(idVal);
+        if (!isNull && !isVar && !isUuid) {
+          fail(`${envName}/env.yml の apps.${code}.id が null / \${VAR} / UUID のいずれでもない: ${idVal}`);
+          appsOk = false;
+        }
+        if (envName !== 'cloud-master' && isUuid) {
+          fail(`${envName}/env.yml の apps.${code}.id に生の UUID が書かれている（顧客環境の値は \${VAR} にする）: ${idVal}`);
+          appsOk = false;
+        }
+      }
+    }
+    if (appsOk) ok('全環境の env.yml の apps: が dify/apps/*.yml と一致し、id が null/${VAR}/UUID のいずれか（12-e）');
+  }
+
+  // 12-c: .gitignore（Secrets / Build）
+  const gi = existsSync(resolve(ROOT, '.gitignore')) ? readFileSync(resolve(ROOT, '.gitignore'), 'utf8') : '';
+  const giNeeds = ['.env', '.env.*', '*.key', '*.pem', 'secrets/', 'dify/build/'];
+  const giMissing = giNeeds.filter(n => !gi.includes(n));
+  if (giMissing.length) fail(`.gitignore に無いパターン: ${giMissing.join(', ')}`);
+  else ok('.gitignore に Secrets / dify/build/ の除外パターンあり');
+
+  // 12-d: render.py --env cloud-master --all --check（python3 が無ければ warn で skip）
+  const renderPy = resolve(ROOT, 'scripts/dify/render.py');
+  if (!existsSync(renderPy)) {
+    fail('scripts/dify/render.py が無い');
+  } else {
+    try {
+      execFileSync('python3', [renderPy, '--env', 'cloud-master', '--all', '--check'], { cwd: ROOT, stdio: 'pipe' });
+      ok('render.py --env cloud-master --all --check が PASS（マスタとバイト一致）');
+    } catch (e) {
+      if (e && e.code === 'ENOENT') {
+        warn('python3 が無いため render.py --check を skip しました');
+      } else {
+        fail('render.py --env cloud-master --all --check が FAIL（マスタとバイト不一致、または実行エラー）: '
+          + String((e && e.stderr && e.stderr.toString()) || e.message || e).split('\n')[0]);
+      }
+    }
+  }
+}
+
+/* ---------- アーカイブモード（mock/.archived がある＝A はアーカイブ済み） ----------
+ * 設計書: docs/handoff/2026-09-08-migrate-to-company-repo.md。
+ * マーカーが無いときはこの if の中を一切通らないので、以降（既存の §1〜12）の検査ロジックは
+ * 1 バイトも変わらない（§8・§12 は上の関数に切り出したが、通常モードでは元の位置から
+ * 呼ばれるだけで実行内容・出力は変わらない）。
+ *
+ * マーカーがあるときは、mock/ のデータ層・多言語辞書・CSS トークン・共通レイヤー・シナリオ・
+ * HOME/FEED・索引の鮮度（§1〜7・9〜11。いずれも mock/js/data/** の実体が前提）を飛ばし、
+ * 代わりに「リダイレクト 3 ページが新 URL を指しているか」「mock/.nojekyll・pages.yml の
+ * 公開設定」だけを検査する。§8（Pages 設定）・§12（dify/env/** の環境レイヤー）は
+ * 通常モードと同じ関数をそのまま呼ぶ（dify/** は無変更のため検査を継続する）。
+ */
+if (existsSync(resolve(MOCK, '.archived'))) {
+  section('A-1. アーカイブ: リダイレクトページ');
+  {
+    const NEW_BASE = readFileSync(resolve(MOCK, '.archived'), 'utf8').trim();
+    if (!/^https:\/\/[^\s"']+\/$/.test(NEW_BASE)) {
+      fail(`mock/.archived の内容が末尾 / 付きの https URL でない: "${NEW_BASE}"`);
+    } else {
+      ok(`mock/.archived: 移行先 = ${NEW_BASE}`);
+      const pages = [
+        ['index.html', NEW_BASE],
+        ['catalog.html', `${NEW_BASE}catalog.html`],
+        ['scripts.html', `${NEW_BASE}scripts.html`],
+      ];
+      for (const [file, expected] of pages) {
+        const p = resolve(MOCK, file);
+        if (!existsSync(p)) { fail(`mock/${file} が無い（リダイレクトページが必要）`); continue; }
+        const raw = readFileSync(p, 'utf8');
+        const m = raw.match(/<meta\s+http-equiv="refresh"\s+content="0;\s*url=([^"]+)"/i);
+        if (!m) { fail(`mock/${file}: <meta http-equiv="refresh" content="0;url=…"> が無い`); continue; }
+        if (m[1].trim() !== expected) {
+          fail(`mock/${file}: リダイレクト先が "${m[1].trim()}"（期待 "${expected}"）`);
+          continue;
+        }
+        // 外部リソースを読んでいないこと（css/**・js/** への参照が無い。単一ファイルの要件）
+        const external = [...raw.matchAll(/<(?:link[^>]+href|script[^>]+src)="([^"]+)"/gi)].map(x => x[1]);
+        if (external.length) { fail(`mock/${file}: 外部リソースを読んでいる: ${external.join(', ')}`); continue; }
+        ok(`mock/${file}: 新 URL (${expected}) を指し、外部リソースなし`);
+      }
+    }
+  }
+  section('A-2. アーカイブ: Pages 設定（§8 を再利用）');
+  checkPagesConfig();
+  section('A-3. アーカイブ: 環境レイヤー dify/env/**（§12 を再利用。無変更のため継続）');
+  checkEnvLayer();
+
+  console.log(`\n${fails === 0 ? '✅ ALL PASS（アーカイブモード）' : `❌ ${fails} FAIL`}${warns ? ` / ⚠️ ${warns} warn` : ''}`);
+  process.exit(fails ? 1 : 0);
+}
+
 if (!existsSync(HTML)) { fail(`not found: ${HTML}`); process.exit(1); }
 
 const mock = loadMock(ROOT);
@@ -431,27 +664,7 @@ section('7. 共通レイヤー契約');
 
 /* ---------- 8. Pages 設定 ---------- */
 section('8. Pages 設定');
-{
-  const wf = resolve(ROOT, '.github/workflows/pages.yml');
-  if (!existsSync(wf)) fail('pages.yml が無い');
-  else if (!/path:\s*mock\b/.test(readFileSync(wf, 'utf8'))) fail('pages.yml の upload path が mock ではない（§2-8）');
-  else ok('pages.yml: path: mock');
-  if (!existsSync(resolve(MOCK, '.nojekyll'))) fail('mock/.nojekyll が無い'); else ok('mock/.nojekyll あり');
-
-  // mock/ 配下（サブディレクトリ含む）に _ 始まりのディレクトリが無いこと
-  const underscoreDirs = [];
-  const walk = (dir, rel) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      const childRel = rel ? `${rel}/${entry.name}` : entry.name;
-      if (entry.name.startsWith('_')) underscoreDirs.push(childRel);
-      walk(resolve(dir, entry.name), childRel);
-    }
-  };
-  walk(MOCK, '');
-  if (underscoreDirs.length) fail(`mock/ 配下に _ 始まりのディレクトリ: ${underscoreDirs.join(', ')}`);
-  else ok('mock/ 配下に _ 始まりのディレクトリなし');
-}
+checkPagesConfig();
 
 /* ---------- 9. シナリオ整合（SCENARIOS ⇔ SVCS ⇔ TEMPLATES。業種ごと） ---------- */
 section('9. シナリオ整合');
@@ -650,161 +863,7 @@ section('11. 索引の鮮度・README の 4 区分地図');
 
 /* ---------- 12. 環境レイヤー（dify/env/**） ---------- */
 section('12. 環境レイヤー（dify/env/**）');
-{
-  const ENV_ROOT = resolve(ROOT, 'dify/env');
-  const REQUIRED_ENVS = ['cloud-master', 'inhouse', 'customer-a'];
-  const KNOWN_CLOUD_MASTER_URLS = ['https://api.dify.ai/v1', 'https://cloud.dify.ai'];
-
-  if (!existsSync(ENV_ROOT)) {
-    fail('dify/env/ が無い');
-  } else {
-    const envDirs = readdirSync(ENV_ROOT, { withFileTypes: true })
-      .filter(d => d.isDirectory()).map(d => d.name).sort();
-    const missing = REQUIRED_ENVS.filter(e => !envDirs.includes(e));
-    if (missing.length) fail(`dify/env/ に無い環境: ${missing.join(', ')}`);
-    else ok(`dify/env/ に 3 環境が揃っている: ${envDirs.join(', ')}`);
-
-    // 12-a: README
-    if (!existsSync(resolve(ENV_ROOT, 'README.md'))) fail('dify/env/README.md が無い');
-    else ok('dify/env/README.md あり');
-
-    const REQUIRED_TOP = ['schema', 'name', 'description', 'dify', 'models', 'knowledge', 'brand', 'flags', 'variables', 'apps'];
-    const REQUIRED_DIFY = ['base_url', 'console_url', 'edition', 'dsl_version'];
-    const REQUIRED_MODELS = ['chat', 'reasoning', 'embedding', 'rerank'];
-    const REQUIRED_BRAND = ['company', 'local_entity', 'sites', 'replace'];
-    const REQUIRED_FLAGS = ['cross_border', 'partner_mode', 'pipl_mask'];
-
-    // 秘密・実名らしき値の直値検出（12-b）。対象は dify/env/**/env.yml の生テキスト全体
-    const SECRET_KEY_RE = /sk-[A-Za-z0-9_-]{6,}/;
-    const HEXB64_RE = /\b[0-9a-fA-F]{32,}\b|\b[A-Za-z0-9+]{32,}={0,2}\b/;
-    const URL_RE = /https?:\/\/[^\s"'\)]+/g;
-    let schemaOk = true, secretsOk = true;
-
-    for (const envName of envDirs) {
-      const p = resolve(ENV_ROOT, envName, 'env.yml');
-      if (!existsSync(p)) { fail(`${envName}/env.yml が無い`); schemaOk = false; continue; }
-      const raw = readFileSync(p, 'utf8');
-
-      // schema / 必須キー（YAML を厳密に解釈せず、行頭キーの存在で確認。verify.mjs は JS のみで完結させるため）
-      const hasKey = (re) => re.test(raw);
-      if (!/^schema:\s*1\s*$/m.test(raw)) { fail(`${envName}/env.yml の schema が 1 でない`); schemaOk = false; }
-      for (const k of REQUIRED_TOP) {
-        if (!new RegExp(`^${k}:`, 'm').test(raw)) { fail(`${envName}/env.yml に必須キー ${k} が無い`); schemaOk = false; }
-      }
-      for (const k of REQUIRED_DIFY) {
-        if (!hasKey(new RegExp(`^\\s+${k}:`, 'm'))) { fail(`${envName}/env.yml の dify.${k} が無い`); schemaOk = false; }
-      }
-      for (const k of REQUIRED_MODELS) {
-        if (!hasKey(new RegExp(`^\\s+${k}:`, 'm'))) { fail(`${envName}/env.yml の models.${k} が無い`); schemaOk = false; }
-      }
-      for (const k of REQUIRED_BRAND) {
-        if (!hasKey(new RegExp(`^\\s+${k}:`, 'm'))) { fail(`${envName}/env.yml の brand.${k} が無い`); schemaOk = false; }
-      }
-      for (const k of REQUIRED_FLAGS) {
-        if (!hasKey(new RegExp(`\\b${k}:`, 'm'))) { fail(`${envName}/env.yml の flags.${k} が無い`); schemaOk = false; }
-      }
-      if (envName !== 'cloud-master' && !new RegExp(`^name:\\s*${envName}\\s*$`, 'm').test(raw)) {
-        fail(`${envName}/env.yml の name がディレクトリ名と不一致`);
-        schemaOk = false;
-      }
-
-      // 秘密・実名の直値
-      if (SECRET_KEY_RE.test(raw)) { fail(`${envName}/env.yml に sk- で始まる文字列がある（秘密の直値）`); secretsOk = false; }
-      // ${VAR} 由来のトークン自体はハイフンを含み HEXB64_RE に基本ヒットしないが、誤検知を避けるため
-      // '${' を含む行は対象から除外する
-      const bodyForHex = raw.split('\n').filter(l => !l.includes('${')).join('\n');
-      if (HEXB64_RE.test(bodyForHex)) {
-        fail(`${envName}/env.yml に 32 文字以上の 16 進／base64 らしき文字列がある（秘密の直値の疑い）`);
-        secretsOk = false;
-      }
-      const urls = [...raw.matchAll(URL_RE)].map(m => m[0].replace(/[,\s]+$/, ''));
-      const badUrls = envName === 'cloud-master'
-        ? urls.filter(u => !KNOWN_CLOUD_MASTER_URLS.includes(u))
-        : urls; // cloud-master 以外は生 URL があってはいけない（${DIFY_BASE_URL} 等で渡す）
-      if (badUrls.length) {
-        fail(`${envName}/env.yml に想定外の生 URL がある: ${badUrls.join(', ')}`);
-        secretsOk = false;
-      }
-    }
-    if (schemaOk) ok('全環境の env.yml が schema: 1 と必須キーを満たす');
-    if (secretsOk) ok('dify/env/**/env.yml に秘密・実名の直値なし（sk- / 32+ hex-base64 / 想定外 URL）');
-
-    // 12-e: apps:（Cloud/セルフホストのアプリ id。管理番号は dify/apps/*.yml と 1:1。Issue #114 PR-2）
-    const APPS_DIR = resolve(ROOT, 'dify/apps');
-    const appCodesOnDisk = existsSync(APPS_DIR)
-      ? [...new Set(readdirSync(APPS_DIR).filter(f => f.endsWith('.yml')).map(f => f.split('-').slice(0, 2).join('-')))].sort()
-      : [];
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    let appsOk = true;
-    for (const envName of envDirs) {
-      const p = resolve(ENV_ROOT, envName, 'env.yml');
-      if (!existsSync(p)) continue; // 既に上で fail 済み
-      const raw = readFileSync(p, 'utf8');
-      const lines = raw.split('\n');
-      const startIdx = lines.findIndex(l => /^apps:\s*$/.test(l));
-      if (startIdx === -1) { fail(`${envName}/env.yml に apps: ブロックが無い`); appsOk = false; continue; }
-
-      const entries = {};
-      for (let i = startIdx + 1; i < lines.length; i++) {
-        const line = lines[i];
-        if (/^\S/.test(line)) break; // 次のトップレベルキーでブロック終端
-        if (line.trim() === '' || line.trim().startsWith('#')) continue;
-        const m = line.match(/^\s+([A-Za-z0-9_-]+):\s*\{\s*id:\s*(.+?)\s*\}\s*(#.*)?$/);
-        if (!m) { fail(`${envName}/env.yml の apps: に解釈できない行がある: ${line.trim()}`); appsOk = false; continue; }
-        entries[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
-      }
-
-      const codes = Object.keys(entries);
-      const badCode = codes.filter(c => !/^[A-Z]{2}-\d{2}$/.test(c));
-      if (badCode.length) { fail(`${envName}/env.yml の apps: に管理番号の形式でないキーがある: ${badCode.join(', ')}`); appsOk = false; }
-
-      const missing = appCodesOnDisk.filter(c => !codes.includes(c));
-      const extra = codes.filter(c => !appCodesOnDisk.includes(c));
-      if (missing.length) { fail(`${envName}/env.yml の apps: に無い管理番号（dify/apps/*.yml にはある）: ${missing.join(', ')}`); appsOk = false; }
-      if (extra.length) { fail(`${envName}/env.yml の apps: に dify/apps/*.yml に無い管理番号がある: ${extra.join(', ')}`); appsOk = false; }
-
-      for (const [code, idVal] of Object.entries(entries)) {
-        const isNull = idVal === 'null';
-        const isVar = /^\$\{[A-Za-z_][A-Za-z0-9_]*\}$/.test(idVal);
-        const isUuid = UUID_RE.test(idVal);
-        if (!isNull && !isVar && !isUuid) {
-          fail(`${envName}/env.yml の apps.${code}.id が null / \${VAR} / UUID のいずれでもない: ${idVal}`);
-          appsOk = false;
-        }
-        if (envName !== 'cloud-master' && isUuid) {
-          fail(`${envName}/env.yml の apps.${code}.id に生の UUID が書かれている（顧客環境の値は \${VAR} にする）: ${idVal}`);
-          appsOk = false;
-        }
-      }
-    }
-    if (appsOk) ok('全環境の env.yml の apps: が dify/apps/*.yml と一致し、id が null/${VAR}/UUID のいずれか（12-e）');
-  }
-
-  // 12-c: .gitignore（Secrets / Build）
-  const gi = existsSync(resolve(ROOT, '.gitignore')) ? readFileSync(resolve(ROOT, '.gitignore'), 'utf8') : '';
-  const giNeeds = ['.env', '.env.*', '*.key', '*.pem', 'secrets/', 'dify/build/'];
-  const giMissing = giNeeds.filter(n => !gi.includes(n));
-  if (giMissing.length) fail(`.gitignore に無いパターン: ${giMissing.join(', ')}`);
-  else ok('.gitignore に Secrets / dify/build/ の除外パターンあり');
-
-  // 12-d: render.py --env cloud-master --all --check（python3 が無ければ warn で skip）
-  const renderPy = resolve(ROOT, 'scripts/dify/render.py');
-  if (!existsSync(renderPy)) {
-    fail('scripts/dify/render.py が無い');
-  } else {
-    try {
-      execFileSync('python3', [renderPy, '--env', 'cloud-master', '--all', '--check'], { cwd: ROOT, stdio: 'pipe' });
-      ok('render.py --env cloud-master --all --check が PASS（マスタとバイト一致）');
-    } catch (e) {
-      if (e && e.code === 'ENOENT') {
-        warn('python3 が無いため render.py --check を skip しました');
-      } else {
-        fail('render.py --env cloud-master --all --check が FAIL（マスタとバイト不一致、または実行エラー）: '
-          + String((e && e.stderr && e.stderr.toString()) || e.message || e).split('\n')[0]);
-      }
-    }
-  }
-}
+checkEnvLayer();
 
 /* ---------- 結果 ---------- */
 console.log(`\n${fails === 0 ? '✅ ALL PASS' : `❌ ${fails} FAIL`}${warns ? ` / ⚠️ ${warns} warn` : ''}`);

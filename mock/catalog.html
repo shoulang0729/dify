@@ -1,86 +1,78 @@
 <!DOCTYPE html>
-<html lang="ja" data-theme="light" data-lang="ja">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AIエージェントカタログ ／ AI智能体服务目录 ／ AI Agent Catalog</title>
-<template id="__bundler_thumbnail" data-bg-color="#070F26">
-  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
-    <rect x="360" y="240" width="120" height="320" fill="#0071BC"/>
-    <rect x="510" y="240" width="330" height="90" fill="#FFFFFF" opacity="0.92"/>
-    <rect x="510" y="355" width="330" height="90" fill="#FFFFFF" opacity="0.55"/>
-    <rect x="510" y="470" width="330" height="90" fill="#FFFFFF" opacity="0.3"/>
-  </svg>
-</template>
-<link rel="stylesheet" href="css/tokens.css">
-<link rel="stylesheet" href="css/components.css">
+<title>移転しました ／ 已迁移 ／ This page has moved</title>
+<!--
+  このリポジトリ（A / shoulang0729/dify）はアーカイブです。
+  デモと開発は会社アカウントのリポジトリ（B）へ移転しました。
+
+  移行先 URL の定義はこの 1 行（<meta http-equiv="refresh"> の content 属性）だけです。
+  変更するときはこの行の "url=" の後ろだけ書き換えてください。
+  <link rel="canonical">・本文中のリンク・JS によるリダイレクトは、すべてこの meta タグから
+  実行時に読み取って組み立てます（tools/verify.mjs のアーカイブ検査もこの行を見ています）。
+-->
+<meta http-equiv="refresh" content="0; url=https://toshioiinuma-ntt.github.io/ndit.dify/catalog.html">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Noto Sans SC", sans-serif;
+    background: #f5f6f8; color: #1a1f2b;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  main {
+    max-width: 640px; width: 100%;
+    background: #ffffff; border: 1px solid #dde1e8; border-radius: 8px;
+    padding: 32px 36px; line-height: 1.7;
+  }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  p { margin: 0 0 14px; font-size: 14px; }
+  .lang-block { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px dashed #dde1e8; }
+  .lang-block:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  a.dest { display: inline-block; word-break: break-all; font-weight: bold; }
+  .note { font-size: 12px; color: #6b7280; margin-top: 18px; }
+</style>
 </head>
 <body>
-<div class="app">
-
-  <!-- レビュー用の足場。本番UIには存在しない領域 -->
-  <div class="mockbar" data-screen-label="モックツールバー">
-    <div class="label" id="mock-label">CONCEPT MOCK</div>
-    <div class="segwrap">
-      <span class="seglabel" id="ind-label">業種:</span>
-      <div class="seg" id="ind-seg"></div>
-      <span class="seglabel" id="seg-label">パターン:</span>
-      <div class="seg" id="seg"></div>
-    </div>
+<main>
+  <div class="lang-block">
+    <h1>AIエージェントカタログは移転しました</h1>
+    <p>このリポジトリ（A）はアーカイブになりました。デモと開発は会社アカウントのリポジトリ（B）へ移転しています。数秒で自動的に新しいカタログへ移動します。自動で移動しない場合は、下のリンクをクリックしてください。</p>
   </div>
-
-  <!-- ここから下が本番相当の画面 -->
-  <header class="hdr">
-    <div class="brand">
-      <span class="brand-mark" id="brand-mark" aria-hidden="true"></span>
-      <span class="wordmark" id="wordmark">会社ロゴ</span>
-    </div>
-    <div class="vline"></div>
-    <div class="t1" id="app-title">AIエージェントカタログ</div>
-    <div class="right">
-      <div class="ctrl">
-        <select class="lang-select" id="lang-select" aria-label="Language">
-          <option value="ja">日本語</option>
-          <option value="zh">中文</option>
-          <option value="en">English</option>
-        </select>
-        <button class="theme-btn" id="theme-btn" aria-label="Theme"></button>
-      </div>
-      <span class="dept" id="dept">情報システム部</span>
-      <div class="avatar">S</div>
-    </div>
-  </header>
-
-  <div class="body">
-    <div id="sidebar" style="display: contents;"></div>
-    <main id="main"></main>
+  <div class="lang-block">
+    <h1>AI智能体目录已迁移</h1>
+    <p>本仓库（A）已归档。演示与后续开发已迁移至公司账号下的仓库（B）。页面将在数秒内自动跳转到新的目录页面。如未自动跳转，请点击下方链接。</p>
   </div>
-</div>
+  <div class="lang-block">
+    <h1>The AI Agent Catalog has moved</h1>
+    <p>This repository (A) is now archived. The demo and ongoing development have moved to the company account repository (B). You will be redirected to the new catalog page automatically in a moment. If not, please click the link below.</p>
+  </div>
+  <p><a class="dest" id="dest-link" href="#">https://toshioiinuma-ntt.github.io/ndit.dify/catalog.html</a></p>
+  <p class="note">shoulang0729/dify (A) → toshioiinuma-ntt/ndit.dify (B)</p>
+</main>
+<script>
+(function () {
+  var meta = document.querySelector('meta[http-equiv="refresh" i]');
+  var content = meta ? meta.getAttribute('content') || '' : '';
+  var m = content.match(/url=(.+)$/i);
+  var dest = m ? m[1].trim() : '';
+  if (!dest) return;
 
-<!-- データ層（純粋なリテラルのみ。実行時副作用なし） -->
-<script src="js/data/ui.js"></script>
-<script src="js/data/catalog.js"></script>
-<script src="js/data/home.js"></script>
-<script src="js/data/style.js"></script>
-<script src="js/data/scenarios/mfg/kn.js"></script>
-<script src="js/data/scenarios/mfg/qa.js"></script>
-<script src="js/data/scenarios/mfg/dc.js"></script>
-<script src="js/data/scenarios/mfg/lg.js"></script>
-<script src="js/data/scenarios/mfg/nm.js"></script>
-<script src="js/data/scenarios/mfg/en.js"></script>
-<script src="js/data/scenarios/mfg/gn.js"></script>
-<script src="js/data/scenarios/mfg/pt.js"></script>
-<script src="js/data/scenarios/fin/kn.js"></script>
-<script src="js/data/scenarios/fin/rs.js"></script>
-<script src="js/data/scenarios/fin/cv.js"></script>
-<script src="js/data/scenarios/fin/fa.js"></script>
-<script src="js/data/scenarios/fin/dc.js"></script>
-<script src="js/data/scenarios/fin/gn.js"></script>
-<script src="js/data/scenarios/fin/po.js"></script>
-<script src="js/data/scenarios/fin/eg.js"></script>
-<!-- アプリ層 -->
-<script src="js/app.js"></script>
-<script src="js/render.js"></script>
-<script src="js/events.js"></script>
+  // <link rel="canonical"> は meta タグの値から実行時に組み立てる（値の定義を 2 か所に持たない）
+  var canonical = document.createElement('link');
+  canonical.setAttribute('rel', 'canonical');
+  canonical.setAttribute('href', dest);
+  document.head.appendChild(canonical);
+
+  var a = document.getElementById('dest-link');
+  if (a) { a.setAttribute('href', dest); a.textContent = dest; }
+
+  // meta refresh に加えて JS でも遷移させる（meta refresh がブロックされる環境向け）
+  location.replace(dest);
+})();
+</script>
 </body>
 </html>
