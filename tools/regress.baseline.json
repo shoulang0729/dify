@@ -1241,7 +1241,6 @@
   "uiKeys": [
     "addedOn",
     "afterLabel",
-    "all",
     "allServices",
     "appTitle",
     "backHome",
@@ -1332,7 +1331,7 @@
     "subs": 29,
     "svcs": 67,
     "tags": 57,
-    "ui": 87,
+    "ui": 86,
     "svcsMfg": 49,
     "svcsFin": 29,
     "svcsBoth": 11,
