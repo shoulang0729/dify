@@ -154,15 +154,6 @@ def expand_env(env_raw, environ):
 # 語彙置換（R6・R7）
 # ---------------------------------------------------------------------------
 
-def build_replace_table(env_raw_brand):
-    table = []
-    for item in (env_raw_brand or {}).get("replace") or []:
-        frm, to = item.get("from"), item.get("to")
-        if frm and to is not None:
-            table.append((frm, to))
-    return table
-
-
 def apply_replace(text, table_expanded, table_masked):
     """table_expanded: [(from, to)]。table_masked: from -> bool（to が ${VAR} 由来か）。
     戻り値: (置換後テキスト, [(word, count, masked), ...])"""
