@@ -39,7 +39,8 @@
   /* ===== ヘッダー（本番にも存在する領域） ===== */
   .hdr {
     flex-shrink: 0; display: flex; align-items: center; gap: var(--space-5);
-    padding: 0 var(--space-6); height: 64px;
+    flex-wrap: wrap; row-gap: var(--space-2);
+    padding: var(--space-2) var(--space-6); min-height: 64px;
     background: var(--surface-header); border-bottom: 1px solid var(--border-subtle);
   }
   /* 会社ロゴ（アイコン＋社名）。業種切替で両方が入れ替わる（PM 追加要件・Issue #120）。
@@ -56,8 +57,12 @@
     color: var(--text-muted);
   }
   .hdr .vline { width: 1px; height: 28px; background: var(--border-subtle); }
-  .hdr .t1 { font-size: 15px; font-weight: var(--weight-bold); color: var(--text-heading); }
-  .hdr .right { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); }
+  /* 狭い幅で 1 文字幅まで潰れて縦に伸び、上のツールバーを覆う事故を防ぐ（折り返さず省略する） */
+  .hdr .t1 {
+    font-size: 15px; font-weight: var(--weight-bold); color: var(--text-heading);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  .hdr .right { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; row-gap: var(--space-2); }
   .hdr .dept { font-size: 12.5px; color: var(--text-secondary); }
   .avatar {
     width: 32px; height: 32px; border-radius: 50%; background: var(--action-primary);
