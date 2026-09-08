@@ -4,6 +4,9 @@
     python3 scripts/dify/kb_upload.py KN-01
     python3 scripts/dify/kb_upload.py --env customer-a KN-01
     python3 scripts/dify/kb_upload.py --env cloud-master --dry-run KN-01   # KB 名だけ確認。ネットワークを呼ばない
+    python3 scripts/dify/kb_upload.py --env cloud-master --refresh KN-01   # 同名文書の中身だけ差し替える（削除しない）
+    python3 scripts/dify/kb_upload.py --env cloud-master --replace --dry-run KN-01   # 削除予定を列挙するだけ（K5）
+    python3 scripts/dify/kb_upload.py --env cloud-master --replace KN-01   # 同名文書を削除して入れ直す（最大 5 件。K1〜K3）
 
 環境変数
   DIFY_DATASET_KEY  ナレッジ API キー（必須。ログには出さない。--dry-run では不要）
@@ -14,16 +17,32 @@
   dify/env/<env>/env.yml の knowledge.<管理番号>.name を KB 名として使う（${VAR} はプロセス環境変数で展開）。
   env.yml が無い／論理 KB 名の定義が無い場合は、従来どおり dify/apps/<管理番号>-*.yml の app.name から作る。
 
-動作（冪等）
+動作（冪等。既定はフラグ無しで従来と完全に同じ＝同名はスキップ・削除も更新もしない）
   1. KB 名 "<管理番号> <サービス名>"（または env の論理名）の KB を探す。無ければ作成
      （indexing_technique: high_quality。新規作成時のみ retrieval_model を完全な形で送り Rerank を無効化する。DI-005 / DI-016）
-  2. dify/kb/<管理番号>/ の .md / .txt / .pdf を、同名文書が無いものだけアップロード
-     （POST /datasets/{id}/document/create-by-file、process_rule は custom 固定：区切り \n\n・最大 1024 字。DI-006）
+  2. dify/kb/<管理番号>/ の .md / .txt / .pdf を、同名文書が無いものはアップロード
+     （POST /datasets/{id}/document/create-by-file、process_rule は custom 固定：区切り \n\n・最大 1024 字。DI-006）。
+     同名文書があるものは既定ではスキップ。--refresh / --replace（下記）で挙動を変えられる
   3. アップロードした文書のインデックス完了を待つ（最長 --timeout 秒、既定 600）
+
+--refresh（Issue #121 W4-1）
+  同名文書の**中身だけ**差し替える（削除しない。文書 id は保たれる）。まず canonical な
+  PATCH /datasets/{id}/documents/{doc_id}（ファイル差し替え）を試し、404/405 なら
+  POST …/documents/{doc_id}/update-by-text にフォールバックする（1.17.0 に PATCH が無い場合の逃げ道）。
+  DELETE は一度も呼ばない。
+
+--replace（Issue #121 W4-1）
+  同名文書を**削除してから**入れ直す。歯止め（すべて必須）:
+    K1 削除・更新の対象は dify/kb/<管理番号>/ に実在するファイル名と完全一致する文書だけ
+    K2 1 回の実行で削除できる文書数の上限 5（MAX_DELETE）。超えたら 1 件も削除せず exit 1
+    K3 削除は 1 文書ずつ「削除 → 直後に再投入」。全部消してから入れ直さない
+    K4 KB そのものの削除（DELETE /datasets/{id}）は実装しない
+    K5 --dry-run と併用すると、削除予定の文書名を列挙するだけで終了する（削除しない）
+    K7 削除の前に、その文書の id と name を標準出力に出す（id は先頭 8 文字までマスク）
 
 既存 KB を再利用する経路では process_rule・retrieval_model の設定は変更しない（DI-005 は画面で確認）。
 
-終了コード: 0 成功 / 1 設定不備・API エラー / 2 インデックス未完了（タイムアウト）
+終了コード: 0 成功 / 1 設定不備・API エラー・MAX_DELETE 超過 / 2 インデックス未完了（タイムアウト）
 """
 import argparse
 import json
@@ -55,6 +74,7 @@ USER_AGENT = "dify-scripts/1.0 (+https://github.com/shoulang0729/dify)"  # Cloud
 # チャンク設定の既定（DI-006）。UI 既定の改行区切りだと条件表・箇条書きが 1 行 1 チャンクに分断されるため custom 固定にする
 CHUNK_SEPARATOR = "\n\n"
 CHUNK_MAX_TOKENS = 1024
+MAX_DELETE = 5  # K2: --replace が 1 回の実行で削除できる文書数の上限。超えたら 1 件も削除せず exit 1
 # アプリ DSL が見つからないときの予備（KB 名の後半）
 FALLBACK_NAMES = {
     "KN-01": "技術ナレッジQA",
@@ -196,6 +216,13 @@ class Api:
         return self._req("POST", path, body)[1]
 
     def post_multipart(self, path, fields, file_field, filename, content, content_type):
+        return self._multipart_req("POST", path, fields, file_field, filename, content, content_type)
+
+    def patch_multipart(self, path, fields, file_field, filename, content, content_type):
+        """--refresh が使う。canonical な PATCH /datasets/{id}/documents/{doc_id}（ファイル差し替え。削除しない）。"""
+        return self._multipart_req("PATCH", path, fields, file_field, filename, content, content_type)
+
+    def _multipart_req(self, method, path, fields, file_field, filename, content, content_type):
         boundary = "----DifyUpload" + uuid.uuid4().hex
         parts = []
         for k, v in fields.items():
@@ -214,7 +241,7 @@ class Api:
         parts.append(f"--{boundary}--\r\n".encode("utf-8"))
         body = b"".join(parts)
         return self._req(
-            "POST", path, body, {"Content-Type": f"multipart/form-data; boundary={boundary}"}
+            method, path, body, {"Content-Type": f"multipart/form-data; boundary={boundary}"}
         )[1]
 
 
@@ -228,6 +255,35 @@ def list_all(api, path):
         page += 1
 
 
+def update_document(api, ds_id, doc_id, fname, content, ctype, process_rule):
+    """--refresh: 同名文書の中身だけ差し替える（削除しない。文書 id は保たれる）。
+
+    まず canonical な PATCH（ファイル差し替え）を試し、404/405 なら update-by-text にフォールバックする
+    （1.17.0 に PATCH が無い場合の逃げ道。設計書 §4-1・V3 は実機未確認）。
+    """
+    data = json.dumps({"name": fname, "process_rule": process_rule}, ensure_ascii=False)
+    try:
+        return api.patch_multipart(
+            f"/datasets/{ds_id}/documents/{doc_id}", {"data": data}, "file", fname, content, ctype
+        )
+    except RuntimeError as e:
+        if "HTTP 404" not in str(e) and "HTTP 405" not in str(e):
+            raise
+        text = content.decode("utf-8", "replace")
+        body = {"name": fname, "text": text, "process_rule": process_rule}
+        return api.post(f"/datasets/{ds_id}/documents/{doc_id}/update-by-text", body)
+
+
+def delete_document(api, ds_id, doc_id):
+    """--replace が使う唯一の削除経路（K1〜K3 の歯止めは呼び出し側の main() が担う）。
+
+    K4: KB そのものの削除（DELETE /datasets/{id}）はここにも、他のどこにも実装しない。
+    K8: tools/verify.mjs §15 が、scripts/dify/**.py で "DELETE" を渡す HTTP 呼び出しが
+    この関数だけであることを機械検査する。新しい削除経路を足すときは、この関数を経由すること。
+    """
+    api._req("DELETE", f"/datasets/{ds_id}/documents/{doc_id}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("code", help="管理番号（例 KN-01）")
@@ -235,9 +291,16 @@ def main():
                      help="dify/env/<env>/env.yml の knowledge.<管理番号>.name を KB 名に使う（既定 $DIFY_ENV または cloud-master）")
     ap.add_argument("--timeout", type=int, default=600, help="インデックス完了待ちの上限秒（既定 600）")
     ap.add_argument("--no-wait", action="store_true", help="インデックス完了を待たない")
-    ap.add_argument("--dry-run", action="store_true", help="KB 名・process_rule・retrieval_model だけ表示して終了する。ネットワークを呼ばない")
+    ap.add_argument("--dry-run", action="store_true",
+                     help="既定: KB 名・process_rule・retrieval_model だけ表示して終了する（ネットワークを呼ばない）。"
+                          "--replace と併用すると、削除予定の文書名を列挙するだけで終了する（K5。この場合のみ一覧取得のネットワークを呼ぶ）")
     ap.add_argument("--separator", default=CHUNK_SEPARATOR, help=f"チャンク区切り（既定 {CHUNK_SEPARATOR!r}。DI-006）")
     ap.add_argument("--max-tokens", type=int, default=CHUNK_MAX_TOKENS, help=f"チャンク最大字数（既定 {CHUNK_MAX_TOKENS}。DI-006）")
+    refresh_replace = ap.add_mutually_exclusive_group()
+    refresh_replace.add_argument("--refresh", action="store_true",
+                                  help="同名文書の中身だけ差し替える（削除しない。文書 id は保たれる）")
+    refresh_replace.add_argument("--replace", action="store_true",
+                                  help=f"同名文書を削除してから入れ直す（最大 {MAX_DELETE} 件。K1〜K5）")
     args = ap.parse_args()
 
     code = args.code.upper()
@@ -245,7 +308,9 @@ def main():
     process_rule = build_process_rule(args.separator, args.max_tokens)
     retrieval_model = build_retrieval_model()
 
-    if args.dry_run:
+    if args.dry_run and not args.replace:
+        # --replace --dry-run は K5 により別経路（削除予定の一覧を実際に取得して表示する）を通るため、ここでは
+        # skip/--refresh を含む「ネットワークを呼ばない」既定の dry-run のみを扱う
         print(f"[dry-run] env={args.env} code={code} KB 名 '{kb_name}'")
         print(f"[dry-run] process_rule（新規・既存とも文書アップロード時に送信） = {json.dumps(process_rule, ensure_ascii=False)}")
         print(f"[dry-run] retrieval_model（新規 KB 作成時のみ送信。受付確認要＝DI-005） = {json.dumps(retrieval_model, ensure_ascii=False)}")
@@ -276,6 +341,12 @@ def main():
         if ds:
             log(f"既存 KB を再利用: id={short_id(ds['id'])}")
             log("既存 KB の Rerank 設定は画面で確認すること（DI-005。retrieval_model は変更しません）")
+        elif args.replace and args.dry_run:
+            # K5: --replace --dry-run は削除予定を列挙するだけ。KB がまだ無ければ削除予定も無いので、
+            # ここで新規作成という副作用を起こさずに終える
+            print(f"[dry-run] KB '{kb_name}' はまだありません。削除予定の文書は 0 件です。")
+            print("（DELETE は呼びません）")
+            return 0
         else:
             create_body = {
                 "name": kb_name, "indexing_technique": "high_quality", "permission": "only_me",
@@ -300,12 +371,30 @@ def main():
             log(f"KB を作成: id={short_id(ds['id'])}")
         ds_id = ds["id"]
 
-        existing = {d.get("name") for d in list_all(api, f"/datasets/{ds_id}/documents")}
+        # K1: 削除・更新の対象は dify/kb/<管理番号>/ に実在するファイル名（= files）と完全一致する文書だけ。
+        # existing_map に無い名前（= 一致しない文書）には、このあとどの分岐でも一切触れない。
+        existing_map = {d.get("name"): d.get("id") for d in list_all(api, f"/datasets/{ds_id}/documents") if d.get("name")}
+
+        if args.replace:
+            to_delete = [f for f in files if f in existing_map]
+            if args.dry_run:
+                # K5: 削除予定を列挙するだけで終了する（DELETE は呼ばない）
+                print(f"[dry-run] --replace で削除予定の文書 {len(to_delete)} 件（dify/kb/{code}/ と同名一致のみ。K1）:")
+                for f in to_delete:
+                    print(f"  - {f} (id={short_id(existing_map[f])})")
+                if not to_delete:
+                    print("  （該当なし）")
+                print("（DELETE は呼びません）")
+                return 0
+            if len(to_delete) > MAX_DELETE:
+                print(
+                    f"エラー: 削除対象が MAX_DELETE={MAX_DELETE} 件を超えています（{len(to_delete)} 件: "
+                    f"{', '.join(to_delete)}）。1 件も削除していません。"
+                )
+                return 1
+
         uploaded = []  # (name, doc_id, batch)
         for fname in files:
-            if fname in existing:
-                log(f"スキップ（同名文書あり）: {fname}")
-                continue
             path = os.path.join(src, fname)
             with open(path, "rb") as fh:
                 content = fh.read()
@@ -316,12 +405,40 @@ def main():
                 {"indexing_technique": "high_quality", "process_rule": process_rule},
                 ensure_ascii=False,
             )
+            doc_id = existing_map.get(fname)
+
+            if doc_id is None:
+                # 新規（既定・--refresh・--replace のいずれでも、無いものは普通にアップロードする）
+                res = api.post_multipart(
+                    f"/datasets/{ds_id}/document/create-by-file", {"data": data}, "file", fname, content, ctype
+                )
+                doc = res.get("document") or {}
+                uploaded.append((fname, doc.get("id"), res.get("batch")))
+                log(f"アップロード: {fname} ({len(content)} bytes) -> document id={short_id(doc.get('id'))} status={doc.get('indexing_status')}")
+                continue
+
+            if not args.refresh and not args.replace:
+                log(f"スキップ（同名文書あり）: {fname}")
+                continue
+
+            if args.refresh:
+                # --refresh: 中身だけ差し替える。DELETE は一度も呼ばない
+                res = update_document(api, ds_id, doc_id, fname, content, ctype, process_rule)
+                doc = res.get("document") or {}
+                out_id = doc.get("id") or doc_id
+                uploaded.append((fname, out_id, res.get("batch")))
+                log(f"更新: {fname} ({len(content)} bytes) -> document id={short_id(out_id)} status={doc.get('indexing_status')}")
+                continue
+
+            # --replace: K7（削除前に id/name を出す）→ K3（1 文書ずつ「削除→直後に再投入」）
+            log(f"削除: {fname} (id={short_id(doc_id)})")
+            delete_document(api, ds_id, doc_id)
             res = api.post_multipart(
                 f"/datasets/{ds_id}/document/create-by-file", {"data": data}, "file", fname, content, ctype
             )
             doc = res.get("document") or {}
             uploaded.append((fname, doc.get("id"), res.get("batch")))
-            log(f"アップロード: {fname} ({len(content)} bytes) -> document id={short_id(doc.get('id'))} status={doc.get('indexing_status')}")
+            log(f"再投入: {fname} ({len(content)} bytes) -> document id={short_id(doc.get('id'))} status={doc.get('indexing_status')}")
 
         if not uploaded:
             log("新規アップロードなし（すべて既存）。")

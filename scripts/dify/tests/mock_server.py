@@ -15,8 +15,15 @@ Dify サーバー（標準ライブラリのみ。開発・検証用。CI には
   GET  /console/api/apps/{id}/workflows/draft                  → 下書き（無ければ空の既定値）
   POST /console/api/apps/{id}/workflows/draft                  → 下書きを保存して返す
   GET  /v1/datasets, POST /v1/datasets                         → KB 一覧・作成
-  GET  /v1/datasets/{id}/documents                              → 空（毎回アップロード対象にする）
-  POST /v1/datasets/{id}/document/create-by-file                → 成功（インデックス即完了）
+  GET  /v1/datasets/{id}/documents                              → 実際にアップロード・更新された文書の
+      id/name 一覧を返す（kb_upload.py の --refresh / --replace が同名突き合わせに使うため。Issue #121 W4-1）
+  POST /v1/datasets/{id}/document/create-by-file                → 成功（インデックス即完了）。
+      アップロードするファイル名に "MOCK_FAIL_UPLOAD" を含めると 500 を返す（T7 の再投入失敗を再現する用）
+  PATCH /v1/datasets/{id}/documents/{document_id}                → 文書のファイル差し替え（削除しない。
+      kb_upload.py --refresh が使う canonical エンドポイント）。同じ MOCK_FAIL_UPLOAD 規約で 500 を再現できる
+  POST /v1/datasets/{id}/documents/{document_id}/update-by-text  → 文書の本文差し替え（削除しない。
+      --refresh が PATCH の 404/405 を受けたときのフォールバック先）
+  DELETE /v1/datasets/{id}/documents/{document_id}               → 204（kb_upload.py --replace が使う唯一の削除経路）
   GET  /v1/datasets/{id}/documents/{batch}/indexing-status      → completed
   POST /v1/chat-messages, POST /v1/workflows/run                → dify/tests/<番号>.json の
       expect（配列は先頭の候補を採用）を連結した回答を返す。expect_not を含まないことを起動時に自己検査する。
@@ -26,6 +33,10 @@ Dify サーバー（標準ライブラリのみ。開発・検証用。CI には
 **401 モード**：`/console/api/login` 以外の `console/api/*` は `Authorization: Bearer <token>` を要求する。
 ヘッダが無い、または token が `"expired-token"` のときは 401（`{"code": "unauthorized", ...}`）を返す
 （`console_api.ConsoleAuthError` の往復確認用。test_console_api.py が使う）。
+
+**テスト専用エンドポイント**（`/console/api/*` でも `/v1/*` でもないため、上記の認証は要らない）：
+  GET  /__test__/stats                                          → {"DELETE": n, "PATCH": n, "update_by_text": n}
+      test_kb_upload.py が「意図しない削除・更新を呼んでいないか」を差分で確認するためのカウンタ
 
 このスクリプトは検証専用。生成物（dify/results/** や dify/CHANGELOG.md の検証行）はコミットに含めない。
 """
@@ -38,6 +49,7 @@ import re
 import sys
 import threading
 import time
+import uuid
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 TESTS_DIR = os.path.join(ROOT, "dify", "tests")
@@ -67,12 +79,44 @@ def build_canned_answers():
 
 
 ANSWERS = build_canned_answers()
+# datasets の要素: {"name": str, "documents": {doc_id: name}}（Issue #121 W4-1。id ⇄ name の突き合わせに使うため辞書にした）
 STATE = {
     "apps": {}, "datasets": {}, "next_app": 1, "next_ds": 1, "next_doc": 1,
     "pending_imports": {}, "next_import": 1, "drafts": {},
+    "calls": {"DELETE": 0, "PATCH": 0, "update_by_text": 0},  # /__test__/stats が返すカウンタ
 }
 LOCK = threading.Lock()
 EXPIRED_TOKEN = "expired-token"  # DIFY_CONSOLE_TOKEN にこの値を入れると 401 を再現できる
+MOCK_FAIL_UPLOAD_MARKER = "MOCK_FAIL_UPLOAD"  # ファイル名に含めるとアップロード/更新が 500 で失敗する（T7 用）
+
+
+def _parse_multipart(body, headers):
+    """multipart/form-data の body から (fields, file_field, filename, content) を取り出す簡易パーサ。
+    検証用途に限定（境界条件を厳密には扱わない）。"""
+    ctype = headers.get("Content-Type", "")
+    m = re.search(r"boundary=([^;]+)", ctype)
+    if not m:
+        return {}, None, None, b""
+    boundary = m.group(1).strip().strip('"').encode("utf-8")
+    fields, file_field, filename, content = {}, None, None, b""
+    for raw_part in body.split(b"--" + boundary):
+        part = raw_part.strip(b"\r\n")
+        if not part or part == b"--":
+            continue
+        if b"\r\n\r\n" not in part:
+            continue
+        head, data = part.split(b"\r\n\r\n", 1)
+        data = data[:-2] if data.endswith(b"\r\n") else data
+        head_text = head.decode("utf-8", "replace")
+        name_m = re.search(r'name="([^"]*)"', head_text)
+        if not name_m:
+            continue
+        fname_m = re.search(r'filename="([^"]*)"', head_text)
+        if fname_m:
+            file_field, filename, content = name_m.group(1), fname_m.group(1), data
+        else:
+            fields[name_m.group(1)] = data.decode("utf-8", "replace")
+    return fields, file_field, filename, content
 
 
 def split_n(text, n):
@@ -194,20 +238,38 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path == "/v1/datasets":
             with LOCK:
                 name = payload.get("name")
-                ds_id = f"ds-{STATE['next_ds']}"
+                # 実機同様の UUID 形式にする（Issue #121 W4-1 T6: kb_upload.py の id マスクを end-to-end で検査するため）
+                ds_id = str(uuid.uuid4())
                 STATE["next_ds"] += 1
-                STATE["datasets"][ds_id] = {"name": name, "documents": []}
+                STATE["datasets"][ds_id] = {"name": name, "documents": {}}
             return self._json(200, {"id": ds_id, "name": name})
 
         if path.endswith("/document/create-by-file"):
             m = re.match(r"^/v1/datasets/([^/]+)/document/create-by-file$", path)
             ds_id = m.group(1) if m else "ds-unknown"
+            _fields, _file_field, filename, content = _parse_multipart(body, self.headers)
+            # ファイル名 or 中身のどちらかに MOCK_FAIL_UPLOAD_MARKER を含めると 500 を返す。
+            # T7（削除直後の再投入失敗）はファイル名を固定したまま中身だけ差し替えて再現するため、両方を見る
+            if (filename and MOCK_FAIL_UPLOAD_MARKER in filename) or MOCK_FAIL_UPLOAD_MARKER in content.decode("utf-8", "replace"):
+                return self._json(500, {"error": "mock: forced upload failure"})
             with LOCK:
-                doc_id = f"doc-{STATE['next_doc']}"
+                doc_id = str(uuid.uuid4())
                 STATE["next_doc"] += 1
-                STATE.setdefault("datasets", {}).setdefault(ds_id, {"name": ds_id, "documents": []})
-                STATE["datasets"][ds_id]["documents"].append(doc_id)
-            return self._json(200, {"document": {"id": doc_id, "indexing_status": "completed"}, "batch": f"batch-{doc_id}"})
+                ds = STATE.setdefault("datasets", {}).setdefault(ds_id, {"name": ds_id, "documents": {}})
+                ds.setdefault("documents", {})[doc_id] = filename or doc_id
+            return self._json(200, {"document": {"id": doc_id, "name": filename or doc_id, "indexing_status": "completed"}, "batch": f"batch-{doc_id}"})
+
+        m = re.match(r"^/v1/datasets/([^/]+)/documents/([^/]+)/update-by-text$", path)
+        if m:
+            ds_id, doc_id = m.group(1), m.group(2)
+            with LOCK:
+                STATE["calls"]["update_by_text"] = STATE["calls"].get("update_by_text", 0) + 1
+                ds = STATE["datasets"].get(ds_id)
+                if not ds or doc_id not in ds.get("documents", {}):
+                    return self._json(404, {"error": f"mock: unknown document {doc_id}"})
+                name = payload.get("name") or ds["documents"][doc_id]
+                ds["documents"][doc_id] = name
+            return self._json(200, {"document": {"id": doc_id, "name": name, "indexing_status": "completed"}, "batch": f"batch-{doc_id}"})
 
         if path == "/v1/chat-messages":
             query = payload.get("query", "")
@@ -251,6 +313,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self._path()
+        if path == "/__test__/stats":
+            with LOCK:
+                return self._json(200, dict(STATE.get("calls", {})))
         if path.startswith("/console/api/") and not self._console_auth_ok():
             return self._unauthorized()
 
@@ -273,11 +338,61 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         m = re.match(r"^/v1/datasets/([^/]+)/documents$", path)
         if m:
-            return self._json(200, {"data": [], "has_more": False})
+            ds_id = m.group(1)
+            with LOCK:
+                ds = STATE["datasets"].get(ds_id) or {"documents": {}}
+                data = [{"id": doc_id, "name": name} for doc_id, name in ds.get("documents", {}).items()]
+            return self._json(200, {"data": data, "has_more": False})
 
         m = re.match(r"^/v1/datasets/([^/]+)/documents/([^/]+)/indexing-status$", path)
         if m:
             return self._json(200, {"data": [{"indexing_status": "completed", "completed_segments": 1, "total_segments": 1, "error": None}]})
+
+        return self._json(404, {"error": f"mock: unknown path {path}"})
+
+    # -- PATCH（--refresh のファイル差し替え） -----------------------
+    def do_PATCH(self):
+        path = self._path()
+        body = self._body()
+        if path.startswith("/console/api/") and not self._console_auth_ok():
+            return self._unauthorized()
+
+        m = re.match(r"^/v1/datasets/([^/]+)/documents/([^/]+)$", path)
+        if m:
+            ds_id, doc_id = m.group(1), m.group(2)
+            _fields, _file_field, filename, content = _parse_multipart(body, self.headers)
+            with LOCK:
+                STATE["calls"]["PATCH"] = STATE["calls"].get("PATCH", 0) + 1
+                ds = STATE["datasets"].get(ds_id)
+                if not ds or doc_id not in ds.get("documents", {}):
+                    return self._json(404, {"error": f"mock: unknown document {doc_id}"})
+                if (filename and MOCK_FAIL_UPLOAD_MARKER in filename) or MOCK_FAIL_UPLOAD_MARKER in content.decode("utf-8", "replace"):
+                    return self._json(500, {"error": "mock: forced update failure"})
+                name = filename or ds["documents"][doc_id]
+                ds["documents"][doc_id] = name
+            return self._json(200, {"document": {"id": doc_id, "name": name, "indexing_status": "completed"}, "batch": f"batch-{doc_id}"})
+
+        return self._json(404, {"error": f"mock: unknown path {path}"})
+
+    # -- DELETE（--replace が使う唯一の削除経路の相手側） -------------
+    def do_DELETE(self):
+        path = self._path()
+        if path.startswith("/console/api/") and not self._console_auth_ok():
+            return self._unauthorized()
+
+        m = re.match(r"^/v1/datasets/([^/]+)/documents/([^/]+)$", path)
+        if m:
+            ds_id, doc_id = m.group(1), m.group(2)
+            with LOCK:
+                STATE["calls"]["DELETE"] = STATE["calls"].get("DELETE", 0) + 1
+                ds = STATE["datasets"].get(ds_id)
+                if not ds or doc_id not in ds.get("documents", {}):
+                    return self._json(404, {"error": f"mock: unknown document {doc_id}"})
+                del ds["documents"][doc_id]
+            self.send_response(204)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
 
         return self._json(404, {"error": f"mock: unknown path {path}"})
 
