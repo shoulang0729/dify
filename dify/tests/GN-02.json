@@ -25,7 +25,7 @@
         "invoice_file": null
       },
       "query": "",
-      "expect": ["0250815", "0250826", "csv"],
+      "expect": ["0250815", "0250826", "invoice_no", "amount_incl_tax"],
       "expect_not": []
     },
     {
@@ -37,7 +37,7 @@
         "invoice_file": null
       },
       "query": "",
-      "expect": ["warnings"],
+      "expect": [["読み取れません", "読み取れない", "不明", "記載されていません"], ["発票番号", "invoice_no"]],
       "expect_not": []
     },
     {
