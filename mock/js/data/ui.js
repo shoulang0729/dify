@@ -227,7 +227,10 @@ const TAGS = {
   idea:        { ja: 'アイデア',         zh: '创意提案',     en: 'Ideas' },
   workload:    { ja: '稼働・工数',       zh: '工时与稼动',   en: 'Workload & effort' },
   dashboard:   { ja: 'ダッシュボード',   zh: '仪表盘',       en: 'Dashboards' },
-  datasource:  { ja: '外部データ源',     zh: '外部数据源',   en: 'External data sources' }
+  datasource:  { ja: '外部データ源',     zh: '外部数据源',   en: 'External data sources' },
+
+  /* ---- 業種横断タグ（設計書 2026-09-08-exec-visit-attend.md §2-3） ---- */
+  travel:      { ja: '出張・来訪',       zh: '出差与来访',   en: 'Travel & visits' }
 };
 
 /* ============================================================
