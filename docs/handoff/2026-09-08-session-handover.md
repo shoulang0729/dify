@@ -25,14 +25,18 @@
 ### 1-1. 生成物の再生成を忘れると main が赤くなる
 `docs/service-map.md` は `npm run index` の生成物で、`verify.mjs` §11 が鮮度を検査する。**実サービス・KB のファイル数・実装リファレンスが増減したら再生成が要る。**
 
-実際に踏んだ：`docs/dify/usecases/GN-07.md` を足した PR をマージしたとき再生成を忘れ、**main の `npm test` が FAIL したまま数十分放置**された。次の PR のレビューで発見。
+実際に踏んだ：`docs/dify/usecases/GN-07.md` を足した PR（#147）をマージしたとき再生成を忘れ、**main の `npm test` が FAIL したまま約 21 分放置**された。次の PR（#149）のレビューで発見。
 
-**教訓**：`docs/dify/usecases/**`・`dify/kb/**`・`mock/js/data/catalog.js` を触ったら `node tools/gen-index.mjs --check` を必ず通す。
+**さらに悪いのはここ**：その間にマージした #148 のコミットメッセージは「`npm test` ALL PASS」と書いてある。**PR 単体では本当に緑だった**。それぞれ緑の PR が合流すると赤くなる、という型で、**PR の緑は main の緑を保証しない**。
+
+**教訓**：`docs/dify/usecases/**`・`dify/kb/**`・`mock/js/data/catalog.js` を触ったら `node tools/gen-index.mjs --check` を必ず通す。**マージした直後に main で `npm test` を回して確かめる**（PR の CI 結果を信じない）。
 
 ### 1-2. 共有ディレクトリで `git checkout` を打たない
 `/home/user/Dify` は**サブエージェントも同時に使っている**。ここでブランチを切り替えると、作業中のエージェントの足元が変わり、**設計書が別ブランチの上に取り残される**（実際に起きた）。
 
-**教訓**：状態確認は読み取り専用コマンドだけ。作業は必ず `git worktree` を切る。エージェントに作業を頼むときも**worktree のパスを指定する**。
+**教訓**：状態確認は読み取り専用コマンドだけ。作業は必ず `git worktree` を切る。エージェントに作業を頼むときも**worktree のパスを指定する**（指定を忘れると共有ディレクトリで作業される）。
+
+**副作用**：worktree はすぐ溜まる（1 日で 19 個になった）。`git worktree list` で確認し、用が済んだものは `git worktree remove` するか `git worktree prune` する。**共有ディレクトリが `main` 以外に乗っていないか**も、作業開始時に `git -C /home/user/Dify branch --show-current` で確かめる。
 
 ### 1-3. 「期待値を緩めて通す」は最悪の失敗
 `dify/tests/*.json` の期待語は**絶対に削らない・緩めない**。テストが通らないときは、**期待値が間違っているのか挙動が間違っているのか**を切り分けて報告する。
