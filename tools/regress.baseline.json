@@ -743,6 +743,20 @@
       ]
     },
     {
+      "id": "gn7",
+      "cat": "gn",
+      "sub": "daily",
+      "st": 3,
+      "industries": [
+        "mfg",
+        "fin"
+      ],
+      "tags": [
+        "calendar",
+        "travel"
+      ]
+    },
+    {
       "id": "pt1",
       "cat": "pt",
       "sub": "data",
@@ -1206,6 +1220,7 @@
     "survey",
     "trade",
     "translate",
+    "travel",
     "valuation",
     "workload"
   ],
@@ -1315,12 +1330,12 @@
   "counts": {
     "cats": 13,
     "subs": 29,
-    "svcs": 66,
-    "tags": 56,
+    "svcs": 67,
+    "tags": 57,
     "ui": 87,
-    "svcsMfg": 48,
-    "svcsFin": 28,
-    "svcsBoth": 10,
+    "svcsMfg": 49,
+    "svcsFin": 29,
+    "svcsBoth": 11,
     "catsMfg": 10,
     "catsFin": 8
   }
