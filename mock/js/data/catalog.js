@@ -143,10 +143,10 @@ const SVCS = [
             zh: '受理来自公司内部的咨询，依据已沉淀的 FAQ 与申请手续作答。没有答案的问题转交主管部门并催促回复，收到的回答再沉淀进 FAQ。咨询与回答分类留存，并定期返回件数与未回答事项的统计。',
             en: 'Receives internal inquiries and answers them from the accumulated FAQ and application procedures. Questions with no answer are routed to the owning department with a nudge, and the reply that comes back is added to the FAQ. Inquiries and answers are kept classified, with periodic statistics on volume and unanswered items.' } },
   { id: 'kn5', cat: 'kn', sub: 'rule', st: 2, industries: ['mfg', 'fin'], tags: ['authority', 'regulation'],
-    name: { ja: '当局通達の影響分析・マニュアル反映（NFRA・地方当局等）', zh: '监管通知影响分析与手册更新（金融监管总局・地方主管部门等）', en: 'Regulatory Notice Impact & Manual Update (NFRA, local authorities)' },
-    desc: { ja: '国家金融監督管理総局（NFRA）・税務・海関・地方政府などの通達を読み込み、自社への影響（対象業務・期限・必要な対応）を整理します。さらに影響を受ける社内マニュアル・規定の該当箇所を特定し、改訂案のドラフトまで作成します。',
-            zh: '读取国家金融监督管理总局、税务、海关、地方政府等的通知文件，整理对本公司的影响（涉及业务、期限、应对事项），并定位受影响的内部手册与规定条款，生成修订草案。',
-            en: 'Reads notices from the NFRA, tax and customs authorities and local governments, summarizes the impact on your company (affected operations, deadlines, required actions), then locates the affected internal manuals and drafts the revisions.' } },
+    name: { ja: '当局通達の影響分析・マニュアル反映', zh: '监管通知影响分析与手册更新', en: 'Regulatory Notice Impact & Manual Update' },
+    desc: { ja: '所管当局（外貨管理・税関・税務・地方政府など。業種により金融当局を含む）の通達を読み込み、自社への影響（対象業務・期限・必要な対応）を整理します。さらに影響を受ける社内マニュアル・規定の該当箇所を特定し、改訂案のドラフトまで作成します。',
+            zh: '读取主管部门（外汇管理、海关、税务、地方政府等，视行业亦含金融主管部门）的通知文件，整理对本公司的影响（涉及业务、期限、应对事项），并定位受影响的内部手册与规定条款，生成修订草案。',
+            en: 'Reads notices from the authorities that oversee your operations (foreign exchange, customs, tax, local government and, depending on the industry, the financial regulator), summarizes the impact on your company (affected operations, deadlines, required actions), then locates the affected internal manuals and drafts the revisions.' } },
 
   /* ---- qa: 品質・不具合対応 ---- */
   { id: 'qa1', cat: 'qa', sub: 'defect', st: 2, industries: ['mfg'], tags: ['defect', 'rootcause', 'report8d'],
