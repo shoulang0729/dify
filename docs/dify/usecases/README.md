@@ -1,4 +1,4 @@
-# docs/dify/usecases — サービス別 Dify 実装リファレンス（44 件）
+# docs/dify/usecases — サービス別 Dify 実装リファレンス（58 件）
 
 **1 サービス 1 ファイル。ファイル名＝管理番号**（`KN-02.md`）。雛形は [`_TEMPLATE.md`](./_TEMPLATE.md)、全体方針は [`../implementation-guide.md`](../implementation-guide.md)、共通部品は [`../platform-components.md`](../platform-components.md)、Outline は [`../outline-wiki-usecases.md`](../outline-wiki-usecases.md)。
 一覧の元：`docs/handoff/service-index.md`（管理番号・成熟度・デモ画面タイプ）、`../feasibility-33-services.md` §2（実現性 ◎○△）、`docs/handoff/2026-09-06-partner-usecases.md` §5（PT 系の実現性）。
@@ -26,6 +26,20 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 | [KN-03](./KN-03.md) | 社内規程・就業規則QA | KN/rule | 提供中 | qa | ○ | PC-03 PC-05 PC-12（版ズレ） | 読・書（任意） |
 | [KN-04](./KN-04.md) | 労務・総務の社内問い合わせ対応 | KN/rule | 試行版 | qa | ○ | PC-03 PC-04 PC-05 PC-14 | 読・書（FAQ） |
 | [KN-05](./KN-05.md) | 当局通達の影響分析・マニュアル反映 | KN/rule | 試行版 | upload | ○ | PC-01 PC-03 PC-05 PC-11 PC-12 PC-13 PC-14 | 読・書（改訂案） |
+| [RS-01](./RS-01.md) | 企業・業界ニュースの自動収集と配信 | RS/news | 試行版 | form | ○ | PC-11 PC-13 PC-14 | 使わない |
+| [RS-02](./RS-02.md) | セクター・発行体のモニタリング | RS/news | 構想 | form | ○ | PC-05 PC-13 | 読・書 |
+| [RS-03](./RS-03.md) | 顧客IR・決算の収集と日本語要約・比較 | RS/disc | 試行版 | upload | ◎ | PC-03 PC-06 PC-13 | 使わない |
+| [RS-04](./RS-04.md) | 市場・企業データの照会（金融情報端末・契約データベース） | RS/data | 試行版 | lookup | △ | PC-04（拡張要。§10） PC-13 | 使わない |
+| [RS-05](./RS-05.md) | ダッシュボード出力からの気づき分析 | RS/data | 構想 | upload | ○ | PC-03 | 使わない |
+| [CV-01](./CV-01.md) | 提案・ピッチ資料の作成（候補先選定・比較企業分析） | CV/pitch | 構想 | form | ○ | PC-05 PC-13 | 読・書 |
+| [CV-02](./CV-02.md) | 面談前ブリーフの作成 | CV/pitch | 構想 | form | ○ | GN-06 `tasks` API（PC 未割当。§8） | 使わない（候補） |
+| [CV-03](./CV-03.md) | 審査コメントのドラフト作成 | CV/credit | 構想 | upload | ○ | PC-03 PC-05 | 読 |
+| [CV-04](./CV-04.md) | KYCスクリーニングとエスカレーション整理 | CV/kyc | 構想 | upload | ○ | PC-03 PC-05 | 読 |
+| [FA-01](./FA-01.md) | GL勘定のリコンシリエーション | FA/close | 構想 | upload | ○ | PC-03 PC-05 | 読・書 |
+| [FA-02](./FA-02.md) | 月次クローズの実行と報告 | FA/close | 構想 | form | ○ | PC-05 PC-11 PC-13 | 読・書 |
+| [FA-03](./FA-03.md) | 財務諸表のレビュー（整合性・監査対応） | FA/close | 構想 | upload | ○ | PC-03 PC-05 | 読 |
+| [FA-04](./FA-04.md) | 財務モデルの作成と決算反映 | FA/model | 構想 | upload | △ | PC-03 | 使わない |
+| [FA-05](./FA-05.md) | バリュエーションのレビュー | FA/model | 構想 | upload | ○ | PC-03 PC-05 | 読 |
 | [QA-01](./QA-01.md) | 不具合原因分析・報告書（8D）作成 | QA/defect | 試行版 | upload | ○ | PC-01 PC-03 PC-04（QMS） PC-05 PC-06 PC-13 | 読 |
 | [QA-02](./QA-02.md) | 変更点影響予測（4M変更管理） | QA/change | 構想 | diff | ○ | PC-01 PC-03 PC-04 PC-05 PC-12 PC-13 | 読 |
 | [QA-03](./QA-03.md) | 顧客クレーム一次回答・分類 | QA/change | 試行版 | form | ○ | PC-01 PC-03 PC-04（Webhook／メール） PC-05 PC-11 PC-13 PC-14 | 読 |
@@ -70,29 +84,31 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 
 | 軸 | 内訳 |
 |---|---|
-| 成熟度 | 提供中 **12**／試行版 **23**／構想 **8** |
-| 画面タイプ | qa 6／upload 17／form 13／diff 2／lookup 5 |
-| 実現性 | ◎ 11／○ 22（33 件中 16 ＋ PT 4 ＋ DC-08 ＋ GN-06）／△ 10（33 件中 6 ＋ PT 4）／× 0 |
-| Outline | 読 42／書 25（確定 19・任意 2〔KN-03 QA-04〕・候補 4〔NM-03 EN-01 GN-05 GN-06〕）／使わない 1（LG-04） |
-| 依存の多い PC（固有分） | PC-05 Outline 36、PC-13 ファイル出力 33、PC-03 文書取込 26、PC-04 業務連携 23、PC-06 用語集 21、PC-14 通知 21 |
+| 成熟度 | 提供中 **12**／試行版 **26**／構想 **20** |
+| 画面タイプ | qa 6／upload 25／form 19／diff 2／lookup 6 |
+| 実現性 | ◎ 12／○ 33（33 件中 16 ＋ PT 4 ＋ DC-08 ＋ GN-06 ＋ RS/CV/FA 11）／△ 13（33 件中 6 ＋ PT 4 ＋ RS-04 ＋ FA-04）／× 0 |
+| Outline | 読 50／書 29（確定 23・任意 2〔KN-03 QA-04〕・候補 4〔NM-03 EN-01 GN-05 GN-06〕）／使わない 6（LG-04 RS-01 RS-03 RS-04 RS-05 FA-04）／使わない（候補）1（CV-02） |
+| 依存の多い PC（固有分） | PC-05 Outline 44、PC-13 ファイル出力 38、PC-03 文書取込 34、PC-04 業務連携 24、PC-06 用語集 22、PC-14 通知 22 |
 
 ## 依存 PC の逆引き（どの部品が何件を解放するか）
 
-`../platform-components.md` 末尾「先行して作る順」の根拠。共通 6（PC-02 07 08 09 10 16）は全 44 件。
+`../platform-components.md` 末尾「先行して作る順」の根拠。共通 6（PC-02 07 08 09 10 16）は全 58 件。
 
 | PC | 件数 | サービス |
 |---|---|---|
 | PC-01 フィードストア | 15 | KN-05 QA-01〜04 DC-05 LG-03 GN-03 PT-01 PT-05〜08 DC-08 GN-06 |
-| PC-03 文書取込パイプライン | 26 | KN-01〜05 QA-01〜04 DC-02〜04 DC-06 LG-02 NM-02 NM-03 EN-01 EN-03 GN-01〜03 GN-05 PT-05 PT-06 PT-08 DC-08 |
-| PC-04 業務システム連携 | 23 | KN-04 QA-01〜04 DC-05 DC-06 NM-01 NM-02 NM-04 NM-05 EN-02 EN-03 GN-01〜04 PT-04〜08 GN-06 |
-| PC-05 Outline Wiki 連携 | 36 | KN-01〜05 QA-01〜04 DC-01〜05 DC-07 LG-01〜03 NM-04 NM-05 EN-01 EN-02 GN-01〜05 PT-01〜04 PT-06〜08 DC-08 GN-06 |
-| PC-06 用語集・翻訳メモリ | 21 | KN-01 QA-01 DC-03 DC-04 DC-06 DC-07 LG-01〜04 NM-01〜03 EN-01 GN-03 GN-05 PT-02 PT-03 PT-06 PT-07 DC-08 |
-| PC-11 スケジューラ | 13 | KN-02 KN-05 QA-03 LG-03 NM-03 GN-02 GN-03 PT-01 PT-02 PT-07 PT-08 DC-08 GN-06 |
+| PC-03 文書取込パイプライン | 34 | KN-01〜05 QA-01〜04 DC-02〜04 DC-06 LG-02 NM-02 NM-03 EN-01 EN-03 GN-01〜03 GN-05 PT-05 PT-06 PT-08 DC-08 RS-03 RS-05 CV-03 CV-04 FA-01 FA-03 FA-04 FA-05 |
+| PC-04 業務システム連携 | 24 | KN-04 QA-01〜04 DC-05 DC-06 NM-01 NM-02 NM-04 NM-05 EN-02 EN-03 GN-01〜04 PT-04〜08 GN-06 RS-04（拡張要。`RS-04.md` §10） |
+| PC-05 Outline Wiki 連携 | 44 | KN-01〜05 QA-01〜04 DC-01〜05 DC-07 LG-01〜03 NM-04 NM-05 EN-01 EN-02 GN-01〜05 PT-01〜04 PT-06〜08 DC-08 GN-06 RS-02 CV-01 CV-03 CV-04 FA-01 FA-02 FA-03 FA-05 |
+| PC-06 用語集・翻訳メモリ | 22 | KN-01 QA-01 DC-03 DC-04 DC-06 DC-07 LG-01〜04 NM-01〜03 EN-01 GN-03 GN-05 PT-02 PT-03 PT-06 PT-07 DC-08 RS-03 |
+| PC-11 スケジューラ | 15 | KN-02 KN-05 QA-03 LG-03 NM-03 GN-02 GN-03 PT-01 PT-02 PT-07 PT-08 DC-08 GN-06 RS-01 FA-02 |
 | PC-12 差分検出エンジン | 7 | KN-03 KN-05 QA-02 DC-06 DC-07 EN-01 PT-01 |
-| PC-13 ファイル出力 | 33 | KN-05 QA-01〜04 DC-01〜07 LG-02 LG-03 NM-01〜03 NM-05 EN-01 EN-02 GN-01〜03 GN-05 PT-02〜08 DC-08 GN-06 |
-| PC-14 通知チャネル | 21 | KN-02 KN-04 KN-05 QA-03 QA-04 DC-02 DC-06 DC-07 LG-04 NM-03 NM-04 EN-02 GN-01 GN-04 PT-01 PT-05〜08 DC-08 GN-06 |
+| PC-13 ファイル出力 | 38 | KN-05 QA-01〜04 DC-01〜07 LG-02 LG-03 NM-01〜03 NM-05 EN-01 EN-02 GN-01〜03 GN-05 PT-02〜08 DC-08 GN-06 RS-01 RS-02 RS-03 CV-01 FA-02 |
+| PC-14 通知チャネル | 22 | KN-02 KN-04 KN-05 QA-03 QA-04 DC-02 DC-06 DC-07 LG-04 NM-03 NM-04 EN-02 GN-01 GN-04 PT-01 PT-05〜08 DC-08 GN-06 RS-01 |
 | PC-15 パートナー連携ゲートウェイ | 8 | PT-01〜08 |
 | PC-17 指摘・回答台帳 | 2 | DC-08 GN-06 |
+
+**RS/CV/FA 固有の依存**（上表に個別列挙が無いもの）：`CV-02` は `GN-06` の `tasks` API を直接参照する（PC 未割当。`CV-02.md` §8）。`RS-04` は `PC-04` の「依存する外部システム」に金融情報端末・契約データベースが含まれていないため、architect 側での追記提案を `RS-04.md` §10 に記録した。
 
 ## 実装の波（`../implementation-guide.md` §3）との対応
 
@@ -118,6 +134,9 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 | **EN** 図面 | 技術 | 差分は機械的に取り、影響は「候補」として提示。図面・BOM は社外秘（PC-10） | `diff-core`（PC-12）、MinerU／図面 OCR（PC-03）、ERP/MES（PC-04） |
 | **GN** 汎用 | 全社／経理（GN-01 GN-02） | 発票・経費は個人情報を含む（PC-10）。基幹への登録は CSV 出力まで | PaddleOCR（PC-03）、精算履歴・基幹 API（PC-04）、カレンダー（GN-04） |
 | **PT** パートナー | 購買／HR（PT-04 PT-05 PT-08） | 「送信したもの／送信していないもの」を結果に明示（PT-10）。発注・採用判断は当社。出典・取得時点を表示 | パートナー GW（PC-15）、契約前はモック応答、PIPL 設計（PC-10） |
+| **RS** 情報収集 | 金融（コンプライアンス／審査／市場業務） | 記事・開示・照会結果は出所を明示。数値・傾向は Code の計算結果を転記し LLM が計算しない。与信・取引継続の可否は断定しない | 検索ツール（Web 検索系。`plugins-and-references.md` §2）、監視設定・過去結果の永続化（RS-01/02/03/04 とも自前ストアか Outline）、金融情報端末の接続アダプタ（PC-04 拡張要。RS-04） |
+| **CV** 顧客カバレッジ・審査 | 金融（営業第一部／審査部／コンプライアンス部） | 候補先・未確定情報は仮称・「案」であることを明示。過去の類似案件（Outline）を型として使うが文言は複製しない | 過去案件アーカイブ（PC-05）、他サービス（RS-01 GN-06 KN-07）との API 連携、PIPL 対応の強化（CV-04） |
+| **FA** 財務・経理 | 金融（事務統括部／市場業務部） | **数値は Code で計算**、LLM は説明のみ。会計上の最終判断（引当金の妥当性等）は断定せず所管部門への確認を促す | 前月・前期結果の保存先（Outline または専用ストア）、会計方針・レビュー基準（PC-05）、モデルの継続保守ストア（FA-04） |
 
 ## 画面タイプ → Dify 構成の定石
 
