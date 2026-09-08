@@ -1,4 +1,4 @@
-# docs/dify/usecases — サービス別 Dify 実装リファレンス（64 件）
+# docs/dify/usecases — サービス別 Dify 実装リファレンス（67 件）
 
 **1 サービス 1 ファイル。ファイル名＝管理番号**（`KN-02.md`）。雛形は [`_TEMPLATE.md`](./_TEMPLATE.md)、全体方針は [`../implementation-guide.md`](../implementation-guide.md)、共通部品は [`../platform-components.md`](../platform-components.md)、Outline は [`../outline-wiki-usecases.md`](../outline-wiki-usecases.md)。
 一覧の元：`docs/handoff/service-index.md`（管理番号・成熟度・デモ画面タイプ）、`../feasibility-33-services.md` §2（実現性 ◎○△）、`docs/handoff/2026-09-06-partner-usecases.md` §5（PT 系の実現性）。
@@ -26,6 +26,9 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 | [KN-03](./KN-03.md) | 社内規程・就業規則QA | KN/rule | 提供中 | qa | ○ | PC-03 PC-05 PC-12（版ズレ） | 読・書（任意） |
 | [KN-04](./KN-04.md) | 労務・総務の社内問い合わせ対応 | KN/rule | 試行版 | qa | ○ | PC-03 PC-04 PC-05 PC-14 | 読・書（FAQ） |
 | [KN-05](./KN-05.md) | 当局通達の影響分析・マニュアル反映 | KN/rule | 試行版 | upload | ○ | PC-01 PC-03 PC-05 PC-11 PC-12 PC-13 PC-14 | 読・書（改訂案） |
+| [KN-06](./KN-06.md) | 事務手続の照会 | KN/rule | 試行版 | qa | ◎ | PC-03 PC-05 | 読 |
+| [KN-07](./KN-07.md) | 行内営業情報の検索（日誌・接触履歴） | KN/bizlog | 構想 | qa | ○ | PC-03 PC-05 | 読 |
+| [KN-08](./KN-08.md) | 当局通達・ガイドラインDB（照会・過去比較） | KN/rule | 試行版 | diff | ○ | PC-03 PC-05 PC-12 | 読・書 |
 | [RS-01](./RS-01.md) | 企業・業界ニュースの自動収集と配信 | RS/news | 試行版 | form | ○ | PC-11 PC-13 PC-14 | 使わない |
 | [RS-02](./RS-02.md) | セクター・発行体のモニタリング | RS/news | 構想 | form | ○ | PC-05 PC-13 | 読・書 |
 | [RS-03](./RS-03.md) | 顧客IR・決算の収集と日本語要約・比較 | RS/disc | 試行版 | upload | ◎ | PC-03 PC-06 PC-13 | 使わない |
@@ -90,25 +93,25 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 
 | 軸 | 内訳 |
 |---|---|
-| 成熟度 | 提供中 **12**／試行版 **27**／構想 **25** |
-| 画面タイプ | qa 8／upload 26／form 22／diff 2／lookup 6 |
-| 実現性 | ◎ 12／○ 39（33 件中 16 ＋ PT 4 ＋ DC-08 ＋ GN-06 ＋ RS/CV/FA 11 ＋ DC-09 ＋ PO-01〜04 ＋ EG-01）／△ 13（33 件中 6 ＋ PT 4 ＋ RS-04 ＋ FA-04）／× 0 |
-| Outline | 読 57／書 36（読・書 26・任意 2〔KN-03 QA-04〕・候補 4〔NM-03 EN-01 GN-05 GN-06〕・FAQ 1〔KN-04〕・改訂案 1〔KN-05〕・求人票のみ 1〔PT-05〕・用語集 1〔LG-01〕）／使わない 6（LG-04 RS-01 RS-03 RS-04 RS-05 FA-04）／使わない（候補）1（CV-02） |
-| 依存の多い PC（固有分） | PC-05 Outline 50、PC-13 ファイル出力 43、PC-03 文書取込 35、PC-04 業務連携 25、PC-14 通知 25、PC-06 用語集 23 |
+| 成熟度 | 提供中 **12**／試行版 **29**／構想 **26** |
+| 画面タイプ | qa 10／upload 26／form 22／diff 3／lookup 6 |
+| 実現性 | ◎ 13（12 ＋ KN-06）／○ 41（33 件中 16 ＋ PT 4 ＋ DC-08 ＋ GN-06 ＋ RS/CV/FA 11 ＋ DC-09 ＋ PO-01〜04 ＋ EG-01 ＋ KN-07 ＋ KN-08）／△ 13（33 件中 6 ＋ PT 4 ＋ RS-04 ＋ FA-04）／× 0 |
+| Outline | 読 60／書 37（読・書 27・任意 2〔KN-03 QA-04〕・候補 4〔NM-03 EN-01 GN-05 GN-06〕・FAQ 1〔KN-04〕・改訂案 1〔KN-05〕・求人票のみ 1〔PT-05〕・用語集 1〔LG-01〕）／使わない 6（LG-04 RS-01 RS-03 RS-04 RS-05 FA-04）／使わない（候補）1（CV-02） |
+| 依存の多い PC（固有分） | PC-05 Outline 53、PC-13 ファイル出力 43、PC-03 文書取込 38、PC-04 業務連携 25、PC-14 通知 25、PC-06 用語集 23 |
 
 ## 依存 PC の逆引き（どの部品が何件を解放するか）
 
-`../platform-components.md` 末尾「先行して作る順」の根拠。共通 6（PC-02 07 08 09 10 16）は全 64 件。
+`../platform-components.md` 末尾「先行して作る順」の根拠。共通 6（PC-02 07 08 09 10 16）は全 67 件。
 
 | PC | 件数 | サービス |
 |---|---|---|
 | PC-01 フィードストア | 16 | KN-05 QA-01〜04 DC-05 LG-03 GN-03 PT-01 PT-05〜08 DC-08 GN-06 DC-09 |
-| PC-03 文書取込パイプライン | 35 | KN-01〜05 QA-01〜04 DC-02〜04 DC-06 LG-02 NM-02 NM-03 EN-01 EN-03 GN-01〜03 GN-05 PT-05 PT-06 PT-08 DC-08 RS-03 RS-05 CV-03 CV-04 FA-01 FA-03 FA-04 FA-05 EG-01 |
+| PC-03 文書取込パイプライン | 38 | KN-01〜08 QA-01〜04 DC-02〜04 DC-06 LG-02 NM-02 NM-03 EN-01 EN-03 GN-01〜03 GN-05 PT-05 PT-06 PT-08 DC-08 RS-03 RS-05 CV-03 CV-04 FA-01 FA-03 FA-04 FA-05 EG-01 |
 | PC-04 業務システム連携 | 25 | KN-04 QA-01〜04 DC-05 DC-06 NM-01 NM-02 NM-04 NM-05 EN-02 EN-03 GN-01〜04 PT-04〜08 GN-06 RS-04（拡張要。`RS-04.md` §10） PO-04 |
-| PC-05 Outline Wiki 連携 | 50 | KN-01〜05 QA-01〜04 DC-01〜05 DC-07 LG-01〜03 NM-04 NM-05 EN-01 EN-02 GN-01〜05 PT-01〜04 PT-06〜08 DC-08 GN-06 RS-02 CV-01 CV-03 CV-04 FA-01 FA-02 FA-03 FA-05 DC-09 PO-01〜04 EG-01 |
+| PC-05 Outline Wiki 連携 | 53 | KN-01〜08 QA-01〜04 DC-01〜05 DC-07 LG-01〜03 NM-04 NM-05 EN-01 EN-02 GN-01〜05 PT-01〜04 PT-06〜08 DC-08 GN-06 RS-02 CV-01 CV-03 CV-04 FA-01 FA-02 FA-03 FA-05 DC-09 PO-01〜04 EG-01 |
 | PC-06 用語集・翻訳メモリ | 23 | KN-01 QA-01 DC-03 DC-04 DC-06 DC-07 LG-01〜04 NM-01〜03 EN-01 GN-03 GN-05 PT-02 PT-03 PT-06 PT-07 DC-08 RS-03 EG-01 |
 | PC-11 スケジューラ | 18 | KN-02 KN-05 QA-03 LG-03 NM-03 GN-02 GN-03 PT-01 PT-02 PT-07 PT-08 DC-08 GN-06 RS-01 FA-02 PO-01〜03 |
-| PC-12 差分検出エンジン | 8 | KN-03 KN-05 QA-02 DC-06 DC-07 EN-01 PT-01 EG-01 |
+| PC-12 差分検出エンジン | 9 | KN-03 KN-05 KN-08 QA-02 DC-06 DC-07 EN-01 PT-01 EG-01 |
 | PC-13 ファイル出力 | 43 | KN-05 QA-01〜04 DC-01〜07 LG-02 LG-03 NM-01〜03 NM-05 EN-01 EN-02 GN-01〜03 GN-05 PT-02〜08 DC-08 GN-06 RS-01 RS-02 RS-03 CV-01 FA-02 DC-09 PO-01〜04 |
 | PC-14 通知チャネル | 25 | KN-02 KN-04 KN-05 QA-03 QA-04 DC-02 DC-06 DC-07 LG-04 NM-03 NM-04 EN-02 GN-01 GN-04 PT-01 PT-05〜08 DC-08 GN-06 RS-01 PO-01〜03 |
 | PC-15 パートナー連携ゲートウェイ | 8 | PT-01〜08 |
@@ -122,9 +125,9 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 |---|---|---|
 | W1 提供中・KB のみ | KN-01 KN-02 GN-05 LG-01 DC-04 LG-04 DC-01 DC-02 | 共通 6 の最低限 ＋ PC-03（手動）PC-06（初期用語） |
 | W2 提供中・データ整備 | KN-03 NM-03 GN-01 GN-02 | ＋ PC-02（HR 帯）PC-03（OCR）PC-11 PC-13 |
-| W3 試行版・文書系 | KN-04 KN-05 QA-01 QA-04 DC-03 DC-05 DC-08 DC-07 LG-02 LG-03 EN-01 NM-02 GN-03 GN-06 DC-09 | ＋ PC-05 PC-12 PC-14 PC-01 |
+| W3 試行版・文書系 | KN-04 KN-05 KN-06 KN-08 QA-01 QA-04 DC-03 DC-05 DC-08 DC-07 LG-02 LG-03 EN-01 NM-02 GN-03 GN-06 DC-09 | ＋ PC-05 PC-12 PC-14 PC-01 |
 | W4 試行版・システム連携 | QA-03 DC-06 NM-04 NM-05 EN-02 GN-04 PT-01 PT-02 PT-03 | ＋ PC-04 PC-15 |
-| W5 構想 | QA-02 NM-01 EN-03 PT-04 PT-05 PT-06 PT-07 PT-08 PO-01〜04 EG-01 | ＋ 顧客判断・契約（DSL は雛形まで） |
+| W5 構想 | KN-07 QA-02 NM-01 EN-03 PT-04 PT-05 PT-06 PT-07 PT-08 PO-01〜04 EG-01 | ＋ 顧客判断・契約（DSL は雛形まで） |
 
 ## 分類別の共通事項（writer 向け）
 
@@ -132,7 +135,7 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 
 | 分類 | KB の帯（PC-02） | 分類で共通の観点（§3） | 分類で共通の別出し（§8） |
 |---|---|---|---|
-| **KN** ナレッジ | 技術／HR（KN-03 KN-04）／全社 | 根拠の文書番号・版・ページを必ず引く。版が違えば両方を示す。クロスリンガル（zh 質問 → ja 文書）は `bge-m3`＋リランク | Outline 同期（PC-05）、版メタデータ（PC-03）、WeCom bot（PC-14） |
+| **KN** ナレッジ | 技術／HR（KN-03 KN-04）／全社／金融（KN-06〜08） | 根拠の文書番号・版・ページを必ず引く。版が違えば両方を示す。クロスリンガル（zh 質問 → ja 文書）は `bge-m3`＋リランク | Outline 同期（PC-05）、版メタデータ（PC-03）、WeCom bot（PC-14）。金融側は条番号がチャンク境界（KN-06 KN-08） |
 | **QA** 品質 | 品質 | 顧客名・不良数値は入力から転記のみ。原因は「仮説」と明示。8D・ECR は**ドラフト** | QMS Webhook（PC-04）、フィード `due`（PC-01）、8D 様式（PC-13） |
 | **DC** 文書 | 全社／購買（DC-07） | 社内様式に合わせた見出し。日本語品質（DC-01）。契約は法的助言ではない注記 | 様式テンプレート（PC-13）、議事録・教材の下書き先（PC-05）、BPMS（PC-04） |
 | **LG** 日中 | 全社 | 用語集を最優先（PC-06）。敬語・現場語のレジスタ指定。原文の数値・型番は改変しない | 用語集の正本と更新責任（PC-06）、翻訳メモリ |
