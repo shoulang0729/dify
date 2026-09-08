@@ -1,0 +1,3 @@
+doc_id,kind,title_ja,title_zh,title_en,owner_dept,rev,note
+ERR-401,code,エラーコード：区分コード未登録,错误代码：区分代码未登记,Error Code: Category Code Not Registered,system,,mock/js/data/scenarios/fin/eg.js（eg1・EG-01 台本）
+ERR-402,code,エラーコード：区分コード未登録相当（仕様書に説明なし）,错误代码：相当于区分代码未登记（规格书未记载说明）,Error Code: Presumed Category-Code-Not-Registered (undocumented in spec),system,,mock/js/data/scenarios/fin/eg.js（eg1・EG-01 台本）

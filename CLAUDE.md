@@ -104,9 +104,9 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 - 設計書：`docs/handoff/2026-09-07-repo-layout-v2.md` §3・§4
 
 ### 2-13. 架空データの正本は `data/world/`
-- **何を**：会社（青嶺精工／青岭精工／Seirei Seiko Co., Ltd.）・拠点（蘇州工場・Japan HQ）・人・部署・品番・設備・取引先記号・KPI・文書番号体系・カレンダー。台本（`mock/js/data/scenarios/**`）・KB 用文書（`dify/kb/**`）・テスト（`dify/tests/**`）・ユースケース文書はここにある値だけを使う。**新しい名前・数字はまずマスタに足す**
+- **何を**：会社（青嶺精工／青岭精工／Seirei Seiko Co., Ltd.）・拠点（蘇州工場・Japan HQ）・人・部署・品番・設備・取引先記号・KPI・文書番号体系・規程と社内 ID の台帳（`documents.csv`）・カレンダー。台本（`mock/js/data/scenarios/**`）・KB 用文書（`dify/kb/**`）・テスト（`dify/tests/**`）・ユースケース文書はここにある値だけを使う。**新しい名前・数字はまずマスタに足す**
 - **なぜ**：4 か所に同じ架空世界が散らばり、既に食い違っている（社名の英名が無かった・`K社`/`K 社`・役職ゆれ）。顧客環境では実データに差し替える境目でもある
-- **どこで検出**：`node tools/check-world.mjs`（`npm run world`。**warn のみ・CI には入れない**）。食い違いを潰す PR では `--strict`。未統一の一覧は `data/world/README.md`
+- **どこで検出**：`node tools/check-world.mjs`（`npm run world`。**warn のみ・CI には入れない**）。食い違いを潰す PR では `--strict`。未統一の一覧は `data/world/README.md`。残す warn は `data/world/README.md` の「未統一」に理由付きで 1 行ずつ載せる（現状 10 件）
 
 ---
 

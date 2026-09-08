@@ -1,0 +1,11 @@
+doc_id,kind,title_ja,title_zh,title_en,owner_dept,rev,note
+RULE-01,rule,就業規則,员工手册,Employee Handbook (Rules of Employment),kanri,ja 2023-07-01 / zh 2025-01-01,dify/kb/KN-03/就業規則_抜粋_日本語版.md・员工手册_摘录_中文版.md、docs/dify/usecases/KN-03.md
+RULE-07,rule,費用管理規程,费用管理规定,Expense Management Regulations,kanri,2024-04-01,dify/kb/KN-03/費用管理規程_抜粋_日本語版.md（管理部・財務課の共管）
+QM-001,rule,品質マニュアル,质量手册,Quality Manual,hinshitsu,v6（承認済）,docs/dify/usecases/QA-04.md（文書管理台帳の例）
+FIN-TRV-01,rule,経費規程（出張旅費）,报销规定（差旅费）,Expense Policy (Business Travel),zaimu,Rev.B（2026-04-01）,dify/kb/GN-01/经费规程_第1-4章抜粋_出张旅费.md
+FIN-ENT-01,rule,経費規程（接待費）,报销规定（接待费）,Expense Policy (Entertainment),zaimu,Rev.B（2026-04-01）,dify/kb/GN-01/经费规程_第6章抜粋_接待费.md
+FIN-MAN-01,rule,経費業務マニュアル,报销业务手册,Expense Operations Manual,zaimu,,docs/dify/usecases/KN-05.md（manual_mapping の例）
+PDB-0001,record_id,取引先データベース：現行取引先（蘇州）,供应商数据库：现行供应商（苏州）,Partner Database: Current Supplier (Suzhou),koubai,,docs/dify/usecases/PT-07.md
+PDB-0417,record_id,取引先データベース：国内大手（購買代行推奨）,供应商数据库：国内大型企业（推荐采购代理）,Partner Database: Domestic Major Account (Recommended Procurement Agent),koubai,,docs/dify/usecases/PT-06.md・PT-07.md
+SUP-001,record_id,サプライヤー匿名 ID 対応表（例）,供应商匿名ID对照表（示例）,Supplier Anonymized ID Mapping (Example),koubai,,docs/dify/usecases/PT-06.md
+SH-OSA-01,record_id,出荷ルール：上海→大阪,出货规则：上海→大阪,Shipping Rule: Shanghai to Osaka,butsuryu,,docs/dify/usecases/NM-04.md
