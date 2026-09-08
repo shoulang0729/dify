@@ -326,8 +326,8 @@ Mac の前に座らずに `kb_upload.py` / `run_tests.py` を実行し、結果�
 
 1. GitHub の Actions タブ → `dify-ops` ワークフロー → **Run workflow**
 2. 入力
-   - `op`：`kb_upload`（KB 投入のみ・同名文書はスキップ）／`kb_refresh`（同名文書の中身だけ差し替え）／`kb_replace`（同名文書を削除して入れ直す）／`run_tests`（テスト実行のみ）／`both`（`kb_upload` ＋ `run_tests`）
-   - `codes`：管理番号を空白区切り（例 `KN-01 DC-01`）。`^[A-Z]{2}-[0-9]{2}( [A-Z]{2}-[0-9]{2})*$` に一致しない値は検証ステップで即失敗する。**`kb_replace` は削除を伴うため 1 件のみ**（2 件以上を指定すると Validate inputs で即 exit 1）
+   - `op`：`kb_upload`（KB 投入のみ・同名文書はスキップ）／`kb_refresh`（同名文書の中身だけ差し替え）／`kb_replace`（同名文書を削除して入れ直す）／`run_tests`（テスト実行のみ）／`both`（`kb_upload` ＋ `run_tests`）／`probe`（秘密を使わない Dify Cloud への到達性確認。§下記）
+   - `codes`：管理番号を空白区切り（例 `KN-01 DC-01`）。`^[A-Z]{2}-[0-9]{2}( [A-Z]{2}-[0-9]{2})*$` に一致しない値は検証ステップで即失敗する。**`kb_replace` は削除を伴うため 1 件のみ**（2 件以上を指定すると Validate inputs で即 exit 1）。**`probe` では不要**（空欄のままでよい。検証もスキップされる）
    - `confirm`：**`kb_replace` のときだけ必須**。`codes` と完全に同じ文字列（対象の管理番号そのもの）を入力する。空欄・値違いは Validate inputs で即 exit 1（他の `op` では未使用。空欄のままでよい）
    - `env`：`cloud-master`（当面これだけ）
 3. Environment `dify-cloud-master` に **required reviewers** が設定されていれば、ここでジョブが一時停止し、承認待ちになる。**PM が承認するまでキーには一切触れない**
@@ -355,6 +355,25 @@ Mac の前に座らずに `kb_upload.py` / `run_tests.py` を実行し、結果�
   | `kb_replace` で削除後にアップロードが失敗 | **その 1 文書だけ KB から欠ける** | **`op: kb_upload`（フラグ無し）で同じ番号を再実行**すれば、同名文書が無いので再投入される。**正本は `dify/kb/<番号>/`（Git）なので内容は失われない** |
   | インデックス中で削除できない | 4xx で停止。KB は無傷 | 数分待って再実行 |
   | ナレッジ API キーが失効 | 401 で停止。KB は無傷 | PM が画面で再発行 → Environment secret `DIFY_DATASET_KEY` を更新 |
+
+### `probe` —— 秘密を使わない Dify Cloud への到達性確認（W4-3 の前提確認。#121）
+
+設計: `docs/handoff/2026-09-08-cloud-auth-and-w4.md` §10・§11「W4-3」（受け入れ条件 V5）。
+
+**何のためか**：W4-3（Cloud のコンソール認証を CI から使えるようにする）を作り込む前に、
+**GitHub ホストランナーから `cloud.dify.ai` の前段（Cloudflare）を通過できるか**だけを確かめる。
+`api.dify.ai`（Service API）では Cloudflare が独自でない User-Agent を弾いた前例（DI-004）があり、
+コンソール側（`cloud.dify.ai`）で同じことが起きないかを、**認証を試みる前に**見ておく。
+
+- **秘密を一切使わない**（`secrets.*` を参照しない）。**認証が通る必要は無い**。見たいのは前段だけ
+- `codes` は不要（空欄のままでよい。Validate inputs で検証がスキップされる）
+- `GET https://cloud.dify.ai/console/api/setup` を 1 回叩くだけ。**`POST`/`PUT`/`DELETE` は送らない**ので Dify 側に副作用は無い
+- User-Agent は `console_api.py` / `kb_upload.py` / `run_tests.py` と同じ `dify-scripts/1.0 (+https://github.com/shoulang0729/dify)`
+- 判定（設計書 §10）：
+  - **200 / 401 / 403（本文に `1010` を含まない）** → 成功。「前段は通っている。Cookie 案（W4-3）は成立しうる」と Job Summary に出す
+  - **403 かつ本文に `1010`** → **Cloudflare に弾かれている**。User-Agent を変えて 1 回だけ再試行し、それでも解消しなければ失敗（**W4-3 は保留**とし DI を起票する）
+  - それ以外（接続失敗・想定外の HTTP status）→ 区別できるメッセージを Job Summary に出す
+- Environment `dify-cloud-master` の承認ゲートは他の `op` と同じく必要（**秘密は使わないが、実行の記録は残す**ため）
 
 ### 変更パスガード（load-bearing）
 

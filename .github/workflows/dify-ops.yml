@@ -3,6 +3,8 @@ name: dify-ops
 # W1（#121）：KB 投入（kb_upload.py）とテスト実行（run_tests.py）を GitHub ホストランナーで回す。
 # W4-1 PR-2（#121）：kb_refresh（--refresh。更新のみ・削除しない）と kb_replace（--replace。削除して
 # 入れ直す）を追加。設計書: docs/handoff/2026-09-08-cloud-auth-and-w4.md §4-2（歯止め K1〜K8）。
+# W4-3 PR-5（#121）：op: probe を追加。cloud.dify.ai の前段（Cloudflare）にホストランナーから
+# 到達できるかだけを、秘密を一切使わずに確かめる（V5）。設計書: 同ファイル §10・§11「W4-3」。
 # 設計書: docs/handoff/2026-09-08-execution-split-and-runner.md（W1 の節・§9 セルフホストランナーの安全性）
 #
 # 重要：トリガは workflow_dispatch だけ。pull_request 系・push 系は絶対に付けない
@@ -11,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       op:
-        description: "実行する操作（kb_refresh=同名文書の中身だけ差し替え／kb_replace=削除して入れ直し。まず kb_refresh を試すこと）"
+        description: "実行する操作（kb_refresh=同名文書の中身だけ差し替え／kb_replace=削除して入れ直し。まず kb_refresh を試すこと／probe=秘密を使わない Dify Cloud への到達性確認。codes 不要）"
         required: true
         type: choice
         options:
@@ -20,11 +22,13 @@ on:
           - kb_replace
           - run_tests
           - both
+          - probe
         default: run_tests
       codes:
-        description: "対象の管理番号（空白区切り、例: KN-01 DC-01）。kb_replace は削除を伴うため 1 件のみ"
-        required: true
+        description: "対象の管理番号（空白区切り、例: KN-01 DC-01）。kb_replace は削除を伴うため 1 件のみ。op=probe では不要（空でよい）"
+        required: false
         type: string
+        default: ""
       confirm:
         description: "kb_replace のときだけ必須：codes と完全一致する文字列を入力（削除を伴う操作の誤操作防止。他の op では未使用）"
         required: false
@@ -76,10 +80,15 @@ jobs:
         run: |
           set -euo pipefail
           case "$OP" in
-            kb_upload|kb_refresh|kb_replace|run_tests|both) ;;
+            kb_upload|kb_refresh|kb_replace|run_tests|both|probe) ;;
             *) echo "::error::op の値が不正です: $OP"; exit 1 ;;
           esac
-          if ! [[ "$CODES" =~ ^[A-Z]{2}-[0-9]{2}(\ [A-Z]{2}-[0-9]{2})*$ ]]; then
+          # op=probe は秘密を一切使わない疎通確認のみで、対象アプリ／KB を指定する
+          # 意味が無いため codes を要求しない（設計書 §11 W4-3 PR-5）。それ以外の op は
+          # 従来どおり codes の形式を検証する。
+          if [ "$OP" = "probe" ]; then
+            echo "op=probe のため codes の検証をスキップします（codes=${CODES:-<空>}）"
+          elif ! [[ "$CODES" =~ ^[A-Z]{2}-[0-9]{2}(\ [A-Z]{2}-[0-9]{2})*$ ]]; then
             echo "::error::codes の形式が不正です（例: KN-01 DC-01）: $CODES"
             exit 1
           fi
@@ -112,6 +121,9 @@ jobs:
       # キーの値は一切出力しない。「設定されているか」だけを確認する。
       # set -x は使わない。env / printenv は使わない。
       - name: Check secrets presence (values are never printed)
+        # op=probe は秘密を一切使わない（V5。設計書 §10・§11 W4-3）。このステップは
+        # DIFY_DATASET_KEY / DIFY_APP_KEY_* を参照するため、probe のときは実行しない。
+        if: ${{ inputs.op != 'probe' }}
         env:
           DIFY_DATASET_KEY: ${{ secrets.DIFY_DATASET_KEY }}
           CODES: ${{ inputs.codes }}
@@ -131,6 +143,11 @@ jobs:
 
       - name: Run kb_upload.py / run_tests.py
         id: run
+        # op=probe は秘密を一切使わない別ステップ（Probe Dify Cloud reachability）で処理する。
+        # このステップは DIFY_DATASET_KEY / DIFY_APP_KEY_* を env: に列挙するため、
+        # probe のときは実行自体をスキップし、secrets の値がそのステップの実行環境に
+        # 一切渡らないようにする（load-bearing。設計書 §11 W4-3 PR-5「秘密を一切使わない」）。
+        if: ${{ inputs.op != 'probe' }}
         env:
           OP: ${{ inputs.op }}
           CODES: ${{ inputs.codes }}
@@ -230,6 +247,127 @@ jobs:
           # dify/results/**/*.md（PR の diff）で判断する（設計書 §4-3）。
           exit 0
 
+      # W4-3 PR-5（#121）：op: probe。GitHub ホストランナーから cloud.dify.ai の前段
+      # （Cloudflare）に到達できるかだけを確かめる（設計書 §10・§11「W4-3」V5）。
+      # なぜ secrets を一切参照しないか：見たいのは Cloudflare の前段だけであり、
+      # 認証が通る必要が無いため。Dify のアカウントに紐づく秘密（DIFY_DATASET_KEY /
+      # DIFY_APP_KEY_*）はこのステップの env: に一切書かない（load-bearing）。
+      # GET のみ（POST/PUT/DELETE を送らない）。Dify 側に副作用は出さない。
+      - name: "Probe Dify Cloud reachability (op: probe)"
+        if: ${{ inputs.op == 'probe' }}
+        run: |
+          set -euo pipefail
+
+          # console_api.py / kb_upload.py / run_tests.py と同一の User-Agent
+          # （Cloudflare の error 1010 対策。DI-004 の前例）。新しい文字列は作らない。
+          UA_PRIMARY="dify-scripts/1.0 (+https://github.com/shoulang0729/dify)"
+          UA_FALLBACK="Mozilla/5.0 (compatible; dify-scripts-probe/1.0)"
+          URL="https://cloud.dify.ai/console/api/setup"
+
+          # $1: 使う User-Agent。/tmp/dify-ops-probe-code.txt に HTTP status
+          # （接続失敗なら 000）、/tmp/dify-ops-probe-body.txt に本文を書く。
+          probe_once() {
+            local ua="$1"
+            local out code
+            out="$(mktemp)"
+            if ! code="$(curl -sS -m 20 -o "$out" -w '%{http_code}' -H "User-Agent: ${ua}" "$URL")"; then
+              code="000"
+            fi
+            echo "$code" > /tmp/dify-ops-probe-code.txt
+            mv "$out" /tmp/dify-ops-probe-body.txt
+          }
+
+          # $1: HTTP status, $2: 本文ファイル
+          # 戻り値：0=成功／1=Cloudflare に弾かれた（403+1010）／2=接続失敗（000）／3=想定外コード
+          judge() {
+            local code="$1" body_file="$2"
+            if [ "$code" = "000" ]; then
+              return 2
+            fi
+            case "$code" in
+              200|401|403)
+                if [ "$code" = "403" ] && grep -q "1010" "$body_file"; then
+                  return 1
+                fi
+                return 0
+                ;;
+              *)
+                return 3
+                ;;
+            esac
+          }
+
+          probe_once "$UA_PRIMARY"
+          code1="$(cat /tmp/dify-ops-probe-code.txt)"
+          cp /tmp/dify-ops-probe-body.txt /tmp/dify-ops-probe-body1.txt
+          set +e
+          judge "$code1" /tmp/dify-ops-probe-body1.txt
+          result1=$?
+          set -e
+
+          # 403 + 1010（Cloudflare）のときだけ、設計書 §10 のとおり User-Agent を
+          # 変えて 1 回だけ再試行する。
+          retried=false
+          code2=""
+          result2=""
+          if [ "$result1" -eq 1 ]; then
+            retried=true
+            probe_once "$UA_FALLBACK"
+            code2="$(cat /tmp/dify-ops-probe-code.txt)"
+            cp /tmp/dify-ops-probe-body.txt /tmp/dify-ops-probe-body2.txt
+            set +e
+            judge "$code2" /tmp/dify-ops-probe-body2.txt
+            result2=$?
+            set -e
+          fi
+
+          final_result="$result1"
+          final_code="$code1"
+          if [ "$retried" = true ]; then
+            final_result="$result2"
+            final_code="$code2"
+          fi
+
+          {
+            echo "## probe（op: probe）— Dify Cloud への到達性確認"
+            echo
+            echo "設計書: docs/handoff/2026-09-08-cloud-auth-and-w4.md §10・§11（W4-3 V5）"
+            echo
+            echo "- 1 回目 User-Agent: \`${UA_PRIMARY}\`"
+            echo "- 1 回目 HTTP status: \`${code1}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$retried" = true ]; then
+            {
+              echo "- 2 回目 User-Agent（再試行）: \`${UA_FALLBACK}\`"
+              echo "- 2 回目 HTTP status: \`${code2}\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo >> "$GITHUB_STEP_SUMMARY"
+
+          case "$final_result" in
+            0)
+              echo "**結果: 成功。** 200 / 401 / 403（本文に \`1010\` を含まない）を確認した。前段（Cloudflare）は通っている。Cookie 案（W4-3）は成立しうる。" >> "$GITHUB_STEP_SUMMARY"
+              echo "OVERALL_RC=0" >> "$GITHUB_ENV"
+              ;;
+            1)
+              echo "**結果: 失敗。Cloudflare が弾いている（403 かつ本文に \`1010\`）。** User-Agent を変えて再試行しても解消しなかった。**W4-3 は保留**とし、DI として起票すること。" >> "$GITHUB_STEP_SUMMARY"
+              echo "::error::probe 失敗: Cloudflare（1010）にホストランナーが弾かれた。W4-3 は保留。DI 起票が必要。"
+              echo "OVERALL_RC=1" >> "$GITHUB_ENV"
+              ;;
+            2)
+              echo "**結果: 判定不能。** 接続に失敗した（タイムアウト・DNS 失敗など。HTTP status を取得できなかった）。ネットワーク自体の問題の可能性がある。再実行するか、ランナーの egress を確認すること。" >> "$GITHUB_STEP_SUMMARY"
+              echo "::error::probe 判定不能: 接続に失敗した（HTTP status 000）。"
+              echo "OVERALL_RC=1" >> "$GITHUB_ENV"
+              ;;
+            *)
+              echo "**結果: 判定不能。** 想定外の HTTP status \`${final_code}\` を受け取った。設計書 §10 の想定（200/401/403）の外なので、手動で確認すること。" >> "$GITHUB_STEP_SUMMARY"
+              echo "::error::probe 判定不能: 想定外の HTTP status ${final_code}。"
+              echo "OVERALL_RC=1" >> "$GITHUB_ENV"
+              ;;
+          esac
+
       # push の直前に、ステージ済みファイルがすべて許容パターンに一致するかを確認する。
       # 1 つでも外れたら push せずに失敗させる（#121「生成物の二重生成」対策。load-bearing）。
       - name: Stage results and guard changed paths
@@ -324,6 +462,6 @@ jobs:
           set -euo pipefail
           rc="${OVERALL_RC:-0}"
           if [ "$rc" != "0" ]; then
-            echo "::error::kb_upload / kb_refresh / kb_replace / run_tests のいずれかが失敗しました（詳細は Job Summary と PR の結果ファイルを参照）。"
+            echo "::error::kb_upload / kb_refresh / kb_replace / run_tests / probe のいずれかが失敗しました（詳細は Job Summary と PR の結果ファイルを参照）。"
             exit 1
           fi
