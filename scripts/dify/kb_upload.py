@@ -131,6 +131,31 @@ def build_retrieval_model():
     }
 
 
+def short_id(v):
+    """UUID・ID を先頭 8 文字だけにする（CLAUDE.md §2-10）。
+
+    dataset id / document id は dify/env/**/env.yml に直値で書くことを禁じている値
+    （§2-12 の ${DIFY_DATASET_ID_*}）。このスクリプトは GitHub Actions（公開リポジトリ）
+    からも動くので、完全な値を標準出力に出すと Actions のログに残り続ける。
+    突き合わせに使えるだけの長さは残しつつ、そのまま API を叩けない形にする。
+    """
+    v = "" if v is None else str(v)
+    return v if len(v) <= 8 else v[:8] + "…"
+
+
+_UUID_RE = re.compile(r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b")
+
+
+def mask_ids(text):
+    """文字列中の UUID をすべて先頭 8 文字に落とす（CLAUDE.md §2-10）。
+
+    成功時のログより、**エラー時のほうが漏れやすい**。HTTP エラーの message には
+    リクエストパス（/datasets/<dataset id>/...）が入り、応答本文にも id が入りうる。
+    公開リポジトリの Actions ログに残るため、raise する前にここを通す。
+    """
+    return _UUID_RE.sub(lambda m: m.group(0)[:8] + "…", "" if text is None else str(text))
+
+
 def log(msg):
     print(time.strftime("%H:%M:%S"), msg, flush=True)
 
@@ -178,9 +203,9 @@ class Api:
                 return r.status, (json.loads(raw) if raw else {})
         except urllib.error.HTTPError as e:
             raw = e.read().decode("utf-8", "replace")
-            raise RuntimeError(f"HTTP {e.code} {method} {path}: {raw[:500]}") from None
+            raise RuntimeError(mask_ids(f"HTTP {e.code} {method} {path}: {raw[:500]}")) from None
         except urllib.error.URLError as e:
-            raise RuntimeError(f"接続失敗 {method} {path}: {e.reason}") from None
+            raise RuntimeError(mask_ids(f"接続失敗 {method} {path}: {e.reason}")) from None
 
     def get(self, path):
         return self._req("GET", path)[1]
@@ -267,7 +292,7 @@ def main():
         datasets = list_all(api, "/datasets")
         ds = next((d for d in datasets if d.get("name") == kb_name), None)
         if ds:
-            log(f"既存 KB を再利用: id={ds['id']}")
+            log(f"既存 KB を再利用: id={short_id(ds['id'])}")
             log("既存 KB の Rerank 設定は画面で確認すること（DI-005。retrieval_model は変更しません）")
         else:
             create_body = {
@@ -290,7 +315,7 @@ def main():
                     ds = api.post("/datasets", create_body)
                 else:
                     raise
-            log(f"KB を作成: id={ds['id']}")
+            log(f"KB を作成: id={short_id(ds['id'])}")
         ds_id = ds["id"]
 
         existing = {d.get("name") for d in list_all(api, f"/datasets/{ds_id}/documents")}
@@ -314,7 +339,7 @@ def main():
             )
             doc = res.get("document") or {}
             uploaded.append((fname, doc.get("id"), res.get("batch")))
-            log(f"アップロード: {fname} ({len(content)} bytes) -> document id={doc.get('id')} status={doc.get('indexing_status')}")
+            log(f"アップロード: {fname} ({len(content)} bytes) -> document id={short_id(doc.get('id'))} status={doc.get('indexing_status')}")
 
         if not uploaded:
             log("新規アップロードなし（すべて既存）。")
@@ -333,16 +358,16 @@ def main():
                 if statuses and all(s[0] in ("completed", "error", "paused") for s in statuses):
                     pending.discard(batch)
                     for s in statuses:
-                        log(f"batch {batch}: {s[0]} ({s[1]}/{s[2]} segments){' error=' + str(s[3]) if s[3] else ''}")
+                        log(f"batch {short_id(batch)}: {s[0]} ({s[1]}/{s[2]} segments){' error=' + str(s[3]) if s[3] else ''}")
             if pending:
                 time.sleep(5)
         if pending:
             log(f"タイムアウト: {len(pending)} batch がまだ完了していません。Dify のナレッジ画面で状態を確認してください。")
             return 2
-        log(f"完了: KB '{kb_name}' (id={ds_id})。Studio で {code} の Knowledge Retrieval ノードにこの KB を選び、再公開してください。")
+        log(f"完了: KB '{kb_name}' (id={short_id(ds_id)})。Studio で {code} の Knowledge Retrieval ノードにこの KB を選び、再公開してください。")
         return 0
     except RuntimeError as e:
-        print("エラー:", e)
+        print("エラー:", mask_ids(e))
         print("ヒント: 401=キー違い（ナレッジ API キーか確認） / 404=URL か dataset id / 4xx の本文をそのまま報告")
         return 1
 
