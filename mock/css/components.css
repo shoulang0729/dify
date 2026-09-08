@@ -128,6 +128,9 @@
   .chev.open { transform: rotate(45deg); }
   .nav-divider { height: 1px; background: var(--border-subtle); margin: 6px var(--space-5); }
 
+  /* ===== ① サイドバー：お気に入りの入口（設計書 §3-2） ===== */
+  .nav-item.fav-nav .ic { color: var(--action-primary); }
+
   /* ===== 右ペイン ===== */
   main {
     flex: 1; min-width: 0; overflow-y: auto;
@@ -210,6 +213,20 @@
   }
   .detail-card .d-code .badge-new { margin-left: var(--space-2); }
 
+  /* ===== お気に入り（星ボタン。設計書 2026-09-08-favorites.md §3-1） =====
+     塗り/輪郭という「形」で on/off を区別する（色だけに頼らない）。既存トークンのみ使用。 */
+  .card .c-top .c-top-tail {
+    margin-left: auto; flex-shrink: 0; display: flex; align-items: flex-start; gap: var(--space-2);
+  }
+  .fav-btn {
+    width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent; border-radius: var(--radius-sm); color: var(--text-secondary);
+    transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+  }
+  .fav-btn:hover { background: var(--surface-hover); color: var(--action-primary); }
+  .fav-btn.on { color: var(--action-primary); }
+  .fav-btn .ic-star { width: 18px; height: 18px; }
+
   /* ===== A: 分類アクセント（色とアイコン） ===== */
   .ic { width: 20px; height: 20px; flex-shrink: 0; display: block; }
   .ic-sm { width: 16px; height: 16px; }
@@ -238,6 +255,11 @@
     padding: 2px var(--space-2); background: var(--surface-canvas);
   }
   .empty { padding: 64px 0; text-align: center; color: var(--text-muted); font-size: 13.5px; line-height: 2; }
+
+  /* ===== お気に入り一覧の空状態（noResults とは別物。設計書 §3-6） ===== */
+  .fav-empty { display: flex; flex-direction: column; gap: var(--space-2); }
+  .fav-empty-title { font-size: 14.5px; font-weight: var(--weight-bold); color: var(--text-heading); }
+  .fav-empty-hint { font-size: 12.5px; color: var(--text-secondary); }
 
   /* ===== 詳細 ===== */
   .detail-wrap { padding: var(--space-6) 36px var(--space-12) 36px; max-width: 920px; }
@@ -283,6 +305,17 @@
   }
   .btn-primary:hover { background: var(--action-primary-hover); }
   .btn-primary:active { background: var(--action-primary-active); }
+
+  /* ===== お気に入り：詳細画面の文字ラベル付きトグル（設計書 §3-5） ===== */
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-body);
+    font-size: 15px; font-weight: var(--weight-bold); padding: 13px 22px; border-radius: var(--radius-xs);
+    transition: border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+  }
+  .btn-ghost:hover { border-color: var(--action-primary); color: var(--action-primary); }
+  .btn-ghost.on { color: var(--action-primary); border-color: var(--action-primary); }
+  .btn-ghost .ic-star { width: 18px; height: 18px; }
   .cta-note { font-size: 11.5px; color: var(--text-muted); }
 
   /* ===== チャット ===== */

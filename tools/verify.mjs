@@ -398,7 +398,7 @@ if (CATS && SVCS && TAGS) {
 section('7. 共通レイヤー契約');
 {
   const stateM = appText.match(/const state = \{([\s\S]*?)\};/);
-  const required = ['industry', 'pattern', 'lang', 'theme', 'openCats', 'selCat', 'selSub', 'lastCat', 'selSvc', 'view', 'query'];
+  const required = ['industry', 'pattern', 'lang', 'theme', 'openCats', 'selCat', 'selSub', 'lastCat', 'selSvc', 'view', 'query', 'fav', 'favOnly'];
   if (!stateM) fail('const state = {…} が見つからない');
   else {
     const keys = new Set([...stateM[1].matchAll(/^\s*([a-zA-Z]+)\s*:/gm)].map(m => m[1]));
@@ -406,7 +406,7 @@ section('7. 共通レイヤー契約');
     if (missing.length) fail(`state に必須キーが無い: ${missing.join(', ')}`); else ok(`state 必須キー ${required.length} 件 OK`);
   }
   const acts = new Set([...appText.matchAll(/act === '([a-z]+)'/g)].map(m => m[1]));
-  const requiredActs = ['industry', 'pattern', 'all', 'cat', 'sub', 'svc', 'back', 'backdetail', 'start', 'send', 'run', 'chip', 'restart', 'gocat'];
+  const requiredActs = ['industry', 'pattern', 'all', 'cat', 'sub', 'svc', 'back', 'backdetail', 'start', 'send', 'run', 'chip', 'restart', 'gocat', 'fav', 'favlist'];
   const missingActs = requiredActs.filter(a => !acts.has(a));
   if (missingActs.length) fail(`data-act ハンドラが無い: ${missingActs.join(', ')}`); else ok(`data-act ${requiredActs.length} 種 OK`);
 
@@ -415,10 +415,15 @@ section('7. 共通レイヤー契約');
   if (!demoDate) fail('DEMO_DATE が無い（NEW 表示の基準日）');
   else if (demoDate[1].trim() !== 'null') warn(`DEMO_DATE が ${demoDate[1].trim()} に固定されている（デモ後は null に戻す）`);
   else ok('DEMO_DATE = null（実際の今日で判定）');
-  for (const k of ['mock.lang', 'mock.theme']) {
-    if (!appText.includes(`'${k}'`)) fail(`localStorage キー '${k}' が見当たらない（§2-6）`);
-  }
-  if (appText.includes(`'mock.lang'`) && appText.includes(`'mock.theme'`)) ok('localStorage キー mock.lang / mock.theme OK');
+  // localStorage キーの許可集合は mock.lang / mock.theme / mock.fav の 3 つだけ（設計書 2026-09-08-favorites.md §2-1・§7-1）。
+  // 3 キーすべてが存在すること、かつアプリ層に現れる 'mock.…' リテラルがこの 3 つの部分集合であること（4 つ目を機械的に止める）
+  const ALLOWED_MOCK_KEYS = ['mock.lang', 'mock.theme', 'mock.fav'];
+  const missingMockKeys = ALLOWED_MOCK_KEYS.filter(k => !appText.includes(`'${k}'`));
+  if (missingMockKeys.length) fail(`localStorage キーが見当たらない: ${missingMockKeys.join(', ')}（§2-6）`);
+  const mockKeyLiterals = new Set([...appText.matchAll(/'(mock\.[a-zA-Z]+)'/g)].map(m => m[1]));
+  const extraMockKeys = [...mockKeyLiterals].filter(k => !ALLOWED_MOCK_KEYS.includes(k));
+  if (extraMockKeys.length) fail(`localStorage キーが許可集合の外にある: ${extraMockKeys.join(', ')}（許可は ${ALLOWED_MOCK_KEYS.join(' / ')} の 3 つだけ。§2-6）`);
+  if (!missingMockKeys.length && !extraMockKeys.length) ok(`localStorage キー ${ALLOWED_MOCK_KEYS.join(' / ')} の 3 つだけ OK`);
   if (!/class="mockbar"/.test(html)) fail('.mockbar（レビュー用足場）が無い（§2-4）');
   if (!/id="lang-select"/.test(html) || !/id="theme-btn"/.test(html)) fail('ヘッダーの言語/テーマ切替が無い（§2-4）');
   if (/class="mockbar"/.test(html) && /id="lang-select"/.test(html)) ok('足場（.mockbar）とプロダクト機能（言語/テーマ）が両方存在');

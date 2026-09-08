@@ -15,28 +15,52 @@ document.addEventListener('click', (e) => {
     state.openCats = firstCat ? { [firstCat]: true } : {};
     state.selCat = null; state.selSub = null; state.selSvc = null;
     state.lastCat = firstCat;
-    state.view = 'list'; state.query = ''; state.log = [];
+    state.view = 'list'; state.query = ''; state.log = []; state.favOnly = false;
     renderAll();
   }
   else if (act === 'pattern') { state.pattern = arg; renderAll(); }
-  else if (act === 'all') { state.selCat = null; state.selSub = null; state.view = 'list'; renderAll(); }
+  else if (act === 'all') { state.selCat = null; state.selSub = null; state.favOnly = false; state.view = 'list'; renderAll(); }
   else if (act === 'cat') {
     const open = !!state.openCats[arg];
     state.openCats[arg] = !open;
+    state.favOnly = false;
     if (!open) { state.selCat = arg; state.selSub = null; state.lastCat = arg; state.view = 'list'; }
     renderAll();
   }
   else if (act === 'gocat') {
     state.selCat = arg; state.selSub = null; state.lastCat = arg;
-    state.openCats[arg] = true; state.view = 'list'; state.query = '';
+    state.openCats[arg] = true; state.view = 'list'; state.query = ''; state.favOnly = false;
     renderAll();
   }
   else if (act === 'sub') {
     const [c, sb] = arg.split(':');
     state.selCat = c; state.selSub = sb; state.lastCat = c; state.openCats[c] = true; state.view = 'list';
+    state.favOnly = false;
     renderAll();
   }
   else if (act === 'svc') { state.selSvc = arg; state.view = 'detail'; state.log = []; renderMain(); }
+  else if (act === 'fav') {
+    toggleFav(arg);
+    savePrefs();
+    syncFavButtons(arg);      // 押した星（カード・詳細）を書き換える
+    renderSidebar();          // ① の件数を更新（nav 以外のパターンでは既存どおり即 return）
+    const homeHolder = document.getElementById('home-holder');
+    const gridHolder = document.getElementById('grid-holder');
+    if (homeHolder) {
+      // ②③ のホーム（お気に入り帯・レールは PR-2）。ここでは既存の home 描画のみ更新する
+      homeHolder.innerHTML = state.pattern === 'feed' ? feedSectionsHTML() : dashSectionsHTML();
+    } else if (gridHolder) {
+      // list ビュー（favOnly のときは外した項目がその場で消える）。renderAll()/renderMain() は呼ばない（§3-8）
+      const l = filtered();
+      gridHolder.innerHTML = gridHTML(l, listEmptyOverride(l));
+      const count = document.getElementById('count');
+      if (count) count.textContent = countText(l.length);
+    }
+  }
+  else if (act === 'favlist') {
+    state.favOnly = true; state.selCat = null; state.selSub = null; state.query = ''; state.view = 'list';
+    renderAll();
+  }
   else if (act === 'back') { state.view = 'list'; renderAll(); }
   else if (act === 'backdetail') { state.view = 'detail'; renderMain(); }
   else if (act === 'start') {
