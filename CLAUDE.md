@@ -85,6 +85,7 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 - Dify のトークン／Cookie／API キーは**環境変数渡し**。コミット・チャット貼り付け禁止
 - `.gitignore` で `.env`・`.env.*`（`.env.example` は除く）・`*.key`・`*.pem`・`secrets/`・`dify/build/` を除外済み。設定ファイルはリポジトリの外（`~/.config/dify/env`）
 - **`dify/env/**/env.yml` にも顧客実名・実 URL・dataset id・キーを書かない**。環境固有の値は `${VAR}` で環境変数から渡す。顧客は `customer-a` のような匿名 id
+- **公開デモ（GitHub Pages）に本番 Dify の URL を載せてよいのは、架空データしか入っていないアプリだけ**。Pages は誰でも見られるので、URL を載せた時点でリンクを知った全員がそのアプリを開ける。**顧客の実データ・実名・社内文書を投入した環境の URL は載せない**（環境台帳 `dify/env/README.md` の確認状態と対で判断する）。2026-09-08 時点で Cloud にある 12 本は `data/world/` の架空世界だけを使っており、載せてよい（PM 確認済み）。仕組みは Issue #124
 - 検出：`tools/verify.mjs`（§12 env に秘密・実名が無い）
 
 ### 2-11. 管理番号（サービスの呼び名）
