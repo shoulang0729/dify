@@ -12,19 +12,41 @@
  *   node tools/check-world.mjs --all      W6/W7 のような件数が多い検査も全件表示する（既定は先頭 10 件＋「ほか N 件」）
  *   npm run world                          = node tools/check-world.mjs
  *
- * 業種（mfg / fin）ごとに data/world/<業種>/ のマスタと走査対象を対にして回す。
+ * 業種は mfg / fin / both の 3 バケットで回す（Issue #182）。
  * 走査対象の振り分け:
  *   - mock/js/data/scenarios/**（台本）: パスに `/scenarios/fin/` を含むものが fin、それ以外は mfg
  *     （`scenarios/mfg/`・`scenarios/fin/` それぞれのディレクトリ配下が丸ごとそのまま対応する業種の
  *      走査対象になる。台本データ本体は `window.SCENARIOS[業種][svcId]` の 2 階層で、構造化データ
  *      （W1/W2/W3/W9 の persona 走査）はこのディレクトリ分けと対で `data.SCENARIOS[ind]` を直接
- *      参照する。Issue #133 コメント2）
- *   - dify/kb/**・dify/tests/**・docs/dify/usecases/**: ファイルパスから管理番号
- *     （`[A-Z]{2}-\d+`）を抜き、FIN_ONLY_CODES（金融専用の分類コード）に含まれれば fin、
- *     それ以外は mfg。PO/EG のような業種横断コードは、現時点ではまだ実ファイルが
- *     存在しないため mfg 側の既定分類に留めている（両業種化は該当ファイルが増える PR で見直す）
+ *      参照する。Issue #133 コメント2）。両業種のサービス（`industries: ['mfg','fin']`）でも台本は
+ *      mfg 側・fin 側それぞれのディレクトリに別々の実例として置かれる（1 つのサービスに mfg 用と
+ *      fin 用の 2 つの台本がある）ので、台本は常にどちらか一方に正しく属し、both バケットには
+ *      台本が存在しない
+ *   - dify/kb/**・dify/tests/**・docs/dify/usecases/**（台本と違い業種ディレクトリに分かれておらず、
+ *     1 管理番号につき 1 ファイルしか無い）: ファイルパスから管理番号（`[A-Z]{2}-\d+`）を抜き、
+ *     CLAUDE.md §2-11 の逆変換（大文字接頭辞 → 内部 id の小文字化＋ゼロ埋め解除。例 `KN-06` → `kn6`）
+ *     で SVCS の該当エントリを引き、その `industries`（正本）で mfg 専用／fin 専用／両業種の
+ *     3 バケットに振り分ける（分類コードのハードコード集合は使わない）。
+ *     SVCS に無い管理番号（欠番・README.md・_TEMPLATE.md のような番号を含まないファイル等）は
+ *     従来どおり既定で mfg 扱いにする（走査対象から漏らさないため。§7-2 の「不明なものは mfg」と同じ既定）
  *
- * 入力: data/world/<業種>/ 配下の csv/md ＋ 上記の走査対象 4 系統
+ * both バケット（業種横断サービスの kb/tests/usecases）の扱い（Issue #182 のやり直し。
+ * PM 指摘：「両方の pass に入れる」＝両方の world master に登録されていることを要求する形は
+ * 誤りだった。両業種サービスの実例は普通どちらか一方の世界の語彙で書かれる。正しくは
+ * 「mfg と fin の world master の和集合のどちらかに載っていればよい」）:
+ *   - W1（人名）・W2（役職）・W3（拠点）・W9（カバレッジ）は台本（SCENARIOS）が入力で、
+ *     both バケットには台本が無い（上記のとおり常にどちらかの業種ディレクトリに属する）ため、
+ *     対象データが無く skip する（黙って飛ばさず理由を出力する）
+ *   - W4（社名の出現回数）・W5（取引先記号）は台本本体（mock/js/data 配下）のテキストが入力で、
+ *     both バケット（kb/tests/usecases）にはその入力が無いため skip する
+ *   - W8（KPI）は「基準値と一致するか」を見る検査で、mfg と fin は指標体系そのものが違う
+ *     （不良率・稼働率 vs 延滞率）ため和集合にする意味が無く skip する
+ *   - W6（文書番号）・W7（品番・設備）は「登録済みの集合に含まれるか」を見る検査なので、
+ *     mfg と fin の calendar.md／documents.csv／products.csv／equipment.csv を**和集合**にして
+ *     判定する（すでに mfg/fin バケットの実行で解析済みの正規表現・集合を再利用する。calendar.md の
+ *     パース警告を two重に出さないため、W6 の再パースはしない）
+ *
+ * 入力: data/world/<業種>/ 配下の csv/md ＋ 上記の走査対象 3 系統
  *
  * 検査（すべて warn。FAIL にしない）:
  *   W1 人名：走査対象に出る人名が people.csv にあるか
@@ -63,16 +85,14 @@ const WORLD = resolve(ROOT, 'data/world');
 const strict = process.argv.includes('--strict');
 const showAll = process.argv.includes('--all');
 
-// 金融専用の分類コード（設計書 2026-09-08-finance-catalog.md §3-1）。
-// PO / EG は業種横断だが、現時点で実ファイル（dify/kb・dify/tests・docs/dify/usecases・台本）が
-// 存在しないため、ここでは mfg 側の既定分類のままにしている。
-const FIN_ONLY_CODES = new Set(['RS', 'CV', 'FA']);
-
-const warnCounts = { mfg: 0, fin: 0 };
+const warnCounts = { mfg: 0, fin: 0, both: 0 };
 let currentInd = 'mfg';
 const section = (t) => console.log(`\n── ${t} ──`);
 const report = (m) => { warnCounts[currentInd]++; console.log('⚠️ ', m); };
 const ok = (m) => console.log('✅', m);
+// 対象データが無い／和集合にすると意味が薄れる検査を明示的に飛ばすときに使う。
+// warnCounts は増やさない（skip は不一致の報告ではない）が、黙って飛ばさず必ず 1 行出す
+const skip = (m) => console.log('⏭️ ', m);
 
 // 件数が多い検査（W6/W7）用。集計は常に全件（items.length）、表示だけ既定 showMax 件に絞る。
 // 旧実装は表示キャップ（`if (n <= 10) report(...)`）の内側で集計していたため、
@@ -217,6 +237,13 @@ function parseCalendarPatterns(md, warn, categoryCodes) {
   return patterns;
 }
 
+// W6 の候補抽出（mfg/fin/both で共用）。候補抽出：末尾セグメントが 1 文字のものも拾う
+// （`{2,4}` → `{1,4}`。Issue #133 コメント2。`C-2509-A` のような `-A` 1 文字セグメントを
+// 見落とさないため）。境界は `\b` ではなく否定先読み／後読みにする：
+// `VST-2026-021_v3_ja.pdf` のようなアンダースコア結合のファイル名で `\b` がバックトラックし、
+// `VST-2026` のように途中で切り詰められた偽の候補を拾ってしまうのを防ぐ
+const CANDIDATE_RE = /(?<![A-Za-z0-9_])[A-Z]{1,4}(?:-[A-Za-z0-9]{1,4}){1,3}(?![A-Za-z0-9_-])/g;
+
 /* ---------- 走査対象の準備（全体を 1 回だけ読み、業種ごとに振り分ける） ---------- */
 const mock = loadMock(ROOT);
 
@@ -236,12 +263,37 @@ function walkFiles(dir, exts) {
 }
 
 function extractCode(pathStr) {
-  const m = pathStr.match(/\b([A-Z]{2})-\d+/);
+  const m = pathStr.match(/\b([A-Z]{2}-\d+)\b/);
   return m ? m[1] : null;
 }
-function codeBelongsTo(code, ind) {
-  if (!code) return ind === 'mfg'; // 不明なものは既定で mfg 扱い（従来どおりの検査対象）
-  return ind === 'fin' ? FIN_ONLY_CODES.has(code) : !FIN_ONLY_CODES.has(code);
+
+// 管理番号（例 "KN-06"）→ SVCS の内部 id（例 "kn6"）。CLAUDE.md §2-11 の逆変換
+// （内部 id を大文字化し通番を 2 桁ゼロ埋め＝順変換）の逆：接頭辞を小文字化し、
+// 通番のゼロ埋めを解く（"06" → 6）。
+function mgmtCodeToId(code) {
+  const m = code.match(/^([A-Z]{2})-(\d+)$/);
+  if (!m) return null;
+  return m[1].toLowerCase() + String(parseInt(m[2], 10));
+}
+
+// SVCS[].id → SVCS エントリ。業種判定の正本（Issue #182）
+const svcById = new Map((mock.data.SVCS || []).map(s => [s.id, s]));
+
+// 管理番号 → 3 バケット（'mfg' | 'fin' | 'both'）。SVCS[].industries が正本。
+// PM 指摘（Issue #182 やり直し）：両業種のサービスを「mfg と fin 両方の pass に入れる」と、
+// 両方の world master に登録されていることを要求する形になってしまい、実態（両業種サービスの
+// 実例は普通どちらか一方の世界の語彙で書かれる）と合わない。両業種のファイルは第 3 のバケット
+// （both）にまとめ、mfg と fin の world master の和集合と突き合わせる
+function bucketOf(code) {
+  if (!code) return 'mfg'; // 不明なもの（コード自体が無い）は既定で mfg 扱い（従来どおりの検査対象）
+  const svc = svcById.get(mgmtCodeToId(code) || '');
+  // SVCS に無い管理番号（欠番・将来の追加・README.md/_TEMPLATE.md のような番号を
+  // 含まないファイル等）も従来どおり既定で mfg 扱いにする（走査対象から漏らさないため）
+  if (!svc) return 'mfg';
+  const inds = svc.industries || [];
+  if (inds.includes('mfg') && inds.includes('fin')) return 'both';
+  if (inds.includes('fin')) return 'fin';
+  return 'mfg';
 }
 
 const kbFiles = walkFiles(resolve(ROOT, 'dify/kb'), ['.md'])
@@ -250,7 +302,14 @@ const usecaseFiles = walkFiles(resolve(ROOT, 'docs/dify/usecases'), ['.md'])
   .map(p => ({ src: p.replace(ROOT + '/', ''), text: readFileSync(p, 'utf8') }));
 const testFiles = walkFiles(resolve(ROOT, 'dify/tests'), ['.json'])
   .map(p => ({ src: p.replace(ROOT + '/', ''), text: readFileSync(p, 'utf8') }));
+const allKbTestUsecaseFiles = [...kbFiles, ...usecaseFiles, ...testFiles];
 
+function filesForBucket(bucket) {
+  return allKbTestUsecaseFiles.filter(f => bucketOf(extractCode(f.src)) === bucket);
+}
+
+// mfg/fin バケットの走査対象。both バケットの kb/tests/usecases はここには含めない
+// （both バケットで一度だけ、和集合の world master と突き合わせて検査する。Issue #182）
 function scanTextsFor(ind) {
   // mock.dataSources には scenarios 以外（ui.js/catalog.js/home.js/style.js）も含まれる。
   // これらは業種を問わず両方の検査対象に含める（社名・部署名などは業種ごとに書き分けられていないため）。
@@ -261,10 +320,15 @@ function scanTextsFor(ind) {
     .filter(f => f.path.includes('/scenarios/'))
     .filter(f => ind === 'fin' ? f.path.includes('/scenarios/fin/') : !f.path.includes('/scenarios/fin/'))
     .map(f => ({ src: f.path, text: f.src }));
-  const others = [...kbFiles, ...usecaseFiles, ...testFiles]
-    .filter(f => codeBelongsTo(extractCode(f.src), ind));
+  const others = filesForBucket(ind).map(f => ({ src: f.src, text: f.text }));
   return { texts: [...nonScenario, ...scenarioOnly, ...others] };
 }
+
+// mfg/fin それぞれの解析済みデータ（calendar.md の regex・documents.csv の doc_id・
+// products/equipment の集合）を both バケットが再利用するためのキャッシュ。
+// calendar.md の再パースを避けることで、パース警告（未知のプレースホルダ等）が
+// both バケットでも二重に report() されるのを防ぐ
+const worldCache = {};
 
 /* ============================================================ */
 function runIndustryChecks(ind) {
@@ -287,6 +351,10 @@ function runIndustryChecks(ind) {
     ...products.map(p => (p.part_no || '').split('-')[0]),
     ...equipment.map(e => (e.equip_id || '').split('-')[0]),
   ].filter(Boolean));
+  // both バケット（W7 の和集合）で使うため、fin でも knownParts/knownEquip は計算しておく
+  // （fin 側の W7 セクション自体は従来どおり skip のまま。§7-2）
+  const knownParts = new Set(products.map(p => p.part_no));
+  const knownEquip = new Set(equipment.map(e => e.equip_id));
 
   const { texts } = scanTextsFor(ind);
   const allText = texts.map(f => f.text).join('\n');
@@ -451,6 +519,7 @@ function runIndustryChecks(ind) {
 
   /* ---------------------------------------------------------- */
   section(`[${ind}] W6. 文書番号：calendar.md の体系に合わない書式・未登録の接頭辞`);
+  let w6Result; // both バケットに渡す（再パース不要）
   {
     // knownPatterns は calendar.md の「文書番号の体系」表から組み立てる（ハードコードしない。
     // Issue #133）。パース規則は parseCalendarPatterns() 付近のコメントを参照
@@ -460,6 +529,7 @@ function runIndustryChecks(ind) {
     // 大半が文書番号ではなく、金型・アラーム・様式番号などの別体系（下記 note 参照）なので、
     // 未登録として warn するのはこの許可集合に無いものだけに絞る
     const singleCharPrefixes = new Set(parsed.filter(p => p.prefix.length === 1).map(p => p.prefix));
+    w6Result = { knownPatterns, singleCharPrefixes, docIds, partPrefixes };
 
     // 台本 JS ファイルのブロックコメント（ファイル冒頭の設計メタ情報）は架空世界の文書番号ではなく
     // 実際の設計 PR ラベル（例: `PR-4a`）を参照することがあるため、W6 の走査対象からは除く
@@ -467,12 +537,6 @@ function runIndustryChecks(ind) {
       .map(f => (f.src && f.src.endsWith('.js')) ? f.text.replace(/\/\*[\s\S]*?\*\//g, '') : f.text)
       .join('\n');
 
-    // 候補抽出：末尾セグメントが 1 文字のものも拾う（`{2,4}` → `{1,4}`。Issue #133 コメント2。
-    // `C-2509-A` のような `-A` 1 文字セグメントを見落とさないため）。
-    // 境界は `\b` ではなく否定先読み／後読みにする：`VST-2026-021_v3_ja.pdf` のような
-    // アンダースコア結合のファイル名で `\b` がバックトラックし、`VST-2026` のように
-    // 途中で切り詰められた偽の候補を拾ってしまうのを防ぐ
-    const CANDIDATE_RE = /(?<![A-Za-z0-9_])[A-Z]{1,4}(?:-[A-Za-z0-9]{1,4}){1,3}(?![A-Za-z0-9_-])/g;
     const candidates = new Set(w6Text.match(CANDIDATE_RE) || []);
     // 判定順序（Issue #153 PR-1 §7-2。正本の明示的な登録がツールの一般則より優先）：
     //   ① 数字を含まない → 対象外
@@ -501,8 +565,6 @@ function runIndustryChecks(ind) {
   /* ---------------------------------------------------------- */
   if (ind === 'mfg') {
     section(`[${ind}] W7. 品番・設備：products.csv / equipment.csv に無いコード。管理番号形式との衝突`);
-    const knownParts = new Set(products.map(p => p.part_no));
-    const knownEquip = new Set(equipment.map(e => e.equip_id));
     // 候補の接頭辞はハードコードせず partPrefixes（products.csv/equipment.csv 由来）から組み立てる
     // （Issue #153 PR-1 §5-3）。長い接頭辞を先に試す（DO と D のように前方一致するものがあるため）
     const prefixAlt = [...partPrefixes].sort((a, b) => b.length - a.length).map(escLit).join('|');
@@ -559,12 +621,96 @@ function runIndustryChecks(ind) {
       ok('people.csv の全員が走査対象に出現');
     }
   }
+
+  worldCache[ind] = { ...w6Result, knownParts, knownEquip };
+}
+
+/* ============================================================ */
+// both バケット（industries: ['mfg','fin'] のサービスの kb/tests/usecases）。
+// PM 指摘（Issue #182 やり直し）のとおり、mfg/fin 個別ではなく mfg と fin の world master の
+// 和集合と突き合わせる。台本（SCENARIOS）や台本本体テキスト（mock/js/data）を入力に使う検査
+// （W1〜W5・W9）と、業種ごとに基準値の体系が違う検査（W8）は対象データが無い／和集合にすると
+// 意味が薄れるため skip し、その理由を必ず出力する
+function runBothChecks() {
+  currentInd = 'both';
+  const bothFiles = filesForBucket('both');
+  const bothTexts = bothFiles.map(f => ({ src: f.src, text: f.text }));
+  const allText = bothTexts.map(f => f.text).join('\n');
+
+  section('[both] W1. 人名：業種横断バケットは台本（SCENARIOS）を持たないため skip');
+  skip('台本は常に scenarios/mfg または scenarios/fin のどちらかのディレクトリに属し（両業種サービスも mfg 用・fin 用それぞれの実例が別々に存在する）、both バケット自体には台本が無い。人名検査の対象データが無い');
+
+  section('[both] W2. 役職：業種横断バケットは台本を持たないため skip');
+  skip('W1 と同じ理由（台本を持たない）');
+
+  section('[both] W3. 拠点：業種横断バケットは台本を持たないため skip');
+  skip('W1 と同じ理由（台本を持たない）');
+
+  section('[both] W4. 社名：業種横断バケットは台本本体（mock/js/data）を持たないため skip');
+  skip('社名の出現回数チェックは台本本体（mock/js/data 配下）のテキストが入力で、both バケット（kb/tests/usecases）にはその入力が無い。加えて mfg/fin で社名自体が異なるため、和集合にしても比較対象を一意に決められない');
+
+  section('[both] W5. 取引先記号：業種横断バケットは台本本体（mock/js/data）を持たないため skip');
+  skip('W4 と同じ理由（台本本体テキストが入力で、both バケットにはその入力が無い）');
+
+  section('[both] W6. 文書番号：mfg と fin の calendar.md 書式・documents.csv の和集合で判定');
+  {
+    const m = worldCache.mfg, f = worldCache.fin;
+    const knownPatterns = [...m.knownPatterns, ...f.knownPatterns];
+    const singleCharPrefixes = new Set([...m.singleCharPrefixes, ...f.singleCharPrefixes]);
+    const docIds = new Set([...m.docIds, ...f.docIds]);
+    const partPrefixes = new Set([...m.partPrefixes, ...f.partPrefixes]);
+
+    const w6Text = bothTexts
+      .map(t => (t.src && t.src.endsWith('.js')) ? t.text.replace(/\/\*[\s\S]*?\*\//g, '') : t.text)
+      .join('\n');
+    const candidates = new Set(w6Text.match(CANDIDATE_RE) || []);
+    const unknownList = [];
+    for (const c of candidates) {
+      if (!/\d/.test(c)) continue;
+      if (knownPatterns.some(re => re.test(c))) continue;
+      if (docIds.has(c)) continue;
+      if (/^[A-Z]{2}-\d{1,2}$/.test(c)) continue;
+      const prefix = c.split('-')[0];
+      if (partPrefixes.has(prefix)) continue;
+      if (prefix.length === 1 && !singleCharPrefixes.has(prefix)) continue;
+      unknownList.push(c);
+    }
+    reportMany('mfg・fin いずれの calendar.md の書式にも documents.csv にも一致しない文書番号らしき文字列（和集合で判定）', unknownList);
+    if (!unknownList.length) ok('文書番号は mfg・fin いずれかの calendar.md／documents.csv の体系に一致（該当なしを含む）');
+  }
+
+  section('[both] W7. 品番・設備：mfg と fin の products.csv / equipment.csv の和集合で判定');
+  {
+    const m = worldCache.mfg, f = worldCache.fin;
+    const knownParts = new Set([...m.knownParts, ...f.knownParts]);
+    const knownEquip = new Set([...m.knownEquip, ...f.knownEquip]); // fin は equipment.csv を持たないため常に空集合
+    const partPrefixes = new Set([...m.partPrefixes, ...f.partPrefixes]);
+    const prefixAlt = [...partPrefixes].sort((a, b) => b.length - a.length).map(escLit).join('|');
+    const candidateRe = prefixAlt ? new RegExp(`\\b(${prefixAlt})-[A-Za-z0-9]{2,5}(-[A-Za-z0-9]+)?\\b`, 'g') : null;
+    const candidates = new Set(candidateRe ? (allText.match(candidateRe) || []) : []);
+    const unknownList = [];
+    for (const c of candidates) {
+      if (knownParts.has(c) || knownEquip.has(c)) continue;
+      const base = c.replace(/-[A-Z]$/, '');
+      if (knownParts.has(base) || knownEquip.has(base)) continue;
+      unknownList.push(c);
+    }
+    reportMany('products.csv / equipment.csv に無いコード（mfg・fin の和集合で判定）', unknownList);
+    if (!unknownList.length) ok('品番・設備コードはすべて mfg・fin いずれかに登録済み（該当なしを含む）');
+  }
+
+  section('[both] W8. KPI：業種横断は基準値の比較対象を一意に決められないため skip');
+  skip('KPI は mfg（不良率・稼働率）と fin（延滞率）で指標体系そのものが異なり、和集合にすると意味が薄れる');
+
+  section('[both] W9. カバレッジ：業種横断は「どちらの people.csv と比較するか」を一意に決められないため skip');
+  skip('people.csv は mfg/fin で別々の人物台帳であり、both バケットの狭いテキスト量に和集合の人物リストを当てると大半が「未出現」と誤検出される。各業種本来のカバレッジは mfg/fin 側の W9 で検査済み');
 }
 
 for (const ind of ['mfg', 'fin']) runIndustryChecks(ind);
+runBothChecks();
 
 /* ---------- 結果 ---------- */
-const total = warnCounts.mfg + warnCounts.fin;
-console.log(`\n製造業（mfg）: ${warnCounts.mfg} 件 ／ 金融（fin）: ${warnCounts.fin} 件`);
+const total = warnCounts.mfg + warnCounts.fin + warnCounts.both;
+console.log(`\n製造業（mfg）: ${warnCounts.mfg} 件 ／ 金融（fin）: ${warnCounts.fin} 件 ／ 業種横断（both）: ${warnCounts.both} 件 ／ 合計 ${total} 件`);
 console.log(`${total ? `⚠️  合計 ${total} 件の食い違いを報告` : '✅ 食い違いなし'}（このツールは報告のみ。CI には入れない）`);
 process.exit(strict && total ? 1 : 0);
