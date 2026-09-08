@@ -9,8 +9,8 @@
  *   1.   JS 構文（各 JS ファイルを個別に node --check）
  *   1-A. （新規）二重宣言：全 JS（データ層＋アプリ層）を <script src> の順に連結して node --check
  *   1-B. （新規）読み込み契約：実ファイル存在／相対パスのみ／scenarios タグ集合＝ディレクトリの *.js 集合／
- *        読み込み順が data/ui → data/catalog → data/home → data/style → data/scenarios/* → app → render → events／
- *        <script src> の本数は実ディレクトリから計算（data 4 + scenarios <業種ごとの台本ファイル数> + app/render/events 3）・
+ *        読み込み順が data/ui → data/catalog → data/home → data/style → data/live → data/scenarios/* → app → render → events／
+ *        <script src> の本数は実ディレクトリから計算（data 5 + scenarios <業種ごとの台本ファイル数> + app/render/events 3）・
  *        インライン <script> 0 個／catalog.html に <style> が 0 個
  *   2.   i18n キー集合の一致（T / TAGS / PATTERNS / CATS / SVCS / TEMPLATES が ja/zh/en を全て持ち、空でない。en にかな残りなし）
  *   3.   未定義キー参照（t('key') / T.key が T に存在するか。全 JS ファイルの連結テキストを対象）
@@ -33,6 +33,13 @@
  *        （設計書 docs/handoff/2026-09-07-repo-layout-v2.md §3-2・§4-2・§8 PR-2）
  *   12-e.（新規）apps: の管理番号一覧が dify/apps/*.yml と過不足なく一致し、id が null/${VAR}/UUID 形のいずれかで、
  *        cloud-master 以外に生 UUID が無いこと（設計書 docs/handoff/2026-09-08-cloud-console-deploy.md §3-4・Issue #114 PR-2）
+ *   14.  （新規）本番リンク（LIVE）の契約：mock/js/data/live.js が存在しオブジェクトとして読める（{} でもよい）／
+ *        各キーが SVCS[].id に存在／各値が url・env・updated の 3 キーちょうど（url は https:// 始まり、
+ *        env は 'cloud-master' のみ、updated は YYYY-MM-DD）／各キーの管理番号に対応する dify/apps/<番号>-*.yml が実在／
+ *        url のホストが udify.app のみ／url に重複が無いこと。dify/apps/ にあるが LIVE に無い管理番号は warn。
+ *        dify/state/cloud-master.yml との鮮度不一致も warn（FAIL にしない）
+ *        （設計書 docs/handoff/2026-09-08-live-links.md §6。Issue #124 PR-1。§13 は #121 W2 用に予約済み、
+ *        §15 は #121 W4-1 が先に使っているため、この検査は §14 を使う）
  *   15.  （新規）削除系 API 呼び出しの機械検査：scripts/dify/**.py を走査し、"DELETE" を渡す HTTP 呼び出しが
  *        scripts/dify/kb_upload.py の delete_document() だけであること（他ファイルに現れたら FAIL）
  *        （設計書 docs/handoff/2026-09-08-cloud-auth-and-w4.md §4-2・§9-1。Issue #121 W4-1 K8。
@@ -62,7 +69,7 @@ if (!existsSync(HTML)) { fail(`not found: ${HTML}`); process.exit(1); }
 
 const mock = loadMock(ROOT);
 const { html, indexHtml, cssLinks, scriptSrcs, tokenCss, componentCss, jsSources, dataSources, appSources, data, vmErrors } = mock;
-const { T, PATTERNS, TAGS, TEMPLATES, INDUSTRIES, CATS, SVCS, CAT_STYLE, HOME, FEED, SCENARIOS } = data;
+const { T, PATTERNS, TAGS, TEMPLATES, INDUSTRIES, CATS, SVCS, CAT_STYLE, HOME, FEED, LIVE, SCENARIOS } = data;
 const INDUSTRY_ORDER = ['mfg', 'fin'];
 const industryIds = new Set((INDUSTRIES || []).map(i => i.id));
 /* 分類の表示順（業種ごと。§4-3。台本ディレクトリの期待順序にも使う） */
@@ -144,8 +151,9 @@ section('1-B. 読み込み契約');
     }
   }
 
-  // ④ 読み込み順が data/ui → data/catalog → data/home → data/style → data/scenarios/mfg/* → data/scenarios/fin/* → app → render → events
-  //    （設計書 2026-09-08-finance-catalog.md §4-3。業種ディレクトリは実ディレクトリから、ファイル順は CAT_ORDER_BY_INDUSTRY から計算する）
+  // ④ 読み込み順が data/ui → data/catalog → data/home → data/style → data/live → data/scenarios/mfg/* → data/scenarios/fin/* → app → render → events
+  //    （設計書 2026-09-08-finance-catalog.md §4-3／2026-09-08-live-links.md §3-1。業種ディレクトリは実ディレクトリから、
+  //    ファイル順は CAT_ORDER_BY_INDUSTRY から計算する）
   const presentIndustries = INDUSTRY_ORDER.filter(i => scenarioIndustryDirs.includes(i));
   const scenarioExpectedTags = presentIndustries.flatMap(indId => {
     const dirFiles = new Set(readdirSync(resolve(scenDir, indId)).filter(f => f.endsWith('.js')));
@@ -154,24 +162,24 @@ section('1-B. 読み込み契約');
     return [...ordered, ...extra.map(f => basename(f, '.js'))].map(code => `js/data/scenarios/${indId}/${code}.js`);
   });
   const expectedOrder = [
-    'js/data/ui.js', 'js/data/catalog.js', 'js/data/home.js', 'js/data/style.js',
+    'js/data/ui.js', 'js/data/catalog.js', 'js/data/home.js', 'js/data/style.js', 'js/data/live.js',
     ...scenarioExpectedTags,
     'js/app.js', 'js/render.js', 'js/events.js'
   ];
   if (JSON.stringify(scriptSrcs) !== JSON.stringify(expectedOrder)) {
     fail(`<script src> の順序が設計書 §4-3 と異なる:\n   期待: ${expectedOrder.join(' → ')}\n   実際: ${scriptSrcs.join(' → ')}`);
     bad++;
-  } else ok('<script src> の順序が設計書 §4-3 と一致（data/ui → … → data/scenarios/<業種>/* → app → render → events）');
+  } else ok('<script src> の順序が設計書 §4-3 と一致（data/ui → … → data/live → data/scenarios/<業種>/* → app → render → events）');
 
   // ⑤ <script> タグすべてが src 付き（インライン <script> が 0 個）。本数は実ディレクトリから計算
-  //    （4 = data/ui+catalog+home+style／業種ごとの台本ファイル数／3 = app+render+events）
+  //    （5 = data/ui+catalog+home+style+live／業種ごとの台本ファイル数／3 = app+render+events）
   const scriptTagCount = [...html.matchAll(/<script\b/g)].length;
-  const expectedCount = 4 + scenarioExpectedTags.length + 3;
+  const expectedCount = 5 + scenarioExpectedTags.length + 3;
   if (scriptTagCount !== scriptSrcs.length) {
     fail(`catalog.html の <script> タグ ${scriptTagCount} 個のうち src 無しが ${scriptTagCount - scriptSrcs.length} 個ある（インライン <script> は禁止）`);
     bad++;
   } else if (scriptSrcs.length !== expectedCount) {
-    fail(`<script src> が ${scriptSrcs.length} 本（期待 ${expectedCount} 本 = data 4 + scenarios ${scenarioExpectedTags.length} + app/render/events 3）`);
+    fail(`<script src> が ${scriptSrcs.length} 本（期待 ${expectedCount} 本 = data 5 + scenarios ${scenarioExpectedTags.length} + app/render/events 3）`);
     bad++;
   } else ok(`<script src> ${expectedCount} 本すべてに src があり、インライン <script> は 0 個`);
 
@@ -808,6 +816,81 @@ section('12. 環境レイヤー（dify/env/**）');
           + String((e && e.stderr && e.stderr.toString()) || e.message || e).split('\n')[0]);
       }
     }
+  }
+}
+
+/* ---------- 14. 本番リンク（LIVE）の契約 ---------- */
+// 設計書 docs/handoff/2026-09-08-live-links.md §6（Issue #124 PR-1）。
+// §13 は #121 W2（dify/state/）用に予約済み、§15 は #121 W4-1 が先に使っているため、この検査は §14 を使う。
+// 14-h（LIVE と dify/state/cloud-master.yml の鮮度比較。D6=warn）は tools/gen-live.mjs（PR-4）導入後に実装する。
+section('14. 本番リンク（LIVE）の契約');
+{
+  const LIVE_PATH = resolve(MOCK, 'js/data/live.js');
+  if (!existsSync(LIVE_PATH)) {
+    fail('mock/js/data/live.js が無い');
+  } else if (!LIVE || typeof LIVE !== 'object' || Array.isArray(LIVE)) {
+    fail('LIVE がオブジェクトとして読めない（{} でもよい）');
+  } else {
+    let bad = 0;
+    const svcIds = new Set((SVCS || []).map(s => s.id));
+    const managementCode = (id) => id.replace(/^([a-z]+)(\d+)$/, (_, a, b) => a.toUpperCase() + '-' + String(b).padStart(2, '0'));
+    const seenUrls = new Map();
+    const APPS_DIR = resolve(ROOT, 'dify/apps');
+    const appFiles = existsSync(APPS_DIR) ? readdirSync(APPS_DIR).filter(f => f.endsWith('.yml')) : [];
+    const ALLOWED_HOSTS = ['udify.app'];
+
+    for (const [id, entry] of Object.entries(LIVE)) {
+      // 14-b: キーが SVCS[].id に存在
+      if (!svcIds.has(id)) { fail(`LIVE.${id}: SVCS に存在しない id`); bad++; continue; }
+
+      // 14-c: url / env / updated の 3 キーちょうど・形式
+      const keys = Object.keys(entry || {}).sort();
+      const expectedKeys = ['env', 'updated', 'url'];
+      if (!entry || typeof entry !== 'object' || JSON.stringify(keys) !== JSON.stringify(expectedKeys)) {
+        fail(`LIVE.${id}: url/env/updated の 3 キーちょうどではない（実際: ${keys.join(', ') || '(なし)'}）`);
+        bad++;
+        continue;
+      }
+      if (typeof entry.url !== 'string' || !entry.url.startsWith('https://')) {
+        fail(`LIVE.${id}: url が https:// で始まる文字列でない: ${entry.url}`); bad++;
+      }
+      if (entry.env !== 'cloud-master') {
+        fail(`LIVE.${id}: env が 'cloud-master' でない: ${entry.env}`); bad++;
+      }
+      if (typeof entry.updated !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(entry.updated)) {
+        fail(`LIVE.${id}: updated が YYYY-MM-DD 形式でない: ${entry.updated}`); bad++;
+      }
+
+      // 14-d: dify/apps/<管理番号>-*.yml が実在
+      const code = managementCode(id);
+      if (!appFiles.some(f => f.startsWith(`${code}-`))) {
+        fail(`LIVE.${id}: dify/apps/${code}-*.yml が無い`); bad++;
+      }
+
+      // 14-e: ホストが許可集合のみ
+      if (typeof entry.url === 'string' && entry.url.startsWith('https://')) {
+        let host = null;
+        try { host = new URL(entry.url).hostname; } catch { /* noop */ }
+        if (!host || !ALLOWED_HOSTS.includes(host)) {
+          fail(`LIVE.${id}: url のホストが許可集合 [${ALLOWED_HOSTS.join(', ')}] に無い: ${entry.url}`); bad++;
+        }
+      }
+
+      // 14-f: url の重複
+      if (typeof entry.url === 'string') {
+        if (seenUrls.has(entry.url)) { fail(`LIVE.${id}: url が ${seenUrls.get(entry.url)} と重複している: ${entry.url}`); bad++; }
+        else seenUrls.set(entry.url, id);
+      }
+    }
+
+    if (!bad) ok(`LIVE ${Object.keys(LIVE).length} 件すべて id/url/env/updated/DSL の整合 OK`);
+
+    // 14-g: dify/apps/ にあるが LIVE に無い管理番号は warn
+    const liveCodes = new Set(Object.keys(LIVE).map(managementCode));
+    const appCodesOnDisk = [...new Set(appFiles.map(f => f.split('-').slice(0, 2).join('-')))].sort();
+    const unlinked = appCodesOnDisk.filter(c => !liveCodes.has(c));
+    if (unlinked.length) warn(`dify/apps/ の DSL ${appCodesOnDisk.length} 本中 ${unlinked.length} 本に LIVE のリンクが無い: ${unlinked.join(', ')}`);
+    else if (appCodesOnDisk.length) ok(`dify/apps/ の DSL ${appCodesOnDisk.length} 本すべてに LIVE のリンクあり`);
   }
 }
 
