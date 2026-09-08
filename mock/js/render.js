@@ -192,6 +192,29 @@ function bindHomeSearch(sectionsFn) {
   });
 }
 
+/** ②③ お気に入りが 6 件を超えるときの「すべて見る」。0 件では呼ばれない（呼び出し側で分岐） */
+const favSeeAllHTML = (n) => n > 6
+  ? `<button class="sec-more" data-act="favlist">${esc(t('favSeeAll').replace('{n}', n))}</button>` : '';
+
+/** ② ダッシュボード：`dash-duo` の上に出す全幅のお気に入り帯（設計書 2026-09-08-favorites.md §3-3）。
+    0 件なら帯ごと出さない（新着帯と同じ規則）。カードを使うので星の付け外しがその場でできる
+    （.use-row は <button> のため中に星ボタンを置けない＝§3-1 の入れ子ボタン問題を避ける） */
+function favBandHTML() {
+  const fav = favList();
+  if (!fav.length) return '';
+  return `
+    <div class="dash-sec dash-fav">
+      <div class="sec-h">
+        <h2>${esc(t('favTitle'))}</h2>
+        <span class="sec-note">${esc(t('favNote'))}</span>
+        ${favSeeAllHTML(fav.length)}
+      </div>
+      <div class="grid">
+        ${fav.slice(0, 6).map(cardHTML).join('')}
+      </div>
+    </div>`;
+}
+
 /** ② ダッシュボード：ホーム本体（検索で差し替える範囲） */
 function dashSectionsHTML() {
   const maxUses = Math.max(...home().frequent.map(f => f.uses));
@@ -294,7 +317,7 @@ function dashSectionsHTML() {
       </div>
     </div>`;
 
-  return `${newHTML}<div class="dash-duo">${recoHTML}<div class="dash-col">${freqHTML}${catsHTML}</div></div>`;
+  return `${favBandHTML()}${newHTML}<div class="dash-duo">${recoHTML}<div class="dash-col">${freqHTML}${catsHTML}</div></div>`;
 }
 
 function renderDash(el) {
@@ -386,6 +409,23 @@ function feedItemHTML(it) {
   </button>`;
 }
 
+/** ③ 業務フィード：右レール最上段のお気に入りボックス（設計書 2026-09-08-favorites.md §3-4）。
+    0 件ならボックスごと出さない。行は catIcon＋名前だけ（.side-link は <button> のため
+    星ボタンは行に置かない。§3-1）。付け外しは詳細画面か「すべて見る」→カード一覧（favlist）で行う */
+function favSideBoxHTML() {
+  const fav = favList();
+  if (!fav.length) return '';
+  return `
+    <div class="side-box fav-box">
+      <h3><svg class="ic ic-sm" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${favStarPath(true)}</svg>${esc(t('favTitle'))}</h3>
+      ${fav.slice(0, 6).map(x => `
+        <button class="side-link ${catClass(x.cat)}" data-act="svc" data-arg="${x.id}">
+          ${catIcon(x.cat, 'ic-sm')}<span>${esc(L(x.name))}</span>
+        </button>`).join('')}
+      ${fav.length > 6 ? `<button class="side-link side-more" data-act="favlist">${esc(t('favSeeAll').replace('{n}', fav.length))}</button>` : ''}
+    </div>`;
+}
+
 /** ③ フィード：ホーム本体（検索で差し替える範囲） */
 function feedSectionsHTML() {
   const sec = (items, title) => {
@@ -436,6 +476,7 @@ function feedSectionsHTML() {
       ${sec(notice, t('feedNotice'))}
     </div>
     <div class="feed-side">
+      ${favSideBoxHTML()}
       ${mineHTML}
       ${recentHTML}
     </div>

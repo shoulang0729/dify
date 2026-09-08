@@ -563,6 +563,12 @@
   .sec-count { font-size: var(--text-overline); color: var(--text-muted); }
   .legend { display: flex; gap: var(--space-3); margin-left: auto; font-size: 11.5px; color: var(--text-muted); }
   .lg-i { display: inline-flex; align-items: center; gap: 5px; }
+  /* --- ②③「すべて見る」（お気に入りが 6 件を超えたとき。設計書 2026-09-08-favorites.md §3-3・§3-4） --- */
+  .sec-more {
+    border: none; background: transparent; padding: 0; font-family: inherit; cursor: pointer;
+    font-size: 11.5px; font-weight: var(--weight-bold); color: var(--text-link); white-space: nowrap;
+  }
+  .sec-more:hover { color: var(--text-link-hover); text-decoration: underline; }
 
   /* --- 新しく追加されたエージェント（②。新着 0 件なら帯ごと出ない） --- */
   .dash-new .new-item { display: flex; flex-direction: column; gap: 6px; }
@@ -711,6 +717,14 @@
   .side-link .ic { color: var(--cat-accent); }
   .side-link:hover { color: var(--text-link); }
   .side-link .cnt { margin-left: auto; font-size: var(--text-overline); color: var(--text-muted); }
+
+  /* --- 右レール最上段：お気に入り（③。設計書 2026-09-08-favorites.md §3-4。0 件ならボックスごと出ない） ---
+     行は catIcon＋名前だけ（.side-link は <button> のため星ボタンを行に置かない。§3-1）。
+     見出しの星は h3 の中の装飾アイコン（ボタンではないので入れ子の問題は起きない） */
+  .side-box.fav-box h3 { display: flex; align-items: center; gap: 6px; }
+  .side-box.fav-box h3 .ic { color: var(--action-primary); flex-shrink: 0; }
+  .side-link.side-more { color: var(--text-link); font-weight: var(--weight-bold); justify-content: center; }
+  .side-link.side-more:hover { color: var(--text-link-hover); }
 
   @media (max-width: 1180px) {
     .demo-body { flex-direction: column; }
