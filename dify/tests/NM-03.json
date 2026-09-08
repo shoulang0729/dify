@@ -29,7 +29,10 @@
           "190,000"
         ]
       ],
-      "expect_not": []
+      "expect_not": [],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "NM-03 T02",
@@ -48,7 +51,10 @@
           "2,140"
         ]
       ],
-      "expect_not": []
+      "expect_not": [],
+      "expect_lang": "zh",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "NM-03 T03",
@@ -69,7 +75,10 @@
       "expect_not": [
         "0.42",
         "87.2"
-      ]
+      ],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "NM-03 T04",
@@ -91,7 +100,10 @@
       "expect_not": [
         "张小雨",
         "A-20231"
-      ]
+      ],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     }
   ]
 }

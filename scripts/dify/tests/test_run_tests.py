@@ -156,6 +156,16 @@ def main():
             check("T7: DC-01 の結果表にトークン列見出しがある", "| トークン |" in text3)
             check("T7: DC-01 の行にトークン数値が入っている（`—` でない）",
                   bool(re.search(r"\|\s*\d+\s*\|\s*(PASS|FAIL)\s*\|\s*$", row3)), row3)
+
+            # ---- T8: 応答言語の列（#162 PR-1。judge_lang の呼び出しと列追加の検証）----
+            check("T8: KN-01 の結果表に『応答言語』列見出しがあり、T01（expect_lang=ja）のセルが OK",
+                  "| 応答言語 |" in text2
+                  and bool(re.search(r"\|\s*OK\s*\|\s*[\d.]+\s*\|\s*\d+\s*\|\s*(PASS|FAIL)\s*\|\s*$", row2)),
+                  row2)
+            check("T8: DC-01 の結果表に『応答言語』列見出しがあり、T01（expect_lang=ja）のセルが OK",
+                  "| 応答言語 |" in text3
+                  and bool(re.search(r"\|\s*OK\s*\|\s*[\d.]+\s*\|\s*\d+\s*\|\s*(PASS|FAIL)\s*\|\s*$", row3)),
+                  row3)
     finally:
         proc.terminate()
         try:

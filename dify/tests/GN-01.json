@@ -14,8 +14,18 @@
         "lang": "zh"
       },
       "query": "",
-      "expect": [["§6.2", "6.2"], "300", "1,860"],
-      "expect_not": []
+      "expect": [
+        [
+          "§6.2",
+          "6.2"
+        ],
+        "300",
+        "1,860"
+      ],
+      "expect_not": [],
+      "expect_lang": "zh",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "GN-01 T02",
@@ -27,8 +37,18 @@
         "lang": "ja"
       },
       "query": "",
-      "expect": [["§4.1", "4.1"], "2,000", "3,200"],
-      "expect_not": []
+      "expect": [
+        [
+          "§4.1",
+          "4.1"
+        ],
+        "2,000",
+        "3,200"
+      ],
+      "expect_not": [],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "GN-01 T03",
@@ -40,8 +60,16 @@
         "lang": "ja"
       },
       "query": "",
-      "expect": [["該当条文なし", "財務課長"]],
-      "expect_not": []
+      "expect": [
+        [
+          "該当条文なし",
+          "財務課長"
+        ]
+      ],
+      "expect_not": [],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "GN-01 T06",
@@ -53,8 +81,17 @@
         "lang": "ja"
       },
       "query": "",
-      "expect": ["個人名"],
-      "expect_not": ["320500199001010012", "13900001234", "6222021234567890123"]
+      "expect": [
+        "個人名"
+      ],
+      "expect_not": [
+        "320500199001010012",
+        "13900001234",
+        "6222021234567890123"
+      ],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     }
   ]
 }

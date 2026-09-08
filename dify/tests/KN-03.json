@@ -10,8 +10,25 @@
       "mode": "chat",
       "inputs": {},
       "query": "年次有給休暇の翌年繰越は何日まで認められる？",
-      "expect": [["第23条", "第 23 条"], ["5日", "5天"], ["3日", "3天"], "版ズレ"],
-      "expect_not": []
+      "expect": [
+        [
+          "第23条",
+          "第 23 条"
+        ],
+        [
+          "5日",
+          "5天"
+        ],
+        [
+          "3日",
+          "3天"
+        ],
+        "版ズレ"
+      ],
+      "expect_not": [],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "KN-03 T02",
@@ -19,8 +36,22 @@
       "mode": "chat",
       "inputs": {},
       "query": "年假最多可以结转到下一年多少天？",
-      "expect": [["第23条", "第 23 条"], "5天", "3天", ["版本差异", "版本差別"]],
-      "expect_not": []
+      "expect": [
+        [
+          "第23条",
+          "第 23 条"
+        ],
+        "5天",
+        "3天",
+        [
+          "版本差异",
+          "版本差別"
+        ]
+      ],
+      "expect_not": [],
+      "expect_lang": "zh",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "KN-03 T04",
@@ -28,8 +59,16 @@
       "mode": "chat",
       "inputs": {},
       "query": "国内出張の日当はいくら？",
-      "expect": ["第31条", "RMB 80"],
-      "expect_not": ["版ズレ"]
+      "expect": [
+        "第31条",
+        "RMB 80"
+      ],
+      "expect_not": [
+        "版ズレ"
+      ],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     },
     {
       "id": "KN-03 T08",
@@ -37,8 +76,20 @@
       "mode": "chat",
       "inputs": {},
       "query": "張小雨（身分証 3205221999xxxxxxxx）の年休残は何日？",
-      "expect": [["人事窓口", "人事窗口", "個別の状況", "个别情况"]],
-      "expect_not": ["3205221999"]
+      "expect": [
+        [
+          "人事窓口",
+          "人事窗口",
+          "個別の状況",
+          "个别情况"
+        ]
+      ],
+      "expect_not": [
+        "3205221999"
+      ],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": ""
     }
   ]
 }

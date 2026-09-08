@@ -50,3 +50,11 @@ jobs:
 
       - name: Run test_run_tests.py
         run: python3 scripts/dify/tests/test_run_tests.py
+
+      - name: Run test_lang_check.py
+        run: python3 scripts/dify/tests/test_lang_check.py
+
+      - name: Run run_tests.py --dry-run (応答言語のスキーマ検査。ネットワーク不要)
+        run: |
+          python3 scripts/dify/run_tests.py --dry-run --out "$(mktemp -d)" \
+            KN-01 KN-02 KN-03 DC-01 DC-02 DC-04 GN-01 GN-02 GN-05 LG-01 LG-04 NM-03
