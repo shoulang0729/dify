@@ -11,6 +11,8 @@ function renderChrome() {
   document.getElementById('ind-label').textContent = t('indLabel');
   document.getElementById('seg-label').textContent = t('segLabel');
   document.getElementById('wordmark').textContent = L(ind().wordmark);
+  const brandMark = document.getElementById('brand-mark');
+  if (brandMark) brandMark.innerHTML = indLogo();
   document.getElementById('app-title').textContent = t('appTitle');
   document.getElementById('dept').textContent = L(ind().dept);
   document.title = T.appTitle.ja + ' ／ ' + T.appTitle.zh + ' ／ ' + T.appTitle.en;

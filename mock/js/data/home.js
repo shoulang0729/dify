@@ -33,6 +33,32 @@ const HOME = {
                zh: '客户来函当天即可给出初步答复，分类结果也会留存记录。',
                en: 'Send a first reply to a customer complaint the same day, with the classification kept on record.' } }
     ]
+  },
+  /* ---- 金融（碧洋銀行）。世界マスタは data/world/fin/**（設計書 §7-2）。
+     台本は未投入（PR-4）なので、ここで挙げるサービスも start は chat フォールバックになる（§1-4） ---- */
+  fin: {
+    frequent: [
+      { id: 'kn6', uses: 258 },
+      { id: 'dc9', uses: 221 },
+      { id: 'gn6', uses: 196 },
+      { id: 'rs1', uses: 174 },
+      { id: 'kn4', uses: 151 },
+      { id: 'dc2', uses: 129 }
+    ],
+    recommended: [
+      { id: 'kn6',
+        why: { ja: '窓口や事務の定型的な問い合わせに、根拠となる条番号つきで即答できます。まず試す 1 本目に向いています。',
+               zh: '柜面与事务的常见咨询可即刻附条款依据作答，适合作为最先尝试的一个。',
+               en: 'Answers routine front- and back-office questions instantly with the clause number cited. A good first agent to try.' } },
+      { id: 'dc9',
+        why: { ja: '議案・報告書・提案書のどれも、最低限の情報を入れるだけで骨子ができます。作成に時間がかかる文書から効果が見えます。',
+               zh: '无论议案、报告还是提案书，只需输入最少信息即可生成骨架，最耗时的文书类工作最先看到效果。',
+               en: 'Drafts proposals, reports and pitches alike from the minimum facts. The documents that take longest to write show the benefit first.' } },
+      { id: 'rs1',
+        why: { ja: '取引先・業界のニュースを毎回手作業で集める必要がなくなります。設定は 1 度だけです。',
+               zh: '不必再每次手动收集客户与行业新闻，只需设定一次。',
+               en: 'No more manually collecting client and industry news every time. Set it up once.' } }
+    ]
   }
 };
 
@@ -87,6 +113,53 @@ const FEED = {
         note: { ja: '取引先の仕様書が Rev.C に更新されました。差分の確認をおすすめします。',
                 zh: '客户规格书已更新为 Rev.C，建议确认差异。',
                 en: 'A customer specification moved to Rev.C. Reviewing the differences is recommended.' } }
+    ]
+  },
+  /* ---- 金融（碧洋銀行）。persona は data/world/fin/people.csv の韓雪（事務統括部 主管）。
+     部署・拠点・文書番号の書式は data/world/fin/**（org.csv・calendar.md）の正本に合わせる。
+     絶対日付・実在の稟議番号等は書かない（すべて相対表現・架空の例） ---- */
+  fin: {
+    persona: { name: { ja: '韓 雪', zh: '韩雪', en: 'Han Xue' },
+               role: { ja: '事務統括部 主管', zh: '事务统筹部 主管', en: 'Operations Planning Dept. Supervisor' },
+               site: { ja: '上海本部', zh: '上海总部', en: 'Shanghai Head Office' } },
+    mine:   ['kn', 'dc', 'gn'],
+    recent: ['dc2', 'kn6', 'dc9', 'gn6'],
+    items: [
+      { id: 'dc9', kind: 'due',
+        when: { ja: '本日 17:00 まで', zh: '今天 17:00 前', en: 'Today, by 17:00' },
+        note: { ja: '月次報告のドラフト。経営企画部への提出前レビューが残っています。',
+                zh: '月度报告草案。提交经营企划部前的评审尚未完成。',
+                en: 'Draft of the monthly report. The pre-submission review for Corporate Planning is still open.' } },
+      { id: 'kn6', kind: 'due',
+        when: { ja: '明日まで', zh: '明天前', en: 'By tomorrow' },
+        note: { ja: '甲社からの送金手続に関する照会。根拠条番号つきで回答する必要があります。',
+                zh: '甲社关于汇款手续的咨询，需要附条款依据作答。',
+                en: 'An inquiry from 甲社 about a remittance procedure. The reply needs the clause number cited.' } },
+      { id: 'gn6', kind: 'due',
+        when: { ja: '今週中', zh: '本周内', en: 'This week' },
+        note: { ja: '営業第一部から頼まれた資料取りまとめが止まっています。期限が近いので声掛けが必要です。',
+                zh: '受营业第一部委托整理的资料仍未完成，期限将近，需要提醒。',
+                en: 'A document collation asked for by Corporate Banking Division I is stalled. The deadline is close and needs a nudge.' } },
+      { id: 'dc2', kind: 'routine',
+        when: { ja: '毎週月曜', zh: '每周一', en: 'Every Monday' },
+        note: { ja: '週次の部内会議の議事録を作成し、未決事項を次回への論点として整理します。',
+                zh: '整理每周部门例会纪要，并把未决事项列为下次的议题。',
+                en: 'Write up minutes for the weekly department meeting and list the open items as next week\'s agenda.' } },
+      { id: 'rs1', kind: 'routine',
+        when: { ja: '毎日 8:30', zh: '每天 8:30', en: 'Daily at 8:30' },
+        note: { ja: '主要取引先のニュース配信を確認し、必要なものだけ営業部へ転送します。',
+                zh: '查看主要客户的新闻推送，仅将需要的内容转发给营业部门。',
+                en: 'Check the news feed for key clients and forward only what matters to the coverage teams.' } },
+      { id: 'kn8', kind: 'notify',
+        when: { ja: '新着', zh: '最新', en: 'New' },
+        note: { ja: '当局通達が更新されました。事務手続書への反映要否の確認を求められています。',
+                zh: '监管通知已更新，需要确认是否要反映到事务手册中。',
+                en: 'A regulatory notice was updated. A check on whether the procedure manual needs revising has been requested.' } },
+      { id: 'dc8', kind: 'notify',
+        when: { ja: '新着', zh: '最新', en: 'New' },
+        note: { ja: '報告レビューの対象に「当局報告」の種別が加わりました。台帳との照合ルールを確認してください。',
+                zh: '报告评审新增「当局报告」种类，请确认与台账的核对规则。',
+                en: 'Report review now covers the regulatory-report type as well. Check the reconciliation rule against the log.' } }
     ]
   }
 };
