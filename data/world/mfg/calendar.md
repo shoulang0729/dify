@@ -42,6 +42,24 @@
 | `QC-NN` | 品質様式・検査基準番号 | `QC-11`（初品検査記録）`QC-27`（脱脂液濃度チェックシート）`QC-31`（碁盤目試験） |
 | `VST-YYYY-NNN` | 出張・来訪案件番号（GN-07） | `VST-2025-014`（設計書 2026-09-08-exec-visit-attend.md §4-4）。3 文字接頭にしているのは `tools/check-world.mjs` W7 の「管理番号形式（`^[A-Z]{2}-\d{2}$`）と紛らわしい」報告を避けるため |
 | `C-<4 桁>-<A〜Z>` | 匿名個人 ID（相手方出席者を氏名でなく匿名化する形。会食・交際費稟議で使用） | `C-2509-A`〜`C-2509-C`（GN-07。設計書 2026-09-08-exec-visit-attend.md §3-4-1・§5 の JSON `their_attendees[].anon_id` に対応）。既存の `C-26NN-X`（採用候補者の匿名 ID・PT-05）とは別の用途・別の書式 |
+| `SO-YYMM-NNN` | 受注番号（Sales Order） | `SO-2509-018` `SO-2510-001`〜`003`（`gn.js` GN-03） |
+| `EX-NNNN` | 経費精算申請番号 | `EX-0812` `EX-0819` `EX-0823` `EX-0831` `EX-0835` `EX-0841`（`gn.js` GN-01）。年月は持たない 4 桁通番 |
+| `RT-YYMM-NN` | 返品伝票番号 | `RT-2508-04`（`gn.js` GN-02） |
+| `TK-YY-NNNN` | 依頼・宿題（小さな頼まれ事）の追跡番号 | `TK-25-0031` `TK-25-0044` `TK-25-0058` `TK-25-0066` `TK-25-0071` `TK-25-0079` `TK-25-0081` `TK-25-0084` `TK-25-0087`（`gn.js` GN-06）。**業種横断**（金融側は `TK-26-…`） |
+| `HD-MMDD-NNN` | ヘルプデスク受付番号 | `HD-0906-014`（`kn.js` KN-04）。年を持たない（当年内で完結する受付番号） |
+| `IT-YY-MMDD` | システム障害報告番号 | `IT-25-0611`（`dc.js` DC-08） |
+| `INV-YYYY-MMDD` | インボイス番号（通関書類） | `INV-2025-0906`（`dc.js` DC-06） |
+| `PL-YYYY-MMDD` | パッキングリスト番号（通関書類） | `PL-2025-0906`（`dc.js` DC-06） |
+| `TN-YY-NNN` | 技術連絡書番号 | `TN-25-031`（`lg.js` LG-01） |
+| `PA-YY-NNNN` | パートナー案件番号（社外サービスへの依頼案件） | `PA-26-0141` `PA-26-0142`（`pt.js` PT-06 / PT-07） |
+| `TP-YY-NN` | 研修プログラム番号 | `TP-26-07`（`pt.js` PT-08） |
+| `TV-YY-NNN` | 研修ベンダ側の案件番号 | `TV-26-018`（`pt.js` PT-08） |
+| `CAR-YY-NN` | 是正処置報告書（Corrective Action Report） | `CAR-24-01`（`docs/dify/usecases/QA-04.md`） |
+| `CL-YY-MMDD-NN` | クレーム対応番号（**同日 2 件目以降の枝番**） | `CL-25-0906-02`（`qa.js` QA-03）。**1 件目は枝番なし**（`CL-25-0906` ＝ 塗装ブツの別クレーム）。同日に 2 件発生したときだけ `-02` 以降を付ける |
+| `WS-LN-NN` | ライン別の作業標準書 | `WS-L2-07`（`en.js` EN-01）。機能別の `WS-XX-NNN`（`WS-QC-031`）とは通番桁が異なる。`L` は `PC-LN-YYYY-NNN` と同じライン記号 |
+| `QS-NNNN` | 検査基準書 | `QS-3310`（`en.js` EN-01・`docs/dify/usecases/EN-01.md` の `doc_no`）。対象品番の数字部をそのまま番号に使う。**品番ではない**（§5-3） |
 
 出典：`docs/handoff/2026-09-07-repo-layout-v2.md` §2-2・§2-3 の実測、および `mock/js/data/scenarios/*.js`・
 `dify/kb/KN-01/*.md` からの本 PR での再確認（grep 実測値。件数は概数）。
+追加書式（`SO-` `EX-` `RT-` `TK-` `HD-` `IT-` `INV-` `PL-` `TN-` `PA-` `TP-` `TV-` `CAR-` `CL-YY-MMDD-NN` `WS-LN-NN` `QS-`）は
+Issue #153 PR-2（`docs/handoff/2026-09-08-world-consistency-cleanup.md` §4-1）で追加。既存の行は変更していない。

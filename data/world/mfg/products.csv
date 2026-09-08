@@ -6,3 +6,5 @@ SK-3310,ブラケット系（要求仕様書 Rev.C/D の対象系列）,支架�
 SK-3310-C,ブラケットC（新規・試作）,支架C（新品・试制）,Bracket C (new, trial),K社常熟,,未確定,内示段階の新規品番（gn.js）。量産品番ではない
 SK-1190,（旧品・生産終了、2019〜2023）,（旧品・已停产，2019〜2023）,Discontinued part (2019-2023),J社（旧顧客・取引終了）,,未確定,台本出現 8 回。外形・板厚が近似。金型 D-092 を倉庫 T-2 に保管中（equipment.csv 参照）
 ASSY-771,シート骨格アッシー（K社側の組立部品番号）,座椅骨架总成（K公司侧装配件号）,Seat frame assembly (customer-side assy no.),K社,,,当社品番ではなく客先の組立品番。構成部品として SK-3310-A・SK-3318 を使用
+SK-T-0812,超硬コーティングドリル Φ8 L/D=8（当社図番）,硬质合金涂层钻头 Φ8 L/D=8（本公司图号）,"Carbide-coated drill, Φ8 L/D=8 (company dwg. no.)",,,超硬合金,台本出現：pt.js PT-07・docs/dify/usecases/PT-07.md。本社図番 HT-0812 と同等（Issue #153 PR-2）
+HT-0812,超硬コーティングドリル Φ8 L/D=8（本社図番。当社図番 SK-T-0812 と同等）,硬质合金涂层钻头 Φ8 L/D=8（总部图号，与本公司图号 SK-T-0812 同等）,"Carbide-coated drill, Φ8 L/D=8 (HQ dwg. no., equivalent to company dwg. SK-T-0812)",,,超硬合金,台本出現：pt.js PT-07・docs/dify/usecases/PT-07.md（Issue #153 PR-2）
