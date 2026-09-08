@@ -262,9 +262,9 @@ jobs:
             echo
             echo "### 変更ファイル"
             echo
-            echo '\`\`\`'
+            echo '```'
             cat /tmp/dify-ops-changed.txt
-            echo '\`\`\`'
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail the job if any operation failed
