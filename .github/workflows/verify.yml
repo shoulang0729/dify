@@ -25,8 +25,28 @@ jobs:
         with:
           node-version-file: .nvmrc
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Python dependencies
+        run: pip install pyyaml
+
       - name: Run verify
         run: npm run verify
 
       - name: Run regress
         run: npm run regress
+
+      - name: Run dify/check.py
+        run: python3 dify/check.py
+
+      - name: Run render.py --check
+        run: python3 scripts/dify/render.py --env cloud-master --all --check
+
+      - name: Run test_sync_back.py
+        run: python3 scripts/dify/tests/test_sync_back.py
+
+      - name: Run test_run_tests.py
+        run: python3 scripts/dify/tests/test_run_tests.py
