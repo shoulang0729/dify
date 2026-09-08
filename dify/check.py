@@ -9,6 +9,8 @@
   start ノードなら yyy が variables[].variable に、llm なら text、knowledge-retrieval なら result に限る
 - knowledge-retrieval の context 参照（LLM の context.variable_selector）が存在するノードを指す
 - 参照 DSL（docs/dify/templates/*.yml）に無いキーの一覧（情報。Cloud の最新版で名称が変わっている可能性の目安）
+- 言語の扱いの共通ブロック（docs/handoff/2026-09-08-response-language-contract.md §2-2）が
+  system プロンプトの中に 1 回だけあるか（#162 PR-2）
 
 使い方: python3 dify/check.py            # dify/apps/*.yml をすべて
         python3 dify/check.py path.yml  # 指定ファイルだけ
@@ -33,6 +35,18 @@ NODE_OUTPUTS = {
     "knowledge-retrieval": {"result"},
     "document-extractor": {"text"},
 }
+
+# 言語の扱い（地の文と引用の区別。全サービス共通）— #162 PR-2。
+# docs/handoff/2026-09-08-response-language-contract.md §2-2 の確定文言そのまま。
+# 12 本すべての system プロンプトに、この 5 行（見出し 1 行＋箇条書き 4 行）が
+# 1 回ずつバイト一致で入っていることを検査する。1 バイトも変えない。
+LANG_COMMON_BLOCK = (
+    "言語の扱い（地の文と引用の区別。全サービス共通）：\n"
+    "- 地の文（見出し・小見出し・分析・コメント・注記・箇条書き・自分で書いた表の見出し）は、例外なく回答言語で書く。1 つの文の中で日本語と中国語を混ぜない。\n"
+    "- 原語のまま出してよいのは、引用符「」の中・引用ブロック（行頭 >）の中・番号や記号（E-47、7-12、ORG、MODE、SK-3310-A、TR-2024-007、§6.2）・文書の正式名称（取扱説明書、员工手册）だけ。\n"
+    "- 対応語がある概念は必ず回答言語の語を使う（手順→步骤、根拠→依据、備考→备注、版ズレ→版本差异、現地スタッフ→当地员工、保全課長→保全科长、ページ→页）。文書に「保全課長（保全科长）」のように両方の語が併記されているときも、回答言語の側の語だけを書く（併記の形のまま持ち込まない）。対応語が本当に無い語だけ、原語のまま書いて直後の括弧に回答言語の説明を添える。\n"
+    "- 引用した原文が回答言語と違う言語のときは、引用はそのままにして、その直後に回答言語で 1 行の要約を添える。引用を地の文の代わりに使わない。"
+)
 
 
 def walk_keys(obj, acc):
@@ -217,6 +231,14 @@ def check(path, refkeys):
     novel = sorted(k for k in mine - refkeys)
     if novel:
         infos.append("参照 DSL に無いキー: " + ", ".join(novel))
+
+    # 言語の扱いの共通ブロック（#162 PR-2）が system プロンプトに 1 回だけあるか
+    lang_count = sum(s.count(LANG_COMMON_BLOCK) for s in walk_strings(graph))
+    if lang_count == 0:
+        errors.append("言語の扱いの共通ブロック（言語の扱い（地の文と引用の区別。全サービス共通）：…）が無い")
+    elif lang_count > 1:
+        errors.append(f"言語の扱いの共通ブロックが複数ある（{lang_count} 回）")
+
     return errors, warns, infos
 
 
