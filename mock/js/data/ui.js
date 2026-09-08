@@ -119,7 +119,7 @@ const INDUSTRIES = [
     wordmark: { ja: '青嶺精工', zh: '青岭精工', en: 'SEIREI SEIKO' },
     dept:     { ja: '情報システム部', zh: '信息系统部', en: 'IT Department' } },
   { id: 'fin',
-    name:     { ja: '金融（銀行）', zh: '金融（银行）', en: 'Banking' },
+    name:     { ja: '金融', zh: '金融', en: 'Finance' },
     desc:     { ja: '在中日系銀行（中国拠点）', zh: '在华日资银行（中国网点）', en: 'Japanese-affiliated bank in China' },
     /* 銀行名は 2026-09-08 に PM 判断で「碧洋銀行 / 碧洋银行 / Hekiyo Bank, Ltd.」へ確定
        （data/world/fin/company.md 参照。当初案「瑞央銀行」は実在の邦銀「瑞穂」と頭文字が
