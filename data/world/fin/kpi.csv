@@ -1,0 +1,9 @@
+kpi_id,name_ja,name_zh,name_en,unit,target,current,prev,as_of,source,note
+loan_balance,貸出残高,贷款余额,Loan balance,百万元,32000,31200,30800,2026-08（月次報告）,台本未実装（PR-4 で参照予定）,架空値
+deposit_balance,預金残高,存款余额,Deposit balance,百万元,28000,27650,27100,2026-08（月次報告）,台本未実装（PR-4 で参照予定）,架空値
+credit_clients,与信先数,授信客户数,Number of credit clients,社/家,420,405,398,2026-08（月次報告）,台本未実装（PR-4 で参照予定）,架空値
+delinquency_rate,延滞率,逾期率,Delinquency rate,%,0.80,0.95,0.88,2026-08（月次報告）,台本未実装（PR-4 で参照予定）,架空値
+fee_income,手数料収益,手续费收入,Fee income,百万元,180,172,165,2026-08（月次報告）,台本未実装（PR-4 で参照予定）,架空値
+ringi_days,稟議処理日数,稟议处理天数,Ringi (internal approval) processing days,日/天,5.0,6.2,5.8,2026-08（月次報告）,台本未実装（PR-4 で参照予定）,架空値。稟議番号体系は calendar.md 参照
+inquiry_response_rate,照会一次回答率,首次咨询答复率,First-response rate for inquiries,%,90.0,87.5,85.0,2026-08（月次報告）,台本未実装（PR-4 で参照予定）,架空値。KN-06 事務手続の照会と対応
+regulator_reports,当局報告件数,监管报告件数,Regulatory report count,件/份,,14,12,2026-08（月次報告）,台本未実装（PR-4 で参照予定）,架空値。目標値は台本に明記なし（未確定・mfg の uptime と同じ扱い）

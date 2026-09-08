@@ -1,0 +1,6 @@
+code,kind,role_ja,role_zh,role_en,country,note
+甲社,customer,日系製造業（法人取引の主要先）,日资制造企业（法人业务主要客户）,Japanese-affiliated manufacturer (core corporate client),CN/JP,製造業マスタの取引先記号（K 社など）とは別体系。空白なし表記が正（README 参照）
+乙社,customer,日系商社（貿易金融・為替の取引先）,日资商社（贸易金融与结算客户）,Japanese-affiliated trading company (trade finance & FX client),CN/JP,
+丙社,customer,現地民営企業（自動車部品）,本地民营企业（汽车零部件）,Local private enterprise (auto parts),CN,
+丁社,customer,現地国有企業（素材）,本地国有企业（原材料）,Local state-owned enterprise (materials),CN,
+戊社,customer,現地企業（サービス業）,本地企业（服务业）,Local enterprise (services),CN,

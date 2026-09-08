@@ -1,0 +1,11 @@
+dept_id,dept_ja,dept_zh,dept_en,site_id,parent_dept_id,note
+eigyo1,営業第一部,营业第一部,Corporate Banking Division I (Japanese Affiliates),sh_hq,,日系法人取引を担当。森下隆一・陳慧が所属
+eigyo2,営業第二部,营业第二部,Corporate Banking Division II (Local Enterprises),sh_hq,,現地企業取引を担当（本 PR ではペルソナ未配置。台本 PR で追加予定）
+shinsa,審査部,审查部,Credit Review Department,sh_hq,,高梨直人・楊建国が所属
+risk,リスク統括部,风险管理部,Risk Management Department,sh_hq,,本 PR ではペルソナ未配置
+compliance,コンプライアンス部,合规部,Compliance Department,sh_hq,,羅佳が所属
+kikaku,経営企画部,经营企划部,Corporate Planning Department,sh_hq,,岡部千夏が所属
+jimu,事務統括部,事务统筹部,Operations Planning Department,sh_hq,,韓雪が所属。ヘッダー表記の部署名（`mock/js/data/ui.js` の `INDUSTRIES[].dept`）と同じ日本語表記
+shijo,市場業務部,市场业务部,Markets Department,sh_hq,,沈明が所属
+zaimu,財務部,财务部,Finance Department,sh_hq,,本 PR ではペルソナ未配置
+system,システム部,系统部,Systems Department,sh_hq,,本 PR ではペルソナ未配置
