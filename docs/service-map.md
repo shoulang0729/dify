@@ -10,20 +10,20 @@
 | KN-01 | 技術ナレッジQA | KN/tech | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | [KN-01-tech-knowledge-qa.yml](../dify/apps/KN-01-tech-knowledge-qa.yml) | [KN-01.md](./dify/usecases/KN-01.md) | [3 件](../dify/kb/KN-01/) | [4 件](../dify/tests/KN-01.json) |
 | KN-02 | 設備マニュアル・取扱説明書の検索 | KN/tech | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | [KN-02-equipment-manual-search.yml](../dify/apps/KN-02-equipment-manual-search.yml) | [KN-02.md](./dify/usecases/KN-02.md) | [3 件](../dify/kb/KN-02/) | [4 件](../dify/tests/KN-02.json) |
 | KN-03 | 社内規程・就業規則QA | KN/rule | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | [KN-03-internal-rules-qa.yml](../dify/apps/KN-03-internal-rules-qa.yml) | [KN-03.md](./dify/usecases/KN-03.md) | [3 件](../dify/kb/KN-03/) | [4 件](../dify/tests/KN-03.json) |
-| KN-04 | 社内問い合わせ受付とFAQ蓄積 | KN/rule | 製造・金融 | 試行版 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | — | [KN-04.md](./dify/usecases/KN-04.md) | — | — |
-| KN-05 | 当局通達の影響分析・マニュアル反映（NFRA・地方当局等） | KN/rule | 製造・金融 | 試行版 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) upload | — | — | [KN-05.md](./dify/usecases/KN-05.md) | — | — |
+| KN-04 | 社内問い合わせ受付とFAQ蓄積 | KN/rule | 製造・金融 | 試行版 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | [KN-04.md](./dify/usecases/KN-04.md) | — | — |
+| KN-05 | 当局通達の影響分析・マニュアル反映（NFRA・地方当局等） | KN/rule | 製造・金融 | 試行版 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) upload | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | [KN-05.md](./dify/usecases/KN-05.md) | — | — |
 | QA-01 | 不具合原因分析・報告書（8D）作成 | QA/defect | 製造 | 試行版 | [mfg/qa.js](../mock/js/data/scenarios/mfg/qa.js) upload | — | — | [QA-01.md](./dify/usecases/QA-01.md) | — | — |
 | QA-02 | 変更点影響予測（4M変更管理） | QA/change | 製造 | 構想 | [mfg/qa.js](../mock/js/data/scenarios/mfg/qa.js) diff | — | — | [QA-02.md](./dify/usecases/QA-02.md) | — | — |
 | QA-03 | 顧客クレーム一次回答・分類 | QA/change | 製造 | 試行版 | [mfg/qa.js](../mock/js/data/scenarios/mfg/qa.js) form | — | — | [QA-03.md](./dify/usecases/QA-03.md) | — | — |
 | QA-04 | 完成車メーカー工程監査への対応資料 | QA/change | 製造 | 試行版 | [mfg/qa.js](../mock/js/data/scenarios/mfg/qa.js) upload | — | — | [QA-04.md](./dify/usecases/QA-04.md) | — | — |
 | DC-01 | 日本本社への報告資料作成 | DC/report | 製造 | 提供中 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) form | — | [DC-01-hq-report-draft.yml](../dify/apps/DC-01-hq-report-draft.yml) | [DC-01.md](./dify/usecases/DC-01.md) | — | [4 件](../dify/tests/DC-01.json) |
-| DC-02 | 議事録作成と次回論点整理 | DC/report | 製造・金融 | 提供中 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) upload | — | [DC-02-meeting-minutes.yml](../dify/apps/DC-02-meeting-minutes.yml) | [DC-02.md](./dify/usecases/DC-02.md) | — | [4 件](../dify/tests/DC-02.json) |
+| DC-02 | 議事録作成と次回論点整理 | DC/report | 製造・金融 | 提供中 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) upload | [fin/dc.js](../mock/js/data/scenarios/fin/dc.js) upload | [DC-02-meeting-minutes.yml](../dify/apps/DC-02-meeting-minutes.yml) | [DC-02.md](./dify/usecases/DC-02.md) | — | [4 件](../dify/tests/DC-02.json) |
 | DC-03 | 教育・OJT資料作成 | DC/site | 製造 | 試行版 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) upload | — | — | [DC-03.md](./dify/usecases/DC-03.md) | — | — |
 | DC-04 | 安全衛生・5S掲示物・改善提案の中国語化 | DC/site | 製造 | 提供中 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) upload | — | [DC-04-site-notice-zh.yml](../dify/apps/DC-04-site-notice-zh.yml) | [DC-04.md](./dify/usecases/DC-04.md) | — | [4 件](../dify/tests/DC-04.json) |
 | DC-05 | 稟議・申請書の作成と記載漏れ検出 | DC/apply | 製造 | 試行版 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) form | — | — | [DC-05.md](./dify/usecases/DC-05.md) | — | — |
 | DC-06 | 輸出入・通関書類の確認 | DC/apply | 製造 | 試行版 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) upload | — | — | [DC-06.md](./dify/usecases/DC-06.md) | — | — |
 | DC-07 | サプライヤー契約書ドラフト支援 | DC/apply | 製造 | 試行版 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) form | — | — | [DC-07.md](./dify/usecases/DC-07.md) | — | — |
-| DC-08 | 報告レビュー（提出前チェック／受領後の論点整理） | DC/report | 製造・金融 | 試行版 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) form | — | — | [DC-08.md](./dify/usecases/DC-08.md) | — | — |
+| DC-08 | 報告レビュー（提出前チェック／受領後の論点整理） | DC/report | 製造・金融 | 試行版 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) form | [fin/dc.js](../mock/js/data/scenarios/fin/dc.js) form | — | [DC-08.md](./dify/usecases/DC-08.md) | — | — |
 | LG-01 | 日中翻訳（社内の言い方に揃える） | LG/trans | 製造 | 提供中 | [mfg/lg.js](../mock/js/data/scenarios/mfg/lg.js) form | — | [LG-01-ja-zh-translation.yml](../dify/apps/LG-01-ja-zh-translation.yml) | [LG-01.md](./dify/usecases/LG-01.md) | — | [4 件](../dify/tests/LG-01.json) |
 | LG-02 | 社内用語・呼称の統一（用語集） | LG/trans | 製造 | 試行版 | [mfg/lg.js](../mock/js/data/scenarios/mfg/lg.js) upload | — | — | [LG-02.md](./dify/usecases/LG-02.md) | — | — |
 | LG-03 | 現地スタッフとの認識合わせ（手順の中国語書き下し） | LG/align | 製造 | 試行版 | [mfg/lg.js](../mock/js/data/scenarios/mfg/lg.js) form | — | — | [LG-03.md](./dify/usecases/LG-03.md) | — | — |
@@ -41,7 +41,7 @@
 | GN-03 | 受注・発注書の読み取りと登録支援 | GN/office | 製造 | 試行版 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) upload | — | — | [GN-03.md](./dify/usecases/GN-03.md) | — | — |
 | GN-04 | スケジュール調整 | GN/daily | 製造 | 試行版 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) qa | — | — | [GN-04.md](./dify/usecases/GN-04.md) | — | — |
 | GN-05 | 文書要約 | GN/daily | 製造 | 提供中 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) upload | — | [GN-05-document-summary.yml](../dify/apps/GN-05-document-summary.yml) | [GN-05.md](./dify/usecases/GN-05.md) | — | [4 件](../dify/tests/GN-05.json) |
-| GN-06 | 頼まれ事・放置業務の追跡 | GN/daily | 製造・金融 | 試行版 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) form | — | — | [GN-06.md](./dify/usecases/GN-06.md) | — | — |
+| GN-06 | 頼まれ事・放置業務の追跡 | GN/daily | 製造・金融 | 試行版 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) form | [fin/gn.js](../mock/js/data/scenarios/fin/gn.js) form | — | [GN-06.md](./dify/usecases/GN-06.md) | — | — |
 | PT-01 | 取引先・サプライヤーの与信・リスク監視 | PT/data | 製造 | 試行版 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) lookup | — | — | [PT-01.md](./dify/usecases/PT-01.md) | — | — |
 | PT-02 | 業界・材料相場リサーチ（本社報告の外部根拠） | PT/data | 製造 | 試行版 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) form | — | — | [PT-02.md](./dify/usecases/PT-02.md) | — | — |
 | PT-03 | 業界誌・技術記事アーカイブの横断検索 | PT/data | 製造 | 試行版 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) qa | — | — | [PT-03.md](./dify/usecases/PT-03.md) | — | — |
@@ -50,10 +50,10 @@
 | PT-06 | 戦略購買の立案（集約・複数年・代替サプライヤー） | PT/service | 製造 | 構想 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) upload | — | — | [PT-06.md](./dify/usecases/PT-06.md) | — | — |
 | PT-07 | RFQ 起草と購買代行への引き継ぎ | PT/service | 製造 | 構想 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) form | — | — | [PT-07.md](./dify/usecases/PT-07.md) | — | — |
 | PT-08 | 研修プログラム化と実施代行・受講管理 | PT/service | 製造 | 構想 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) form | — | — | [PT-08.md](./dify/usecases/PT-08.md) | — | — |
-| KN-06 | 事務手続の照会 | KN/rule | 金融 | 試行版 | — | — | — | — | — | — |
-| KN-07 | 行内営業情報の検索（日誌・接触履歴） | KN/bizlog | 金融 | 構想 | — | — | — | — | — | — |
-| KN-08 | 当局通達・ガイドラインDB（照会・過去比較） | KN/rule | 金融 | 試行版 | — | — | — | — | — | — |
-| DC-09 | 議案・報告書・提案書のドラフト作成（テンプレート選択） | DC/report | 金融 | 試行版 | — | — | — | — | — | — |
+| KN-06 | 事務手続の照会 | KN/rule | 金融 | 試行版 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | — | — | — |
+| KN-07 | 行内営業情報の検索（日誌・接触履歴） | KN/bizlog | 金融 | 構想 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | — | — | — |
+| KN-08 | 当局通達・ガイドラインDB（照会・過去比較） | KN/rule | 金融 | 試行版 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) diff | — | — | — | — |
+| DC-09 | 議案・報告書・提案書のドラフト作成（テンプレート選択） | DC/report | 金融 | 試行版 | — | [fin/dc.js](../mock/js/data/scenarios/fin/dc.js) form | — | — | — | — |
 | RS-01 | 企業・業界ニュースの自動収集と配信 | RS/news | 金融 | 試行版 | — | — | — | — | — | — |
 | RS-02 | セクター・発行体のモニタリング | RS/news | 金融 | 構想 | — | — | — | — | — | — |
 | RS-03 | 顧客IR・決算の収集と日本語要約・比較 | RS/disc | 金融 | 試行版 | — | — | — | — | — | — |
@@ -68,9 +68,9 @@
 | FA-03 | 財務諸表のレビュー（整合性・監査対応） | FA/close | 金融 | 構想 | — | — | — | — | — | — |
 | FA-04 | 財務モデルの作成と決算反映 | FA/model | 金融 | 構想 | — | — | — | — | — | — |
 | FA-05 | バリュエーションのレビュー | FA/model | 金融 | 構想 | — | — | — | — | — | — |
-| PO-01 | アンケート・インタビュー収集 | PO/collect | 製造・金融 | 構想 | — | — | — | — | — | — |
-| PO-02 | アイデアの募集・蓄積・投票集計 | PO/collect | 製造・金融 | 構想 | — | — | — | — | — | — |
-| PO-03 | 小テスト・コンプライアンスチェックの実施と集計 | PO/collect | 製造・金融 | 構想 | — | — | — | — | — | — |
-| PO-04 | 稼働の集計とコスト配分の提案 | PO/mgmt | 製造・金融 | 構想 | — | — | — | — | — | — |
-| EG-01 | 上流工程の仕様支援（読解・質問回答・エラー対処） | EG/sysspec | 製造・金融 | 構想 | — | — | — | — | — | — |
-| 集計 | — | — | — | — | ①製造 43 | ①金融 0 | ②12 | ③43 | ④KB 4 | ④テスト 12 |
+| PO-01 | アンケート・インタビュー収集 | PO/collect | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) qa | — | — | — | — |
+| PO-02 | アイデアの募集・蓄積・投票集計 | PO/collect | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) form | — | — | — | — |
+| PO-03 | 小テスト・コンプライアンスチェックの実施と集計 | PO/collect | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) form | — | — | — | — |
+| PO-04 | 稼働の集計とコスト配分の提案 | PO/mgmt | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) upload | — | — | — | — |
+| EG-01 | 上流工程の仕様支援（読解・質問回答・エラー対処） | EG/sysspec | 製造・金融 | 構想 | — | [fin/eg.js](../mock/js/data/scenarios/fin/eg.js) qa | — | — | — | — |
+| 集計 | — | — | — | — | ①製造 43 | ①金融 14 | ②12 | ③43 | ④KB 4 | ④テスト 12 |
