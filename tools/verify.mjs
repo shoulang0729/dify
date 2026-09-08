@@ -823,8 +823,18 @@ section('15. 削除系 API 呼び出しの機械検査（scripts/dify/**.py）')
   //   <obj>._req("<METHOD>", ...) / urllib.request.Request(..., method="<METHOD>")
   // なので、"DELETE" が実際に HTTP メソッドとして渡されている箇所だけを拾う。
   // dict のキー（STATE["calls"]["DELETE"] 等。mock_server.py / テストのカウンタ）や
-  // 文字列比較はここでは対象にしない（false positive を避けるため）
-  const DELETE_LIT_RE = /_req\(\s*(["'])DELETE\1|method\s*=\s*(["'])DELETE\2/;
+  // 文字列比較はここでは対象にしない（false positive を避けるため）。
+  // 大文字小文字は区別しない（i フラグ）。"delete" / "Delete" のような書き方でも urllib は
+  // メソッド名を大文字化せずそのまま送るため、見逃すと実際に削除が飛ぶ（reviewer 指摘。
+  // console_api.py の _MASK_PATTERNS が "bearer" 小文字を見逃していた過去の穴と同種）。
+  //
+  // 【この検査の限界（正直に書く）】ここで捕まえられるのは、HTTP メソッドを
+  // 文字列リテラルで直接渡している呼び出しだけ。`m = "DELETE"; api._req(m, ...)` のように
+  // 変数に入れてから渡す形は正規表現では追えず検出できない。この検査は「うっかり」削除系の
+  // 呼び出しを増やすことを止めるためのものであり、意図的な回避を防ぐものではない。
+  // 削除系 API を新しく使うときは、この検査に通ることではなく、設計書
+  // docs/handoff/2026-09-08-cloud-auth-and-w4.md §4-2 の歯止め K1〜K7 を満たすことで担保する。
+  const DELETE_LIT_RE = /_req\(\s*(["'])DELETE\1|method\s*=\s*(["'])DELETE\2/i;
 
   function listPyFiles(dir) {
     let out = [];
