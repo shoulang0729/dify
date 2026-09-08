@@ -12,7 +12,6 @@ const T = {
   segLabel:     { ja: 'パターン:', zh: '方案:', en: 'Pattern:' },
   appTitle:     { ja: 'AIエージェントカタログ', zh: 'AI智能体服务目录', en: 'AI Agent Catalog' },
   allServices:  { ja: 'すべてのサービス', zh: '全部服务', en: 'All Services' },
-  all:          { ja: 'すべて', zh: '全部', en: 'All' },
   home:         { ja: 'ホーム', zh: '首页', en: 'Home' },
   searchPh:     { ja: 'サービスを検索', zh: '搜索服务', en: 'Search services' },
   countUnit:    { ja: '件のサービス', zh: '项服务', en: ' services' },
