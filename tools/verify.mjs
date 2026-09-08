@@ -32,6 +32,10 @@
  *        （設計書 docs/handoff/2026-09-07-repo-layout-v2.md §3-2・§4-2・§8 PR-2）
  *   12-e.（新規）apps: の管理番号一覧が dify/apps/*.yml と過不足なく一致し、id が null/${VAR}/UUID 形のいずれかで、
  *        cloud-master 以外に生 UUID が無いこと（設計書 docs/handoff/2026-09-08-cloud-console-deploy.md §3-4・Issue #114 PR-2）
+ *   15.  （新規）削除系 API 呼び出しの機械検査：scripts/dify/**.py を走査し、"DELETE" を渡す HTTP 呼び出しが
+ *        scripts/dify/kb_upload.py の delete_document() だけであること（他ファイルに現れたら FAIL）
+ *        （設計書 docs/handoff/2026-09-08-cloud-auth-and-w4.md §4-2・§9-1。Issue #121 W4-1 K8。
+ *        設計書は §14 としているが §14 は Issue #124 が先に取ったため §15 を使う。§13 は #121 W2 用に予約済み）
  *
  * データの取り出しは tools/lib/load.mjs（node:vm で js/data/** を実行順に評価）を使う。
  * grab()（正規表現抽出）は廃止。
@@ -803,6 +807,58 @@ section('12. 環境レイヤー（dify/env/**）');
           + String((e && e.stderr && e.stderr.toString()) || e.message || e).split('\n')[0]);
       }
     }
+  }
+}
+
+/* ---------- 15. 削除系 API 呼び出しの機械検査（scripts/dify/**.py） ---------- */
+// 設計書 docs/handoff/2026-09-08-cloud-auth-and-w4.md §4-2・§9-1（Issue #121 W4-1 K8）は
+// この検査を「§14」としているが、§14 は Issue #124（本番リンク）が先に取った（2026-09-08 時点）。
+// §13 は #121 W2（dify/state/）用に予約済みのため、削除系検査はここ §15 に置く（設計書は変更しない）。
+section('15. 削除系 API 呼び出しの機械検査（scripts/dify/**.py）');
+{
+  const SCRIPTS_DIFY = resolve(ROOT, 'scripts/dify');
+  const ALLOWED_FILE = 'scripts/dify/kb_upload.py';
+  const ALLOWED_FUNCS = new Set(['delete_document']);
+  // このリポジトリの HTTP 呼び出しの慣用形（console_api.py / kb_upload.py とも）は
+  //   <obj>._req("<METHOD>", ...) / urllib.request.Request(..., method="<METHOD>")
+  // なので、"DELETE" が実際に HTTP メソッドとして渡されている箇所だけを拾う。
+  // dict のキー（STATE["calls"]["DELETE"] 等。mock_server.py / テストのカウンタ）や
+  // 文字列比較はここでは対象にしない（false positive を避けるため）
+  const DELETE_LIT_RE = /_req\(\s*(["'])DELETE\1|method\s*=\s*(["'])DELETE\2/;
+
+  function listPyFiles(dir) {
+    let out = [];
+    if (!existsSync(dir)) return out;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const p = resolve(dir, entry.name);
+      if (entry.isDirectory()) out = out.concat(listPyFiles(p));
+      else if (entry.name.endsWith('.py')) out.push(p);
+    }
+    return out;
+  }
+
+  let sawAllowed = false;
+  const bad = [];
+  for (const file of listPyFiles(SCRIPTS_DIFY)) {
+    const rel = file.slice(ROOT.length + 1).split('\\').join('/');
+    const lines = readFileSync(file, 'utf8').split('\n');
+    let currentFunc = null;
+    for (let i = 0; i < lines.length; i++) {
+      const defm = lines[i].match(/^\s*def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/);
+      if (defm) currentFunc = defm[1];
+      if (DELETE_LIT_RE.test(lines[i])) {
+        const isAllowed = rel === ALLOWED_FILE && currentFunc && ALLOWED_FUNCS.has(currentFunc);
+        if (isAllowed) sawAllowed = true;
+        else bad.push(`${rel}:${i + 1}（関数: ${currentFunc || '(トップレベル)'}）`);
+      }
+    }
+  }
+  if (bad.length) {
+    fail(`削除系 API 呼び出し（"DELETE"）が許可されていない箇所にある（許可は ${ALLOWED_FILE} の ${[...ALLOWED_FUNCS].join('/')} のみ）: ${bad.join(', ')}`);
+  } else if (!sawAllowed) {
+    fail(`削除系 API 呼び出し（"DELETE"）が 1 件も見つからない。${ALLOWED_FILE} の ${[...ALLOWED_FUNCS].join('/')} が実装されているか確認してください`);
+  } else {
+    ok(`削除系 API 呼び出し（"DELETE"）は ${ALLOWED_FILE} の ${[...ALLOWED_FUNCS].join('/')} 1 か所のみ`);
   }
 }
 
