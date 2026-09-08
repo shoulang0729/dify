@@ -42,7 +42,7 @@
 | GN-04 | スケジュール調整 | GN/daily | 製造 | 試行版 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) qa | — | — | [GN-04.md](./dify/usecases/GN-04.md) | — | — |
 | GN-05 | 文書要約 | GN/daily | 製造 | 提供中 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) upload | — | [GN-05-document-summary.yml](../dify/apps/GN-05-document-summary.yml) | [GN-05.md](./dify/usecases/GN-05.md) | — | [4 件](../dify/tests/GN-05.json) |
 | GN-06 | 頼まれ事・放置業務の追跡 | GN/daily | 製造・金融 | 試行版 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) form | [fin/gn.js](../mock/js/data/scenarios/fin/gn.js) form | — | [GN-06.md](./dify/usecases/GN-06.md) | — | — |
-| GN-07 | 幹部来訪・出張のアテンド段取り | GN/daily | 製造・金融 | 構想 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) form | — | — | — | — | — |
+| GN-07 | 幹部来訪・出張のアテンド段取り | GN/daily | 製造・金融 | 構想 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) form | — | — | [GN-07.md](./dify/usecases/GN-07.md) | — | — |
 | PT-01 | 取引先・サプライヤーの与信・リスク監視 | PT/data | 製造 | 試行版 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) lookup | — | — | [PT-01.md](./dify/usecases/PT-01.md) | — | — |
 | PT-02 | 業界・材料相場リサーチ（本社報告の外部根拠） | PT/data | 製造 | 試行版 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) form | — | — | [PT-02.md](./dify/usecases/PT-02.md) | — | — |
 | PT-03 | 業界誌・技術記事アーカイブの横断検索 | PT/data | 製造 | 試行版 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) qa | — | — | [PT-03.md](./dify/usecases/PT-03.md) | — | — |
@@ -74,4 +74,4 @@
 | PO-03 | 小テスト・コンプライアンスチェックの実施と集計 | PO/collect | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) form | — | — | — | — |
 | PO-04 | 稼働の集計とコスト配分の提案 | PO/mgmt | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) upload | — | — | — | — |
 | EG-01 | 上流工程の仕様支援（読解・質問回答・エラー対処） | EG/sysspec | 製造・金融 | 構想 | — | [fin/eg.js](../mock/js/data/scenarios/fin/eg.js) qa | — | — | — | — |
-| 集計 | — | — | — | — | ①製造 44 | ①金融 28 | ②12 | ③43 | ④KB 4 | ④テスト 12 |
+| 集計 | — | — | — | — | ①製造 44 | ①金融 28 | ②12 | ③44 | ④KB 4 | ④テスト 12 |
