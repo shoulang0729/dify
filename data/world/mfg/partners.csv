@@ -14,3 +14,4 @@ salarydb,service,人事情報サービス（現地給与水準データベース
 recruit,service,採用エージェント（現地技術者・管理職の紹介）,招聘代理（现地技术与管理人才推荐）,Recruiting agent (local engineers & managers),,pt5 で使用
 procure,service,購買代行（戦略購買・RFQ 引き継ぎ）,采购代理（战略采购・RFQ 交接）,Procurement agency (strategic sourcing & RFQ handoff),,pt6/pt7 で使用
 training,service,研修ベンダ（研修プログラム化・実施代行）,培训厂商（培训项目化・实施代办）,Training vendor (program design & delivery),,pt8 で使用
+R 社,service,旅行会社（ハイヤー手配・出張手配）,旅行社（包车与差旅安排）,Travel agency (chartered cars & trip arrangements),,GN-07（出張アテンド）の `charter` 車両で使用（設計書 §4-4）。社名は付けない（PM 決定 PT-8）

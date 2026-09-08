@@ -1,0 +1,6 @@
+contact_id,scope,label_ja,label_zh,label_en,person_id,phone_note,hours,escalate_to,note
+cnt_soumu,internal,総務課 当直,总务科 值班,General Affairs Duty Line,,+86-512-XXXX-9001（架空）,24時間,ct_kojocho,来訪・出張の一次連絡先
+ct_kojocho,internal,工場長室 秘書（呉婷）,厂长办公室 秘书（吴婷）,Plant Manager Office Secretary (Wu Ting),wu-ting,+86-512-XXXX-9002（架空）,平日 8:30-18:00,,工場側の窓口。person_id は people.csv の呉婷（wu-ting）
+cnt_hotel_front,external,契約ホテル フロント（錦楓大酒店）,签约酒店前台（锦枫大酒店）,Contracted Hotel Front Desk (Kinpu Hotel),,+86-512-XXXX-9101（架空）,24時間,cnt_soumu,hotels.csv の htl_kinpu に対応
+cnt_travel_desk,external,旅行会社（R社）24hデスク,旅行社（R社）24小时台,Travel Agency (R) 24h Desk,,+86-21-XXXX-9201（架空）,24時間,cnt_soumu,partners.csv の R 社（ハイヤー手配）に対応
+cnt_clinic,medical,提携クリニック（蘇州）,合作诊所（苏州）,Partner Clinic (Suzhou),,+86-512-XXXX-9301（架空）,平日 9:00-17:00（時間外は救急案内）,cnt_soumu,来訪者の急病・体調不良時の一次連絡先

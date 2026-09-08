@@ -141,7 +141,7 @@ function runIndustryChecks(ind) {
   const people = readCSV(dir, 'people.csv');
   const products = readCSV(dir, 'products.csv');
   const equipment = ind === 'mfg' ? readCSV(dir, 'equipment.csv') : [];
-  const partners = ind === 'mfg' ? readCSV(dir, 'partners.csv') : readCSV(dir, 'clients.csv');
+  const partners = ind === 'mfg' ? readCSV(dir, 'partners.csv') : [...readCSV(dir, 'clients.csv'), ...readCSV(dir, 'vendors.csv')];
   const kpi = readCSV(dir, 'kpi.csv');
   const companyMd = readMd(dir, 'company.md');
   const calendarMd = readMd(dir, 'calendar.md');
@@ -294,10 +294,12 @@ function runIndustryChecks(ind) {
       /^TR-\d{4}-\d{3}$/, /^NC-\d{4}-\d{4}$/, /^8D-\d{2}-\d{4}$/, /^ECR-\d{2}-\d{4}$/,
       /^RFQ-\d{4}-\d{3}$/, /^RFQ-\d{2}-\d{3}$/, /^PO-\d{4}-\d{3}$/, /^C-\d{4}-\d{3}$/,
       /^C-\d{4}-[A-Z]$/, /^RG-\d{2}-\d{4}$/, /^CL-\d{2}-\d{4}$/, /^QR-\d{4}-Q\d-\d{2}$/,
-      /^WS-[A-Z]{2}-\d{3}$/, /^PC-L\d-\d{4}-\d{3}$/, /^CM-\d{2}$/, /^QC-\d{2}$/
+      /^WS-[A-Z]{2}-\d{3}$/, /^PC-L\d-\d{4}-\d{3}$/, /^CM-\d{2}$/, /^QC-\d{2}$/,
+      /^VST-\d{4}-\d{3}$/
     ] : [
       /^RNG-\d{4}-\d{4}$/, /^CRD-\d{2}-\d{4}$/, /^NTF-\d{4}-\d{3}$/,
-      /^MTG-\d{4}-\d{4}$/, /^CLM-\d{2}-\d{4}$/, /^IRR-\d{4}-\d{3}$/
+      /^MTG-\d{4}-\d{4}$/, /^CLM-\d{2}-\d{4}$/, /^IRR-\d{4}-\d{3}$/,
+      /^VST-\d{4}-\d{3}$/
     ];
     const docPrefixes = ind === 'mfg'
       ? /^(TR|NC|8D|ECR|RFQ|PO|C|RG|CL|QR|WS|CM|QC)-|^PC-L\d-/

@@ -1,0 +1,9 @@
+route_id,from_id,to_id,mode,minutes_typical,minutes_peak,distance_km,cost_note,note
+rt_pvg_hekiha,apt_pvg,htl_hekiha,company_car,70,90,45,架空の見込み額（公務車のため実費計上なし）,設計書 §3-4-2 の骨子に対応（空港→ホテル）
+rt_sha_hekiha,apt_sha,htl_hekiha,company_car,55,75,38,架空の見込み額（公務車のため実費計上なし）,朝の渋滞込みで minutes_peak を使う（台本の「前倒し」の根拠）
+rt_hekiha_shhq,htl_hekiha,sh_hq,company_car,15,25,9,架空の見込み額（公務車のため実費計上なし）,ホテル→上海本部
+rt_pvg_shhq,apt_pvg,sh_hq,company_car,65,85,42,架空の見込み額（公務車のため実費計上なし）,空港から上海本部への直行ルート
+rt_sha_shhq,sh_hq,apt_sha,company_car,50,70,35,架空の見込み額（公務車のため実費計上なし）,上海本部から空港への直行ルート（出迎え往路の逆区間）
+rt_shinonome_shhq,htl_shinonome,sh_hq,company_car,20,30,13,架空の見込み額（公務車のため実費計上なし）,東雲ホテル上海浦東は浦東・空港側
+rt_shirakaba_dlc,htl_shirakaba,apt_dlc,taxi,25,40,15,架空の見込み額（タクシーメーター想定）,白樺ホテル大連は大連支店出張用
+rt_pvg_sha,apt_pvg,apt_sha,rail,70,95,55,架空の見込み額（都市間鉄道・地下鉄想定）,上海の 2 空港間の乗継移動
