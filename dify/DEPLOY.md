@@ -370,9 +370,10 @@ Mac の前に座らずに `kb_upload.py` / `run_tests.py` を実行し、結果�
 - `GET https://cloud.dify.ai/console/api/setup` を 1 回叩くだけ。**`POST`/`PUT`/`DELETE` は送らない**ので Dify 側に副作用は無い
 - User-Agent は `console_api.py` / `kb_upload.py` / `run_tests.py` と同じ `dify-scripts/1.0 (+https://github.com/shoulang0729/dify)`
 - 判定（設計書 §10）：
-  - **200 / 401 / 403（本文に `1010` を含まない）** → 成功。「前段は通っている。Cookie 案（W4-3）は成立しうる」と Job Summary に出す
-  - **403 かつ本文に `1010`** → **Cloudflare に弾かれている**。User-Agent を変えて 1 回だけ再試行し、それでも解消しなければ失敗（**W4-3 は保留**とし DI を起票する）
+  - **200 / 401 / 403（本文に Cloudflare のシグネチャ `error code: 1010` を含まない）** → 成功。「前段は通っている。Cookie 案（W4-3）は成立しうる」と Job Summary に出す
+  - **403 かつ本文に `error code: 1010`** → **Cloudflare に弾かれている**。User-Agent を変えて 1 回だけ再試行し、それでも解消しなければ失敗（**W4-3 は保留**とし DI を起票する）
   - それ以外（接続失敗・想定外の HTTP status）→ 区別できるメッセージを Job Summary に出す
+  - **照合は `error code: 1010`（大文字小文字・コロン前後の空白ゆれのみ許容）に絞っている。** 単純な `1010` の部分一致だと、`request_id` や件数に偶然その数字が入るだけの無関係な 403 まで「Cloudflare に弾かれた」と誤判定するため（reviewer 指摘）。**ただし** Cloudflare がブロック本文の文言を変えた場合（コロン無し表記・見出しのみ・HTML タグが挟まる表記など）は逆に**見逃して「成功」と誤判定しうる**。V5 の一次判定として使い、疑わしい結果が出たら本文を目視で確認すること
 - Environment `dify-cloud-master` の承認ゲートは他の `op` と同じく必要（**秘密は使わないが、実行の記録は残す**ため）
 
 ### 変更パスガード（load-bearing）

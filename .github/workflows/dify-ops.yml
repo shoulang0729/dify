@@ -277,8 +277,24 @@ jobs:
             mv "$out" /tmp/dify-ops-probe-body.txt
           }
 
+          # Cloudflare のブロック本文特有のシグネチャだけに照合を狭める（reviewer 指摘）。
+          # 設計書 §10・DEPLOY.md §4 が示す表記 "error code: 1010" に、大小文字・コロン
+          # 前後の空白ゆれだけを許容して合わせる（"error code" の直後に "1010" が続く形）。
+          # 単純な部分一致 "1010" だと、Cloudflare と無関係な 403（本文の request_id や
+          # 件数などに偶然 "1010" という数字が含まれるだけのもの）まで「弾かれた」と誤判定する。
+          #
+          # 検出できる：実際に観測されている Cloudflare のブロック本文の表記
+          # "error code: 1010"（大文字小文字・コロン前後の空白ゆれを含む）。
+          #
+          # 見逃しうる：Cloudflare がブロック本文の文言を変えた場合（例：コロンを付けない
+          # "error code 1010"、見出しだけの "Error 1010"、日本語化された文言、HTML タグが
+          # "code" と "1010" の間に挟まる表記）。その場合はこの probe が「成功」と誤って
+          # 判定しうる。これは verify.mjs §15 の削除系 API 検査と同じ考え方（機械検査は
+          # 完全ではない）で、V5 の一次判定として使い、実機で疑わしい結果が出たら本文を
+          # 目視で確認すること。
+          #
           # $1: HTTP status, $2: 本文ファイル
-          # 戻り値：0=成功／1=Cloudflare に弾かれた（403+1010）／2=接続失敗（000）／3=想定外コード
+          # 戻り値：0=成功／1=Cloudflare に弾かれた（403+error code: 1010）／2=接続失敗（000）／3=想定外コード
           judge() {
             local code="$1" body_file="$2"
             if [ "$code" = "000" ]; then
@@ -286,7 +302,7 @@ jobs:
             fi
             case "$code" in
               200|401|403)
-                if [ "$code" = "403" ] && grep -q "1010" "$body_file"; then
+                if [ "$code" = "403" ] && grep -qiE 'error[[:space:]]*code[[:space:]]*:[[:space:]]*1010' "$body_file"; then
                   return 1
                 fi
                 return 0
@@ -305,8 +321,8 @@ jobs:
           result1=$?
           set -e
 
-          # 403 + 1010（Cloudflare）のときだけ、設計書 §10 のとおり User-Agent を
-          # 変えて 1 回だけ再試行する。
+          # 403 + error code: 1010（Cloudflare）のときだけ、設計書 §10 のとおり
+          # User-Agent を変えて 1 回だけ再試行する。
           retried=false
           code2=""
           result2=""
@@ -348,12 +364,12 @@ jobs:
 
           case "$final_result" in
             0)
-              echo "**結果: 成功。** 200 / 401 / 403（本文に \`1010\` を含まない）を確認した。前段（Cloudflare）は通っている。Cookie 案（W4-3）は成立しうる。" >> "$GITHUB_STEP_SUMMARY"
+              echo "**結果: 成功。** 200 / 401 / 403（本文に Cloudflare のシグネチャ \`error code: 1010\` を含まない）を確認した。前段（Cloudflare）は通っている。Cookie 案（W4-3）は成立しうる。" >> "$GITHUB_STEP_SUMMARY"
               echo "OVERALL_RC=0" >> "$GITHUB_ENV"
               ;;
             1)
-              echo "**結果: 失敗。Cloudflare が弾いている（403 かつ本文に \`1010\`）。** User-Agent を変えて再試行しても解消しなかった。**W4-3 は保留**とし、DI として起票すること。" >> "$GITHUB_STEP_SUMMARY"
-              echo "::error::probe 失敗: Cloudflare（1010）にホストランナーが弾かれた。W4-3 は保留。DI 起票が必要。"
+              echo "**結果: 失敗。Cloudflare が弾いている（403 かつ本文に \`error code: 1010\`）。** User-Agent を変えて再試行しても解消しなかった。**W4-3 は保留**とし、DI として起票すること。" >> "$GITHUB_STEP_SUMMARY"
+              echo "::error::probe 失敗: Cloudflare（error code: 1010）にホストランナーが弾かれた。W4-3 は保留。DI 起票が必要。"
               echo "OVERALL_RC=1" >> "$GITHUB_ENV"
               ;;
             2)
