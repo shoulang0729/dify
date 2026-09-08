@@ -1,6 +1,8 @@
 name: dify-ops
 
 # W1（#121）：KB 投入（kb_upload.py）とテスト実行（run_tests.py）を GitHub ホストランナーで回す。
+# W4-1 PR-2（#121）：kb_refresh（--refresh。更新のみ・削除しない）と kb_replace（--replace。削除して
+# 入れ直す）を追加。設計書: docs/handoff/2026-09-08-cloud-auth-and-w4.md §4-2（歯止め K1〜K8）。
 # 設計書: docs/handoff/2026-09-08-execution-split-and-runner.md（W1 の節・§9 セルフホストランナーの安全性）
 #
 # 重要：トリガは workflow_dispatch だけ。pull_request 系・push 系は絶対に付けない
@@ -9,18 +11,25 @@ on:
   workflow_dispatch:
     inputs:
       op:
-        description: "実行する操作"
+        description: "実行する操作（kb_refresh=同名文書の中身だけ差し替え／kb_replace=削除して入れ直し。まず kb_refresh を試すこと）"
         required: true
         type: choice
         options:
           - kb_upload
+          - kb_refresh
+          - kb_replace
           - run_tests
           - both
         default: run_tests
       codes:
-        description: "対象の管理番号（空白区切り、例: KN-01 DC-01）"
+        description: "対象の管理番号（空白区切り、例: KN-01 DC-01）。kb_replace は削除を伴うため 1 件のみ"
         required: true
         type: string
+      confirm:
+        description: "kb_replace のときだけ必須：codes と完全一致する文字列を入力（削除を伴う操作の誤操作防止。他の op では未使用）"
+        required: false
+        type: string
+        default: ""
       env:
         description: "投入・接続先の環境（当面 cloud-master のみ）"
         required: true
@@ -62,11 +71,12 @@ jobs:
         env:
           OP: ${{ inputs.op }}
           CODES: ${{ inputs.codes }}
+          CONFIRM: ${{ inputs.confirm }}
           ENV_NAME: ${{ inputs.env }}
         run: |
           set -euo pipefail
           case "$OP" in
-            kb_upload|run_tests|both) ;;
+            kb_upload|kb_refresh|kb_replace|run_tests|both) ;;
             *) echo "::error::op の値が不正です: $OP"; exit 1 ;;
           esac
           if ! [[ "$CODES" =~ ^[A-Z]{2}-[0-9]{2}(\ [A-Z]{2}-[0-9]{2})*$ ]]; then
@@ -77,6 +87,26 @@ jobs:
             cloud-master) ;;
             *) echo "::error::env の値が不正です: $ENV_NAME"; exit 1 ;;
           esac
+
+          # kb_replace は文書を削除してから入れ直す（K1〜K5 は kb_upload.py 側で担保）ため、
+          # ここでは呼び出し面の歯止め（歯止め K6。設計書 §4-2）を実行に入る前に検証する：
+          #   1) codes は 1 件のみ（複数件を一度に削除できないようにする）
+          #   2) confirm に codes と完全一致する文字列を要求する（choice の初期値のままでは
+          #      通らない＝「うっかり選んだだけでは走らない」形。管理番号そのものを要求するのは、
+          #      静的な固定文字列〔例: "replace"〕よりも「対象を打ち直させる」ことで
+          #      別の番号を消すコピペミスも同時に防げるため）
+          if [ "$OP" = "kb_replace" ]; then
+            code_count=$(wc -w <<< "$CODES")
+            if [ "$code_count" -ne 1 ]; then
+              echo "::error::kb_replace は codes を 1 件だけ指定してください（削除を伴うため。現在: $CODES）"
+              exit 1
+            fi
+            if [ "$CONFIRM" != "$CODES" ]; then
+              echo "::error::kb_replace には confirm に対象の管理番号（$CODES）と完全一致する文字列を入力してください"
+              exit 1
+            fi
+          fi
+
           echo "検証 OK: op=$OP codes=$CODES env=$ENV_NAME"
 
       # キーの値は一切出力しない。「設定されているか」だけを確認する。
@@ -87,7 +117,7 @@ jobs:
           CODES: ${{ inputs.codes }}
         run: |
           set -euo pipefail
-          [ -n "${DIFY_DATASET_KEY:-}" ] && echo "DIFY_DATASET_KEY: set" || echo "DIFY_DATASET_KEY: unset（kb_upload で必要）"
+          [ -n "${DIFY_DATASET_KEY:-}" ] && echo "DIFY_DATASET_KEY: set" || echo "DIFY_DATASET_KEY: unset（kb_upload / kb_refresh / kb_replace で必要）"
           for code in $CODES; do
             var="DIFY_APP_KEY_${code//-/}"
             if [ -n "${!var:-}" ]; then
@@ -135,20 +165,39 @@ jobs:
             echo
           } >> "$GITHUB_STEP_SUMMARY"
 
+          # $1: kb_upload.py に渡す追加フラグ（"" / "--refresh" / "--replace"）
+          # $2: Job Summary に出す操作名のラベル
           run_kb() {
+            local flag="$1"
+            local label="$2"
             for code in $CODES; do
               if [ ! -d "dify/kb/$code" ]; then
-                echo "- KB \`$code\`: スキップ（dify/kb/$code が無い）" >> "$GITHUB_STEP_SUMMARY"
+                echo "- KB \`$code\` (\`$label\`): スキップ（dify/kb/$code が無い）" >> "$GITHUB_STEP_SUMMARY"
                 continue
               fi
-              echo "== kb_upload.py $code =="
-              if python3 scripts/dify/kb_upload.py --env "$ENV_NAME" "$code"; then
-                echo "- KB \`$code\`: OK" >> "$GITHUB_STEP_SUMMARY"
+              echo "== kb_upload.py ${flag:+$flag }$code =="
+              out_file="$(mktemp)"
+              # shellcheck disable=SC2086  # flag は "" か固定の 1 語のみ（呼び出し元で決め打ち。inputs は渡さない）
+              if python3 scripts/dify/kb_upload.py --env "$ENV_NAME" $flag "$code" 2>&1 | tee "$out_file"; then
+                echo "- KB \`$code\` (\`$label\`): OK" >> "$GITHUB_STEP_SUMMARY"
               else
                 rc=$?
-                echo "- KB \`$code\`: 失敗（exit $rc）" >> "$GITHUB_STEP_SUMMARY"
+                echo "- KB \`$code\` (\`$label\`): 失敗（exit $rc）" >> "$GITHUB_STEP_SUMMARY"
                 overall_rc=1
               fi
+              # 歯止め K7（設計書 §4-2）：kb_upload.py の標準出力（--replace 時は削除前の
+              # id〔マスク済み〕・name を含む）を Job Summary にも残す。Actions のログだけでなく
+              # 事後にレビューしやすい場所に置くため。
+              {
+                echo "<details><summary>kb_upload.py ${label} ${code} の出力</summary>"
+                echo
+                echo '```'
+                cat "$out_file"
+                echo '```'
+                echo "</details>"
+                echo
+              } >> "$GITHUB_STEP_SUMMARY"
+              rm -f "$out_file"
             done
           }
 
@@ -168,9 +217,11 @@ jobs:
           }
 
           case "$OP" in
-            kb_upload) run_kb ;;
+            kb_upload) run_kb "" "kb_upload" ;;
+            kb_refresh) run_kb "--refresh" "kb_refresh" ;;
+            kb_replace) run_kb "--replace" "kb_replace" ;;
             run_tests) run_tests_op ;;
-            both) run_kb; run_tests_op ;;
+            both) run_kb "" "kb_upload"; run_tests_op ;;
           esac
 
           echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -273,6 +324,6 @@ jobs:
           set -euo pipefail
           rc="${OVERALL_RC:-0}"
           if [ "$rc" != "0" ]; then
-            echo "::error::kb_upload / run_tests のいずれかが失敗しました（詳細は Job Summary と PR の結果ファイルを参照）。"
+            echo "::error::kb_upload / kb_refresh / kb_replace / run_tests のいずれかが失敗しました（詳細は Job Summary と PR の結果ファイルを参照）。"
             exit 1
           fi

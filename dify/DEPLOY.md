@@ -326,14 +326,35 @@ Mac の前に座らずに `kb_upload.py` / `run_tests.py` を実行し、結果�
 
 1. GitHub の Actions タブ → `dify-ops` ワークフロー → **Run workflow**
 2. 入力
-   - `op`：`kb_upload`（KB 投入のみ）／`run_tests`（テスト実行のみ）／`both`（両方）
-   - `codes`：管理番号を空白区切り（例 `KN-01 DC-01`）。`^[A-Z]{2}-[0-9]{2}( [A-Z]{2}-[0-9]{2})*$` に一致しない値は検証ステップで即失敗する
+   - `op`：`kb_upload`（KB 投入のみ・同名文書はスキップ）／`kb_refresh`（同名文書の中身だけ差し替え）／`kb_replace`（同名文書を削除して入れ直す）／`run_tests`（テスト実行のみ）／`both`（`kb_upload` ＋ `run_tests`）
+   - `codes`：管理番号を空白区切り（例 `KN-01 DC-01`）。`^[A-Z]{2}-[0-9]{2}( [A-Z]{2}-[0-9]{2})*$` に一致しない値は検証ステップで即失敗する。**`kb_replace` は削除を伴うため 1 件のみ**（2 件以上を指定すると Validate inputs で即 exit 1）
+   - `confirm`：**`kb_replace` のときだけ必須**。`codes` と完全に同じ文字列（対象の管理番号そのもの）を入力する。空欄・値違いは Validate inputs で即 exit 1（他の `op` では未使用。空欄のままでよい）
    - `env`：`cloud-master`（当面これだけ）
 3. Environment `dify-cloud-master` に **required reviewers** が設定されていれば、ここでジョブが一時停止し、承認待ちになる。**PM が承認するまでキーには一切触れない**
 4. 承認後、ジョブが `kb_upload.py` / `run_tests.py` を実行する。結果は
-   - Job Summary（合否の要約。値は出さない）
+   - Job Summary（合否の要約。値は出さない。`kb_refresh` / `kb_replace` は文書ごとの出力〔`kb_upload.py` の標準出力。id はマスク済み〕も折りたたみ表示で残る）
    - `dify/results/<env>/<番号>-<YYYYMMDD-HHMM>.md`（テスト実行時のみ生成）を **`bot/dify-ops-<run_id>` ブランチに push → 自動で PR 作成**
 5. **PR のマージは人が行う**（`main` への直 push はしない。CLAUDE.md §5）。中身を読んでから squash マージする
+
+### `kb_refresh` / `kb_replace` —— KB の文書を入れ替える（W4-1。#121）
+
+設計: `docs/handoff/2026-09-08-cloud-auth-and-w4.md` §4-2（歯止め K1〜K8）・§4-3（壊れたときの復旧）。
+実体は `scripts/dify/kb_upload.py --refresh` / `--replace`（詳しい挙動は `python3 scripts/dify/kb_upload.py --help`）。
+
+- **どちらを先に試すべきか：`kb_refresh` が第一候補。** 同名文書の中身だけを差し替え、**一度も削除しない**（`PATCH`、404/405 なら `update-by-text` にフォールバック）ので、失敗しても既存の文書がそのまま残る＝失うものが無い。`kb_replace` は同名文書を **削除してから** 入れ直すので、一時的に KB から消える窓ができる
+- **`kb_replace` の制約**：
+  - **`codes` は 1 件のみ**（`kb_refresh` は複数可。削除しないので危険度が低いため）。CI（`dify-ops.yml`）は `op: kb_upload` から `--replace` を呼べない構造にしてある（歯止め K6）
+  - **`confirm` に対象の管理番号と完全一致する文字列を要求する**。`op` の選択肢を選んだだけでは走らない二重確認。誤って別の番号を打つと一致せず止まるので、コピペミスでの誤爆も同時に防げる
+  - 削除できる文書数の上限は 5（`MAX_DELETE`。K2）・削除は 1 文書ずつ「削除 → 直後に再投入」（K3）・削除対象は `dify/kb/<番号>/` に実在するファイル名と完全一致する文書だけ（K1）・KB そのものの削除（`DELETE /datasets/{id}`）は実装されていない（K4）
+- **`kb_refresh` が 404/405 で失敗したら `kb_replace` に切り替える。** 1.17.0 に更新 API（`PATCH …/documents/{id}` または `update-by-text`）が実在するかは未確認（設計書 §11 V3）。`kb_refresh` の初回実行がそのまま実機確認を兼ねる
+- **壊れたときの復旧**（設計書 §4-3）：
+
+  | 失敗 | 起きること | 復旧 |
+  |---|---|---|
+  | `kb_refresh` が 4xx で失敗 | 文書は元のまま。何も失われない | `op: kb_upload`（フラグ無し）で再実行すれば従来どおり |
+  | `kb_replace` で削除後にアップロードが失敗 | **その 1 文書だけ KB から欠ける** | **`op: kb_upload`（フラグ無し）で同じ番号を再実行**すれば、同名文書が無いので再投入される。**正本は `dify/kb/<番号>/`（Git）なので内容は失われない** |
+  | インデックス中で削除できない | 4xx で停止。KB は無傷 | 数分待って再実行 |
+  | ナレッジ API キーが失効 | 401 で停止。KB は無傷 | PM が画面で再発行 → Environment secret `DIFY_DATASET_KEY` を更新 |
 
 ### 変更パスガード（load-bearing）
 
