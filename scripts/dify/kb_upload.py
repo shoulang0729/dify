@@ -16,7 +16,7 @@
 
 動作（冪等）
   1. KB 名 "<管理番号> <サービス名>"（または env の論理名）の KB を探す。無ければ作成
-     （indexing_technique: high_quality。新規作成時のみ retrieval_model.reranking_enable: false を試みる。DI-005）
+     （indexing_technique: high_quality。新規作成時のみ retrieval_model を完全な形で送り Rerank を無効化する。DI-005 / DI-016）
   2. dify/kb/<管理番号>/ の .md / .txt / .pdf を、同名文書が無いものだけアップロード
      （POST /datasets/{id}/document/create-by-file、process_rule は custom 固定：区切り \n\n・最大 1024 字。DI-006）
   3. アップロードした文書のインデックス完了を待つ（最長 --timeout 秒、既定 600）
@@ -95,8 +95,20 @@ def build_process_rule(separator, max_tokens):
 
 
 def build_retrieval_model():
-    """新規 dataset 作成時に Rerank を無効化する（DI-005）。search_method・top_k は既定のまま（触らない）。"""
-    return {"reranking_enable": False}
+    """新規 dataset 作成時に Rerank を無効化する（DI-005）。
+
+    Datasets API は retrieval_model の部分指定を受け付けない（reranking_enable だけ送ると
+    search_method / top_k が Field required で invalid_param になる。DI-016）。
+    そのため既定値を明示した完全な形で送る。
+    """
+    return {
+        "search_method": "semantic_search",
+        "reranking_enable": False,
+        "reranking_model": {"reranking_provider_name": "", "reranking_model_name": ""},
+        "top_k": 8,
+        "score_threshold_enabled": False,
+        "score_threshold": 0,
+    }
 
 
 def log(msg):

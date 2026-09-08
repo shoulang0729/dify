@@ -25,7 +25,7 @@
         "invoice_file": null
       },
       "query": "",
-      "expect": ["0250815", "0250826", "csv"],
+      "expect": ["0250815", "0250826", "invoice_no", "amount_incl_tax"],
       "expect_not": []
     },
     {
@@ -37,7 +37,7 @@
         "invoice_file": null
       },
       "query": "",
-      "expect": ["warnings"],
+      "expect": [["税号", "tax_id"], ["記載されていません", "未記載", "不足"]],
       "expect_not": []
     },
     {
