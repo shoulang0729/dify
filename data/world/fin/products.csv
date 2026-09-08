@@ -1,0 +1,9 @@
+product_id,name_ja,name_zh,name_en,category,note
+loan-working,運転資金貸出,流动资金贷款,Working Capital Loan,lending,
+loan-capex,設備資金貸出,固定资产贷款,Capital Expenditure Loan,lending,
+fx-spot,外貨両替,外币兑换,Foreign Currency Exchange,fx,
+fx-forward,為替予約,远期结售汇,FX Forward Contract,fx,
+lc-trade,L/C・貿易金融,信用证・贸易融资,Letter of Credit & Trade Finance,trade,
+cms,キャッシュマネジメント,现金管理,Cash Management,cash,
+rmb-cross,クロスボーダー人民元送金,跨境人民币汇款,Cross-Border RMB Remittance,cash,
+fund-sales,投資信託販売,基金销售,Investment Fund Distribution,wealth,

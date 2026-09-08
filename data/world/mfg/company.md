@@ -39,7 +39,7 @@ This company, its people and all figures are fictional and unrelated to any real
 ## 規模（顧客に見せてよい説明・架空値）
 
 - 蘇州工場：製造二課ほか複数課体制、生産ライン L1〜L3（旋盤・プレス・組立の複数工程）
-- 主要顧客：`data/world/partners.csv` の `kind: customer`（記号のみ、社名は付けない。PM 決定 PT-8）
+- 主要顧客：`data/world/mfg/partners.csv` の `kind: customer`（記号のみ、社名は付けない。PM 決定 PT-8）
 
 ## 顧客に見せてよい説明（3 行）
 
