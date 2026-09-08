@@ -21,6 +21,11 @@
 直値で書いてよい（アプリ id は URL に出るもので秘密ではない）。顧客・社内 env は `${DIFY_APP_ID_<番号ハイフン無し>}`
 で渡す（`CLAUDE.md` §2-10）。`id: null` の行は `cloud_deploy.py --write-env` が新規作成後に書き戻す対象になる。
 
+**`cloud-master` の実 id は PM が Cloud のアプリ URL（`/app/<uuid>/…`）から確認して入れる**（`null` のままでも
+名前一致で動くが、入れておくと確実）。運用は「既定（`--write-env` を付けない）＝ stdout に断片を出すだけ」
+「`--write-env` を付けたときだけ `id: null` の行を書き換える」の 2 段（`git diff` を見てから commit する。
+YAML の整形を壊さないよう `null` 以外の行は書き換えない）。
+
 **注意**：`cloud-master` の `knowledge.*.id` を `${DIFY_DATASET_ID_*}` にしたため、その変数が **export された shell**
 で `render.py --env cloud-master --all --check` を回すと `dataset_ids` が焼き込まれてマスタと不一致になり `[DIFF]`
 （exit 1）になる。これは正しい挙動。**`--check` は必ず素の shell（`DIFY_DATASET_ID_*` を source していない状態。

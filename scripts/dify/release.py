@@ -15,8 +15,12 @@
                     G2 pipl_mask: on なら PIPL マスクノード（PC-10）の存在を警告付きで確認
                     G3 partner_mode: mock なら http-request ノードの宛先が実 API でないか警告付きで確認
   3. import         edition: selfhost → console_api.py（login → apps/import → publish）
-                    edition: cloud    → dify/build/<env>/IMPORT.md を生成して**ここで止まる**
-                       （Console API は Cloudflare / Cookie で壊れやすいので自動 import しない。§4-4）
+                    edition: cloud    → IMPORT.md を生成（証跡・手動フォールバック用）。
+                       DIFY_CONSOLE_TOKEN が set かつ --no-console-import でなければ、続けて
+                       scripts/dify/cloud_deploy.py の関数を import して自動インポート・公開まで進む
+                       （成功すれば止まらず後続の KB・test へ進む。失敗すれば stage=3-import で停止）。
+                       未設定／--no-console-import 指定のときは、従来どおり手動インポート待ちとして
+                       **ここで止まる**（設計: docs/handoff/2026-09-08-cloud-console-deploy.md §5）
   4. KB             kb_upload.py --env <env> <code>（dify/kb/<code>/ があるものだけ）
   5. test           run_tests.py --env <env> <code...> → dify/results/<env>/<番号>-<YYYYMMDD-HHMM>.md
   6. 記録           全件合格のときだけ dify/CHANGELOG.md に 1 行追記
@@ -24,8 +28,12 @@
                     **ローカルに作る**（push は人）。`--no-tag` で抑止
 
 `--dry-run`：1 (render) ・2 (ガード) ・3 (cloud なら IMPORT.md 生成) は実際に行うが、ネットワークは一切呼ばない
-（selfhost の login/import/publish はしない）。4・5・6・7 は実行予定のコマンド・タグ名を表示するだけで、
+（selfhost の login/import/publish、cloud の Console API 自動インポートのどちらもしない。DIFY_CONSOLE_TOKEN が
+set でも --dry-run では呼ばない）。4・5・6・7 は実行予定のコマンド・タグ名を表示するだけで、
 何も書き込まない（`dify/results/**` にも `dify/CHANGELOG.md` にも書かない。tag も作らない）。
+
+`--no-console-import`：cloud edition でも Console API を使わず、常に従来どおり IMPORT.md を書いて
+手動インポート待ちで止まる（DIFY_CONSOLE_TOKEN の有無に関係なく）。
 
 終了コード: 0 成功（cloud 経路で手動待ちのため途中で止まる場合も含む）/ 1 いずれかの段で失敗 / 2 引数・環境不備
 """
@@ -44,6 +52,7 @@ except ImportError:  # pragma: no cover
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import console_api  # noqa: E402  (scripts/dify/console_api.py。上の sys.path.insert が必要)
+import cloud_deploy  # noqa: E402  (scripts/dify/cloud_deploy.py。cloud 経路の自動インポートで関数を呼ぶだけ。§5)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 APPS_DIR = os.path.join(ROOT, "dify", "apps")
@@ -292,6 +301,76 @@ def do_import_selfhost(env_raw, out_dir, codes, dry_run):
     return app_ids
 
 
+def do_import_cloud_console(env_raw, out_dir, codes):
+    """cloud edition で DIFY_CONSOLE_TOKEN が使える（かつ --no-console-import でない）ときの自動インポート経路。
+    scripts/dify/cloud_deploy.py の関数を **サブプロセスではなく import して**呼ぶ（設計 §5）。
+    cloud_deploy.py 自体は変更しない（触らない範囲）。
+
+    戻り値: (app_ids, failures)。failures が空でなければ呼び出し側は ReleaseError を投げて
+    stage=3-import で停止する（従来どおり後続の KB・test には進まない）。
+    """
+    console_url = (
+        os.environ.get("DIFY_CONSOLE_URL", "").strip()
+        or expand((env_raw.get("dify") or {}).get("console_url") or "")
+    )
+    try:
+        client = console_api.client_from_env(console_url, timeout=120)
+    except console_api.ConsoleAuthError as e:
+        log(str(e))
+        log(console_api.TOKEN_HELP)
+        raise ReleaseError("Console API 認証エラー（トークン期限切れの可能性）") from None
+    except console_api.ConsoleAPIError as e:
+        raise ReleaseError(f"Console API に到達できません: {e}") from None
+
+    apps_cache = {"apps": None}
+    results = []
+    failures = []
+    warnings = []
+    adopt_by_name = True
+
+    for code in codes:
+        try:
+            _, yaml_text, name = cloud_deploy.load_build(out_dir, code)
+            app_id, source = cloud_deploy.resolve_app_id(
+                client, code, name, {}, env_raw, adopt_by_name, apps_cache,
+            )
+            route_label = "新規作成" if source == "new" else "上書き"
+            log(f"[import] [{code}] app_id={app_id or '(none)'}（{source}） → {route_label}インポート中…")
+            result_app_id, status, _import_id = client.import_dsl(yaml_text, app_id=app_id, return_details=True)
+            client.publish(result_app_id)
+            results.append({"code": code, "route": route_label, "app_id": result_app_id, "new": source == "new"})
+            log(f"[import] [{code}] 完了: app_id={result_app_id}（status={status}）→ 公開")
+        except console_api.ConsoleAuthError as e:
+            # 認証エラーは即座に停止する（Issue #114 §2-4 と同じ）
+            log(str(e))
+            log(console_api.TOKEN_HELP)
+            raise ReleaseError("Console API 認証エラー（トークン期限切れの可能性）") from None
+        except console_api.ConsoleAPIError as e:
+            msg = str(e)
+            if "接続失敗" in msg:
+                raise ReleaseError(f"この環境から Cloud に到達できません: {msg}") from None
+            log(f"[import] [{code}] [FAIL] {msg}")
+            failures.append((code, msg))
+        except cloud_deploy.CloudDeployError as e:
+            log(f"[import] [{code}] [FAIL] {e}")
+            failures.append((code, str(e)))
+
+    for w in warnings:
+        log("WARN: " + w)
+
+    cloud_deploy.print_report(
+        [{"code": r["code"], "route": r["route"], "app_id": r["app_id"], "published": True} for r in results],
+        failures,
+    )
+
+    new_ids = {r["code"]: r["app_id"] for r in results if r["new"]}
+    if new_ids:
+        cloud_deploy.print_write_env_fragment(new_ids)
+
+    app_ids = {r["code"]: r["app_id"] for r in results}
+    return app_ids, failures
+
+
 # ---------------------------------------------------------------------------
 # 4. KB
 # ---------------------------------------------------------------------------
@@ -416,6 +495,9 @@ def main():
     ap.add_argument("--dry-run", action="store_true",
                      help="render・ガード・(cloud なら)IMPORT.md 生成だけ実行し、他はコマンド表示のみ。ネットワークを呼ばない")
     ap.add_argument("--no-tag", action="store_true", help="合格しても git tag を作らない")
+    ap.add_argument("--no-console-import", action="store_true",
+                     help="cloud edition でも Console API を使わず、常に IMPORT.md による手動インポート待ちにする"
+                          "（DIFY_CONSOLE_TOKEN の有無に関係なく）")
     args = ap.parse_args()
 
     env_name = args.env
@@ -438,14 +520,42 @@ def main():
         stage = "3-import"
         edition = (env_raw.get("dify") or {}).get("edition")
         if edition == "cloud":
+            # IMPORT.md は自動経路でも証跡・手動フォールバック用に必ず生成する（設計 §5）
             write_import_md(env_name, edition, out_dir, codes)
-            log("[STOP] cloud 経路は自動 import しません。IMPORT.md の手順で Chrome から手動インポートしてから、"
-                "続き（KB・テスト）を人が判断して実行してください。")
-            log("実行予定（参考。手動インポート後に）:")
-            log(f"  python3 scripts/dify/kb_upload.py --env {env_name} <対象>")
-            log(f"  python3 scripts/dify/run_tests.py --env {env_name} {' '.join(codes)}")
-            log(f"  git tag {next_tag_name(env_name)}   # 全件合格後")
-            return 0
+            token_set = bool(os.environ.get("DIFY_CONSOLE_TOKEN", "").strip())
+
+            if args.dry_run:
+                # --dry-run はトークンの有無に関係なく、ここでネットワークを一切呼ばずに終わる（受け入れ条件 A5）
+                log("[import] (dry-run) cloud 経路: IMPORT.md 生成のみ。ネットワークは呼びません")
+                log("[STOP] --dry-run のため、ここで終了します（--dry-run を外すと DIFY_CONSOLE_TOKEN の"
+                    "有無で自動 import / 手動インポートのどちらに進むかが決まります）")
+                log("実行予定（参考）:")
+                log(f"  python3 scripts/dify/kb_upload.py --env {env_name} <対象>")
+                log(f"  python3 scripts/dify/run_tests.py --env {env_name} {' '.join(codes)}")
+                log(f"  git tag {next_tag_name(env_name)}   # 全件合格後")
+                return 0
+
+            use_console_api = token_set and not args.no_console_import
+            if not use_console_api:
+                reason = "--no-console-import 指定" if args.no_console_import else "DIFY_CONSOLE_TOKEN 未設定"
+                log(f"[import] cloud 経路: 手動（IMPORT.md）（{reason}）")
+                log("[STOP] cloud 経路は自動 import しません。IMPORT.md の手順で Chrome から手動インポートしてから、"
+                    "続き（KB・テスト）を人が判断して実行してください。")
+                log("実行予定（参考。手動インポート後に）:")
+                log(f"  python3 scripts/dify/kb_upload.py --env {env_name} <対象>")
+                log(f"  python3 scripts/dify/run_tests.py --env {env_name} {' '.join(codes)}")
+                log(f"  git tag {next_tag_name(env_name)}   # 全件合格後")
+                return 0
+
+            log("[import] cloud 経路: Console API（DIFY_CONSOLE_TOKEN: set）")
+            _app_ids, failures = do_import_cloud_console(env_raw, out_dir, codes)
+            if failures:
+                failed_codes = ", ".join(c for c, _ in failures)
+                raise ReleaseError(
+                    f"Console API 経由の import/publish が {len(failures)} 件失敗しました（{failed_codes}）。"
+                    f"{os.path.join('dify', 'build', env_name, 'IMPORT.md')} の手動手順に切り替えてください"
+                )
+            log("[import] Console API 経由のインポート・公開が完了しました。続けて KB・テストへ進みます。")
         elif edition != "selfhost":
             raise ReleaseError(f"dify.edition が不明です: {edition!r}（cloud/selfhost のいずれか）")
         else:
