@@ -121,7 +121,10 @@ const INDUSTRIES = [
   { id: 'fin',
     name:     { ja: '金融（銀行）', zh: '金融（银行）', en: 'Banking' },
     desc:     { ja: '在中日系銀行（中国拠点）', zh: '在华日资银行（中国网点）', en: 'Japanese-affiliated bank in China' },
-    wordmark: { ja: '瑞央銀行', zh: '瑞央银行', en: 'ZUIO BANK' },
+    /* 銀行名は 2026-09-08 に PM 判断で「碧洋銀行 / 碧洋银行 / Hekiyo Bank, Ltd.」へ確定
+       （data/world/fin/company.md 参照。当初案「瑞央銀行」は実在の邦銀「瑞穂」と頭文字が
+       紛らわしいため差し替え。§9 #4）。世界マスタの正本と一致させる */
+    wordmark: { ja: '碧洋銀行', zh: '碧洋银行', en: 'HEKIYO BANK' },
     dept:     { ja: '事務統括部', zh: '事务统筹部', en: 'Operations Planning Dept.' } }
 ];
 
@@ -188,7 +191,22 @@ const TAGS = {
   partner_procure:    { ja: '購買エージェント', zh: '采购代理',     en: 'Procurement agent' },
   partner_training:   { ja: '研修ベンダ',       zh: '培训服务商',   en: 'Training vendor' },
   credit:             { ja: '与信・リスク',     zh: '信用与风险',   en: 'Credit & risk' },
-  market:             { ja: '市況・業界',       zh: '行情与行业',   en: 'Market intel' }
+  market:             { ja: '市況・業界',       zh: '行情与行业',   en: 'Market intel' },
+
+  /* ---- 金融カタログ新設タグ 13 個（設計書 2026-09-08-finance-catalog.md §3-6） ---- */
+  news:        { ja: 'ニュース収集',     zh: '新闻收集',     en: 'News monitoring' },
+  disclosure:  { ja: '開示・IR',         zh: '信息披露・IR', en: 'Disclosure & IR' },
+  screening:   { ja: 'KYC・スクリーニング', zh: 'KYC与筛查',  en: 'KYC & screening' },
+  valuation:   { ja: 'バリュエーション', zh: '估值',         en: 'Valuation' },
+  modeling:    { ja: '財務モデル',       zh: '财务模型',     en: 'Financial modeling' },
+  closing:     { ja: '決算・クローズ',   zh: '结账・决算',   en: 'Close & reconciliation' },
+  proposal:    { ja: '提案・ピッチ',     zh: '提案与路演',   en: 'Proposals & pitches' },
+  client:      { ja: '顧客対応',         zh: '客户对接',     en: 'Client coverage' },
+  survey:      { ja: 'アンケート',       zh: '问卷调查',     en: 'Surveys' },
+  idea:        { ja: 'アイデア',         zh: '创意提案',     en: 'Ideas' },
+  workload:    { ja: '稼働・工数',       zh: '工时与稼动',   en: 'Workload & effort' },
+  dashboard:   { ja: 'ダッシュボード',   zh: '仪表盘',       en: 'Dashboards' },
+  datasource:  { ja: '外部データ源',     zh: '外部数据源',   en: 'External data sources' }
 };
 
 /* ============================================================

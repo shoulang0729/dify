@@ -42,6 +42,13 @@
     padding: 0 var(--space-6); height: 64px;
     background: var(--surface-header); border-bottom: 1px solid var(--border-subtle);
   }
+  /* 会社ロゴ（アイコン＋社名）。業種切替で両方が入れ替わる（PM 追加要件・Issue #120）。
+     アイコンは currentColor（--text-link）で着色。light #0071BC/白地 ≈5.1:1・dark #2E90FF/ヘッダー地 ≈5.6:1
+     （--action-primary は dark でも #0071BC のまま据え置かれておりヘッダー地で 3.5:1 しか出ないため使わない）。
+     実在企業のロゴに似せない幾何マーク */
+  .hdr .brand { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .hdr .brand-mark { display: inline-flex; width: 30px; height: 22px; color: var(--text-link); flex-shrink: 0; }
+  .hdr .brand-mark svg { width: 100%; height: 100%; }
   .hdr .wordmark {
     display: inline-flex; align-items: center; justify-content: center; height: 30px; padding: 0 14px;
     border: 1px dashed var(--border-default); border-radius: var(--radius-sm);

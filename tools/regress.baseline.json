@@ -7,7 +7,8 @@
     {
       "id": "kn",
       "industries": [
-        "mfg"
+        "mfg",
+        "fin"
       ],
       "subs": [
         {
@@ -19,7 +20,86 @@
         {
           "id": "rule",
           "industries": [
-            "mfg"
+            "mfg",
+            "fin"
+          ]
+        },
+        {
+          "id": "bizlog",
+          "industries": [
+            "fin"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rs",
+      "industries": [
+        "fin"
+      ],
+      "subs": [
+        {
+          "id": "news",
+          "industries": [
+            "fin"
+          ]
+        },
+        {
+          "id": "disc",
+          "industries": [
+            "fin"
+          ]
+        },
+        {
+          "id": "data",
+          "industries": [
+            "fin"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cv",
+      "industries": [
+        "fin"
+      ],
+      "subs": [
+        {
+          "id": "pitch",
+          "industries": [
+            "fin"
+          ]
+        },
+        {
+          "id": "credit",
+          "industries": [
+            "fin"
+          ]
+        },
+        {
+          "id": "kyc",
+          "industries": [
+            "fin"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fa",
+      "industries": [
+        "fin"
+      ],
+      "subs": [
+        {
+          "id": "close",
+          "industries": [
+            "fin"
+          ]
+        },
+        {
+          "id": "model",
+          "industries": [
+            "fin"
           ]
         }
       ]
@@ -47,13 +127,15 @@
     {
       "id": "dc",
       "industries": [
-        "mfg"
+        "mfg",
+        "fin"
       ],
       "subs": [
         {
           "id": "report",
           "industries": [
-            "mfg"
+            "mfg",
+            "fin"
           ]
         },
         {
@@ -133,7 +215,8 @@
     {
       "id": "gn",
       "industries": [
-        "mfg"
+        "mfg",
+        "fin"
       ],
       "subs": [
         {
@@ -145,7 +228,8 @@
         {
           "id": "daily",
           "industries": [
-            "mfg"
+            "mfg",
+            "fin"
           ]
         }
       ]
@@ -166,6 +250,45 @@
           "id": "service",
           "industries": [
             "mfg"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "po",
+      "industries": [
+        "mfg",
+        "fin"
+      ],
+      "subs": [
+        {
+          "id": "collect",
+          "industries": [
+            "mfg",
+            "fin"
+          ]
+        },
+        {
+          "id": "mgmt",
+          "industries": [
+            "mfg",
+            "fin"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "eg",
+      "industries": [
+        "mfg",
+        "fin"
+      ],
+      "subs": [
+        {
+          "id": "sysspec",
+          "industries": [
+            "mfg",
+            "fin"
           ]
         }
       ]
@@ -216,7 +339,8 @@
       "sub": "rule",
       "st": 2,
       "industries": [
-        "mfg"
+        "mfg",
+        "fin"
       ],
       "tags": [
         "faq",
@@ -229,7 +353,8 @@
       "sub": "rule",
       "st": 2,
       "industries": [
-        "mfg"
+        "mfg",
+        "fin"
       ],
       "tags": [
         "authority",
@@ -305,7 +430,8 @@
       "sub": "report",
       "st": 1,
       "industries": [
-        "mfg"
+        "mfg",
+        "fin"
       ],
       "tags": [
         "meeting",
@@ -381,7 +507,8 @@
       "sub": "report",
       "st": 2,
       "industries": [
-        "mfg"
+        "mfg",
+        "fin"
       ],
       "tags": [
         "report",
@@ -607,7 +734,8 @@
       "sub": "daily",
       "st": 2,
       "industries": [
-        "mfg"
+        "mfg",
+        "fin"
       ],
       "tags": [
         "calendar",
@@ -717,6 +845,310 @@
         "partner_training",
         "education"
       ]
+    },
+    {
+      "id": "kn6",
+      "cat": "kn",
+      "sub": "rule",
+      "st": 2,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "procedure",
+        "faq"
+      ]
+    },
+    {
+      "id": "kn7",
+      "cat": "kn",
+      "sub": "bizlog",
+      "st": 3,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "search",
+        "client"
+      ]
+    },
+    {
+      "id": "kn8",
+      "cat": "kn",
+      "sub": "rule",
+      "st": 2,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "authority",
+        "search"
+      ]
+    },
+    {
+      "id": "dc9",
+      "cat": "dc",
+      "sub": "report",
+      "st": 2,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "report",
+        "approval"
+      ]
+    },
+    {
+      "id": "rs1",
+      "cat": "rs",
+      "sub": "news",
+      "st": 2,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "news",
+        "market"
+      ]
+    },
+    {
+      "id": "rs2",
+      "cat": "rs",
+      "sub": "news",
+      "st": 3,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "news",
+        "credit"
+      ]
+    },
+    {
+      "id": "rs3",
+      "cat": "rs",
+      "sub": "disc",
+      "st": 2,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "disclosure",
+        "summary"
+      ]
+    },
+    {
+      "id": "rs4",
+      "cat": "rs",
+      "sub": "data",
+      "st": 2,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "datasource",
+        "market"
+      ]
+    },
+    {
+      "id": "rs5",
+      "cat": "rs",
+      "sub": "data",
+      "st": 3,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "dashboard",
+        "analysis"
+      ]
+    },
+    {
+      "id": "cv1",
+      "cat": "cv",
+      "sub": "pitch",
+      "st": 3,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "proposal",
+        "client"
+      ]
+    },
+    {
+      "id": "cv2",
+      "cat": "cv",
+      "sub": "pitch",
+      "st": 3,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "client",
+        "meeting"
+      ]
+    },
+    {
+      "id": "cv3",
+      "cat": "cv",
+      "sub": "credit",
+      "st": 3,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "credit",
+        "report"
+      ]
+    },
+    {
+      "id": "cv4",
+      "cat": "cv",
+      "sub": "kyc",
+      "st": 3,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "screening",
+        "audit"
+      ]
+    },
+    {
+      "id": "fa1",
+      "cat": "fa",
+      "sub": "close",
+      "st": 3,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "closing",
+        "finance"
+      ]
+    },
+    {
+      "id": "fa2",
+      "cat": "fa",
+      "sub": "close",
+      "st": 3,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "closing",
+        "report"
+      ]
+    },
+    {
+      "id": "fa3",
+      "cat": "fa",
+      "sub": "close",
+      "st": 3,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "audit",
+        "finance"
+      ]
+    },
+    {
+      "id": "fa4",
+      "cat": "fa",
+      "sub": "model",
+      "st": 3,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "modeling",
+        "disclosure"
+      ]
+    },
+    {
+      "id": "fa5",
+      "cat": "fa",
+      "sub": "model",
+      "st": 3,
+      "industries": [
+        "fin"
+      ],
+      "tags": [
+        "valuation",
+        "modeling"
+      ]
+    },
+    {
+      "id": "po1",
+      "cat": "po",
+      "sub": "collect",
+      "st": 3,
+      "industries": [
+        "mfg",
+        "fin"
+      ],
+      "tags": [
+        "survey",
+        "faq"
+      ]
+    },
+    {
+      "id": "po2",
+      "cat": "po",
+      "sub": "collect",
+      "st": 3,
+      "industries": [
+        "mfg",
+        "fin"
+      ],
+      "tags": [
+        "idea",
+        "survey"
+      ]
+    },
+    {
+      "id": "po3",
+      "cat": "po",
+      "sub": "collect",
+      "st": 3,
+      "industries": [
+        "mfg",
+        "fin"
+      ],
+      "tags": [
+        "education",
+        "kpi"
+      ]
+    },
+    {
+      "id": "po4",
+      "cat": "po",
+      "sub": "mgmt",
+      "st": 3,
+      "industries": [
+        "mfg",
+        "fin"
+      ],
+      "tags": [
+        "workload",
+        "kpi"
+      ]
+    },
+    {
+      "id": "eg1",
+      "cat": "eg",
+      "sub": "sysspec",
+      "st": 3,
+      "industries": [
+        "mfg",
+        "fin"
+      ],
+      "tags": [
+        "spec",
+        "faq"
+      ]
     }
   ],
   "tags": [
@@ -728,10 +1160,15 @@
     "calendar",
     "change4m",
     "claim",
+    "client",
+    "closing",
     "contract",
     "costing",
     "credit",
+    "dashboard",
+    "datasource",
     "defect",
+    "disclosure",
     "drawing",
     "education",
     "equipment",
@@ -739,11 +1176,14 @@
     "finance",
     "glossary",
     "hr",
+    "idea",
     "inventory",
     "kpi",
     "mail",
     "market",
     "meeting",
+    "modeling",
+    "news",
     "order",
     "partner_archive",
     "partner_infovendor",
@@ -752,17 +1192,22 @@
     "partner_salarydb",
     "partner_training",
     "procedure",
+    "proposal",
     "purchase",
     "regulation",
     "report",
     "report8d",
     "rootcause",
     "safety",
+    "screening",
     "search",
     "spec",
     "summary",
+    "survey",
     "trade",
-    "translate"
+    "translate",
+    "valuation",
+    "workload"
   ],
   "patterns": [
     {
@@ -859,15 +1304,15 @@
     "usesUnit"
   ],
   "counts": {
-    "cats": 8,
-    "subs": 17,
-    "svcs": 43,
-    "tags": 43,
+    "cats": 13,
+    "subs": 29,
+    "svcs": 66,
+    "tags": 56,
     "ui": 78,
-    "svcsMfg": 43,
-    "svcsFin": 0,
-    "svcsBoth": 0,
-    "catsMfg": 8,
-    "catsFin": 0
+    "svcsMfg": 48,
+    "svcsFin": 28,
+    "svcsBoth": 10,
+    "catsMfg": 10,
+    "catsFin": 8
   }
 }

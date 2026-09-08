@@ -111,6 +111,10 @@ const catIcon = (id, size) => `<svg class="ic ${size || ''}" viewBox="0 0 24 24"
 /** 分類アクセント色を要素に載せるクラス。未定義分類は空文字＝既定色（--cat-accent）のまま */
 const catClass = (id) => (CAT_STYLE[id] ? `cat-${id}` : '');
 
+/** 現在の業種のヘッダーロゴ（会社ロゴ・PM 追加要件。currentColor で着色するため
+    呼び出し側の CSS が色を決める。IND_LOGO に無い業種でも空の <svg> で壊れない） */
+const indLogo = () => `<svg viewBox="0 0 32 24" aria-hidden="true" focusable="false">${(IND_LOGO[state.industry] || {}).icon || ''}</svg>`;
+
 /** 入力テキストの言語を判定（ひらがな/カタカナ→ja、漢字のみ→zh、それ以外→UI言語）
     エージェントは UI 言語と無関係に日本語・中国語どちらの入力も受け付ける */
 function detectLang(s) {

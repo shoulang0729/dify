@@ -120,6 +120,18 @@
   --cat-gn-bg:   rgba(31, 122, 70, 0.12);
   --cat-pt:      #A8347A;
   --cat-pt-bg:   rgba(168, 52, 122, 0.12);
+  /* 金融カタログ新設 5 分類（設計書 2026-09-08-finance-catalog.md §4-10）。
+     白地で 4.5:1 以上（rs 8.66 / cv 7.45 / fa 6.32 / po 6.12 / eg 8.54） */
+  --cat-rs:      #34478C;
+  --cat-rs-bg:   rgba(52, 71, 140, 0.12);
+  --cat-cv:      #9C2B3A;
+  --cat-cv-bg:   rgba(156, 43, 58, 0.12);
+  --cat-fa:      #7A5B00;
+  --cat-fa-bg:   rgba(122, 91, 0, 0.12);
+  --cat-po:      #0E6E63;
+  --cat-po-bg:   rgba(14, 110, 99, 0.12);
+  --cat-eg:      #6B3389;
+  --cat-eg-bg:   rgba(107, 51, 137, 0.12);
 
   /* 既定値。CAT_STYLE / --cat-<id> が無い分類 id が来ても壊れないためのフォールバック（§2-9） */
   --cat-accent:    var(--action-primary);
@@ -201,6 +213,13 @@
   --cat-en:      #A9BACB;  --cat-en-bg: rgba(169, 186, 203, 0.18);
   --cat-gn:      #52C98A;  --cat-gn-bg: rgba(82, 201, 138, 0.18);
   --cat-pt:      #F07AC0;  --cat-pt-bg: rgba(240, 122, 192, 0.18);
+  /* 金融カタログ新設 5 分類（dark）。カード地 #111C30 で 4.5:1 以上
+     （rs 6.74 / cv 8.00 / fa 9.46 / po 10.38 / eg 7.87） */
+  --cat-rs:      #8CA0E8;  --cat-rs-bg: rgba(140, 160, 232, 0.18);
+  --cat-cv:      #F09AA3;  --cat-cv-bg: rgba(240, 154, 163, 0.18);
+  --cat-fa:      #E0BE55;  --cat-fa-bg: rgba(224, 190, 85, 0.18);
+  --cat-po:      #57DFC8;  --cat-po-bg: rgba(87, 223, 200, 0.18);
+  --cat-eg:      #D19DE8;  --cat-eg-bg: rgba(209, 157, 232, 0.18);
 
   /* --- ② ヒーロー帯・大きな数字用の成熟度色（dark） --- */
   --surface-hero:      #050B1A;
