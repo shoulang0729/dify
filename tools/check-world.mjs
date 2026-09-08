@@ -28,7 +28,10 @@
  *
  * 検査（すべて warn。FAIL にしない）:
  *   W1 人名：走査対象に出る人名が people.csv にあるか
- *   W2 役職ゆれ：同じ人名に複数の役職
+ *   W2 役職：台本の役職（persona.role）が people.csv の主務（title_*）または兼務
+ *      （alt_title_*。`;` 区切り）のいずれかと 3 言語すべて一致するか（Issue #153 PR-3 §6-2・§7-3。
+ *      旧実装は「同じ人名に複数の役職があること」自体を warn にしていたが、正本に兼務を
+ *      登録できるようにしたため「正本に無い役職」だけを検出する形に変えた）
  *   W3 拠点：company.md の拠点表にない拠点表記
  *   W4 社名：正式名称（ja/zh/en）の表記が company.md と一致するか。英名が使われていない
  *   W5 取引先記号：partners.csv / clients.csv に無い記号、表記ゆれ
@@ -323,27 +326,52 @@ function runIndustryChecks(ind) {
   }
 
   /* ---------------------------------------------------------- */
-  section(`[${ind}] W2. 役職ゆれ：同じ人名に複数の役職`);
+  section(`[${ind}] W2. 役職：台本の役職が people.csv（主務＋兼務）に登録されているか`);
   {
-    const byName = new Map();
+    // 役職の正本は people.csv。台本の persona.role は、主務（title_*）または
+    // 兼務（alt_title_*。`;` 区切りで複数、3 列とも同じ順序）のいずれかと
+    // 3 言語すべて一致すること（Issue #153 PR-3 §6-2・§7-3）。
+    // alt_title_* 列が無い CSV（列は用意されているが値が無い行を含む）でも
+    // 空として扱われるため、そのまま動く（後方互換）。
+    const rolesByName = new Map(); // name_ja → Array<{ja,zh,en}>
+    for (const p of people) {
+      if (!p.name_ja) continue;
+      const set = [];
+      if (p.title_ja || p.title_zh || p.title_en) {
+        set.push({ ja: p.title_ja || '', zh: p.title_zh || '', en: p.title_en || '' });
+      }
+      const altJa = (p.alt_title_ja || '').split(';').filter(Boolean);
+      const altZh = (p.alt_title_zh || '').split(';').filter(Boolean);
+      const altEn = (p.alt_title_en || '').split(';').filter(Boolean);
+      const n = Math.max(altJa.length, altZh.length, altEn.length);
+      for (let i = 0; i < n; i++) {
+        set.push({ ja: altJa[i] || '', zh: altZh[i] || '', en: altEn[i] || '' });
+      }
+      rolesByName.set(p.name_ja, set);
+    }
+
+    // warn は人物ごとに 1 件（メッセージ中に未登録の役職を列挙する。§7-3）
+    const unregisteredByName = new Map(); // name_ja → Map(role_ja → ids[])
     for (const id in scenarios) {
       const p = scenarios[id].persona;
       if (!p || !p.name || !p.role) continue;
       const key = p.name.ja;
-      if (!byName.has(key)) byName.set(key, new Map());
-      const roles = byName.get(key);
-      if (!roles.has(p.role.ja)) roles.set(p.role.ja, []);
-      roles.get(p.role.ja).push(id);
-    }
-    let n = 0;
-    for (const [name, roles] of byName) {
-      if (roles.size > 1) {
-        n++;
-        const detail = [...roles.entries()].map(([role, ids]) => `${role}（${ids.join(',')}）`).join(' / ');
-        report(`役職ゆれ: ${name} — ${detail}`);
+      const registered = rolesByName.get(key) || [];
+      const matched = registered.some(r => r.ja === p.role.ja && r.zh === p.role.zh && r.en === p.role.en);
+      if (!matched) {
+        if (!unregisteredByName.has(key)) unregisteredByName.set(key, new Map());
+        const roles = unregisteredByName.get(key);
+        if (!roles.has(p.role.ja)) roles.set(p.role.ja, []);
+        roles.get(p.role.ja).push(id);
       }
     }
-    if (!n) ok('役職ゆれなし');
+    let n = 0;
+    for (const [name, roles] of unregisteredByName) {
+      n++;
+      const detail = [...roles.entries()].map(([role, ids]) => `${role}（${ids.join(',')}）`).join(' / ');
+      report(`未登録の役職: ${name} — ${detail}`);
+    }
+    if (!n) ok('台本の役職はすべて people.csv（主務＋兼務）に登録済み');
     else console.log(`   計 ${n} 名`);
   }
 
