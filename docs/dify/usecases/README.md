@@ -1,4 +1,4 @@
-# docs/dify/usecases — サービス別 Dify 実装リファレンス（43 件）
+# docs/dify/usecases — サービス別 Dify 実装リファレンス（44 件）
 
 **1 サービス 1 ファイル。ファイル名＝管理番号**（`KN-02.md`）。雛形は [`_TEMPLATE.md`](./_TEMPLATE.md)、全体方針は [`../implementation-guide.md`](../implementation-guide.md)、共通部品は [`../platform-components.md`](../platform-components.md)、Outline は [`../outline-wiki-usecases.md`](../outline-wiki-usecases.md)。
 一覧の元：`docs/handoff/service-index.md`（管理番号・成熟度・デモ画面タイプ）、`../feasibility-33-services.md` §2（実現性 ◎○△）、`docs/handoff/2026-09-06-partner-usecases.md` §5（PT 系の実現性）。
@@ -56,6 +56,7 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 | [GN-04](./GN-04.md) | スケジュール調整 | GN/daily | 試行版 | qa | △ | PC-04（カレンダー） PC-05 PC-14 | 読 |
 | [GN-05](./GN-05.md) | 文書要約 | GN/daily | 提供中 | upload | ◎ | PC-03 PC-05 PC-06 PC-13 | 読・書（候補） |
 | [GN-06](./GN-06.md) | 頼まれ事・放置業務の追跡 | GN/daily | 試行版 | form | ○ | PC-01（主要な書き手） PC-04（人事マスタ） PC-05 PC-11 PC-13 PC-14 PC-17（境界） | 読・書（候補） |
+| [GN-07](./GN-07.md) | 幹部来訪・出張のアテンド段取り | GN/daily | 構想 | form | △ | PC-18（新規・主要な書き手） PC-13（ICS） PC-14 PC-04（M365 等） PC-01（出迎え通知） PC-11 PC-06 | 読・書 |
 | [PT-01](./PT-01.md) | 取引先・サプライヤーの与信・リスク監視 | PT/data | 試行版 | lookup | ○ | PC-01 PC-05 PC-11 PC-12 PC-14 PC-15 | 読・書 |
 | [PT-02](./PT-02.md) | 業界・材料相場リサーチ（本社報告の外部根拠） | PT/data | 試行版 | form | ○ | PC-05 PC-06 PC-11 PC-13 PC-15 | 読・書 |
 | [PT-03](./PT-03.md) | 業界誌・技術記事アーカイブの横断検索 | PT/data | 試行版 | qa | ○ | PC-05（任意） PC-06 PC-13 PC-15 | 読・書 |
@@ -77,7 +78,7 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 
 ## 依存 PC の逆引き（どの部品が何件を解放するか）
 
-`../platform-components.md` 末尾「先行して作る順」の根拠。共通 6（PC-02 07 08 09 10 16）は全 43 件。
+`../platform-components.md` 末尾「先行して作る順」の根拠。共通 6（PC-02 07 08 09 10 16）は全 44 件。
 
 | PC | 件数 | サービス |
 |---|---|---|

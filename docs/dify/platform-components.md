@@ -1,4 +1,4 @@
-# 共通部品（別出しが必要なもの）PC-01〜PC-17
+# 共通部品（別出しが必要なもの）PC-01〜PC-18
 
 Dify のアプリ（Chatflow／Workflow）だけでは成立しない部分を、サービス横断の**共通部品**として切り出したもの。
 `usecases/<管理番号>.md` の「依存する共通部品」「§8 別出しが必要なもの」はこの ID を参照する。**ID と名称は固定**（writer が既にこの ID で書いている）。
@@ -174,11 +174,11 @@ Dify のアプリ（Chatflow／Workflow）だけでは成立しない部分を�
 
 | 項目 | 内容 |
 |---|---|
-| 目的 | 成果物を **DOCX／XLSX／PDF／CSV** の社内フォーマットで返す（8D 報告書・稟議書・月報・見積比較表・基幹取込 CSV） |
+| 目的 | 成果物を DOCX／XLSX／PDF／CSV／**ICS** の社内フォーマットで返す（8D 報告書・稟議書・月報・見積比較表・基幹取込 CSV・**出張予定表と Outlook 取り込み用 ICS**） |
 | なぜ Dify 単体では足りないか | LLM の出力はテキスト／Markdown。帳票テンプレートへの流し込みと Office ファイル生成は外部処理が要る |
-| 実現案 | 自前 **レンダラ API**（python-docx／openpyxl／PDF 生成）：`POST /render` に `{ template_id, data(JSON) }` → ファイル URL（期限付き）。Dify からは `http-request` で呼び、`files` 出力を Answer／End で返す（ファイル受け取りの詳細は顧客版で実装時に確認）。テンプレート台帳：`template_id`／様式名／言語（ja/zh/両）／版／所管。Excel は `tools/microsoft_excel_365`（M365 なら）、pptx は `tools/slidespeak`（SaaS。越境確認）も選択肢。LLM の出力 JSON スキーマ＝テンプレートの差し込み項目にする（§6-8） |
+| 実現案 | 自前 **レンダラ API**（python-docx／openpyxl／PDF 生成）：`POST /render` に `{ template_id, data(JSON) }` → ファイル URL（期限付き）。Dify からは `http-request` で呼び、`files` 出力を Answer／End で返す（ファイル受け取りの詳細は顧客版で実装時に確認）。テンプレート台帳：`template_id`／様式名／言語（ja/zh/両）／版／所管。Excel は `tools/microsoft_excel_365`（M365 なら）、pptx は `tools/slidespeak`（SaaS。越境確認）も選択肢。LLM の出力 JSON スキーマ＝テンプレートの差し込み項目にする（§6-8）。ICS（iCalendar）：template_id: itinerary_ics。VTIMEZONE（Asia/Shanghai・Asia/Tokyo）を必ず入れ、METHOD:PUBLISH（共有。出席依頼にしない）、UID は {case_id}-{item_id}@{domain} で固定し版が上がったら SEQUENCE を +1 する（前の版を上書きできる）。**LLM に生成させない**（改行・エスケープ・タイムゾーンで壊れる）。GN-07 用 |
 | 依存する外部システム | 社内様式（Word/Excel テンプレート）の提供、M365 |
-| 使うサービス | QA-01（8D）DC-01（報告書）DC-03（教材）DC-05（稟議書）DC-07（契約ドラフト）NM-01 NM-02（見積表）NM-03（集計表）GN-01 GN-02 GN-03（CSV・照合表）LG-04（メール文）PT-02 PT-07（RFQ） |
+| 使うサービス | QA-01（8D）DC-01（報告書）DC-03（教材）DC-05（稟議書）DC-07（契約ドラフト）NM-01 NM-02（見積表）NM-03（集計表）GN-01 GN-02 GN-03（CSV・照合表）LG-04（メール文）PT-02 PT-07（RFQ）GN-07（予定表 PDF/XLSX・ICS・CSV） |
 | 段階導入 | 無い場合：Markdown／CSV テキストをそのまま表示（W1）。DOCX は W2 以降 |
 | 工数感 | M |
 | リスク | 様式の版違い／中国語フォント埋め込み／ファイル URL の権限（PC-02） |
@@ -238,6 +238,23 @@ Dify のアプリ（Chatflow／Workflow）だけでは成立しない部分を�
 | 段階導入 | 無くても DC-08 は動く（「前回照合なし」と明示して再発判定をしない）。第 1 段：Excel の表を人が更新し、次回はファイルで渡す。第 2 段：テーブル＋API（`GET`／`POST`）。第 3 段：`stats` と PC-01 への `due` 併載、期限超過の自動リマインド（PC-11＋PC-14） |
 | 工数感 | S（テーブル＋REST 3 本）／M（`stats` と PC-01 連携・権限まで含めて） |
 | リスク | **個人評価への転用**（最大。運用ルールと権限で塞ぐ）／指摘の粒度がばらつき `repeat_of` の紐付けが機械では決まらない（人が親を選ぶ UI が要る）／台帳が育つと「指摘のための指摘」が増える（月次で件数ではなく解決率を見る）／PC-01 との二重通知 |
+
+## PC-18 出張案件ストア
+
+| 項目 | 内容 |
+|---|---|
+| 目的 | 幹部の来訪・出張を**案件**として持ち、決まった事実を追記し、事実から予定表の**版**を切り、**誰に何版を配ったか**を覚える。GN-07 の本体 |
+| なぜ Dify 単体では足りないか | Dify の会話ログはアプリ単位・利用者単位。**案件という単位で複数人が事実を足す**／**版を切る**／**配布先を覚える**ことができない。PC-01 フィードストアは 1 行 1 タスクの平坦な表で、案件 → 事実 → 版 → 配布先の階層を持てない |
+| 実現案 | 4 テーブル。`visit_cases`（`case_id` `VST-YYYY-NNN`／`title`／`status` `draft`/`active`/`closed`／`owner_id`／`site_id`／`visitor_ids`／`start_date`/`end_date`）、`visit_facts`（`fact_id`／`case_id`／`kind` `arrival`/`departure`/`pickup`/`vehicle`/`hotel`/`meal`/`meeting`/`contact`/`route`/`note`／`payload` JSON／`reported_by`／`reported_at`／`source` `chat`/`mail`/`form`/`system`／`supersedes`／`confidence` `confirmed`/`tentative`。**上書きせず打ち消しで記録**）、`visit_itineraries`（`case_id`／`version`／`generated_at`／`fact_ids`／`diff_summary` ja/zh／`artifacts` PDF・XLSX・ICS・CSV の URL）、`visit_distributions`（`case_id`／`version`／`recipient`／`audience` `internal`/`external`／`lang`／`channel`／`sent_at`／`redaction_profile`）。API：`POST /visit/cases`、`POST /visit/cases/{id}/facts`、`GET /visit/cases/{id}`、`POST /visit/cases/{id}/itineraries`（版を切る）、`GET /visit/cases/{id}/itineraries/latest?lang=&audience=`、`POST /visit/cases/{id}/distributions`。実体は小さな Web サービス（DB ＋ REST）。簡易版は `tools/jiandaoyun`／`tools/microsoft_excel_365` の 4 シート |
+| 会食の「仕向け」 | `visit_facts.kind = meal` の `payload` に `direction`（`host_out` 当社→相手／`host_in` 相手→当社／`split` 折半）と `cost_bearer`（`us`/`counterpart`/`split`。既定は `direction` から導出、上書き可）を持つ。**稟議の区分と出席者の並べ方がこれで決まる**（GN-07.md §3 観点 5） |
+| 書き込む側 | GN-07（主要な書き手）。将来：秘書室のメール取り込み（PC-04）・M365 カレンダー |
+| 読む側 | GN-07／本番 UI（PC-16）の案件一覧／PC-01（当日の出迎え通知を `due` として起票）／PC-11（前日リマインド・版の再配布） |
+| 代替案 | 既存の BPMS／ワークフロー製品に「出張申請」があるなら、案件と事実をそちらに寄せて PC-18 は版と配布だけを持つ。二重管理を避けられる |
+| 依存する外部システム | SSO（PC-02）／M365 カレンダー・メール（PC-04）／社用車予約／ホテル手配 |
+| 使うサービス | GN-07（製造・金融の両業種） |
+| 段階導入 | 無い場合：1 案件 1 会話で完結させ、予定表は Markdown 表で返すだけ（版と配布は人が管理）＝モックのデモ相当。まず `visit_cases` と `visit_facts` の 2 テーブルだけで始め、版と配布は W2 で足す |
+| 工数感 | M（2 テーブル＋REST）／L（版・配布・社外版の伏せ字まで） |
+| リスク | 事実の重複投入（同じ変更が秘書室メールとチャットの両方から来る）→ `source_ref` で冪等に／相手方の個人情報の保持期間（PIPL・PC-10）／案件が長期化したときの版の増殖 |
 
 ---
 
