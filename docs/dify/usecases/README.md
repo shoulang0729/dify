@@ -121,13 +121,17 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 
 ## 実装の波（`../implementation-guide.md` §3）との対応
 
+**この表は 67 件すべてを覆う**（W1 8 ＋ W2 4 ＋ W3 14 ＋ W4 5 ＋ W5 10 ＋ W6 10 ＋ W7 16 ＝ 67。未割り当て 0）。成熟度の帯は波をまたがない：W1-W2 ＝ 提供中 12、W3-W5 ＝ 試行版 29、W6-W7 ＝ 構想 26。詳細は `docs/handoff/2026-09-08-implementation-order-v2.md` §3-1。
+
 | 波 | 管理番号 | 先に要る PC |
 |---|---|---|
-| W1 提供中・KB のみ | KN-01 KN-02 GN-05 LG-01 DC-04 LG-04 DC-01 DC-02 | 共通 6 の最低限 ＋ PC-03（手動）PC-06（初期用語） |
-| W2 提供中・データ整備 | KN-03 NM-03 GN-01 GN-02 | ＋ PC-02（HR 帯）PC-03（OCR）PC-11 PC-13 |
-| W3 試行版・文書系 | KN-04 KN-05 KN-06 KN-08 QA-01 QA-04 DC-03 DC-05 DC-08 DC-07 LG-02 LG-03 EN-01 NM-02 GN-03 GN-06 DC-09 | ＋ PC-05 PC-12 PC-14 PC-01 |
-| W4 試行版・システム連携 | QA-03 DC-06 NM-04 NM-05 EN-02 GN-04 PT-01 PT-02 PT-03 | ＋ PC-04 PC-15 |
-| W5 構想 | KN-07 QA-02 NM-01 EN-03 PT-04 PT-05 PT-06 PT-07 PT-08 PO-01〜04 EG-01 | ＋ 顧客判断・契約（DSL は雛形まで） |
+| W1 提供中・KB のみ（8） | KN-01 KN-02 GN-05 LG-01 DC-04 LG-04 DC-01 DC-02 | 共通 6 の最低限 ＋ PC-03（手動）PC-06（初期用語） |
+| W2 提供中・データ整備（4） | KN-03 NM-03 GN-01 GN-02 | ＋ PC-02（HR 帯）PC-03（OCR）PC-11 PC-13 |
+| W3 試行版・文書系（製造＋横断）（14） | KN-04 KN-05 QA-01 QA-04 DC-03 DC-05 DC-07 DC-08 LG-02 LG-03 EN-01 NM-02 GN-03 GN-06 | ＋ PC-05 PC-12 PC-14 PC-01 PC-17（DC-08 GN-06） |
+| W4 試行版・金融第一陣（5） | KN-06 KN-08 DC-09 RS-01 RS-03 | 新規 PC なし（W2・W3 の PC で足りる）。**着手条件：突合の無い 26 件分の実現性を `feasibility-33-services.md` §4 に書いてから着手する（PR-3）** |
+| W5 試行版・システム連携（10） | QA-03 DC-06 NM-04 NM-05 EN-02 GN-04 PT-01 PT-02 PT-03 RS-04 | ＋ PC-04（＋金融情報端末・契約 DB）PC-15 |
+| W6 構想・既存 PC の範囲（10） | RS-05 KN-07 RS-02 CV-01 CV-03 CV-04 FA-01 FA-03 FA-05 EG-01 | 新規 PC なし（PC-03 PC-05 PC-06 PC-12 PC-13 ＋ PC-10 の強化適用） |
+| W7 構想・外部ストア／契約が本体（16） | QA-02 NM-01 EN-03 PT-04 PT-05 PT-06 PT-07 PT-08 GN-07 CV-02 FA-02 FA-04 PO-01 PO-02 PO-03 PO-04 | ＋ PC-04 PC-08 PC-10 PC-15 PC-18（GN-07）。顧客判断・契約が先（DSL は雛形まで） |
 
 ## 分類別の共通事項（writer 向け）
 
@@ -167,7 +171,7 @@ End の JSON はモックの `Result` 型（`title` ＋ `items[]` または `col
 
 1. **管理番号＝ファイル名**。採番は `docs/handoff/service-index.md`「次に採番するとき」に従う（分類内の最大番号 +1、永久欠番）。管理番号は PM 承認後に付ける（Outline 由来の案は `../outline-wiki-usecases.md` の `OW-xx` のまま置く）
 2. 新規は `_TEMPLATE.md` をコピーし、**10 節すべて**を残す（書けない節は「未確定」と書く。節を消さない）
-3. プラグイン・URL は `../plugins-and-references.md` に載っているものだけ。共通部品は `../platform-components.md` の **PC-01〜16 の ID と名称**で参照する（新しい PC が要るときは architect が `platform-components.md` に追加してから）
+3. プラグイン・URL は `../plugins-and-references.md` に載っているものだけ。共通部品は `../platform-components.md` の **PC-01〜18 の ID と名称**で参照する（新しい PC が要るときは architect が `platform-components.md` に追加してから）
 4. テストシナリオの ID は `<管理番号> T<2 桁>`、6 種別（正常 ja／正常 zh／境界／異常／言語混在／安全）を各 1 件以上（`../implementation-guide.md` §5）
 5. **実データ・実名・顧客名・秘密情報を書かない**（仮社名は 青嶺精工。`CLAUDE.md` §2-10）。パートナーは役割名のみ（PT-8）
 6. 成熟度・名称・分類を変えるのは**モックのデータ層（`SVCS`）が正**。このディレクトリで先に変えない。モック側の変更が squash マージされたら本表を追従させる
