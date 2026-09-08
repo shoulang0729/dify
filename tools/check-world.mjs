@@ -9,6 +9,7 @@
  * 使い方:
  *   node tools/check-world.mjs            報告のみ。常に exit 0
  *   node tools/check-world.mjs --strict   1 件でも不一致なら exit 1（食い違いを潰す PR で使う）
+ *   node tools/check-world.mjs --all      W6/W7 のような件数が多い検査も全件表示する（既定は先頭 10 件＋「ほか N 件」）
  *   npm run world                          = node tools/check-world.mjs
  *
  * 業種（mfg / fin）ごとに data/world/<業種>/ のマスタと走査対象を対にして回す。
@@ -33,9 +34,19 @@
  *   W5 取引先記号：partners.csv / clients.csv に無い記号、表記ゆれ
  *   W6 文書番号：calendar.md の「文書番号の体系」表をパースして得た書式（knownPatterns）に
  *      合わない書式、および表に登録の無い接頭辞（Issue #133）。パース規則は
- *      parseCalendarPatterns()/segToRegexFrag() のコメントを参照
+ *      parseCalendarPatterns()/segToRegexFrag() のコメントを参照。
+ *      判定順序（Issue #153 PR-1 §7-2。正本の明示的な登録がツールの一般則より優先）：
+ *      ① 数字を含まない → 対象外 ／ ② calendar.md の書式に一致 → OK ／
+ *      ③ documents.csv の doc_id に実在 → OK（PR-2 で新設。無ければこの段はスキップ） ／
+ *      ④ 管理番号形式 ^[A-Z]{2}-\d{1,2}$ → 対象外 ／
+ *      ⑤ 品番・設備接頭辞（products.csv/equipment.csv 由来） → 対象外 ／
+ *      ⑥ 単独英字で calendar.md 未登録 → 対象外 ／ ⑦ それ以外 → warn。
+ *      あわせて、calendar.md に `^[A-Z]{2}-NN$` 形の書式を登録するとき、その接頭辞が
+ *      分類コード（CATS[].id の大文字化。§2-11）と衝突していないかも検査する
  *   W7 品番・設備：products.csv/equipment.csv に無いコード（fin は設備を持たないため skip）。
- *      管理番号形式（^[A-Z]{2}-\d{2}$）と衝突するコード
+ *      候補の接頭辞はハードコードせず products.csv の part_no・equipment.csv の equip_id の
+ *      先頭セグメントから組み立てる（Issue #153 PR-1 §5-3）。管理番号形式（^[A-Z]{2}-\d{2}$）と
+ *      衝突するコード
  *   W8 KPI：kpi.csv の指標名が出ているのに値が基準値・目標・前月のどれとも一致しない
  *   W9 カバレッジ：people.csv にあるがどこにも出てこない人物
  */
@@ -47,6 +58,7 @@ import { loadMock } from './lib/load.mjs';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const WORLD = resolve(ROOT, 'data/world');
 const strict = process.argv.includes('--strict');
+const showAll = process.argv.includes('--all');
 
 // 金融専用の分類コード（設計書 2026-09-08-finance-catalog.md §3-1）。
 // PO / EG は業種横断だが、現時点で実ファイル（dify/kb・dify/tests・docs/dify/usecases・台本）が
@@ -58,6 +70,21 @@ let currentInd = 'mfg';
 const section = (t) => console.log(`\n── ${t} ──`);
 const report = (m) => { warnCounts[currentInd]++; console.log('⚠️ ', m); };
 const ok = (m) => console.log('✅', m);
+
+// 件数が多い検査（W6/W7）用。集計は常に全件（items.length）、表示だけ既定 showMax 件に絞る。
+// 旧実装は表示キャップ（`if (n <= 10) report(...)`）の内側で集計していたため、
+// 11 件目以降は表示からも合計からも消えていた（Issue #153 PR-1 §7-1）。
+// --all を付けると表示も全件になる（「ほか N 件」の行は出ない）。
+function reportMany(label, items, showMax = 10) {
+  warnCounts[currentInd] += items.length; // 集計は全件
+  if (!items.length) return;
+  console.log('⚠️ ', `${label} ${items.length} 件`);
+  const shown = showAll ? items : items.slice(0, showMax);
+  for (const it of shown) console.log('    -', it);
+  if (items.length > shown.length) {
+    console.log(`    … ほか ${items.length - shown.length} 件（全件は --all）`);
+  }
+}
 
 /* ---------- CSV パーサ（簡易。ダブルクォート内のカンマ・改行に対応） ---------- */
 function parseCSV(text) {
@@ -155,7 +182,13 @@ function patternStrToRegex(patStr, warn) {
 
 // calendar.md の「## 文書番号の体系」表を走査し { patterns: RegExp[] } を返す。
 // 見出しのある表だけを対象にする（「世界の今日」節などの本文中のバックティックは拾わない）。
-function parseCalendarPatterns(md, warn) {
+//
+// categoryCodes が渡されたときは、歯止めの検査も行う（Issue #153 PR-1 §7-2）：
+// `^[A-Z]{2}-NN$` 形（2 文字接頭 ＋ 2 桁の書式プレースホルダそのまま）の書式を登録するとき、
+// その 2 文字が分類コード（CATS[].id を大文字化したもの。§2-11 の管理番号の接頭辞）と
+// 一致していたら warn する。正本が「これは文書番号の書式である」と宣言した接頭辞が、
+// 別の体系（管理番号 KN-01 等）の接頭辞と将来衝突しないようにするため
+function parseCalendarPatterns(md, warn, categoryCodes) {
   const idx = md.indexOf('## 文書番号の体系');
   const body = idx >= 0 ? md.slice(idx) : '';
   const patterns = [];
@@ -167,6 +200,12 @@ function parseCalendarPatterns(md, warn) {
     const patStrs = [...col0.matchAll(/`([^`]+)`/g)].map(x => x[1]);
     if (!patStrs.length) { warn(`calendar.md の表の行をパースできなかった: ${line.trim()}`); continue; }
     for (const patStr of patStrs) {
+      if (categoryCodes && /^[A-Z]{2}-NN$/.test(patStr)) {
+        const pfx = patStr.slice(0, 2);
+        if (categoryCodes.has(pfx)) {
+          warn(`calendar.md の書式 "${patStr}" の接頭辞 "${pfx}" は分類コード（CATS[].id を大文字化したもの）と衝突している。管理番号（${pfx}-01 等）と紛らわしいので別の接頭辞にする`);
+        }
+      }
       const parsed = patternStrToRegex(patStr, warn);
       if (parsed) patterns.push(parsed);
     }
@@ -177,6 +216,10 @@ function parseCalendarPatterns(md, warn) {
 
 /* ---------- 走査対象の準備（全体を 1 回だけ読み、業種ごとに振り分ける） ---------- */
 const mock = loadMock(ROOT);
+
+// 分類コード（§2-11 の管理番号の接頭辞。CATS[].id を大文字化）。W6 の歯止め検査で使う
+// （Issue #153 PR-1 §7-2）。現時点: KN RS CV FA QA DC LG NM EN GN PT PO EG
+const categoryCodes = new Set((mock.data.CATS || []).map(c => (c.id || '').toUpperCase()).filter(Boolean));
 
 function walkFiles(dir, exts) {
   const out = [];
@@ -231,6 +274,16 @@ function runIndustryChecks(ind) {
   const kpi = readCSV(dir, 'kpi.csv');
   const companyMd = readMd(dir, 'company.md');
   const calendarMd = readMd(dir, 'calendar.md');
+  const documents = readCSV(dir, 'documents.csv'); // PR-2 で新設。無ければ常に []（readCSV が existsSync で吸収）
+  const docIds = new Set(documents.map(d => d.doc_id).filter(Boolean));
+
+  // 品番・設備の接頭辞（W6 の除外・W7 の候補抽出で共用）。ハードコードせず products.csv の
+  // part_no と equipment.csv の equip_id の先頭セグメント（'-' より前）から組み立てる
+  // （Issue #153 PR-1 §5-3）。マスタに新しい接頭辞（例: HT）が増えれば自動で反映される
+  const partPrefixes = new Set([
+    ...products.map(p => (p.part_no || '').split('-')[0]),
+    ...equipment.map(e => (e.equip_id || '').split('-')[0]),
+  ].filter(Boolean));
 
   const { texts } = scanTextsFor(ind);
   const allText = texts.map(f => f.text).join('\n');
@@ -373,7 +426,7 @@ function runIndustryChecks(ind) {
   {
     // knownPatterns は calendar.md の「文書番号の体系」表から組み立てる（ハードコードしない。
     // Issue #133）。パース規則は parseCalendarPatterns() 付近のコメントを参照
-    const parsed = parseCalendarPatterns(calendarMd, (msg) => report(msg));
+    const parsed = parseCalendarPatterns(calendarMd, (msg) => report(msg), categoryCodes);
     const knownPatterns = parsed.map(p => p.re);
     // calendar.md に登録済みの単独英字接頭辞（現状 mfg の `C` のみ）。単独英字＋数字は
     // 大半が文書番号ではなく、金型・アラーム・様式番号などの別体系（下記 note 参照）なので、
@@ -393,24 +446,28 @@ function runIndustryChecks(ind) {
     // 途中で切り詰められた偽の候補を拾ってしまうのを防ぐ
     const CANDIDATE_RE = /(?<![A-Za-z0-9_])[A-Z]{1,4}(?:-[A-Za-z0-9]{1,4}){1,3}(?![A-Za-z0-9_-])/g;
     const candidates = new Set(w6Text.match(CANDIDATE_RE) || []);
-    let unknown = 0;
+    // 判定順序（Issue #153 PR-1 §7-2。正本の明示的な登録がツールの一般則より優先）：
+    //   ① 数字を含まない → 対象外
+    //   ② calendar.md の書式に一致 → OK（正本が明示的に宣言した書式を最優先。CM-NN/QC-NN 等）
+    //   ③ documents.csv の doc_id に実在 → OK（規程・社内 ID の台帳。PR-2 で新設。無ければ常にスキップ）
+    //   ④ 管理番号形式 ^[A-Z]{2}-\d{1,2}$ → 対象外（§2-11 の管理番号／PT-3・PT-8 のような
+    //      1 桁の PM 決定ラベルも拾わないよう \d{2} ではなく \d{1,2} にしている）
+    //   ⑤ 品番・設備接頭辞（products.csv/equipment.csv 由来） → 対象外（W7 の管轄）
+    //   ⑥ 単独英字で calendar.md 未登録 → 対象外（金型・アラーム・様式の別体系）
+    //   ⑦ それ以外 → warn
+    const unknownList = [];
     for (const c of candidates) {
-      if (!/\d/.test(c)) continue; // 数字を含まないものは文書番号ではない（英単語のハイフン結合等）
-      // 管理番号形式（§2-11 `^[A-Z]{2}-\d{2}$`）は文書番号とは別の採番体系（KN-01 等）。
-      // calendar.md 側にこの形の書式は無いため、除外しないと全件が「未登録」扱いになってしまう
-      if (/^[A-Z]{2}-\d{2}$/.test(c)) continue;
+      if (!/\d/.test(c)) continue; // ①
+      if (knownPatterns.some(re => re.test(c))) continue; // ②
+      if (docIds.has(c)) continue; // ③
+      if (/^[A-Z]{2}-\d{1,2}$/.test(c)) continue; // ④
       const prefix = c.split('-')[0];
-      // 品番・設備コード（W7 が products.csv/equipment.csv と突き合わせる別体系。例: PX-200・SK-3310-A）
-      // は文書番号ではないため W6 の対象外
-      if (/^(SK|PX|DO|ASSY|QS|J)$/.test(prefix)) continue;
-      // 単独英字接頭辞（未登録）は、金型・アラーム・様式番号や社内メモの略号（例: D-118・E-47・
-      // F-12・B-1）である可能性が高く、calendar.md が扱う「文書番号」の体系とは別物と見なして
-      // 対象外にする（calendar.md に登録済みの単独英字接頭辞は上の singleCharPrefixes で拾う）
-      if (prefix.length === 1 && !singleCharPrefixes.has(prefix)) continue;
-      if (!knownPatterns.some(re => re.test(c))) { unknown++; if (unknown <= 10) report(`calendar.md のどの書式にも一致しない文書番号らしき文字列（未登録の接頭辞の可能性）: ${c}`); }
+      if (partPrefixes.has(prefix)) continue; // ⑤
+      if (prefix.length === 1 && !singleCharPrefixes.has(prefix)) continue; // ⑥
+      unknownList.push(c); // ⑦
     }
-    if (unknown > 10) console.log(`   ほか ${unknown - 10} 件`);
-    if (!unknown) ok('文書番号は calendar.md の体系に一致（該当なしを含む）');
+    reportMany('calendar.md のどの書式にも一致しない文書番号らしき文字列（未登録の接頭辞の可能性）', unknownList);
+    if (!unknownList.length) ok('文書番号は calendar.md の体系に一致（該当なしを含む）');
   }
 
   /* ---------------------------------------------------------- */
@@ -418,17 +475,20 @@ function runIndustryChecks(ind) {
     section(`[${ind}] W7. 品番・設備：products.csv / equipment.csv に無いコード。管理番号形式との衝突`);
     const knownParts = new Set(products.map(p => p.part_no));
     const knownEquip = new Set(equipment.map(e => e.equip_id));
-    const candidates = new Set((allText.match(/\b(SK|PX|DO|ASSY|QS|J|D)-[A-Za-z0-9]{2,5}(-[A-Za-z0-9]+)?\b/g) || []));
-    let n = 0;
+    // 候補の接頭辞はハードコードせず partPrefixes（products.csv/equipment.csv 由来）から組み立てる
+    // （Issue #153 PR-1 §5-3）。長い接頭辞を先に試す（DO と D のように前方一致するものがあるため）
+    const prefixAlt = [...partPrefixes].sort((a, b) => b.length - a.length).map(escLit).join('|');
+    const candidateRe = prefixAlt ? new RegExp(`\\b(${prefixAlt})-[A-Za-z0-9]{2,5}(-[A-Za-z0-9]+)?\\b`, 'g') : null;
+    const candidates = new Set(candidateRe ? (allText.match(candidateRe) || []) : []);
+    const unknownList = [];
     for (const c of candidates) {
       if (knownParts.has(c) || knownEquip.has(c)) continue;
       const base = c.replace(/-[A-Z]$/, '');
       if (knownParts.has(base) || knownEquip.has(base)) continue;
-      n++;
-      if (n <= 15) report(`products.csv / equipment.csv に無いコード: ${c}`);
+      unknownList.push(c);
     }
-    if (n > 15) console.log(`   ほか ${n - 15} 件`);
-    if (!n) ok('品番・設備コードはすべて登録済み');
+    reportMany('products.csv / equipment.csv に無いコード', unknownList);
+    if (!unknownList.length) ok('品番・設備コードはすべて登録済み');
 
     const mgmtLike = new Set((allText.match(/\b[A-Z]{2}-\d{2}\b/g) || []).filter(c => !/^(RG|CL|WS|CM|QC|QR)-/.test(c)));
     if (mgmtLike.size) console.log(`   参考: 管理番号形式（[A-Z]{2}-\\d{2}）と同じ見た目のコード ${mgmtLike.size} 種（うち SVCS 管理番号と紛らわしいものは data/world/README.md の「未統一」#4 を参照）`);
