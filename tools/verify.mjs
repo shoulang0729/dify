@@ -30,6 +30,8 @@
  *        16 進 or base64 らしき文字列・cloud-master の既知 2 URL 以外の生 http(s):// URL）／
  *        `render.py --env cloud-master --all --check` が通ること（python3 が無ければ warn で skip）
  *        （設計書 docs/handoff/2026-09-07-repo-layout-v2.md §3-2・§4-2・§8 PR-2）
+ *   12-e.（新規）apps: の管理番号一覧が dify/apps/*.yml と過不足なく一致し、id が null/${VAR}/UUID 形のいずれかで、
+ *        cloud-master 以外に生 UUID が無いこと（設計書 docs/handoff/2026-09-08-cloud-console-deploy.md §3-4・Issue #114 PR-2）
  *
  * データの取り出しは tools/lib/load.mjs（node:vm で js/data/** を実行順に評価）を使う。
  * grab()（正規表現抽出）は廃止。
@@ -565,7 +567,7 @@ section('12. 環境レイヤー（dify/env/**）');
     if (!existsSync(resolve(ENV_ROOT, 'README.md'))) fail('dify/env/README.md が無い');
     else ok('dify/env/README.md あり');
 
-    const REQUIRED_TOP = ['schema', 'name', 'description', 'dify', 'models', 'knowledge', 'brand', 'flags', 'variables'];
+    const REQUIRED_TOP = ['schema', 'name', 'description', 'dify', 'models', 'knowledge', 'brand', 'flags', 'variables', 'apps'];
     const REQUIRED_DIFY = ['base_url', 'console_url', 'edition', 'dsl_version'];
     const REQUIRED_MODELS = ['chat', 'reasoning', 'embedding', 'rerank'];
     const REQUIRED_BRAND = ['company', 'local_entity', 'sites', 'replace'];
@@ -625,6 +627,56 @@ section('12. 環境レイヤー（dify/env/**）');
     }
     if (schemaOk) ok('全環境の env.yml が schema: 1 と必須キーを満たす');
     if (secretsOk) ok('dify/env/**/env.yml に秘密・実名の直値なし（sk- / 32+ hex-base64 / 想定外 URL）');
+
+    // 12-e: apps:（Cloud/セルフホストのアプリ id。管理番号は dify/apps/*.yml と 1:1。Issue #114 PR-2）
+    const APPS_DIR = resolve(ROOT, 'dify/apps');
+    const appCodesOnDisk = existsSync(APPS_DIR)
+      ? [...new Set(readdirSync(APPS_DIR).filter(f => f.endsWith('.yml')).map(f => f.split('-').slice(0, 2).join('-')))].sort()
+      : [];
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let appsOk = true;
+    for (const envName of envDirs) {
+      const p = resolve(ENV_ROOT, envName, 'env.yml');
+      if (!existsSync(p)) continue; // 既に上で fail 済み
+      const raw = readFileSync(p, 'utf8');
+      const lines = raw.split('\n');
+      const startIdx = lines.findIndex(l => /^apps:\s*$/.test(l));
+      if (startIdx === -1) { fail(`${envName}/env.yml に apps: ブロックが無い`); appsOk = false; continue; }
+
+      const entries = {};
+      for (let i = startIdx + 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (/^\S/.test(line)) break; // 次のトップレベルキーでブロック終端
+        if (line.trim() === '' || line.trim().startsWith('#')) continue;
+        const m = line.match(/^\s+([A-Za-z0-9_-]+):\s*\{\s*id:\s*(.+?)\s*\}\s*(#.*)?$/);
+        if (!m) { fail(`${envName}/env.yml の apps: に解釈できない行がある: ${line.trim()}`); appsOk = false; continue; }
+        entries[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
+      }
+
+      const codes = Object.keys(entries);
+      const badCode = codes.filter(c => !/^[A-Z]{2}-\d{2}$/.test(c));
+      if (badCode.length) { fail(`${envName}/env.yml の apps: に管理番号の形式でないキーがある: ${badCode.join(', ')}`); appsOk = false; }
+
+      const missing = appCodesOnDisk.filter(c => !codes.includes(c));
+      const extra = codes.filter(c => !appCodesOnDisk.includes(c));
+      if (missing.length) { fail(`${envName}/env.yml の apps: に無い管理番号（dify/apps/*.yml にはある）: ${missing.join(', ')}`); appsOk = false; }
+      if (extra.length) { fail(`${envName}/env.yml の apps: に dify/apps/*.yml に無い管理番号がある: ${extra.join(', ')}`); appsOk = false; }
+
+      for (const [code, idVal] of Object.entries(entries)) {
+        const isNull = idVal === 'null';
+        const isVar = /^\$\{[A-Za-z_][A-Za-z0-9_]*\}$/.test(idVal);
+        const isUuid = UUID_RE.test(idVal);
+        if (!isNull && !isVar && !isUuid) {
+          fail(`${envName}/env.yml の apps.${code}.id が null / \${VAR} / UUID のいずれでもない: ${idVal}`);
+          appsOk = false;
+        }
+        if (envName !== 'cloud-master' && isUuid) {
+          fail(`${envName}/env.yml の apps.${code}.id に生の UUID が書かれている（顧客環境の値は \${VAR} にする）: ${idVal}`);
+          appsOk = false;
+        }
+      }
+    }
+    if (appsOk) ok('全環境の env.yml の apps: が dify/apps/*.yml と一致し、id が null/${VAR}/UUID のいずれか（12-e）');
   }
 
   // 12-c: .gitignore（Secrets / Build）

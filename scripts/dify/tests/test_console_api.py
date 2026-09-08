@@ -87,6 +87,16 @@ def test_t1_mask():
     check("T1: app-... の値がマスクされる", "XyZ09aaaaaaaaaaaaaaaa" not in masked and "app-***" in masked, masked)
 
 
+def test_t1b_mask_case_insensitive():
+    """PR-1 レビュー指摘: bearer（小文字）・App-（先頭大文字）も素通りしないこと（Issue #114 PR-2）。"""
+    msg = "leak: bearer lowercasetoken123456 and App-UpperCaseId0000000000"
+    masked = console_api._mask(msg)
+    check("T1b: 小文字 bearer もマスクされる",
+          "lowercasetoken123456" not in masked and "bearer ***" in masked.lower(), masked)
+    check("T1b: 先頭大文字 App-... もマスクされる",
+          "UpperCaseId0000000000" not in masked and "app-***" in masked.lower(), masked)
+
+
 def test_t2_endpoints_table():
     for key in ("login", "apps", "apps_imports", "apps_imports_confirm", "workflows_publish", "workflows_draft"):
         check(f"T2: ENDPOINTS['{key}'] が定義されている", key in console_api.ENDPOINTS, str(console_api.ENDPOINTS.keys()))
@@ -206,6 +216,7 @@ def main():
     check("前提: mock_server.py が存在する", os.path.isfile(MOCK_SERVER))
 
     test_t1_mask()
+    test_t1b_mask_case_insensitive()
     test_t2_endpoints_table()
 
     port = free_port()
