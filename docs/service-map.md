@@ -54,23 +54,23 @@
 | KN-07 | 行内営業情報の検索（日誌・接触履歴） | KN/bizlog | 金融 | 構想 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | — | — | — |
 | KN-08 | 当局通達・ガイドラインDB（照会・過去比較） | KN/rule | 金融 | 試行版 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) diff | — | — | — | — |
 | DC-09 | 議案・報告書・提案書のドラフト作成（テンプレート選択） | DC/report | 金融 | 試行版 | — | [fin/dc.js](../mock/js/data/scenarios/fin/dc.js) form | — | — | — | — |
-| RS-01 | 企業・業界ニュースの自動収集と配信 | RS/news | 金融 | 試行版 | — | — | — | — | — | — |
-| RS-02 | セクター・発行体のモニタリング | RS/news | 金融 | 構想 | — | — | — | — | — | — |
-| RS-03 | 顧客IR・決算の収集と日本語要約・比較 | RS/disc | 金融 | 試行版 | — | — | — | — | — | — |
-| RS-04 | 市場・企業データの照会（金融情報端末・契約データベース） | RS/data | 金融 | 試行版 | — | — | — | — | — | — |
-| RS-05 | ダッシュボード出力からの気づき分析 | RS/data | 金融 | 構想 | — | — | — | — | — | — |
-| CV-01 | 提案・ピッチ資料の作成（候補先選定・比較企業分析） | CV/pitch | 金融 | 構想 | — | — | — | — | — | — |
-| CV-02 | 面談前ブリーフの作成 | CV/pitch | 金融 | 構想 | — | — | — | — | — | — |
-| CV-03 | 審査コメントのドラフト作成 | CV/credit | 金融 | 構想 | — | — | — | — | — | — |
-| CV-04 | KYCスクリーニングとエスカレーション整理 | CV/kyc | 金融 | 構想 | — | — | — | — | — | — |
-| FA-01 | GL勘定のリコンシリエーション | FA/close | 金融 | 構想 | — | — | — | — | — | — |
-| FA-02 | 月次クローズの実行と報告 | FA/close | 金融 | 構想 | — | — | — | — | — | — |
-| FA-03 | 財務諸表のレビュー（整合性・監査対応） | FA/close | 金融 | 構想 | — | — | — | — | — | — |
-| FA-04 | 財務モデルの作成と決算反映 | FA/model | 金融 | 構想 | — | — | — | — | — | — |
-| FA-05 | バリュエーションのレビュー | FA/model | 金融 | 構想 | — | — | — | — | — | — |
+| RS-01 | 企業・業界ニュースの自動収集と配信 | RS/news | 金融 | 試行版 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) form | — | — | — | — |
+| RS-02 | セクター・発行体のモニタリング | RS/news | 金融 | 構想 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) form | — | — | — | — |
+| RS-03 | 顧客IR・決算の収集と日本語要約・比較 | RS/disc | 金融 | 試行版 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) upload | — | — | — | — |
+| RS-04 | 市場・企業データの照会（金融情報端末・契約データベース） | RS/data | 金融 | 試行版 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) lookup | — | — | — | — |
+| RS-05 | ダッシュボード出力からの気づき分析 | RS/data | 金融 | 構想 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) upload | — | — | — | — |
+| CV-01 | 提案・ピッチ資料の作成（候補先選定・比較企業分析） | CV/pitch | 金融 | 構想 | — | [fin/cv.js](../mock/js/data/scenarios/fin/cv.js) form | — | — | — | — |
+| CV-02 | 面談前ブリーフの作成 | CV/pitch | 金融 | 構想 | — | [fin/cv.js](../mock/js/data/scenarios/fin/cv.js) form | — | — | — | — |
+| CV-03 | 審査コメントのドラフト作成 | CV/credit | 金融 | 構想 | — | [fin/cv.js](../mock/js/data/scenarios/fin/cv.js) upload | — | — | — | — |
+| CV-04 | KYCスクリーニングとエスカレーション整理 | CV/kyc | 金融 | 構想 | — | [fin/cv.js](../mock/js/data/scenarios/fin/cv.js) upload | — | — | — | — |
+| FA-01 | GL勘定のリコンシリエーション | FA/close | 金融 | 構想 | — | [fin/fa.js](../mock/js/data/scenarios/fin/fa.js) upload | — | — | — | — |
+| FA-02 | 月次クローズの実行と報告 | FA/close | 金融 | 構想 | — | [fin/fa.js](../mock/js/data/scenarios/fin/fa.js) form | — | — | — | — |
+| FA-03 | 財務諸表のレビュー（整合性・監査対応） | FA/close | 金融 | 構想 | — | [fin/fa.js](../mock/js/data/scenarios/fin/fa.js) upload | — | — | — | — |
+| FA-04 | 財務モデルの作成と決算反映 | FA/model | 金融 | 構想 | — | [fin/fa.js](../mock/js/data/scenarios/fin/fa.js) upload | — | — | — | — |
+| FA-05 | バリュエーションのレビュー | FA/model | 金融 | 構想 | — | [fin/fa.js](../mock/js/data/scenarios/fin/fa.js) upload | — | — | — | — |
 | PO-01 | アンケート・インタビュー収集 | PO/collect | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) qa | — | — | — | — |
 | PO-02 | アイデアの募集・蓄積・投票集計 | PO/collect | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) form | — | — | — | — |
 | PO-03 | 小テスト・コンプライアンスチェックの実施と集計 | PO/collect | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) form | — | — | — | — |
 | PO-04 | 稼働の集計とコスト配分の提案 | PO/mgmt | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) upload | — | — | — | — |
 | EG-01 | 上流工程の仕様支援（読解・質問回答・エラー対処） | EG/sysspec | 製造・金融 | 構想 | — | [fin/eg.js](../mock/js/data/scenarios/fin/eg.js) qa | — | — | — | — |
-| 集計 | — | — | — | — | ①製造 43 | ①金融 14 | ②12 | ③43 | ④KB 4 | ④テスト 12 |
+| 集計 | — | — | — | — | ①製造 43 | ①金融 28 | ②12 | ③43 | ④KB 4 | ④テスト 12 |
