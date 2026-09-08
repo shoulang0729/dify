@@ -15,6 +15,17 @@
 
 **アプリ側（`dify/apps/*.yml`）は増えない。** 顧客が増えても env を 1 枚足すだけ。
 
+## `apps:`（Cloud のアプリ id。`scripts/dify/cloud_deploy.py` が使う）
+
+`apps.<番号>.id` は `dify/apps/*.yml` と 1:1 の管理番号キー。`cloud-master` は実 id（またはまだ無ければ `null`）を
+直値で書いてよい（アプリ id は URL に出るもので秘密ではない）。顧客・社内 env は `${DIFY_APP_ID_<番号ハイフン無し>}`
+で渡す（`CLAUDE.md` §2-10）。`id: null` の行は `cloud_deploy.py --write-env` が新規作成後に書き戻す対象になる。
+
+**注意**：`cloud-master` の `knowledge.*.id` を `${DIFY_DATASET_ID_*}` にしたため、その変数が **export された shell**
+で `render.py --env cloud-master --all --check` を回すと `dataset_ids` が焼き込まれてマスタと不一致になり `[DIFF]`
+（exit 1）になる。これは正しい挙動。**`--check` は必ず素の shell（`DIFY_DATASET_ID_*` を source していない状態。
+CI もこの状態）で実行する**。
+
 ## 書いてよい値／書いてはいけない値
 
 | 置く | 置かない |

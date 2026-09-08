@@ -72,9 +72,10 @@ TOKEN_HELP = (
 )
 
 # 例外メッセージ・ログからトークン/キーらしき値を消す（CLAUDE.md §2-10）
+# re.IGNORECASE: "bearer"（小文字）や "App-"（先頭大文字）も素通りさせない（PR-1 レビュー指摘・Issue #114 PR-2）
 _MASK_PATTERNS = (
-    (re.compile(r"Bearer\s+\S+"), "Bearer ***"),
-    (re.compile(r"app-[A-Za-z0-9]+"), "app-***"),
+    (re.compile(r"Bearer\s+\S+", re.IGNORECASE), "Bearer ***"),
+    (re.compile(r"app-[A-Za-z0-9]+", re.IGNORECASE), "app-***"),
 )
 
 
