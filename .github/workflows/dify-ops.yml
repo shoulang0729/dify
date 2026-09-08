@@ -40,8 +40,7 @@ jobs:
     # ワークフローはこの environment を宣言するだけで、承認が済むまでここで止まる。
     environment: dify-cloud-master
     permissions:
-      contents: write        # 結果ブランチの push
-      pull-requests: write   # 結果 PR の作成
+      contents: write        # 結果ブランチの push（PR は作らないので pull-requests は不要）
     timeout-minutes: 45
     steps:
       - name: Checkout
@@ -223,10 +222,9 @@ jobs:
           echo "HAS_CHANGES=true" >> "$GITHUB_ENV"
           echo "変更パスガード: OK（$(echo "$changed" | wc -l) 件）" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Commit, push, and open PR
+      - name: Commit and push the result branch
         if: env.HAS_CHANGES == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
           OP: ${{ inputs.op }}
           CODES: ${{ inputs.codes }}
           ENV_NAME: ${{ inputs.env }}
@@ -249,27 +247,25 @@ jobs:
             echo "- 操作: \`${OP}\`"
             echo "- 対象: \`${CODES}\`"
             echo "- 環境: \`${ENV_NAME}\`"
+            echo "- 結果ブランチ: \`${BRANCH}\`"
             echo "- 実行ログ: ${RUN_URL}"
             echo
-            echo "GitHub ホストランナー（\`workflow_dispatch\` → \`dify-ops.yml\`）による自動実行です。"
-            echo "**このワークフローは main への直 push を行いません。マージは人が内容を読んでから行ってください**（CLAUDE.md §5）。"
+            echo "**PR はこのワークフローでは作りません。** 人が次のリンクから作ってください。"
+            echo
+            echo "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/new/${BRANCH}"
+            echo
+            echo "PR 作成を自動化するには Settings → Actions → General の"
+            echo "「Allow GitHub Actions to create and approve pull requests」を ON にする必要があるが、"
+            echo "この設定は PR の**承認**能力も同時に与えるため、PM 判断で ON にしない（#121 W1）。"
+            echo
+            echo "**main への直 push は行っていません。マージは人が内容を読んでから**（CLAUDE.md §5）。"
             echo
             echo "### 変更ファイル"
             echo
             echo '```'
             cat /tmp/dify-ops-changed.txt
             echo '```'
-            echo
-            echo "詳しい合否は上の実行ログの Job Summary、または本 PR の diff（\`dify/results/**\`）を参照。"
-          } > /tmp/dify-ops-pr-body.md
-
-          gh pr create \
-            --title "dify-ops(${ENV_NAME}): ${OP} ${CODES}" \
-            --body-file /tmp/dify-ops-pr-body.md \
-            --base main \
-            --head "$BRANCH"
-          # run:runner ラベルが登録済みなら付ける（無ければスキップ。W1 では必須にしない）
-          gh pr edit "$BRANCH" --add-label run:runner 2>/dev/null || true
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail the job if any operation failed
         if: always()
