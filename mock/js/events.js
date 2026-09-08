@@ -9,7 +9,16 @@ document.addEventListener('click', (e) => {
   if (!btn || btn.disabled) return;
   const act = btn.dataset.act, arg = btn.dataset.arg;
 
-  if (act === 'pattern') { state.pattern = arg; renderAll(); }
+  if (act === 'industry') {
+    state.industry = arg;
+    const firstCat = (visCats()[0] || {}).id || null;
+    state.openCats = firstCat ? { [firstCat]: true } : {};
+    state.selCat = null; state.selSub = null; state.selSvc = null;
+    state.lastCat = firstCat;
+    state.view = 'list'; state.query = ''; state.log = [];
+    renderAll();
+  }
+  else if (act === 'pattern') { state.pattern = arg; renderAll(); }
   else if (act === 'all') { state.selCat = null; state.selSub = null; state.view = 'list'; renderAll(); }
   else if (act === 'cat') {
     const open = !!state.openCats[arg];

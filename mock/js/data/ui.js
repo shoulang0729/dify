@@ -8,10 +8,9 @@
    ============================================================ */
 const T = {
   mockLabel:    { ja: 'CONCEPT MOCK — 社内検討用', zh: 'CONCEPT MOCK — 内部讨论用', en: 'CONCEPT MOCK — Internal review' },
+  indLabel:     { ja: '業種:', zh: '行业:', en: 'Industry:' },
   segLabel:     { ja: 'パターン:', zh: '方案:', en: 'Pattern:' },
-  wordmark:     { ja: '青嶺精工', zh: '青岭精工', en: 'SEIREI SEIKO' },
   appTitle:     { ja: 'AIエージェントカタログ', zh: 'AI智能体服务目录', en: 'AI Agent Catalog' },
-  dept:         { ja: '情報システム部', zh: '信息系统部', en: 'IT Department' },
   allServices:  { ja: 'すべてのサービス', zh: '全部服务', en: 'All Services' },
   all:          { ja: 'すべて', zh: '全部', en: 'All' },
   home:         { ja: 'ホーム', zh: '首页', en: 'Home' },
@@ -107,6 +106,24 @@ const T = {
                   zh: '新智能体 {code} 已可使用。打开详情即可查看演示。',
                   en: 'A new agent, {code}, is available. Open the details to try the demo.' }
 };
+
+/* ============================================================
+   1a. 業種定義（`.mockbar` の業種切替＝レビュー用の足場。§4-1・§4-3）
+   会社名・部署名はここに置く（T には置かない）。CATS/subs/SVCS の
+   `industries` で参照する業種 id は必ずこの配列の id と一致すること
+   ============================================================ */
+const INDUSTRIES = [
+  { id: 'mfg',
+    name:     { ja: '製造業',   zh: '制造业',   en: 'Manufacturing' },
+    desc:     { ja: '在中日系製造業（中国工場）', zh: '在华日资制造业（中国工厂）', en: 'Japanese-affiliated manufacturer in China' },
+    wordmark: { ja: '青嶺精工', zh: '青岭精工', en: 'SEIREI SEIKO' },
+    dept:     { ja: '情報システム部', zh: '信息系统部', en: 'IT Department' } },
+  { id: 'fin',
+    name:     { ja: '金融（銀行）', zh: '金融（银行）', en: 'Banking' },
+    desc:     { ja: '在中日系銀行（中国拠点）', zh: '在华日资银行（中国网点）', en: 'Japanese-affiliated bank in China' },
+    wordmark: { ja: '瑞央銀行', zh: '瑞央银行', en: 'ZUIO BANK' },
+    dept:     { ja: '事務統括部', zh: '事务统筹部', en: 'Operations Planning Dept.' } }
+];
 
 /* パターン定義（表示レイヤーの選択肢） */
 const PATTERNS = [

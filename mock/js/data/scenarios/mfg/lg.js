@@ -4,7 +4,8 @@
    値は 1 バイトも変えていない（抽出コマンドの再実行で diff ゼロを確認）。 */
 
 window.SCENARIOS = window.SCENARIOS || {};
-Object.assign(window.SCENARIOS, {
+window.SCENARIOS.mfg = window.SCENARIOS.mfg || {};
+Object.assign(window.SCENARIOS.mfg, {
   lg1: { template: 'form',
     persona: { name: { ja: '呉 婷', zh: '吴婷', en: 'Wu Ting' },
                role: { ja: '工場長室 秘書・通訳', zh: '厂长办公室 秘书・翻译', en: 'Plant Manager Office Secretary & Interpreter' },

@@ -10,7 +10,8 @@
        §2-1（3 言語同時）の対象外とする ―― 開発者向けの起動失敗表示であって UI 文言ではない */
 (function () {
   var missing = [];
-  if (typeof T === 'undefined')          missing.push('js/data/ui.js (T/PATTERNS/TAGS/TEMPLATES)');
+  if (typeof T === 'undefined' || typeof INDUSTRIES === 'undefined')
+                                         missing.push('js/data/ui.js (T/PATTERNS/TAGS/TEMPLATES/INDUSTRIES)');
   if (typeof CATS === 'undefined' || typeof SVCS === 'undefined') missing.push('js/data/catalog.js (CATS/SVCS)');
   if (typeof HOME === 'undefined' || typeof FEED === 'undefined') missing.push('js/data/home.js (HOME/FEED)');
   if (typeof CAT_STYLE === 'undefined')  missing.push('js/data/style.js (CAT_STYLE)');
@@ -31,6 +32,7 @@
    pattern を切り替えても選択位置は保持され、直接比較できる
    ============================================================ */
 const state = {
+  industry: 'mfg',        // 'mfg' | 'fin'。localStorage には保存しない（§4-5：pattern と同じ足場の一時状態）
   pattern: 'nav',
   lang: 'ja',
   theme: 'light',
@@ -53,11 +55,21 @@ const L = (obj) => (obj && (obj[state.lang] ?? obj.ja)) || '';
 const t = (key) => L(T[key]);
 const tag = (key) => L(TAGS[key]) || key;
 
-const catOf = (id) => CATS.find(c => c.id === id);
+/* ---- 業種（.mockbar の業種切替。§1・§4-4）----
+   業種は「どのデータを読むか」だけを変え、描画の分岐は増やさない（§2-3 を維持）。
+   svcOf(id) だけは全件（visSvcs() ではなく SVCS 全体）から引く（§4-4）。 */
+const ind = () => INDUSTRIES.find(i => i.id === state.industry);
+const inInd = (x) => x.industries.includes(state.industry);
+const visCats = () => CATS.filter(inInd).map(c => Object.assign({}, c, { subs: c.subs.filter(inInd) }));
+const visSvcs = () => SVCS.filter(inInd);
+const home = () => HOME[state.industry];
+const feed = () => FEED[state.industry];
+
+const catOf = (id) => visCats().find(c => c.id === id);
 const subOf = (catId, subId) => { const c = catOf(catId); return c && c.subs.find(b => b.id === subId); };
 const svcOf = (id) => SVCS.find(x => x.id === id);
-const countSub = (subId) => SVCS.filter(x => x.sub === subId).length;
-const countCat = (catId) => SVCS.filter(x => x.cat === catId).length;
+const countSub = (subId) => visSvcs().filter(x => x.sub === subId).length;
+const countCat = (catId) => visSvcs().filter(x => x.cat === catId).length;
 /* st: 1 提供中 / 2 試行版 / 3 構想 */
 const statusText = (st) => st === 1 ? t('statusLive') : st === 2 ? t('statusTrial') : t('statusConcept');
 const statusClass = (st) => st === 1 ? 'live' : st === 2 ? 'trial' : 'concept';
@@ -91,7 +103,7 @@ const daysSince = (added) => {
 /** NEW を出すか（追加日から NEW_DAYS 日以内。未来日も NEW 扱い） */
 const isNew = (x) => { const d = daysSince(x && x.added); return d !== null && d < NEW_DAYS; };
 /** 新着サービスを added の新しい順に返す（同日は SVCS の並び順を保つ＝安定ソート） */
-const newSvcs = () => SVCS.filter(isNew).sort((a, b) => (a.added < b.added ? 1 : a.added > b.added ? -1 : 0));
+const newSvcs = () => visSvcs().filter(isNew).sort((a, b) => (a.added < b.added ? 1 : a.added > b.added ? -1 : 0));
 
 /** 分類アイコン。size は 'ic-sm'(16) / ''(20) / 'ic-lg'(24) / 'ic-xl'(28)
     未知の分類 id でも _fallback で必ず描ける（§2-9） */
@@ -109,7 +121,7 @@ function detectLang(s) {
 const countText = (n) => state.lang === 'en' ? (n + t('countUnit')) : (n + t('countUnit'));
 
 function filtered() {
-  let list = SVCS;
+  let list = visSvcs();
   if (state.selSub) list = list.filter(x => x.sub === state.selSub);
   else if (state.selCat) list = list.filter(x => x.cat === state.selCat);
   const q = state.query.trim().toLowerCase();
@@ -137,7 +149,7 @@ const demoDelay = (text) => Math.min(DEMO_REPLY_MS.max,
     freeform（台本が尽きた後の汎用返答）の pending は再描画されたら諦める（msgs 自体が作り直されるため） */
 let demoPending = false;
 let demoPendingFreeform = false;
-const scnOf = (id) => SCENARIOS[id] || null;
+const scnOf = (id) => (SCENARIOS[state.industry] || {})[id] || null;
 /** 台本は ja / zh のみ。UI が en のときは ja の台本を使う（§2-5：エージェント本体は日中） */
 const scriptLang = (l) => (l === 'zh' ? 'zh' : 'ja');
 /** 次に消費する台本ターン（尽きていれば null） */

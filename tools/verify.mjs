@@ -57,7 +57,14 @@ if (!existsSync(HTML)) { fail(`not found: ${HTML}`); process.exit(1); }
 
 const mock = loadMock(ROOT);
 const { html, indexHtml, cssLinks, scriptSrcs, tokenCss, componentCss, jsSources, dataSources, appSources, data, vmErrors } = mock;
-const { T, PATTERNS, TAGS, TEMPLATES, CATS, SVCS, CAT_STYLE, HOME, FEED, SCENARIOS } = data;
+const { T, PATTERNS, TAGS, TEMPLATES, INDUSTRIES, CATS, SVCS, CAT_STYLE, HOME, FEED, SCENARIOS } = data;
+const INDUSTRY_ORDER = ['mfg', 'fin'];
+const industryIds = new Set((INDUSTRIES || []).map(i => i.id));
+/* 分類の表示順（業種ごと。§4-3。台本ディレクトリの期待順序にも使う） */
+const CAT_ORDER_BY_INDUSTRY = {
+  mfg: ['kn', 'qa', 'dc', 'lg', 'nm', 'en', 'gn', 'pt', 'po', 'eg'],
+  fin: ['kn', 'rs', 'cv', 'fa', 'dc', 'gn', 'po', 'eg']
+};
 
 // 全 JS（データ層 + アプリ層）の連結テキスト。§3/4（未定義・未使用キー参照）と §1-A（二重宣言）で使う
 const allJsInOrder = [...dataSources, ...appSources];
@@ -106,40 +113,62 @@ section('1-B. 読み込み契約');
   }
   if (!bad) ok(`<script src> ${scriptSrcs.length} 本すべて実ファイル・相対パス`);
 
-  // ③ js/data/scenarios/ のタグ集合＝ディレクトリの *.js 集合
+  // ③ js/data/scenarios/<業種>/ のタグ集合＝ディレクトリの *.js 集合（業種ごと）。
+  //    scenarios/ 直下に .js が残っていたら移動漏れとして FAIL（設計書 §4-6）
   const scenDir = resolve(MOCK, 'js/data/scenarios');
+  let scenarioIndustryDirs = [];
   if (!existsSync(scenDir)) { fail('mock/js/data/scenarios/ が無い'); bad++; }
   else {
-    const dirFiles = new Set(readdirSync(scenDir).filter(f => f.endsWith('.js')));
-    const taggedFiles = new Set(scriptSrcs.filter(s => s.startsWith('js/data/scenarios/')).map(s => basename(s)));
-    const missingFromTags = [...dirFiles].filter(f => !taggedFiles.has(f));
-    const missingFromDir = [...taggedFiles].filter(f => !dirFiles.has(f));
-    if (missingFromTags.length) { fail(`scenarios/ にあるが <script src> に無い: ${missingFromTags.join(', ')}`); bad++; }
-    if (missingFromDir.length) { fail(`<script src> にあるが scenarios/ に無い: ${missingFromDir.join(', ')}`); bad++; }
-    if (!missingFromTags.length && !missingFromDir.length) ok(`scenarios/ の *.js ${dirFiles.size} 個 ＝ <script src> のタグ集合`);
+    const entries = readdirSync(scenDir, { withFileTypes: true });
+    const looseFiles = entries.filter(e => e.isFile() && e.name.endsWith('.js')).map(e => e.name);
+    if (looseFiles.length) { fail(`scenarios/ 直下に .js が残っている（<業種>/ への移動漏れ）: ${looseFiles.join(', ')}`); bad++; }
+    scenarioIndustryDirs = entries.filter(e => e.isDirectory()).map(e => e.name).sort();
+    let scenBad = 0;
+    for (const indId of scenarioIndustryDirs) {
+      const dirFiles = new Set(readdirSync(resolve(scenDir, indId)).filter(f => f.endsWith('.js')));
+      const taggedFiles = new Set(scriptSrcs.filter(s => s.startsWith(`js/data/scenarios/${indId}/`)).map(s => basename(s)));
+      const missingFromTags = [...dirFiles].filter(f => !taggedFiles.has(f));
+      const missingFromDir = [...taggedFiles].filter(f => !dirFiles.has(f));
+      if (missingFromTags.length) { fail(`scenarios/${indId}/ にあるが <script src> に無い: ${missingFromTags.join(', ')}`); scenBad++; }
+      if (missingFromDir.length) { fail(`<script src> にあるが scenarios/${indId}/ に無い: ${missingFromDir.join(', ')}`); scenBad++; }
+    }
+    bad += scenBad;
+    if (!scenBad && !looseFiles.length) {
+      const total = scenarioIndustryDirs.reduce((n, d) => n + readdirSync(resolve(scenDir, d)).filter(f => f.endsWith('.js')).length, 0);
+      ok(`scenarios/<業種>/ の *.js 合計 ${total} 個（業種 ${scenarioIndustryDirs.join(', ')}） ＝ <script src> のタグ集合`);
+    }
   }
 
-  // ④ 読み込み順が data/ui → data/catalog → data/home → data/style → data/scenarios/* → app → render → events（設計順・PR-C で確定）
-  const scenarioOrder = ['kn', 'qa', 'dc', 'lg', 'nm', 'en', 'gn', 'pt'];
+  // ④ 読み込み順が data/ui → data/catalog → data/home → data/style → data/scenarios/mfg/* → data/scenarios/fin/* → app → render → events
+  //    （設計書 2026-09-08-finance-catalog.md §4-3。業種ディレクトリは実ディレクトリから、ファイル順は CAT_ORDER_BY_INDUSTRY から計算する）
+  const presentIndustries = INDUSTRY_ORDER.filter(i => scenarioIndustryDirs.includes(i));
+  const scenarioExpectedTags = presentIndustries.flatMap(indId => {
+    const dirFiles = new Set(readdirSync(resolve(scenDir, indId)).filter(f => f.endsWith('.js')));
+    const ordered = (CAT_ORDER_BY_INDUSTRY[indId] || []).filter(code => dirFiles.has(`${code}.js`));
+    const extra = [...dirFiles].filter(f => !ordered.includes(basename(f, '.js'))).sort();
+    return [...ordered, ...extra.map(f => basename(f, '.js'))].map(code => `js/data/scenarios/${indId}/${code}.js`);
+  });
   const expectedOrder = [
     'js/data/ui.js', 'js/data/catalog.js', 'js/data/home.js', 'js/data/style.js',
-    ...scenarioOrder.map(p => `js/data/scenarios/${p}.js`),
+    ...scenarioExpectedTags,
     'js/app.js', 'js/render.js', 'js/events.js'
   ];
   if (JSON.stringify(scriptSrcs) !== JSON.stringify(expectedOrder)) {
-    fail(`<script src> の順序が設計書 §2-1 と異なる:\n   期待: ${expectedOrder.join(' → ')}\n   実際: ${scriptSrcs.join(' → ')}`);
+    fail(`<script src> の順序が設計書 §4-3 と異なる:\n   期待: ${expectedOrder.join(' → ')}\n   実際: ${scriptSrcs.join(' → ')}`);
     bad++;
-  } else ok('<script src> の順序が設計書 §2-1 と一致（data/ui → … → data/scenarios/pt → app → render → events）');
+  } else ok('<script src> の順序が設計書 §4-3 と一致（data/ui → … → data/scenarios/<業種>/* → app → render → events）');
 
-  // ⑤ <script> タグ 15 本すべてが src 付き（インライン <script> が 0 個）
+  // ⑤ <script> タグすべてが src 付き（インライン <script> が 0 個）。本数は実ディレクトリから計算
+  //    （4 = data/ui+catalog+home+style／業種ごとの台本ファイル数／3 = app+render+events）
   const scriptTagCount = [...html.matchAll(/<script\b/g)].length;
+  const expectedCount = 4 + scenarioExpectedTags.length + 3;
   if (scriptTagCount !== scriptSrcs.length) {
     fail(`catalog.html の <script> タグ ${scriptTagCount} 個のうち src 無しが ${scriptTagCount - scriptSrcs.length} 個ある（インライン <script> は禁止）`);
     bad++;
-  } else if (scriptSrcs.length !== 15) {
-    fail(`<script src> が ${scriptSrcs.length} 本（期待 15 本 = data 12 + app/render/events 3）`);
+  } else if (scriptSrcs.length !== expectedCount) {
+    fail(`<script src> が ${scriptSrcs.length} 本（期待 ${expectedCount} 本 = data 4 + scenarios ${scenarioExpectedTags.length} + app/render/events 3）`);
     bad++;
-  } else ok('<script src> 15 本すべてに src があり、インライン <script> は 0 個');
+  } else ok(`<script src> ${expectedCount} 本すべてに src があり、インライン <script> は 0 個`);
 
   // ⑥ catalog.html に <style> ブロックが 0 個（PR-A の帰結。PR-B/PR-C でも維持を再確認）
   const styleCount = [...html.matchAll(/<style>/g)].length;
@@ -167,23 +196,27 @@ const checkML = (obj, label) => {
 if (T) for (const k in T) checkML(T[k], `T.${k}`);
 if (TAGS) for (const k in TAGS) checkML(TAGS[k], `TAGS.${k}`);
 if (PATTERNS) for (const p of PATTERNS) { checkML(p.name, `PATTERNS.${p.id}.name`); checkML(p.desc, `PATTERNS.${p.id}.desc`); }
+if (INDUSTRIES) for (const i of INDUSTRIES) {
+  checkML(i.name, `INDUSTRIES.${i.id}.name`); checkML(i.desc, `INDUSTRIES.${i.id}.desc`);
+  checkML(i.wordmark, `INDUSTRIES.${i.id}.wordmark`); checkML(i.dept, `INDUSTRIES.${i.id}.dept`);
+}
 if (CATS) for (const c of CATS) {
   checkML(c.name, `CATS.${c.id}.name`); checkML(c.abbr, `CATS.${c.id}.abbr`);
   for (const s of c.subs) checkML(s.name, `CATS.${c.id}.subs.${s.id}.name`);
 }
 if (SVCS) for (const s of SVCS) { checkML(s.name, `SVCS.${s.id}.name`); checkML(s.desc, `SVCS.${s.id}.desc`); }
 if (TEMPLATES) for (const k in TEMPLATES) { checkML(TEMPLATES[k].name, `TEMPLATES.${k}.name`); checkML(TEMPLATES[k].desc, `TEMPLATES.${k}.desc`); }
-if (SCENARIOS) for (const id in SCENARIOS) {
-  const scn = SCENARIOS[id];
-  checkML(scn.persona.name, `SCENARIOS.${id}.persona.name`);
-  checkML(scn.persona.role, `SCENARIOS.${id}.persona.role`);
-  checkML(scn.persona.site, `SCENARIOS.${id}.persona.site`);
+if (SCENARIOS) for (const indId in SCENARIOS) for (const id in SCENARIOS[indId]) {
+  const scn = SCENARIOS[indId][id];
+  checkML(scn.persona.name, `SCENARIOS.${indId}.${id}.persona.name`);
+  checkML(scn.persona.role, `SCENARIOS.${indId}.${id}.persona.role`);
+  checkML(scn.persona.site, `SCENARIOS.${indId}.${id}.persona.site`);
   for (const l of LANGS) {
-    if (!Array.isArray(scn.steps[l]) || !scn.steps[l].length) { fail(`SCENARIOS.${id}.steps.${l}: 欠落/空`); i18nBad++; }
+    if (!Array.isArray(scn.steps[l]) || !scn.steps[l].length) { fail(`SCENARIOS.${indId}.${id}.steps.${l}: 欠落/空`); i18nBad++; }
   }
 }
-if (i18nBad === 0 && T && TAGS && PATTERNS && CATS && SVCS && TEMPLATES && SCENARIOS)
-  ok(`全辞書 3 言語一致（T=${Object.keys(T).length} TAGS=${Object.keys(TAGS).length} PATTERNS=${PATTERNS.length} CATS=${CATS.length} SVCS=${SVCS.length} TEMPLATES=${Object.keys(TEMPLATES).length}）`);
+if (i18nBad === 0 && T && TAGS && PATTERNS && INDUSTRIES && CATS && SVCS && TEMPLATES && SCENARIOS)
+  ok(`全辞書 3 言語一致（T=${Object.keys(T).length} TAGS=${Object.keys(TAGS).length} PATTERNS=${PATTERNS.length} INDUSTRIES=${INDUSTRIES.length} CATS=${CATS.length} SVCS=${SVCS.length} TEMPLATES=${Object.keys(TEMPLATES).length}）`);
 
 /* ---------- 3. 未定義キー / 4. 未使用キー ---------- */
 section('3. 未定義キー参照 / 4. 未使用キー');
@@ -289,6 +322,22 @@ if (CATS && SVCS && TAGS) {
   const subIds = new Set(CATS.flatMap(c => c.subs.map(s => s.id)));
   const svcIds = new Set();
   let bad = 0;
+
+  // 業種（industries）：CATS / subs / SVCS すべてで必須。値は ['mfg']/['fin']/['mfg','fin']（順序固定）のみ
+  // （設計書 2026-09-08-finance-catalog.md §1-2）
+  const checkIndustries = (arr, label) => {
+    if (!Array.isArray(arr) || !arr.length) { fail(`${label}: industries が無い/空`); bad++; return; }
+    for (const v of arr) if (!industryIds.has(v)) { fail(`${label}: industries に未知の業種 "${v}"`); bad++; }
+    if (JSON.stringify(arr) !== JSON.stringify(INDUSTRY_ORDER.filter(v => arr.includes(v)))) {
+      fail(`${label}: industries の順序が ['mfg','fin'] 固定でない: [${arr}]`); bad++;
+    }
+  };
+  for (const c of CATS) {
+    checkIndustries(c.industries, `CATS.${c.id}`);
+    for (const s of c.subs) checkIndustries(s.industries, `CATS.${c.id}.subs.${s.id}`);
+  }
+  for (const s of SVCS) checkIndustries(s.industries, `SVCS.${s.id}`);
+
   for (const s of SVCS) {
     if (svcIds.has(s.id)) { fail(`SVCS id 重複: ${s.id}`); bad++; } svcIds.add(s.id);
     if (!catIds.has(s.cat)) { fail(`SVCS.${s.id}: cat "${s.cat}" が CATS に無い`); bad++; }
@@ -303,11 +352,36 @@ if (CATS && SVCS && TAGS) {
       }
     }
     for (const tg of s.tags) if (!(tg in TAGS)) { fail(`SVCS.${s.id}: tag "${tg}" が TAGS に無い`); bad++; }
+    // SVCS.industries ⊆ その cat と sub の industries（設計書 §1-2）
+    if (Array.isArray(s.industries)) {
+      const c = CATS.find(x => x.id === s.cat), sb = c && c.subs.find(x => x.id === s.sub);
+      if (c && !s.industries.every(v => c.industries.includes(v))) {
+        fail(`SVCS.${s.id}: industries [${s.industries}] が cat "${s.cat}" の industries [${c.industries}] の部分集合でない`); bad++;
+      }
+      if (sb && !s.industries.every(v => sb.industries.includes(v))) {
+        fail(`SVCS.${s.id}: industries [${s.industries}] が sub "${s.sub}" の industries [${sb.industries}] の部分集合でない`); bad++;
+      }
+    }
   }
+
+  // 各業種で、サービス 0 件の分類・中分類が無いこと（設計書 §1-2）
+  for (const indId of industryIds) {
+    for (const c of CATS.filter(c => c.industries.includes(indId))) {
+      if (!SVCS.some(s => s.cat === c.id && s.industries.includes(indId))) {
+        fail(`CATS.${c.id}: 業種 "${indId}" で見えるサービスが 0 件（分類が空でメニューに出る）`); bad++;
+      }
+      for (const sb of c.subs.filter(sb => sb.industries.includes(indId))) {
+        if (!SVCS.some(s => s.sub === sb.id && s.industries.includes(indId))) {
+          fail(`CATS.${c.id}.subs.${sb.id}: 業種 "${indId}" で見えるサービスが 0 件`); bad++;
+        }
+      }
+    }
+  }
+
   const usedTags = new Set(SVCS.flatMap(s => s.tags));
   const unusedTags = Object.keys(TAGS).filter(k => !usedTags.has(k));
   if (unusedTags.length) warn(`未使用タグ: ${unusedTags.join(', ')}`);
-  if (!bad) ok(`SVCS ${SVCS.length} 件の cat/sub/st/tags 整合 OK`);
+  if (!bad) ok(`SVCS ${SVCS.length} 件の cat/sub/st/tags/industries 整合 OK`);
 
   // 管理番号（§7B）
   const codeSeen = new Map();
@@ -324,7 +398,7 @@ if (CATS && SVCS && TAGS) {
 section('7. 共通レイヤー契約');
 {
   const stateM = appText.match(/const state = \{([\s\S]*?)\};/);
-  const required = ['pattern', 'lang', 'theme', 'openCats', 'selCat', 'selSub', 'lastCat', 'selSvc', 'view', 'query'];
+  const required = ['industry', 'pattern', 'lang', 'theme', 'openCats', 'selCat', 'selSub', 'lastCat', 'selSvc', 'view', 'query'];
   if (!stateM) fail('const state = {…} が見つからない');
   else {
     const keys = new Set([...stateM[1].matchAll(/^\s*([a-zA-Z]+)\s*:/gm)].map(m => m[1]));
@@ -332,7 +406,7 @@ section('7. 共通レイヤー契約');
     if (missing.length) fail(`state に必須キーが無い: ${missing.join(', ')}`); else ok(`state 必須キー ${required.length} 件 OK`);
   }
   const acts = new Set([...appText.matchAll(/act === '([a-z]+)'/g)].map(m => m[1]));
-  const requiredActs = ['pattern', 'all', 'cat', 'sub', 'svc', 'back', 'backdetail', 'start', 'send', 'run', 'chip', 'restart', 'gocat'];
+  const requiredActs = ['industry', 'pattern', 'all', 'cat', 'sub', 'svc', 'back', 'backdetail', 'start', 'send', 'run', 'chip', 'restart', 'gocat'];
   const missingActs = requiredActs.filter(a => !acts.has(a));
   if (missingActs.length) fail(`data-act ハンドラが無い: ${missingActs.join(', ')}`); else ok(`data-act ${requiredActs.length} 種 OK`);
 
@@ -374,134 +448,156 @@ section('8. Pages 設定');
   else ok('mock/ 配下に _ 始まりのディレクトリなし');
 }
 
-/* ---------- 9. シナリオ整合（SCENARIOS ⇔ SVCS ⇔ TEMPLATES） ---------- */
+/* ---------- 9. シナリオ整合（SCENARIOS ⇔ SVCS ⇔ TEMPLATES。業種ごと） ---------- */
 section('9. シナリオ整合');
 if (SCENARIOS && SVCS && TEMPLATES) {
-  const svcIds = new Set(SVCS.map(s => s.id));
   const tplKeys = new Set(Object.keys(TEMPLATES));
   let bad = 0;
-  for (const id in SCENARIOS) {
-    if (!svcIds.has(id)) { fail(`SCENARIOS.${id}: SVCS に存在しない id`); bad++; continue; }
-    const scn = SCENARIOS[id];
+  let scenarioCount = 0;
+  for (const indId in SCENARIOS) {
+    // その業種で見える SVCS の id 集合（§1-4：SCENARIOS[industry][id] は同じ業種で見えるサービスであること）
+    const svcIdsInInd = new Set(SVCS.filter(s => s.industries.includes(indId)).map(s => s.id));
+    for (const id in SCENARIOS[indId]) {
+      scenarioCount++;
+      const label = `SCENARIOS.${indId}.${id}`;
+      if (!svcIdsInInd.has(id)) { fail(`${label}: 業種 "${indId}" で見える SVCS に存在しない id`); bad++; continue; }
+      const scn = SCENARIOS[indId][id];
 
-    if (!tplKeys.has(scn.template)) { fail(`SCENARIOS.${id}: template "${scn.template}" が TEMPLATES に無い`); bad++; }
+      if (!tplKeys.has(scn.template)) { fail(`${label}: template "${scn.template}" が TEMPLATES に無い`); bad++; }
 
-    if (!['ja', 'zh'].includes(scn.persona && scn.persona.native)) { fail(`SCENARIOS.${id}.persona.native: "${scn.persona && scn.persona.native}" は ja/zh 以外`); bad++; }
+      if (!['ja', 'zh'].includes(scn.persona && scn.persona.native)) { fail(`${label}.persona.native: "${scn.persona && scn.persona.native}" は ja/zh 以外`); bad++; }
 
-    const stepLens = LANGS.map(l => (scn.steps && Array.isArray(scn.steps[l])) ? scn.steps[l].length : -1);
-    if (new Set(stepLens).size !== 1 || stepLens[0] < 3 || stepLens[0] > 6) { fail(`SCENARIOS.${id}.steps: 3 言語の長さ不一致 or 3〜6 の範囲外（${stepLens.join('/')}）`); bad++; }
+      const stepLens = LANGS.map(l => (scn.steps && Array.isArray(scn.steps[l])) ? scn.steps[l].length : -1);
+      if (new Set(stepLens).size !== 1 || stepLens[0] < 3 || stepLens[0] > 6) { fail(`${label}.steps: 3 言語の長さ不一致 or 3〜6 の範囲外（${stepLens.join('/')}）`); bad++; }
 
-    const ja = scn.script && scn.script.ja, zh = scn.script && scn.script.zh;
-    if (!Array.isArray(ja) || !Array.isArray(zh) || ja.length !== zh.length || ja.length < 2 || ja.length > 4) {
-      fail(`SCENARIOS.${id}.script: ja/zh の長さ不一致 or 2〜4 の範囲外`); bad++;
-    } else {
-      for (const [lbl, arr] of [['ja', ja], ['zh', zh]]) {
-        for (let i = 0; i < arr.length; i++) {
-          const turn = arr[i];
-          if (typeof turn.q !== 'string' || !turn.q.trim() || typeof turn.a !== 'string' || !turn.a.trim()) {
-            fail(`SCENARIOS.${id}.script.${lbl}[${i}]: q/a が非空文字列でない`); bad++;
+      const ja = scn.script && scn.script.ja, zh = scn.script && scn.script.zh;
+      if (!Array.isArray(ja) || !Array.isArray(zh) || ja.length !== zh.length || ja.length < 2 || ja.length > 4) {
+        fail(`${label}.script: ja/zh の長さ不一致 or 2〜4 の範囲外`); bad++;
+      } else {
+        for (const [lbl, arr] of [['ja', ja], ['zh', zh]]) {
+          for (let i = 0; i < arr.length; i++) {
+            const turn = arr[i];
+            if (typeof turn.q !== 'string' || !turn.q.trim() || typeof turn.a !== 'string' || !turn.a.trim()) {
+              fail(`${label}.script.${lbl}[${i}]: q/a が非空文字列でない`); bad++;
+            }
+            if (turn.q && turn.q.includes("'")) { fail(`${label}.script.${lbl}[${i}].q: '（U+0027）を含む`); bad++; }
+            if (turn.a && turn.a.includes("'")) { fail(`${label}.script.${lbl}[${i}].a: '（U+0027）を含む`); bad++; }
           }
-          if (turn.q && turn.q.includes("'")) { fail(`SCENARIOS.${id}.script.${lbl}[${i}].q: '（U+0027）を含む`); bad++; }
-          if (turn.a && turn.a.includes("'")) { fail(`SCENARIOS.${id}.script.${lbl}[${i}].a: '（U+0027）を含む`); bad++; }
         }
       }
-    }
 
-    if (scn.template !== 'qa') {
-      if (!scn.input || !scn.input.ja || !scn.input.zh) { fail(`SCENARIOS.${id}.input: ja/zh が無い（template=${scn.template}）`); bad++; }
-      if (!scn.result || !scn.result.ja || !scn.result.zh) { fail(`SCENARIOS.${id}.result: ja/zh が無い（template=${scn.template}）`); bad++; }
-      else {
-        for (const l of ['ja', 'zh']) {
-          const r = scn.result[l];
-          const hasItems = Array.isArray(r.items), hasTable = Array.isArray(r.columns) && Array.isArray(r.rows);
-          if (hasItems === hasTable) { fail(`SCENARIOS.${id}.result.${l}: items か columns+rows のどちらか一方が必要`); bad++; }
-          if (hasTable && r.rows.some(row => row.length !== r.columns.length)) { fail(`SCENARIOS.${id}.result.${l}: rows の列数が columns と不一致`); bad++; }
+      if (scn.template !== 'qa') {
+        if (!scn.input || !scn.input.ja || !scn.input.zh) { fail(`${label}.input: ja/zh が無い（template=${scn.template}）`); bad++; }
+        if (!scn.result || !scn.result.ja || !scn.result.zh) { fail(`${label}.result: ja/zh が無い（template=${scn.template}）`); bad++; }
+        else {
+          for (const l of ['ja', 'zh']) {
+            const r = scn.result[l];
+            const hasItems = Array.isArray(r.items), hasTable = Array.isArray(r.columns) && Array.isArray(r.rows);
+            if (hasItems === hasTable) { fail(`${label}.result.${l}: items か columns+rows のどちらか一方が必要`); bad++; }
+            if (hasTable && r.rows.some(row => row.length !== r.columns.length)) { fail(`${label}.result.${l}: rows の列数が columns と不一致`); bad++; }
+          }
         }
-      }
-      if (scn.input) {
-        for (const l of ['ja', 'zh']) {
-          const inp = scn.input[l]; if (!inp) continue;
-          if (scn.template === 'upload' && !Array.isArray(inp.files)) { fail(`SCENARIOS.${id}.input.${l}.files: 配列が必要（upload）`); bad++; }
-          if (scn.template === 'form' && !Array.isArray(inp.fields)) { fail(`SCENARIOS.${id}.input.${l}.fields: 配列が必要（form）`); bad++; }
-          if (scn.template === 'diff' && !(typeof inp.left === 'string' && typeof inp.right === 'string')) { fail(`SCENARIOS.${id}.input.${l}: left/right が必要（diff）`); bad++; }
-          if (scn.template === 'lookup' && typeof inp.query !== 'string') { fail(`SCENARIOS.${id}.input.${l}.query: 文字列が必要（lookup）`); bad++; }
+        if (scn.input) {
+          for (const l of ['ja', 'zh']) {
+            const inp = scn.input[l]; if (!inp) continue;
+            if (scn.template === 'upload' && !Array.isArray(inp.files)) { fail(`${label}.input.${l}.files: 配列が必要（upload）`); bad++; }
+            if (scn.template === 'form' && !Array.isArray(inp.fields)) { fail(`${label}.input.${l}.fields: 配列が必要（form）`); bad++; }
+            if (scn.template === 'diff' && !(typeof inp.left === 'string' && typeof inp.right === 'string')) { fail(`${label}.input.${l}: left/right が必要（diff）`); bad++; }
+            if (scn.template === 'lookup' && typeof inp.query !== 'string') { fail(`${label}.input.${l}.query: 文字列が必要（lookup）`); bad++; }
+          }
         }
       }
     }
   }
-  const noScript = SVCS.filter(s => !SCENARIOS[s.id]).map(s => s.id);
-  if (noScript.length) warn(`台本の無い SVCS ${noScript.length} 件: ${noScript.join(', ')}`);
-  if (!bad) ok(`SCENARIOS ${Object.keys(SCENARIOS).length} 件の整合 OK`);
+  // 台本の無い SVCS は業種ごとに warn（FAIL にしない。§1-4）
+  for (const indId in SCENARIOS) {
+    const noScript = SVCS.filter(s => s.industries.includes(indId) && !(SCENARIOS[indId] || {})[s.id]).map(s => s.id);
+    if (noScript.length) warn(`業種 "${indId}" で台本の無い SVCS ${noScript.length} 件: ${noScript.join(', ')}`);
+  }
+  if (!bad) ok(`SCENARIOS ${scenarioCount} 件（業種 ${Object.keys(SCENARIOS).join(', ')}）の整合 OK`);
 
-  // 9-A（新規）: 各シナリオ id の接頭 2 文字＝置かれているファイル名（js/data/scenarios/<接頭>.js）
+  // 9-A: 各シナリオ id の接頭＝配置先ファイル名（js/data/scenarios/<業種>/<接頭>.js）。
+  //      dirname が業種 id・basename が分類コードであること（設計書 §4-6）
   let prefixBad = 0;
   for (const f of dataSources) {
     if (!f.path.startsWith('js/data/scenarios/')) continue;
+    const parts = f.path.split('/'); // js, data, scenarios, <ind>, <code>.js
+    const dirInd = parts[3];
     const expectedPrefix = basename(f.path, '.js');
+    if (!industryIds.has(dirInd)) { fail(`${f.path}: 配置ディレクトリ "${dirInd}" が業種 id でない`); prefixBad++; }
     for (const m of f.src.matchAll(/^\s*([a-z]+)\d+:\s*\{/gm)) {
       if (m[1] !== expectedPrefix) { fail(`${f.path}: id 接頭 "${m[1]}" がファイル名 "${expectedPrefix}" と不一致`); prefixBad++; }
     }
   }
-  if (!prefixBad) ok('シナリオ id の接頭 2 文字がすべて配置先ファイル名と一致');
+  if (!prefixBad) ok('シナリオの配置先が dirname=業種・basename=分類コードで一致');
 } else {
   fail('SCENARIOS / SVCS / TEMPLATES のいずれかが取得できない');
 }
 
-/* ---------- 10. ホームデータ整合（HOME / FEED） ---------- */
+/* ---------- 10. ホームデータ整合（HOME / FEED。業種キー。§1-5） ---------- */
 section('10. ホームデータ整合（HOME / FEED）');
 {
-  const svcIds = SVCS ? new Set(SVCS.map(s => s.id)) : new Set();
-  const catIds = CATS ? new Set(CATS.map(c => c.id)) : new Set();
   let bad = 0;
+  // HOME/FEED は「その業種のサービスが 1 件以上あるとき」だけ必須にする。
+  // まだサービス 0 件の業種（PR-1 時点の fin）にダッシュボード/フィードのサンプルは要らない
+  const readyIndustries = [...industryIds].filter(id => SVCS && SVCS.some(s => s.industries.includes(id)));
 
-  if (!HOME) { fail('HOME が取得できない'); bad++; }
-  else {
-    if (!Array.isArray(HOME.frequent) || HOME.frequent.length < 1) { fail('HOME.frequent: 1件以上必要'); bad++; }
+  for (const indId of readyIndustries) {
+    // 参照 id は「その業種で見える」SVCS / CATS であること（設計書 §1-5）
+    const svcIds = SVCS ? new Set(SVCS.filter(s => s.industries.includes(indId)).map(s => s.id)) : new Set();
+    const catIds = CATS ? new Set(CATS.filter(c => c.industries.includes(indId)).map(c => c.id)) : new Set();
+
+    const home = HOME && HOME[indId];
+    if (!home) { fail(`HOME.${indId} が取得できない`); bad++; }
     else {
-      const seen = new Set();
-      for (const f of HOME.frequent) {
-        if (!svcIds.has(f.id)) { fail(`HOME.frequent.${f.id}: SVCS に存在しない`); bad++; }
-        if (seen.has(f.id)) { fail(`HOME.frequent: id 重複 ${f.id}`); bad++; } seen.add(f.id);
-        if (!Number.isInteger(f.uses) || f.uses < 1) { fail(`HOME.frequent.${f.id}.uses: 1以上の整数が必要`); bad++; }
+      if (!Array.isArray(home.frequent) || home.frequent.length < 1) { fail(`HOME.${indId}.frequent: 1件以上必要`); bad++; }
+      else {
+        const seen = new Set();
+        for (const f of home.frequent) {
+          if (!svcIds.has(f.id)) { fail(`HOME.${indId}.frequent.${f.id}: 業種 "${indId}" で見える SVCS に存在しない`); bad++; }
+          if (seen.has(f.id)) { fail(`HOME.${indId}.frequent: id 重複 ${f.id}`); bad++; } seen.add(f.id);
+          if (!Number.isInteger(f.uses) || f.uses < 1) { fail(`HOME.${indId}.frequent.${f.id}.uses: 1以上の整数が必要`); bad++; }
+        }
+        const usesDesc = home.frequent.every((f, i) => i === 0 || home.frequent[i - 1].uses >= f.uses);
+        if (!usesDesc) warn(`HOME.${indId}.frequent: uses が降順でない`);
       }
-      const usesDesc = HOME.frequent.every((f, i) => i === 0 || HOME.frequent[i - 1].uses >= f.uses);
-      if (!usesDesc) warn('HOME.frequent: uses が降順でない');
+      if (!Array.isArray(home.recommended) || home.recommended.length < 1) { fail(`HOME.${indId}.recommended: 1件以上必要`); bad++; }
+      else {
+        for (const r of home.recommended) {
+          if (!svcIds.has(r.id)) { fail(`HOME.${indId}.recommended.${r.id}: 業種 "${indId}" で見える SVCS に存在しない`); bad++; }
+          checkML(r.why, `HOME.${indId}.recommended.${r.id}.why`);
+        }
+      }
     }
-    if (!Array.isArray(HOME.recommended) || HOME.recommended.length < 1) { fail('HOME.recommended: 1件以上必要'); bad++; }
-    else {
-      for (const r of HOME.recommended) {
-        if (!svcIds.has(r.id)) { fail(`HOME.recommended.${r.id}: SVCS に存在しない`); bad++; }
-        checkML(r.why, `HOME.recommended.${r.id}.why`);
+
+    // FEED（③）
+    const fd = FEED && FEED[indId];
+    if (fd) {
+      if (!Array.isArray(fd.mine) || fd.mine.some(id => !catIds.has(id))) { fail(`FEED.${indId}.mine: 業種 "${indId}" で見える CATS に存在しない id を含む`); bad++; }
+      if (!Array.isArray(fd.recent)) { fail(`FEED.${indId}.recent: 配列が必要`); bad++; }
+      else {
+        const seen = new Set();
+        for (const id of fd.recent) {
+          if (!svcIds.has(id)) { fail(`FEED.${indId}.recent.${id}: 業種 "${indId}" で見える SVCS に存在しない`); bad++; }
+          if (seen.has(id)) { fail(`FEED.${indId}.recent: id 重複 ${id}`); bad++; } seen.add(id);
+        }
+      }
+      checkML(fd.persona && fd.persona.name, `FEED.${indId}.persona.name`);
+      checkML(fd.persona && fd.persona.role, `FEED.${indId}.persona.role`);
+      checkML(fd.persona && fd.persona.site, `FEED.${indId}.persona.site`);
+      if (!Array.isArray(fd.items) || fd.items.length < 1) { fail(`FEED.${indId}.items: 1件以上必要`); bad++; }
+      else {
+        for (const it of fd.items) {
+          if (!svcIds.has(it.id)) { fail(`FEED.${indId}.items.${it.id}: 業種 "${indId}" で見える SVCS に存在しない`); bad++; }
+          if (!['due', 'notify', 'routine'].includes(it.kind)) { fail(`FEED.${indId}.items.${it.id}.kind: "${it.kind}" は due/notify/routine 以外`); bad++; }
+          checkML(it.when, `FEED.${indId}.items.${it.id}.when`);
+          checkML(it.note, `FEED.${indId}.items.${it.id}.note`);
+        }
       }
     }
   }
 
-  // FEED（③）
-  if (FEED) {
-    if (!Array.isArray(FEED.mine) || FEED.mine.some(id => !catIds.has(id))) { fail('FEED.mine: CATS に存在しない id を含む'); bad++; }
-    if (!Array.isArray(FEED.recent)) { fail('FEED.recent: 配列が必要'); bad++; }
-    else {
-      const seen = new Set();
-      for (const id of FEED.recent) {
-        if (!svcIds.has(id)) { fail(`FEED.recent.${id}: SVCS に存在しない`); bad++; }
-        if (seen.has(id)) { fail(`FEED.recent: id 重複 ${id}`); bad++; } seen.add(id);
-      }
-    }
-    checkML(FEED.persona && FEED.persona.name, 'FEED.persona.name');
-    checkML(FEED.persona && FEED.persona.role, 'FEED.persona.role');
-    checkML(FEED.persona && FEED.persona.site, 'FEED.persona.site');
-    if (!Array.isArray(FEED.items) || FEED.items.length < 1) { fail('FEED.items: 1件以上必要'); bad++; }
-    else {
-      for (const it of FEED.items) {
-        if (!svcIds.has(it.id)) { fail(`FEED.items.${it.id}: SVCS に存在しない`); bad++; }
-        if (!['due', 'notify', 'routine'].includes(it.kind)) { fail(`FEED.items.${it.id}.kind: "${it.kind}" は due/notify/routine 以外`); bad++; }
-        checkML(it.when, `FEED.items.${it.id}.when`);
-        checkML(it.note, `FEED.items.${it.id}.note`);
-      }
-    }
-  }
-
-  if (!bad) ok('HOME' + (FEED ? ' / FEED' : '') + ' の整合 OK');
+  if (!bad) ok('HOME / FEED の整合 OK（業種ごと）');
 }
 
 /* ---------- 11. 索引の鮮度（docs/service-map.md）＋ README の 4 区分地図のリンク実在 ---------- */

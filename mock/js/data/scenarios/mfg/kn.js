@@ -40,7 +40,8 @@
    ============================================================ */
 
 window.SCENARIOS = window.SCENARIOS || {};
-Object.assign(window.SCENARIOS, {
+window.SCENARIOS.mfg = window.SCENARIOS.mfg || {};
+Object.assign(window.SCENARIOS.mfg, {
   kn1: { template: 'qa',
     persona: { name: { ja: '王 磊', zh: '王磊', en: 'Wang Lei' },
                role: { ja: '生産技術課 主任', zh: '生产技术科 主管', en: 'Production Engineering Supervisor' },

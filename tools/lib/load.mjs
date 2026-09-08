@@ -15,7 +15,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import vm from 'node:vm';
 
-const DATA_KEYS = ['T', 'PATTERNS', 'TAGS', 'TEMPLATES', 'CATS', 'SVCS', 'CAT_STYLE', 'HOME', 'FEED'];
+const DATA_KEYS = ['T', 'PATTERNS', 'TAGS', 'TEMPLATES', 'INDUSTRIES', 'CATS', 'SVCS', 'CAT_STYLE', 'HOME', 'FEED'];
 
 export function loadMock(ROOT) {
   const MOCK = resolve(ROOT, 'mock');

@@ -8,16 +8,28 @@
    ============================================================ */
 function renderChrome() {
   document.getElementById('mock-label').textContent = t('mockLabel');
+  document.getElementById('ind-label').textContent = t('indLabel');
   document.getElementById('seg-label').textContent = t('segLabel');
-  document.getElementById('wordmark').textContent = t('wordmark');
+  document.getElementById('wordmark').textContent = L(ind().wordmark);
   document.getElementById('app-title').textContent = t('appTitle');
-  document.getElementById('dept').textContent = t('dept');
+  document.getElementById('dept').textContent = L(ind().dept);
   document.title = T.appTitle.ja + ' ／ ' + T.appTitle.zh + ' ／ ' + T.appTitle.en;
 }
 
 /* ============================================================
-   7. 描画 — パターン選択（モック用の足場）
+   7. 描画 — 業種・パターン選択（モック用の足場）
+   業種セグメントは「その業種の SVCS が 1 件以上あるか」で有効/無効を決める
+   （§4-1・§6 PR-1：金融は 0 件のうちは disabled のまま。PR-3 でデータが入ると
+   コードを変えずに自動で有効化される）
    ============================================================ */
+function renderIndSeg() {
+  document.getElementById('ind-seg').innerHTML = INDUSTRIES.map(i => {
+    const ready = SVCS.some(x => x.industries.includes(i.id));
+    return `<button class="${state.industry === i.id ? 'on' : ''}"${ready ? '' : ' disabled'}
+       data-act="industry" data-arg="${i.id}" title="${esc(L(i.desc))}">${esc(L(i.name))}</button>`;
+  }).join('');
+}
+
 function renderSeg() {
   document.getElementById('seg').innerHTML = PATTERNS.map(p =>
     `<button class="${state.pattern === p.id ? 'on' : ''}"${p.ready ? '' : ' disabled'}
@@ -35,10 +47,10 @@ function renderSidebar() {
   <nav class="side" data-screen-label="階層ナビ">
     <button class="nav-item ${!state.selCat && !state.selSub ? 'on' : ''}" data-act="all">
       <span class="n-label">${esc(t('allServices'))}</span>
-      <span class="cnt">${SVCS.length}</span>
+      <span class="cnt">${visSvcs().length}</span>
     </button>
     <div class="nav-divider"></div>
-    ${CATS.map(c => {
+    ${visCats().map(c => {
       const open = !!state.openCats[c.id];
       const on = state.selCat === c.id && !state.selSub;
       return `
@@ -119,7 +131,7 @@ function bindHomeSearch(sectionsFn) {
 
 /** ② ダッシュボード：ホーム本体（検索で差し替える範囲） */
 function dashSectionsHTML() {
-  const maxUses = Math.max(...HOME.frequent.map(f => f.uses));
+  const maxUses = Math.max(...home().frequent.map(f => f.uses));
   const freqHTML = `
     <div class="dash-sec">
       <div class="sec-h">
@@ -127,7 +139,7 @@ function dashSectionsHTML() {
         <span class="sec-note">${esc(t('dashFreqNote'))}</span>
       </div>
       <div class="use-list">
-        ${HOME.frequent.map((f, i) => {
+        ${home().frequent.map((f, i) => {
           const x = svcOf(f.id), c = catOf(x.cat);
           const w = Math.round(f.uses / maxUses * 100);
           return `
@@ -154,7 +166,7 @@ function dashSectionsHTML() {
         <span class="sec-note">${esc(t('dashRecoNote'))}</span>
       </div>
       <div class="reco-grid">
-        ${HOME.recommended.map(r => {
+        ${home().recommended.map(r => {
           const x = svcOf(r.id);
           return `
           <div class="reco-item ${catClass(x.cat)}">
@@ -178,9 +190,9 @@ function dashSectionsHTML() {
         <h2>${esc(t('dashCats'))}</h2>
         ${legendHTML}
       </div>
-      ${CATS.map(c => {
-        const list = SVCS.filter(x => x.cat === c.id);
-        const maxCat = Math.max(...CATS.map(cc => SVCS.filter(x => x.cat === cc.id).length));
+      ${visCats().map(c => {
+        const list = visSvcs().filter(x => x.cat === c.id);
+        const maxCat = Math.max(...visCats().map(cc => visSvcs().filter(x => x.cat === cc.id).length));
         const cn1 = list.filter(x => x.st === 1).length;
         const cn2 = list.filter(x => x.st === 2).length;
         const cn3 = list.filter(x => x.st === 3).length;
@@ -223,9 +235,9 @@ function dashSectionsHTML() {
 }
 
 function renderDash(el) {
-  const n1 = SVCS.filter(x => x.st === 1).length;
-  const n2 = SVCS.filter(x => x.st === 2).length;
-  const n3 = SVCS.filter(x => x.st === 3).length;
+  const n1 = visSvcs().filter(x => x.st === 1).length;
+  const n2 = visSvcs().filter(x => x.st === 2).length;
+  const n3 = visSvcs().filter(x => x.st === 3).length;
   el.innerHTML = `
   <div class="dash-wrap" data-screen-label="ダッシュボード">
     <section class="hero">
@@ -245,14 +257,14 @@ function renderDash(el) {
       </svg>
       <div class="hero-flex">
         <div class="hero-copy">
-          <div class="hero-eyebrow">AI AGENT CATALOG — ${esc(t('wordmark'))}</div>
+          <div class="hero-eyebrow">AI AGENT CATALOG — ${esc(L(ind().wordmark))}</div>
           <h1>${esc(t('dashWelcome'))}</h1>
-          <p>${esc(t('dashLead').replace('{c}', CATS.length).replace('{n}', SVCS.length))}</p>
+          <p>${esc(t('dashLead').replace('{c}', visCats().length).replace('{n}', visSvcs().length))}</p>
           <input class="search" id="search" placeholder="${esc(t('searchPh'))}" value="${esc(state.query)}">
         </div>
         <div class="stat-strip">
           <div class="stat-total">
-            <div class="stat-n">${SVCS.length}</div><div class="stat-l">${esc(t('statAll'))}</div>
+            <div class="stat-n">${visSvcs().length}</div><div class="stat-l">${esc(t('statAll'))}</div>
           </div>
           <div class="stat-col">
             <div class="stat-row s-live"><span class="stat-n">${n1}</span><span class="stat-l">${esc(t('statusLive'))}</span></div>
@@ -281,7 +293,7 @@ const kindLabel = (kind) => kind === 'due' ? t('kindDue') : kind === 'notify' ? 
 /** ③「お知らせ」に自動で足す新着行。FEED.items には書かない（データの出どころは SVCS[].added だけ）。
     FEED.items に同じ id が既にあるものは二重表示になるので除く */
 const newFeedItems = () => {
-  const listed = new Set(FEED.items.map(i => i.id));
+  const listed = new Set(feed().items.map(i => i.id));
   return newSvcs().filter(x => !listed.has(x.id)).map(x => {
     const code = svcCode(x.id);
     const fill = (o) => ({ ja: o.ja.replace('{code}', code), zh: o.zh.replace('{code}', code), en: o.en.replace('{code}', code) });
@@ -324,14 +336,14 @@ function feedSectionsHTML() {
       ${items.map(feedItemHTML).join('')}
     </div>`;
   };
-  const action  = FEED.items.filter(i => i.kind === 'due');
-  const routine = FEED.items.filter(i => i.kind === 'routine');
-  const notice  = newFeedItems().concat(FEED.items.filter(i => i.kind === 'notify'));
+  const action  = feed().items.filter(i => i.kind === 'due');
+  const routine = feed().items.filter(i => i.kind === 'routine');
+  const notice  = newFeedItems().concat(feed().items.filter(i => i.kind === 'notify'));
 
   const mineHTML = `
     <div class="side-box">
       <h3>${esc(t('feedMine'))}</h3>
-      ${FEED.mine.map(id => {
+      ${feed().mine.map(id => {
         const c = catOf(id);
         return `
         <button class="side-link ${catClass(id)}" data-act="gocat" data-arg="${id}">
@@ -344,7 +356,7 @@ function feedSectionsHTML() {
   const recentHTML = `
     <div class="side-box">
       <h3>${esc(t('feedRecent'))}</h3>
-      ${FEED.recent.map(id => {
+      ${feed().recent.map(id => {
         const x = svcOf(id);
         return `
         <button class="side-link ${catClass(x.cat)}" data-act="svc" data-arg="${x.id}">
@@ -376,8 +388,8 @@ function renderFeed(el) {
         <h1>${esc(t('feedTitle'))}</h1>
         <p>${esc(t('feedLead'))}</p>
         <div class="feed-who">
-          <div class="avatar">${esc(L(FEED.persona.name).charAt(0))}</div>
-          <span>${esc(L(FEED.persona.name))} ／ ${esc(L(FEED.persona.role))}・${esc(L(FEED.persona.site))}</span>
+          <div class="avatar">${esc(L(feed().persona.name).charAt(0))}</div>
+          <span>${esc(L(feed().persona.name))} ／ ${esc(L(feed().persona.role))}・${esc(L(feed().persona.site))}</span>
           <span class="cta-note">${esc(t('mockNote'))}</span>
         </div>
       </div>
@@ -699,4 +711,4 @@ function sendChat() {
 /* ============================================================
    10. イベント（遷移ロジック — 全パターン共通）
    ============================================================ */
-function renderAll() { renderChrome(); renderSeg(); renderSidebar(); renderMain(); }
+function renderAll() { renderChrome(); renderIndSeg(); renderSeg(); renderSidebar(); renderMain(); }

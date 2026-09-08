@@ -1,60 +1,173 @@
 {
+  "industries": [
+    "mfg",
+    "fin"
+  ],
   "cats": [
     {
       "id": "kn",
+      "industries": [
+        "mfg"
+      ],
       "subs": [
-        "tech",
-        "rule"
+        {
+          "id": "tech",
+          "industries": [
+            "mfg"
+          ]
+        },
+        {
+          "id": "rule",
+          "industries": [
+            "mfg"
+          ]
+        }
       ]
     },
     {
       "id": "qa",
+      "industries": [
+        "mfg"
+      ],
       "subs": [
-        "defect",
-        "change"
+        {
+          "id": "defect",
+          "industries": [
+            "mfg"
+          ]
+        },
+        {
+          "id": "change",
+          "industries": [
+            "mfg"
+          ]
+        }
       ]
     },
     {
       "id": "dc",
+      "industries": [
+        "mfg"
+      ],
       "subs": [
-        "report",
-        "site",
-        "apply"
+        {
+          "id": "report",
+          "industries": [
+            "mfg"
+          ]
+        },
+        {
+          "id": "site",
+          "industries": [
+            "mfg"
+          ]
+        },
+        {
+          "id": "apply",
+          "industries": [
+            "mfg"
+          ]
+        }
       ]
     },
     {
       "id": "lg",
+      "industries": [
+        "mfg"
+      ],
       "subs": [
-        "trans",
-        "align"
+        {
+          "id": "trans",
+          "industries": [
+            "mfg"
+          ]
+        },
+        {
+          "id": "align",
+          "industries": [
+            "mfg"
+          ]
+        }
       ]
     },
     {
       "id": "nm",
+      "industries": [
+        "mfg"
+      ],
       "subs": [
-        "cost",
-        "actual"
+        {
+          "id": "cost",
+          "industries": [
+            "mfg"
+          ]
+        },
+        {
+          "id": "actual",
+          "industries": [
+            "mfg"
+          ]
+        }
       ]
     },
     {
       "id": "en",
+      "industries": [
+        "mfg"
+      ],
       "subs": [
-        "spec",
-        "bom"
+        {
+          "id": "spec",
+          "industries": [
+            "mfg"
+          ]
+        },
+        {
+          "id": "bom",
+          "industries": [
+            "mfg"
+          ]
+        }
       ]
     },
     {
       "id": "gn",
+      "industries": [
+        "mfg"
+      ],
       "subs": [
-        "office",
-        "daily"
+        {
+          "id": "office",
+          "industries": [
+            "mfg"
+          ]
+        },
+        {
+          "id": "daily",
+          "industries": [
+            "mfg"
+          ]
+        }
       ]
     },
     {
       "id": "pt",
+      "industries": [
+        "mfg"
+      ],
       "subs": [
-        "data",
-        "service"
+        {
+          "id": "data",
+          "industries": [
+            "mfg"
+          ]
+        },
+        {
+          "id": "service",
+          "industries": [
+            "mfg"
+          ]
+        }
       ]
     }
   ],
@@ -64,6 +177,9 @@
       "cat": "kn",
       "sub": "tech",
       "st": 1,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "search"
       ]
@@ -73,6 +189,9 @@
       "cat": "kn",
       "sub": "tech",
       "st": 1,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "equipment",
         "search"
@@ -83,6 +202,9 @@
       "cat": "kn",
       "sub": "rule",
       "st": 1,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "regulation",
         "hr"
@@ -93,6 +215,9 @@
       "cat": "kn",
       "sub": "rule",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "faq",
         "hr"
@@ -103,6 +228,9 @@
       "cat": "kn",
       "sub": "rule",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "authority",
         "regulation"
@@ -113,6 +241,9 @@
       "cat": "qa",
       "sub": "defect",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "defect",
         "rootcause",
@@ -124,6 +255,9 @@
       "cat": "qa",
       "sub": "change",
       "st": 3,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "change4m"
       ]
@@ -133,6 +267,9 @@
       "cat": "qa",
       "sub": "change",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "claim"
       ]
@@ -142,6 +279,9 @@
       "cat": "qa",
       "sub": "change",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "audit",
         "report"
@@ -152,6 +292,9 @@
       "cat": "dc",
       "sub": "report",
       "st": 1,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "report"
       ]
@@ -161,6 +304,9 @@
       "cat": "dc",
       "sub": "report",
       "st": 1,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "meeting",
         "summary"
@@ -171,6 +317,9 @@
       "cat": "dc",
       "sub": "site",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "education",
         "procedure"
@@ -181,6 +330,9 @@
       "cat": "dc",
       "sub": "site",
       "st": 1,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "safety",
         "translate"
@@ -191,6 +343,9 @@
       "cat": "dc",
       "sub": "apply",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "approval"
       ]
@@ -200,6 +355,9 @@
       "cat": "dc",
       "sub": "apply",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "trade"
       ]
@@ -209,6 +367,9 @@
       "cat": "dc",
       "sub": "apply",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "contract",
         "purchase"
@@ -219,6 +380,9 @@
       "cat": "dc",
       "sub": "report",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "report",
         "kpi"
@@ -229,6 +393,9 @@
       "cat": "lg",
       "sub": "trans",
       "st": 1,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "translate",
         "glossary"
@@ -239,6 +406,9 @@
       "cat": "lg",
       "sub": "trans",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "glossary"
       ]
@@ -248,6 +418,9 @@
       "cat": "lg",
       "sub": "align",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "procedure",
         "translate"
@@ -258,6 +431,9 @@
       "cat": "lg",
       "sub": "align",
       "st": 1,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "mail"
       ]
@@ -267,6 +443,9 @@
       "cat": "nm",
       "sub": "cost",
       "st": 3,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "costing"
       ]
@@ -276,6 +455,9 @@
       "cat": "nm",
       "sub": "cost",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "purchase",
         "costing"
@@ -286,6 +468,9 @@
       "cat": "nm",
       "sub": "actual",
       "st": 1,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "kpi",
         "summary"
@@ -296,6 +481,9 @@
       "cat": "nm",
       "sub": "actual",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "inventory",
         "faq"
@@ -306,6 +494,9 @@
       "cat": "nm",
       "sub": "actual",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "analysis",
         "kpi"
@@ -316,6 +507,9 @@
       "cat": "en",
       "sub": "spec",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "spec",
         "glossary"
@@ -326,6 +520,9 @@
       "cat": "en",
       "sub": "bom",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "bom"
       ]
@@ -335,6 +532,9 @@
       "cat": "en",
       "sub": "bom",
       "st": 3,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "drawing",
         "search"
@@ -345,6 +545,9 @@
       "cat": "gn",
       "sub": "office",
       "st": 1,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "finance"
       ]
@@ -354,6 +557,9 @@
       "cat": "gn",
       "sub": "office",
       "st": 1,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "finance"
       ]
@@ -363,6 +569,9 @@
       "cat": "gn",
       "sub": "office",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "order"
       ]
@@ -372,6 +581,9 @@
       "cat": "gn",
       "sub": "daily",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "calendar",
         "meeting"
@@ -382,6 +594,9 @@
       "cat": "gn",
       "sub": "daily",
       "st": 1,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "summary"
       ]
@@ -391,6 +606,9 @@
       "cat": "gn",
       "sub": "daily",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "calendar",
         "kpi"
@@ -401,6 +619,9 @@
       "cat": "pt",
       "sub": "data",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "partner_infovendor",
         "credit"
@@ -411,6 +632,9 @@
       "cat": "pt",
       "sub": "data",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "partner_infovendor",
         "market"
@@ -421,6 +645,9 @@
       "cat": "pt",
       "sub": "data",
       "st": 2,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "partner_archive",
         "search"
@@ -431,6 +658,9 @@
       "cat": "pt",
       "sub": "data",
       "st": 3,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "partner_salarydb",
         "hr"
@@ -441,6 +671,9 @@
       "cat": "pt",
       "sub": "service",
       "st": 3,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "partner_recruit",
         "hr"
@@ -451,6 +684,9 @@
       "cat": "pt",
       "sub": "service",
       "st": 3,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "partner_procure",
         "purchase"
@@ -461,6 +697,9 @@
       "cat": "pt",
       "sub": "service",
       "st": 3,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "partner_procure",
         "order"
@@ -471,6 +710,9 @@
       "cat": "pt",
       "sub": "service",
       "st": 3,
+      "industries": [
+        "mfg"
+      ],
       "tags": [
         "partner_training",
         "education"
@@ -564,7 +806,6 @@
     "dashRecoNote",
     "dashWelcome",
     "demoDone",
-    "dept",
     "dropHint",
     "feedAction",
     "feedEyebrow",
@@ -578,6 +819,7 @@
     "feedRoutine",
     "feedTitle",
     "home",
+    "indLabel",
     "inputPanel",
     "kindDue",
     "kindNotify",
@@ -614,14 +856,18 @@
     "todoEyebrow",
     "todoTitle",
     "tplBadge",
-    "usesUnit",
-    "wordmark"
+    "usesUnit"
   ],
   "counts": {
     "cats": 8,
     "subs": 17,
     "svcs": 43,
     "tags": 43,
-    "ui": 79
+    "ui": 78,
+    "svcsMfg": 43,
+    "svcsFin": 0,
+    "svcsBoth": 0,
+    "catsMfg": 8,
+    "catsFin": 0
   }
 }
