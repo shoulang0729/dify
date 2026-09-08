@@ -114,7 +114,7 @@ const T = {
    ============================================================ */
 const INDUSTRIES = [
   { id: 'mfg',
-    name:     { ja: '製造業',   zh: '制造业',   en: 'Manufacturing' },
+    name:     { ja: '製造',   zh: '制造',   en: 'Manufacturing' },
     desc:     { ja: '在中日系製造業（中国工場）', zh: '在华日资制造业（中国工厂）', en: 'Japanese-affiliated manufacturer in China' },
     wordmark: { ja: '青嶺精工', zh: '青岭精工', en: 'SEIREI SEIKO' },
     dept:     { ja: '情報システム部', zh: '信息系统部', en: 'IT Department' } },
