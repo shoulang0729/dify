@@ -1,0 +1,6 @@
+contact_id,scope,label_ja,label_zh,label_en,person_id,phone_note,hours,escalate_to,note
+cnt_soumu,internal,総務部 当直,总务部 值班,General Affairs Duty Line,,+86-21-XXXX-9001（架空）,24時間,cnt_yakuin,来訪・出張の一次連絡先
+cnt_yakuin,internal,役員室 秘書（黒田麻衣）,董事会办公室 秘书（黑田麻衣）,Executive Office Secretary (Mai Kuroda),kuroda-mai,+81-3-XXXX-9002（架空）,平日 9:00-18:00（日本時間）,,日本本店側の窓口。person_id は people.csv の黒田麻衣（kuroda-mai）
+cnt_hotel_front,external,契約ホテル フロント（碧波ホテル上海）,签约酒店前台（碧波酒店上海）,Contracted Hotel Front Desk (Hekiha Hotel),,+86-21-XXXX-9101（架空）,24時間,cnt_soumu,hotels.csv の htl_hekiha に対応
+cnt_travel_desk,external,旅行会社（己社）24hデスク,旅行社（己社）24小时台,Travel Agency (Ki) 24h Desk,,+86-21-XXXX-9201（架空）,24時間,cnt_soumu,vendors.csv の己社（ハイヤー手配）に対応
+cnt_clinic,medical,提携クリニック（上海）,合作诊所（上海）,Partner Clinic (Shanghai),,+86-21-XXXX-9301（架空）,平日 9:00-17:00（時間外は救急案内）,cnt_soumu,来訪者の急病・体調不良時の一次連絡先

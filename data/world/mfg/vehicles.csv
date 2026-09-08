@@ -1,0 +1,4 @@
+vehicle_id,label_ja,label_zh,label_en,kind,seats,luggage,vendor_code,driver_person_id,site_id,booking_rule,note
+veh_1go,社用車1号車,公务车1号车,Company Car No.1,company,5,2,,zhu-hai,suzhou,総務課に前日 17:00 までに申請,設計書 §4-2 の本命車両。5 人乗り
+veh_wagon,社用車ワゴン,公务车（商务车）,Company Van,company,7,4,,zhu-hai,suzhou,総務課に前日 17:00 までに申請（台数限定のため早めの押さえが必要）,7 人乗り。同日別件で押さえ済みになる想定シナリオあり（台本 PR-3）
+veh_charter,R社ハイヤー,R社包车,Chartered Car (Travel Agency R),charter,7,4,R 社,,suzhou,R 社（旅行会社）に前日までに電話で手配（架空。§4-5）,7 人乗り。旅行会社手配のハイヤー。運転手は R 社の手配で自社の person_id を持たない

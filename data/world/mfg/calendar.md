@@ -40,6 +40,7 @@
 | `PC-LN-YYYY-NNN` | 工程条件書 | `PC-L3-2026-014`（`dify/kb/KN-01/工程条件書_旋盤ライン3.md`） |
 | `CM-NN` | 変更管理規定（社内規程番号） | `CM-01` |
 | `QC-NN` | 品質様式・検査基準番号 | `QC-11`（初品検査記録）`QC-27`（脱脂液濃度チェックシート）`QC-31`（碁盤目試験） |
+| `VST-YYYY-NNN` | 出張・来訪案件番号（GN-07） | `VST-2025-014`（設計書 2026-09-08-exec-visit-attend.md §4-4）。3 文字接頭にしているのは `tools/check-world.mjs` W7 の「管理番号形式（`^[A-Z]{2}-\d{2}$`）と紛らわしい」報告を避けるため |
 
 出典：`docs/handoff/2026-09-07-repo-layout-v2.md` §2-2・§2-3 の実測、および `mock/js/data/scenarios/*.js`・
 `dify/kb/KN-01/*.md` からの本 PR での再確認（grep 実測値。件数は概数）。

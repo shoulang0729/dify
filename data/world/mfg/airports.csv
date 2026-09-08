@@ -1,0 +1,5 @@
+airport_id,iata,name_ja,name_zh,name_en,city_ja,city_zh,city_en,tz,terminals,note
+apt_pvg,PVG,上海浦東国際空港,上海浦东国际机场,Shanghai Pudong International Airport,上海,上海,Shanghai,Asia/Shanghai,T1/T2,実在の空港名・IATA コード（設計書 §4-5。地理的事実として使用可）
+apt_sha,SHA,上海虹橋国際空港,上海虹桥国际机场,Shanghai Hongqiao International Airport,上海,上海,Shanghai,Asia/Shanghai,T1/T2,実在の空港名・IATA コード（設計書 §4-5）
+apt_nrt,NRT,成田国際空港,成田国际机场,Narita International Airport,千葉（東京近郊）,千叶（东京近郊）,Narita (near Tokyo),Asia/Tokyo,T1/T2/T3,実在の空港名・IATA コード（設計書 §4-5）
+apt_hnd,HND,東京国際空港（羽田）,东京国际机场（羽田）,Tokyo International Airport (Haneda),東京,东京,Tokyo,Asia/Tokyo,T1/T2/T3,実在の空港名・IATA コード（設計書 §4-5）

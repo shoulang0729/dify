@@ -1,0 +1,4 @@
+vehicle_id,label_ja,label_zh,label_en,kind,seats,luggage,vendor_code,driver_person_id,site_id,booking_rule,note
+veh_gyoumu1,公務車1号車,公务车1号车,Company Car No.1,company,5,2,,tang-zhiyuan,sh_hq,総務部に前日 17:00 までに申請,設計書 §4-2 の本命車両。5 人乗り
+veh_wagon,公務車ワゴン,公务车（商务车）,Company Van,company,7,4,,tang-zhiyuan,sh_hq,総務部に前日 17:00 までに申請（台数限定のため早めの押さえが必要）,7 人乗り
+veh_charter,己社ハイヤー,己社包车,Chartered Car (Travel Agency 己),charter,7,4,己社,,sh_hq,己社（旅行会社）に前日までに電話で手配（架空。§4-5）,7 人乗り。旅行会社手配のハイヤー。運転手は己社の手配で自社の person_id を持たない

@@ -1,0 +1,4 @@
+hotel_id,name_ja,name_zh,name_en,addr_ja,addr_zh,addr_en,tel,contract_note,site_id,note
+htl_kinpu,錦楓大酒店（蘇州）,锦枫大酒店（苏州）,Kinpu Hotel Suzhou,蘇州市蘇州工業園区錦楓路128号,苏州市苏州工业园区锦枫路128号,"No.128 Jinfeng Rd, Suzhou Industrial Park, Suzhou",+86-512-XXXX-1201（架空）,年間契約・シングル RMB 620/泊（朝食込み）,suzhou,架空のホテル。実在名との衝突が後から分かったらこの 1 ファイルと台本の語を差し替える。台本で使う本命（設計書 §4-6）
+htl_seiryu,青流ホテル蘇州,青流酒店苏州,Seiryu Hotel Suzhou,蘇州市姑蘇区青流街56号,苏州市姑苏区青流街56号,"No.56 Qingliu St, Gusu District, Suzhou",+86-512-XXXX-1302（架空）,年間契約・シングル RMB 480/泊（朝食込み）,suzhou,架空のホテル。蘇州市街・駅至近（設計書 §4-6）
+htl_ryuka,柳華ホテル上海虹橋,柳华酒店上海虹桥,Ryuka Hotel Shanghai Hongqiao,上海市長寧区柳華路980号,上海市长宁区柳华路980号,"No.980 Liuhua Rd, Changning District, Shanghai",+86-21-XXXX-1403（架空）,年間契約・シングル RMB 750/泊（朝食込み）,suzhou,架空のホテル。上海。前泊・乗継用（設計書 §4-6）

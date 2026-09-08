@@ -1,0 +1,9 @@
+route_id,from_id,to_id,mode,minutes_typical,minutes_peak,distance_km,cost_note,note
+rt_pvg_kinpu,apt_pvg,htl_kinpu,company_car,110,140,95,架空の見込み額（社用車のため実費計上なし）,設計書 §3-4-1 の骨子 2 行目に対応（PVG→ホテル）
+rt_sha_kinpu,apt_sha,htl_kinpu,company_car,95,120,80,架空の見込み額（社用車のため実費計上なし）,朝の渋滞込みで minutes_peak を使う（台本の「前倒し」の根拠。設計書 §3-4-1）
+rt_kinpu_suzhou,htl_kinpu,suzhou,company_car,20,35,12,架空の見込み額（社用車のため実費計上なし）,ホテル→工場（設計書 §3-4-1 骨子 4 行目）
+rt_pvg_suzhou,apt_pvg,suzhou,company_car,100,130,88,架空の見込み額（社用車のため実費計上なし）,空港から工場への直行ルート
+rt_sha_suzhou,suzhou,apt_sha,company_car,90,115,75,架空の見込み額（社用車のため実費計上なし）,工場から空港への直行ルート（出迎え往路の逆区間）
+rt_seiryu_suzhou,htl_seiryu,suzhou,company_car,15,25,8,架空の見込み額（社用車のため実費計上なし）,青流ホテル蘇州は市街・駅至近
+rt_ryuka_sha,htl_ryuka,apt_sha,taxi,30,45,18,架空の見込み額（タクシーメーター想定）,柳華ホテル上海虹橋は前泊・乗継用
+rt_pvg_sha,apt_pvg,apt_sha,rail,70,95,55,架空の見込み額（都市間鉄道・地下鉄想定）,上海の 2 空港間の乗継移動

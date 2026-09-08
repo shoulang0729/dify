@@ -1,0 +1,4 @@
+hotel_id,name_ja,name_zh,name_en,addr_ja,addr_zh,addr_en,tel,contract_note,site_id,note
+htl_hekiha,碧波ホテル上海,碧波酒店上海,Hekiha Hotel Shanghai,上海市浦東新区碧波路210号,上海市浦东新区碧波路210号,"No.210 Bibo Rd, Pudong New Area, Shanghai",+86-21-XXXX-2201（架空）,年間契約・シングル RMB 780/泊（朝食込み）,sh_hq,架空のホテル。実在名との衝突が後から分かったらこの 1 ファイルと台本の語を差し替える。台本で使う本命（設計書 §4-6）
+htl_shinonome,東雲ホテル上海浦東,东云酒店上海浦东,Shinonome Hotel Shanghai Pudong,上海市浦東新区東雲路45号,上海市浦东新区东云路45号,"No.45 Dongyun Rd, Pudong New Area, Shanghai",+86-21-XXXX-2302（架空）,年間契約・シングル RMB 680/泊（朝食込み）,sh_hq,架空のホテル。浦東・空港側（設計書 §4-6）
+htl_shirakaba,白樺ホテル大連,白桦酒店大连,Shirakaba Hotel Dalian,大連市中山区白樺街17号,大连市中山区白桦街17号,"No.17 Baihua St, Zhongshan District, Dalian",+86-411-XXXX-2403（架空）,年間契約・シングル RMB 560/泊（朝食込み）,dalian,架空のホテル。大連支店出張用（設計書 §4-6）

@@ -12,3 +12,6 @@ koubai,購買課,采购科,Procurement,suzhou,,出典: nm2/pt2/pt6/pt7 の perso
 zaimu,財務課,财务科,Finance,suzhou,,出典: gn1/gn2 の persona.role
 seisankanri,生産管理課,生产管理科,Production Control,suzhou,,出典: gn3 の persona.role（呉婷の兼務先。工場長室との重複は README の「未統一」に記載）
 jinji,人事課,人事科,HR,suzhou,,出典: pt5 の persona.role
+honsha_seisan,本社 生産本部,总部 生产本部,Corporate Production Division (HQ),jp_hq,,出典: GN-07（設計書 2026-09-08-exec-visit-attend.md §4-4）。来訪する常務の所属
+honsha_hisho,本社 秘書室,总部 秘书室,Corporate Secretariat (HQ),jp_hq,,出典: GN-07（設計書 §4-4）。到着便の変更などの事実の出どころ
+soumu,総務課,总务科,General Affairs,suzhou,kanri,出典: GN-07（設計書 §4-4）。管理部の下位課。緊急連絡先・車両手配の窓口
