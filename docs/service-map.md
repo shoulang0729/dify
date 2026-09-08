@@ -8,7 +8,7 @@
 | 管理番号 | サービス | 分類 | 業種 | 成熟度 | ①台本(製造) | ①台本(金融) | ②DSL | ③ユースケース | ④KB | ④テスト |
 |---|---|---|---|---|---|---|---|---|---|---|
 | KN-01 | 技術ナレッジQA | KN/tech | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | [KN-01-tech-knowledge-qa.yml](../dify/apps/KN-01-tech-knowledge-qa.yml) | [KN-01.md](./dify/usecases/KN-01.md) | [3 件](../dify/kb/KN-01/) | [4 件](../dify/tests/KN-01.json) |
-| KN-02 | 設備マニュアル・取扱説明書の検索 | KN/tech | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | [KN-02-equipment-manual-search.yml](../dify/apps/KN-02-equipment-manual-search.yml) | [KN-02.md](./dify/usecases/KN-02.md) | [3 件](../dify/kb/KN-02/) | [4 件](../dify/tests/KN-02.json) |
+| KN-02 | 設備マニュアル・取扱説明書の検索 | KN/tech | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | [KN-02-equipment-manual-search.yml](../dify/apps/KN-02-equipment-manual-search.yml) | [KN-02.md](./dify/usecases/KN-02.md) | [4 件](../dify/kb/KN-02/) | [4 件](../dify/tests/KN-02.json) |
 | KN-03 | 社内規程・就業規則QA | KN/rule | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | [KN-03-internal-rules-qa.yml](../dify/apps/KN-03-internal-rules-qa.yml) | [KN-03.md](./dify/usecases/KN-03.md) | [3 件](../dify/kb/KN-03/) | [4 件](../dify/tests/KN-03.json) |
 | KN-04 | 社内問い合わせ受付とFAQ蓄積 | KN/rule | 製造・金融 | 試行版 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | [KN-04.md](./dify/usecases/KN-04.md) | — | — |
 | KN-05 | 当局通達の影響分析・マニュアル反映（NFRA・地方当局等） | KN/rule | 製造・金融 | 試行版 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) upload | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | [KN-05.md](./dify/usecases/KN-05.md) | — | — |
