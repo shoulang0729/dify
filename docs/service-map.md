@@ -54,7 +54,7 @@
 | KN-06 | 事務手続の照会 | KN/rule | 金融 | 試行版 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | — | — | — |
 | KN-07 | 行内営業情報の検索（日誌・接触履歴） | KN/bizlog | 金融 | 構想 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | — | — | — |
 | KN-08 | 当局通達・ガイドラインDB（照会・過去比較） | KN/rule | 金融 | 試行版 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) diff | — | — | — | — |
-| DC-09 | 議案・報告書・提案書のドラフト作成（テンプレート選択） | DC/report | 金融 | 試行版 | — | [fin/dc.js](../mock/js/data/scenarios/fin/dc.js) form | — | — | — | — |
+| DC-09 | 議案・報告書・提案書のドラフト作成（テンプレート選択） | DC/report | 金融 | 試行版 | — | [fin/dc.js](../mock/js/data/scenarios/fin/dc.js) form | — | [DC-09.md](./dify/usecases/DC-09.md) | — | — |
 | RS-01 | 企業・業界ニュースの自動収集と配信 | RS/news | 金融 | 試行版 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) form | — | [RS-01.md](./dify/usecases/RS-01.md) | — | — |
 | RS-02 | セクター・発行体のモニタリング | RS/news | 金融 | 構想 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) form | — | [RS-02.md](./dify/usecases/RS-02.md) | — | — |
 | RS-03 | 顧客IR・決算の収集と日本語要約・比較 | RS/disc | 金融 | 試行版 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) upload | — | [RS-03.md](./dify/usecases/RS-03.md) | — | — |
@@ -69,9 +69,9 @@
 | FA-03 | 財務諸表のレビュー（整合性・監査対応） | FA/close | 金融 | 構想 | — | [fin/fa.js](../mock/js/data/scenarios/fin/fa.js) upload | — | [FA-03.md](./dify/usecases/FA-03.md) | — | — |
 | FA-04 | 財務モデルの作成と決算反映 | FA/model | 金融 | 構想 | — | [fin/fa.js](../mock/js/data/scenarios/fin/fa.js) upload | — | [FA-04.md](./dify/usecases/FA-04.md) | — | — |
 | FA-05 | バリュエーションのレビュー | FA/model | 金融 | 構想 | — | [fin/fa.js](../mock/js/data/scenarios/fin/fa.js) upload | — | [FA-05.md](./dify/usecases/FA-05.md) | — | — |
-| PO-01 | アンケート・インタビュー収集 | PO/collect | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) qa | — | — | — | — |
-| PO-02 | アイデアの募集・蓄積・投票集計 | PO/collect | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) form | — | — | — | — |
-| PO-03 | 小テスト・コンプライアンスチェックの実施と集計 | PO/collect | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) form | — | — | — | — |
-| PO-04 | 稼働の集計とコスト配分の提案 | PO/mgmt | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) upload | — | — | — | — |
-| EG-01 | 上流工程の仕様支援（読解・質問回答・エラー対処） | EG/sysspec | 製造・金融 | 構想 | — | [fin/eg.js](../mock/js/data/scenarios/fin/eg.js) qa | — | — | — | — |
-| 集計 | — | — | — | — | ①製造 44 | ①金融 29 | ②12 | ③58 | ④KB 4 | ④テスト 12 |
+| PO-01 | アンケート・インタビュー収集 | PO/collect | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) qa | — | [PO-01.md](./dify/usecases/PO-01.md) | — | — |
+| PO-02 | アイデアの募集・蓄積・投票集計 | PO/collect | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) form | — | [PO-02.md](./dify/usecases/PO-02.md) | — | — |
+| PO-03 | 小テスト・コンプライアンスチェックの実施と集計 | PO/collect | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) form | — | [PO-03.md](./dify/usecases/PO-03.md) | — | — |
+| PO-04 | 稼働の集計とコスト配分の提案 | PO/mgmt | 製造・金融 | 構想 | — | [fin/po.js](../mock/js/data/scenarios/fin/po.js) upload | — | [PO-04.md](./dify/usecases/PO-04.md) | — | — |
+| EG-01 | 上流工程の仕様支援（読解・質問回答・エラー対処） | EG/sysspec | 製造・金融 | 構想 | — | [fin/eg.js](../mock/js/data/scenarios/fin/eg.js) qa | — | [EG-01.md](./dify/usecases/EG-01.md) | — | — |
+| 集計 | — | — | — | — | ①製造 44 | ①金融 29 | ②12 | ③64 | ④KB 4 | ④テスト 12 |
