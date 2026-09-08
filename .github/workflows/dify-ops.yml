@@ -277,6 +277,39 @@ jobs:
             mv "$out" /tmp/dify-ops-probe-body.txt
           }
 
+          # 判定（judge）の結果にかかわらず、レスポンス本文を Job Summary に残す。
+          # なぜ本文をそのまま出してよいか：`GET /console/api/setup` は認証情報を
+          # 送らない公開エンドポイントで、この probe ステップは secrets.* を 1 つも
+          # 参照しない（reviewer が機械的に確認済み）。**将来このステップに認証を
+          # 足す場合は、この「本文をそのまま出す」前提を見直すこと**（load-bearing）。
+          # 本文が「成功」判定でも人が目視で確認できないと、judge() の見逃し
+          # （§10 コメントに明記した Cloudflare 表記ゆれ）に誰も気づけないため、
+          # 成功・失敗を問わず必ず出す。
+          # $1: 見出し（例: "1 回目"）, $2: 使った User-Agent, $3: HTTP status, $4: 本文ファイル
+          dump_body_to_summary() {
+            local label="$1" ua="$2" code="$3" body_file="$4"
+            local max_bytes=2000
+            local total_size head_content note=""
+            total_size="$(wc -c < "$body_file" | tr -d ' ')"
+            head_content="$(head -c "$max_bytes" "$body_file")"
+            if [ "$total_size" -gt "$max_bytes" ]; then
+              note=" ／先頭 ${max_bytes} 文字に切り詰め（全体 ${total_size} 文字）"
+            fi
+            {
+              echo "<details><summary>${label}の応答本文（User-Agent: \`${ua}\`／HTTP status: \`${code}\`${note}）</summary>"
+              echo
+              echo '```'
+              if [ -z "$head_content" ]; then
+                echo "(本文なし)"
+              else
+                printf '%s\n' "$head_content"
+              fi
+              echo '```'
+              echo "</details>"
+              echo
+            } >> "$GITHUB_STEP_SUMMARY"
+          }
+
           # Cloudflare のブロック本文特有のシグネチャだけに照合を狭める（reviewer 指摘）。
           # 設計書 §10・DEPLOY.md §4 が示す表記 "error code: 1010" に、大小文字・コロン
           # 前後の空白ゆれだけを許容して合わせる（"error code" の直後に "1010" が続く形）。
@@ -361,6 +394,13 @@ jobs:
           fi
 
           echo >> "$GITHUB_STEP_SUMMARY"
+
+          # 成功・失敗を問わず、判定に使った本文をそのまま残す（reviewer 指摘）。
+          # 「疑わしい結果が出たら本文を目視で確認する」を実行可能にするため。
+          dump_body_to_summary "1 回目" "$UA_PRIMARY" "$code1" /tmp/dify-ops-probe-body1.txt
+          if [ "$retried" = true ]; then
+            dump_body_to_summary "2 回目（再試行）" "$UA_FALLBACK" "$code2" /tmp/dify-ops-probe-body2.txt
+          fi
 
           case "$final_result" in
             0)
