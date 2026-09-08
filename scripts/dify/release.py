@@ -35,6 +35,9 @@ set でも --dry-run では呼ばない）。4・5・6・7 は実行予定のコ
 `--no-console-import`：cloud edition でも Console API を使わず、常に従来どおり IMPORT.md を書いて
 手動インポート待ちで止まる（DIFY_CONSOLE_TOKEN の有無に関係なく）。
 
+値をログに出さない：本モジュールの log() は console_api._mask() を必ず通す（cloud_deploy.py の log() と
+同じ作法。UUID 形式の app_id・Bearer/app-<key> を出力の直前で伏せる。CLAUDE.md §2-10・Issue #178）。
+
 終了コード: 0 成功（cloud 経路で手動待ちのため途中で止まる場合も含む）/ 1 いずれかの段で失敗 / 2 引数・環境不備
 """
 import argparse
@@ -74,7 +77,9 @@ class ReleaseError(RuntimeError):
 
 
 def log(msg):
-    print(msg, flush=True)
+    # console_api._mask() を必ず通す（cloud_deploy.py の log() と同じ作法。UUID の app_id・
+    # Bearer/app-<key> をログに出さない。CLAUDE.md §2-10・Issue #178）
+    print(console_api._mask(str(msg)), flush=True)
 
 
 def expand(s):

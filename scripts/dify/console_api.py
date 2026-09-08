@@ -29,7 +29,8 @@ Cloud（`edition: cloud`）でも使う：認証は `DIFY_CONSOLE_TOKEN`（ブ�
 `release.py` の selfhost 経路（email/password ログイン）は変更しない。
 
 値をログに出さない：access_token・console_token・email・password は log() に渡さない。例外メッセージは
-`Bearer <token>` / `app-<id>` らしき文字列を `***` に置換してから出す（`_mask()`）。
+`Bearer <token>` / `app-<id>` らしき文字列を `***` に置換し、UUID 形式の `app_id` は先頭 8 文字に落として
+から出す（`_mask()`。UUID の丸め処理は `masking.mask_ids()` に委譲。Issue #178）。
 """
 import json
 import os
@@ -38,6 +39,9 @@ import sys
 import time
 import urllib.error
 import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import masking  # noqa: E402  (scripts/dify/masking.py。上の sys.path.insert が必要)
 
 DEFAULT_TIMEOUT = 60
 
@@ -82,6 +86,7 @@ _MASK_PATTERNS = (
 def _mask(text):
     if not text:
         return text
+    text = masking.mask_ids(str(text))  # UUID 形式の app_id 等を先頭 8 文字に落とす（Issue #178）
     for pattern, repl in _MASK_PATTERNS:
         text = pattern.sub(repl, text)
     return text
@@ -296,5 +301,5 @@ if __name__ == "__main__":  # pragma: no cover
         sys.exit(1)
     print(f"アプリ {len(apps)} 件:")
     for a in apps:
-        print(f"  {a.get('id')}: {a.get('name')}")
+        print(_mask(f"  {a.get('id')}: {a.get('name')}"))
     sys.exit(0)

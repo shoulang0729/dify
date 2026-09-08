@@ -42,6 +42,9 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import masking  # noqa: E402  (scripts/dify/masking.py。上の sys.path.insert が必要。console_api.py は import しない＝認証まわりの依存を持ち込まないため。Issue #178)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 KB_DIR = os.path.join(ROOT, "dify", "kb")
 APPS_DIR = os.path.join(ROOT, "dify", "apps")
@@ -131,29 +134,8 @@ def build_retrieval_model():
     }
 
 
-def short_id(v):
-    """UUID・ID を先頭 8 文字だけにする（CLAUDE.md §2-10）。
-
-    dataset id / document id は dify/env/**/env.yml に直値で書くことを禁じている値
-    （§2-12 の ${DIFY_DATASET_ID_*}）。このスクリプトは GitHub Actions（公開リポジトリ）
-    からも動くので、完全な値を標準出力に出すと Actions のログに残り続ける。
-    突き合わせに使えるだけの長さは残しつつ、そのまま API を叩けない形にする。
-    """
-    v = "" if v is None else str(v)
-    return v if len(v) <= 8 else v[:8] + "…"
-
-
-_UUID_RE = re.compile(r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b")
-
-
-def mask_ids(text):
-    """文字列中の UUID をすべて先頭 8 文字に落とす（CLAUDE.md §2-10）。
-
-    成功時のログより、**エラー時のほうが漏れやすい**。HTTP エラーの message には
-    リクエストパス（/datasets/<dataset id>/...）が入り、応答本文にも id が入りうる。
-    公開リポジトリの Actions ログに残るため、raise する前にここを通す。
-    """
-    return _UUID_RE.sub(lambda m: m.group(0)[:8] + "…", "" if text is None else str(text))
+short_id = masking.short_id  # UUID・ID を先頭 8 文字だけにする（CLAUDE.md §2-10。実装は masking.py。Issue #178）
+mask_ids = masking.mask_ids  # 文字列中の UUID をすべて先頭 8 文字に落とす（同上）
 
 
 def log(msg):
@@ -352,7 +334,14 @@ def main():
         pending = {b for _, _, b in uploaded if b}
         while pending and time.time() < deadline:
             for batch in sorted(pending):
-                res = api.get(f"/datasets/{ds_id}/documents/{batch}/indexing-status")
+                try:
+                    res = api.get(f"/datasets/{ds_id}/documents/{batch}/indexing-status")
+                except RuntimeError as e:
+                    # batch は UUID 形式とは限らず mask_ids() の正規表現に掛からないことがある
+                    # （エラー経路で URL に生の batch が出うる）。分かっている値なので直接置換する。
+                    raise RuntimeError(
+                        str(e).replace(str(batch), short_id(batch)).replace(str(ds_id), short_id(ds_id))
+                    ) from None
                 statuses = [(d.get("indexing_status"), d.get("completed_segments"), d.get("total_segments"), d.get("error"))
                             for d in res.get("data") or []]
                 if statuses and all(s[0] in ("completed", "error", "paused") for s in statuses):
