@@ -41,8 +41,8 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 ### 2-3. 共通レイヤーの契約（パターンを増やすときの土台）
 - **置き場**：`mock/js/data/ui.js`（`T`/`PATTERNS`/`TAGS`/`TEMPLATES`）・`catalog.js`（`CATS`/`SVCS`）・`home.js`（`HOME`/`FEED`）・`style.js`（`CAT_STYLE`）・`scenarios/<分類>.js`（`SCENARIOS`。大分類ごと 8 ファイル、`window.SCENARIOS` に `Object.assign` で登録）。**`js/data/**` は純粋なリテラル宣言のみ**（`document`・`localStorage`・関数呼び出しを書かない。verify が vm で実行して読むため）。`state` とヘルパーは `mock/js/app.js`、描画は `mock/js/render.js`、click ハンドラと起動は `mock/js/events.js`。**読み込み順は `catalog.html` の `<script src>` の並びが唯一の正**（`data/ui → data/catalog → data/home → data/style → data/scenarios/* → app → render → events`）。古典的スクリプトのまま（`type="module"` にしない＝`file://` 対応）
 - **データ**：`CATS`（大分類→中分類）/ `SVCS`（サービス、`cat`/`sub`/`st`/`tags`/`name`/`desc`、任意 `added`〔追加日 `YYYY-MM-DD`。`NEW_DAYS` 以内なら ①バッジ／②新着帯／③お知らせを**その場で計算**して出す。`state`・`HOME`・`FEED` には持たせない。regress の対象外〕）/ `TAGS` / `TEMPLATES`（デモ画面テンプレート 5 種 `qa`/`upload`/`form`/`diff`/`lookup` の名称・説明、3 言語）/ `SCENARIOS`（サービス id → `{ template, persona{name,role,site,native}, steps{ja,zh,en}, input?, result?, script{ja,zh} }`。**台本 `script` と `input`/`result` は ja/zh のみ**＝§2-5 の実装。`SVCS` に埋め込まず別定数）/ `HOME`（② ダッシュボード用：`frequent`〔よく使う 6 件・サンプル利用件数〕・`recommended`〔おすすめ 3 件・理由 3 言語〕。**`SVCS` に埋め込まず別定数**。参照 id は `SVCS`/`CATS` に存在すること）/ `FEED`（③ 業務フィード用：`persona`・`mine`〔担当分類 3〕・`recent`〔最近使った 4〕・`items`〔疑似イベント 7 件、`kind` は `due`/`routine`/`notify`、絶対日付は持たない〕。**`SVCS` に埋め込まず別定数**。管理番号はフィード項目に出さない）/ `CAT_STYLE`（分類 id → インライン SVG アイコン。色は CSS の `--cat-*` トークン側）
-- **状態**：`state = { pattern, lang, theme, openCats, selCat, selSub, lastCat, selSvc, view, query, log }`。`view` は `list` / `detail` / `chat` / `demo`。`log` はデモで消費した台本ターン `[{lang,q,a}]`（`log.length` が次に消費する index。言語切替後の再描画で会話を復元）
-- **遷移**：`document` の `click` ハンドラの `data-act`（`pattern`/`all`/`cat`/`sub`/`svc`/`back`/`backdetail`/`start`/`send`/`run`/`chip`/`restart`/`gocat`）。`gocat` は分類タイルから直接その分類の一覧へ（`cat` と違いトグルしない）。`start` は `SCENARIOS` にあれば `demo`、なければ従来の `chat` へ（フォールバックを残す）
+- **状態**：`state = { pattern, lang, theme, industry, openCats, selCat, selSub, lastCat, selSvc, view, query, log, fav, favOnly }`。`industry` は業種（`mfg`/`fin`）。`fav` は業種ごとのお気に入り id、`favOnly` は一覧をお気に入りに絞っているか（`fav` だけ `localStorage` に持つ。§2-6）。`view` は `list` / `detail` / `chat` / `demo`。`log` はデモで消費した台本ターン `[{lang,q,a}]`（`log.length` が次に消費する index。言語切替後の再描画で会話を復元）
+- **遷移**：`document` の `click` ハンドラの `data-act`（`pattern`/`industry`/`all`/`cat`/`sub`/`svc`/`back`/`backdetail`/`start`/`send`/`run`/`chip`/`restart`/`gocat`/`fav`/`favlist`）。`industry` は業種切替（`.mockbar` に置く。レビュー用の足場）。`fav` は星の付け外し、`favlist` は一覧をお気に入りに絞る。**`fav` は全体を描き直さない**（一覧のスクロール位置が飛ぶため、押した箇所だけを差し替えてフォーカスを戻す）。`gocat` は分類タイルから直接その分類の一覧へ（`cat` と違いトグルしない）。`start` は `SCENARIOS` にあれば `demo`、なければ従来の `chat` へ（フォールバックを残す）
 - **ホーム**：`view === 'list'` かつ `selCat`/`selSub`/`query` が全部空の状態。ここだけ `pattern` で描き分ける（① グリッド / ② `renderDash` / ③ `renderFeed`）。`detail`/`chat`/`demo` は 3 パターン完全共通
 - ルール：**表示レイヤー（`renderSidebar` / `renderMain` 内のパターン分岐）は `state` を読んで描くだけ**。パターン固有の都合で `state` の形・データ形・遷移を変えない
 - なぜ：**パターンを切り替えても選択位置が保持され、同じ業務を別の見せ方で直接比較できる**のはこの契約のおかげ。②③（ダッシュボード / 業務フィード）はこの上に乗せる
@@ -60,9 +60,10 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 - 「日中対応」を**サービスの区別タグにしない**（全サービスの前提だから）
 - 検出：`tools/verify.mjs`（`detectLang` の存在）＋ reviewer
 
-### 2-6. `localStorage` キーは `mock.lang` / `mock.theme`
-- 変えるとレビュー参加者の設定が飛ぶ。変更禁止
-- 検出：`tools/verify.mjs`
+### 2-6. `localStorage` キーは許可集合。いまは `mock.lang` / `mock.theme` / `mock.fav` の 3 つだけ
+- **既存キーの改名・転用は禁止**（変えるとレビュー参加者の設定が飛ぶ）。**新しいキーを足すのは PM 判断**で、足したら**この節の一覧と `tools/verify.mjs` の許可集合を同時に更新する**
+- `mock.fav` はお気に入り（業種ごと `{mfg:[…], fin:[…]}`）。**壊れた値が入っていても他の設定を巻き添えにしない**よう、キーごとに別の try で読み書きする
+- 検出：`tools/verify.mjs`（アプリ層に現れる `mock.*` のリテラルが許可集合の部分集合であること。4 つ目を書くと FAIL する）
 
 ### 2-7. 成熟度 `st` は 1 / 2 / 3（提供中 / 試行版 / 構想）
 - 追加するなら `statusText` / `statusClass` / `.dot.*` / `.badge.*` / トークン（light・dark）を**同時に**
