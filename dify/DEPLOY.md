@@ -52,8 +52,19 @@ Claude in Chrome が無い環境（VS Code 拡張の Claude Code など）では
 - **初回だけ人がログインする**：Playwright が開いたウィンドウで `https://cloud.dify.ai` にログインし、
   そのウィンドウを閉じずに次の指示を出す。2 回目以降は同じプロファイルが再利用される
 - **ログイン情報・トークンをチャットに貼らない**（`CLAUDE.md` §2-10）。エージェントには「画面で操作して」とだけ頼む
+- **ファイルの読み取りは MCP の作業ディレクトリ配下に限られる**（`outside allowed roots` で拒否される。DI-021）。
+  リポジトリが別の場所にあるときは、インポートする DSL を作業ディレクトリ配下へ一時コピーしてから読み込ませる
+- 公開のショートカットは `⌘⇧P`。**知識検索ノードに KB が未選択だと、UI がチェックリストで止めて公開リクエスト自体を送らない**
+  （コンソールに `Checklist has unresolved items`）。KB を先に作って紐づけてから公開する
+- API キーは画面に出た値を読まず、**一覧行のコピーボタン → クリップボード → `~/.config/dify/<env>.env` へ直接書き込む**
+  （値を会話・ログに出さない。`CLAUDE.md` §2-10）
 
 #### `console_token` の取り方（Console API 経路の前提。人が 1 回だけ行う）
+
+> **確認要（2026-09-08 実測）**：Dify Cloud `1.17.0` のブラウザでは **`localStorage` に `console_token` が無い**。
+> コンソール API は **httpOnly のセッション Cookie ＋ `X-CSRF-Token` ヘッダ**で認証しており、Bearer ヘッダは送っていない
+> （[#114 のコメント](https://github.com/shoulang0729/dify/issues/114)）。下の手順は旧版・セルフホスト向けとして残している。
+> Cloud で Console API 経路を使う場合は、ログイン API がトークンを返すかの確認から要る。
 
 1. Chrome で `https://cloud.dify.ai` にログイン
 2. 開発者ツール（⌥⌘I）→ **Application** タブ → 左の **Local Storage** → `https://cloud.dify.ai`
@@ -145,13 +156,6 @@ git push
 - API を呼ばず JSON だけ確かめる：`python3 scripts/dify/run_tests.py --dry-run KN-01 DC-01`
 - 接続先を直接指定したいときは `--base-url`、結果の出力先を変えたいときは `--out`
 
-
-### Playwright MCP で操作するとき（Claude in Chrome が無い環境）
-
-- MCP サーバの `--user-data-dir` に専用プロファイルを渡し、**初回だけ人が Dify にログイン**する（以後はセッションが残る）
-- **ファイルの読み取りは MCP の作業ディレクトリ配下に限られる**（`outside allowed roots` で拒否される。DI-021）。リポジトリが別の場所にあるときは、インポートする DSL を作業ディレクトリ配下へ一時コピーしてから読み込ませる
-- 公開は `⌘⇧P`。**知識検索ノードに KB が未選択だと、UI がチェックリストで止めて公開リクエスト自体を送らない**（DI-012 の確認と同じ画面で確認する）
-- API キーは画面に出た値を読まず、**一覧行のコピーボタン → クリップボード → `~/.config/dify/env` へ直接書き込む**（値を会話・ログに出さない。`CLAUDE.md` §2-10）
 
 ### ④ 既存アプリを更新する（再インポート）
 
