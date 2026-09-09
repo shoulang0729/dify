@@ -7,16 +7,25 @@ name: dify-ops
 # 到達できるかだけを、秘密を一切使わずに確かめる（V5）。設計書: 同ファイル §10・§11「W4-3」。
 # 設計書: docs/handoff/2026-09-08-execution-split-and-runner.md（W1 の節・§9 セルフホストランナーの安全性）
 #
-# PM 決定（#121）：読み取り系の op（probe・run_tests）を承認ゲートの外に出す。
-# probe は秘密を一切使わない疎通確認、run_tests は Dify の状態を変えない読み取りで、
-# どちらも「ゲートを通す安全上の意味」が無い。KB を書き換える op（kb_upload / kb_refresh /
-# kb_replace / both）だけが Environment `dify-cloud-master`（required reviewers）の内側に残る。
+# PM 決定（#121。2026-09-09、案 B）：読み取り系の op（probe・run_tests）を承認ゲートの
+# 外に出す。probe は秘密を一切使わない疎通確認、run_tests は Dify の状態を変えない読み取りで、
+# どちらも「ゲートを通す安全上の意味」が無い。
+#
+# **ゲートの外し方は「Environment `dify-cloud-master` の Required reviewers チェックを外す」
+# （PM が GitHub の UI で 1 回行う）。ワークフロー側は tests ジョブにも
+# `environment: dify-cloud-master` を宣言したままにする**（Required reviewers が無い
+# Environment は承認を発生させず、単に secrets/vars のスコープとして機能する）。
+# こうすることで DIFY_APP_KEY_* を Repository secret に複製する必要が無くなる
+# （12 個のコピーは PM の負担が大きいため却下。案 A は不採用）。
+# KB を書き換える op（kb_upload / kb_refresh / kb_replace / both）は元から
+# `environment: dify-cloud-master` を宣言しており、変更なし。
 # ジョブを 3 つに分け、op ごとに if: でどれか 1 つだけが走るようにする（下の対応表）。
 #
 #   op          | 走るジョブ | environment          | 使う secrets
 #   ------------|-----------|-----------------------|----------------------------------------------
 #   probe       | probe     | 無し                  | 無し
-#   run_tests   | tests     | 無し                  | DIFY_APP_KEY_*（Repository secret）
+#   run_tests   | tests     | dify-cloud-master     | DIFY_APP_KEY_*（Environment secret。承認は
+#               |           | （承認ゲート無し）    | 発生しない＝Required reviewers を外したため）
 #   kb_upload   | kb        | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*
 #   kb_refresh  | kb        | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*
 #   kb_replace  | kb        | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*
@@ -24,14 +33,13 @@ name: dify-ops
 #               |           |                       | run_tests の両方を行う＝KB を書くためゲート内）
 #
 # 前提（PM が先に行う。dify/DEPLOY.md §7 参照）：
-#   - DIFY_APP_KEY_*（12 本）を Environment secret `dify-cloud-master` から
-#     **Repository secret** に複製する（environment を持たないジョブ〔tests〕からは
-#     Environment secret を読めないため）。DIFY_DATASET_KEY は Environment secret のまま残す
-#     （KB を書き換える鍵なのでゲートの内側に置く）。
-#   - DIFY_BASE_URL（秘密ではない）は Environment variable にしていた場合、
-#     **Repository variable にも複製する**（tests ジョブは environment を持たないため
-#     Environment variable を読めない。未設定でもスクリプト既定 `https://api.dify.ai/v1` に
-#     フォールバックするが、環境固有の値を使っていた場合は明示的な複製が必要）。
+#   - Settings → Environments → `dify-cloud-master` → **Required reviewers のチェックを外す**
+#     （これだけ。secrets の再配置は不要）。
+#
+# ゲートを戻すには Required reviewers を再度有効にすればよい（`tests` と `kb` の両方に
+# 承認が復活する。`probe` は environment を持たないので影響を受けない）。`kb` だけに
+# 戻したい場合は `kb` 専用の Environment を別に作り、DIFY_DATASET_KEY と DIFY_APP_KEY_*
+# をそちらへ移す（`dify/DEPLOY.md` §7 に詳細）。
 #
 # 重要：トリガは workflow_dispatch だけ。pull_request 系・push 系は絶対に付けない
 # （fork PR や push から secrets を含むこのワークフローが起動しないようにするため）。
@@ -339,14 +347,19 @@ jobs:
             exit 1
           fi
 
-  # op: run_tests。Dify の状態を変えない読み取り専用の操作なので、承認ゲート
-  # （environment）の外に出す（PM 決定。#121）。DIFY_APP_KEY_* は Repository secret
-  # から読む（PM が事前に Environment secret から複製しておくこと。上部コメント参照）。
+  # op: run_tests。Dify の状態を変えない読み取り専用の操作なので、承認は要らない
+  # （PM 決定・案 B。#121）。**`environment: dify-cloud-master` はあえて宣言したままにする**：
+  # Required reviewers は PM が GitHub の UI で外しているため承認は発生しないが、
+  # environment を宣言することで DIFY_APP_KEY_*（Environment secret）をそのまま読める。
+  # これにより DIFY_APP_KEY_* を Repository secret に複製する必要が無い（上部コメント参照）。
   tests:
     name: "tests（op: run_tests）"
     needs: validate
     if: ${{ inputs.op == 'run_tests' }}
     runs-on: ubuntu-latest
+    # Required reviewers を外してあるため、ここで承認待ちにはならない（PM 決定・案 B）。
+    # 宣言する目的は secrets/vars のスコープを dify-cloud-master に合わせることだけ。
+    environment: dify-cloud-master
     permissions:
       contents: write   # 結果ブランチの push（PR は作らないので pull-requests は不要）
     timeout-minutes: 45
@@ -391,8 +404,8 @@ jobs:
           # 12 本の Service API キー（dify/apps/*.yml の管理番号ぶん）。無いものは空文字のまま
           # スクリプト側が「未設定」として扱う（値は出力しない）。新しいアプリを足したら
           # この一覧にも 1 行足す（dify/DEPLOY.md §7 に運用メモあり）。
-          # このジョブに environment を付けていないため、ここで読めるのは
-          # Repository secret（PM が事前に複製したもの）だけ。
+          # このジョブは environment: dify-cloud-master を宣言しているので、
+          # Environment secret（kb ジョブと同じもの）をそのまま読める。
           DIFY_APP_KEY_DC01: ${{ secrets.DIFY_APP_KEY_DC01 }}
           DIFY_APP_KEY_DC02: ${{ secrets.DIFY_APP_KEY_DC02 }}
           DIFY_APP_KEY_DC04: ${{ secrets.DIFY_APP_KEY_DC04 }}
