@@ -115,7 +115,7 @@ OpenRouter プラグインは **customizable-model 対応**なので、一覧に
 `reasoning_effort` / `exclude_reasoning_tokens` を持つか未確認のため。**入れる前に、その環境で
 `render.py --env <env> --all` の出力を実機にインポートして通ることを確かめる。**
 
-`embedding` は `cloud-master` だけ空（KB 作成時のモデル指定はワークスペース既定に任せる）。**KB 付き 4 本は Rerank が必須（#195）。`cloud-master` はマスタ DSL と同値を持つ。`inhouse` は空＝無効のまま（未確認）**。
+`embedding` は `cloud-master` だけ空（KB 作成時のモデル指定はワークスペース既定に任せる）。**KB 付き 4 本は Rerank が必須（#195）。`cloud-master` はマスタ DSL と同値を持つ設計（案 D、2026-09-09 PM 決定。現時点ではマスタ DSL・env とも `reranking_enable: false` のまま。適用は #195 PR-2）。`inhouse` は空＝無効のまま（未確認）**。
 
 **`embedding` を変えたら、既存 KB は作り直しが要る**（索引ベクトルの次元・意味が変わるため）。
 
