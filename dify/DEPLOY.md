@@ -312,6 +312,22 @@ Git のマスタから `python3 scripts/dify/release.py --env inhouse --all` で
 **Mac が要らない操作（O5 KB 投入・O6 テスト実行）は、GitHub の `workflow_dispatch` から回せる。**
 Mac の前に座らずに `kb_upload.py` / `run_tests.py` を実行し、結果を PR として受け取れる。
 
+### 承認ゲートは「KB を書き換える op」だけ（#121）
+
+`dify-ops.yml` は `op` ごとに 3 つのジョブのどれか 1 つだけを走らせる。**Environment
+`dify-cloud-master`（required reviewers の承認待ち）が付くのは KB を書き換える op だけ**。
+`probe`（秘密を使わない疎通確認）と `run_tests`（Dify の状態を変えない読み取り）はゲートの
+外にあり、**承認クリックを待たずに実行される**。
+
+| op | 走るジョブ | `environment` | 承認待ち |
+|---|---|---|---|
+| `probe` | `probe` | 無し | **無し** |
+| `run_tests` | `tests` | 無し | **無し** |
+| `kb_upload` / `kb_refresh` / `kb_replace` / `both` | `kb` | `dify-cloud-master` | あり（従来どおり） |
+
+**`both` は `kb_upload` と `run_tests` の両方を行うため `kb` ジョブ（ゲート内）で実行する**
+（KB を書き換えるので）。テストだけを承認無しで流したいときは `op: run_tests` を選ぶこと。
+
 ### どの操作がどこで回せるか（§1-1 の再掲）
 
 | ラベル | 実行場所 | 回せる操作 |
@@ -330,8 +346,8 @@ Mac の前に座らずに `kb_upload.py` / `run_tests.py` を実行し、結果�
    - `codes`：管理番号を空白区切り（例 `KN-01 DC-01`）。`^[A-Z]{2}-[0-9]{2}( [A-Z]{2}-[0-9]{2})*$` に一致しない値は検証ステップで即失敗する。**`kb_replace` は削除を伴うため 1 件のみ**（2 件以上を指定すると Validate inputs で即 exit 1）。**`probe` では不要**（空欄のままでよい。検証もスキップされる）
    - `confirm`：**`kb_replace` のときだけ必須**。`codes` と完全に同じ文字列（対象の管理番号そのもの）を入力する。空欄・値違いは Validate inputs で即 exit 1（他の `op` では未使用。空欄のままでよい）
    - `env`：`cloud-master`（当面これだけ）
-3. Environment `dify-cloud-master` に **required reviewers** が設定されていれば、ここでジョブが一時停止し、承認待ちになる。**PM が承認するまでキーには一切触れない**
-4. 承認後、ジョブが `kb_upload.py` / `run_tests.py` を実行する。結果は
+3. `op: probe` / `op: run_tests` は **承認待ちにならず即座に実行される**（上表）。それ以外（`kb_upload` / `kb_refresh` / `kb_replace` / `both`）は Environment `dify-cloud-master` に **required reviewers** が設定されていれば、ここでジョブが一時停止し、承認待ちになる。**PM が承認するまでキーには一切触れない**
+4. 承認後（`probe` / `run_tests` は承認不要のためすぐ）、ジョブが `kb_upload.py` / `run_tests.py` を実行する。結果は
    - Job Summary（合否の要約。値は出さない。`kb_refresh` / `kb_replace` は文書ごとの出力〔`kb_upload.py` の標準出力。id はマスク済み〕も折りたたみ表示で残る）
    - `dify/results/<env>/<番号>-<YYYYMMDD-HHMM>.md`（テスト実行時のみ生成）を **`bot/dify-ops-<run_id>` ブランチに push → 自動で PR 作成**
 5. **PR のマージは人が行う**（`main` への直 push はしない。CLAUDE.md §5）。中身を読んでから squash マージする
@@ -375,7 +391,7 @@ Mac の前に座らずに `kb_upload.py` / `run_tests.py` を実行し、結果�
   - それ以外（接続失敗・想定外の HTTP status）→ 区別できるメッセージを Job Summary に出す
   - **照合は `error code: 1010`（大文字小文字・コロン前後の空白ゆれのみ許容）に絞っている。** 単純な `1010` の部分一致だと、`request_id` や件数に偶然その数字が入るだけの無関係な 403 まで「Cloudflare に弾かれた」と誤判定するため（reviewer 指摘）。**ただし** Cloudflare がブロック本文の文言を変えた場合（コロン無し表記・見出しのみ・HTML タグが挟まる表記など）は逆に**見逃して「成功」と誤判定しうる**。V5 の一次判定として使い、疑わしい結果が出たら本文を目視で確認すること
 - **本文を目視で確認する場所**：**Job Summary**（Actions の実行結果画面）に、判定結果（成功／失敗／判定不能）とは別に、**1 回目（再試行したときは 2 回目も）の応答本文**が `<details>` で折りたたまれて残る（見出しに使った User-Agent と HTTP status も併記）。長い本文は先頭 2000 文字に切り詰め、切ったことが見出しに表示される。**`GET /console/api/setup` は認証情報を送らない公開エンドポイントで `probe` は秘密を一切使わないため、本文はそのまま出している**（このステップに将来認証を足す場合はこの前提を見直すこと）
-- Environment `dify-cloud-master` の承認ゲートは他の `op` と同じく必要（**秘密は使わないが、実行の記録は残す**ため）
+- **Environment `dify-cloud-master` の承認ゲートは付かない**（#121。PM 決定）。秘密を一切使わず、Dify に副作用も無い読み取り専用の疎通確認のため、ゲートを通す安全上の意味が無い。実行記録は Actions のログにそのまま残る
 
 ### 変更パスガード（load-bearing）
 
@@ -388,12 +404,23 @@ push の直前に、ステージされたファイルがすべて次のどちら
 
 `dify/state/` は W2 で導入予定（いまは生成されない）。**実機側の自動 PR が `docs/service-map.md`・`mock/**`・`dify/apps/**` などを書き換えて紛れ込ませることを構造的に防ぐ**（#121 の「生成物の二重生成」対策）。
 
-### 秘密の扱い
+### 秘密の扱い（#121 でジョブ分割に伴い置き場を分けた）
 
-- キーは **Environment secret `dify-cloud-master`**（`DIFY_DATASET_KEY`・`DIFY_APP_KEY_<番号>` 12 本）に置く。**PM が GitHub の UI で登録する**（このワークフローはキーの値に一切触れない）
+`tests` ジョブ（`op: run_tests`）は `environment:` を持たないため、**Environment secret を読めない**。
+そのため `DIFY_APP_KEY_<番号>`（12 本）は **Repository secret** に複製している。**`DIFY_DATASET_KEY`
+（KB を書き換える鍵）は Environment secret `dify-cloud-master` のまま**（`kb` ジョブだけが読む）。
+
+- `DIFY_DATASET_KEY`：**Environment secret `dify-cloud-master`** のみ。`kb` ジョブ（`environment: dify-cloud-master`）だけが読む
+- `DIFY_APP_KEY_<番号>`（12 本）：**Repository secret**（`tests` ジョブと `kb` ジョブの両方から読める）。**PM が GitHub の UI で登録・複製する**（このワークフローはキーの値に一切触れない）
+- `DIFY_BASE_URL`（秘密ではない）：Environment variable にしていた場合は **Repository variable にも複製する**。`tests` ジョブは `environment:` が無いため Environment variable を読めない（未設定なら `run_tests.py` の既定 `https://api.dify.ai/v1` にフォールバックするので、既定のままで良ければ複製不要）
 - ワークフローはキーの**値**をログに出さない（`set -x` 不使用、`env` / `printenv` 不使用）。「設定されているか」だけを確認する
 - `run_tests.py` のエラー出力にはキーは含まれない（API のエラー本文だけ。実装を確認済み）
 - 失敗しても Dify 側に副作用は無い（`kb_upload.py` は冪等・同名文書スキップ、`run_tests.py` は読み取りのみ）
+
+**移行手順（順序が重要）**：Repository secret への `DIFY_APP_KEY_*` の複製が終わる**前**にこの変更を
+含む PR を `main` にマージすると、`tests` ジョブ（承認ゲート無しで即実行される）がキー無しで
+`run_tests.py` を呼び、`exit 2`（設定不備）で失敗する。**先に Repository secret を登録してから
+マージすること。**
 
 ### 実機の到達性（A1）はまだ確認していない
 
@@ -417,8 +444,9 @@ Issue・PR には次の 3 分類のいずれか **1 つだけ**を `run:*` ラ�
 ### PM が GitHub の UI で設定すること（ワークフローでは設定できない）
 
 - Settings → Environments → `dify-cloud-master` を作成 → **Required reviewers** に PM を追加 → **Deployment branches** を `main` のみに制限
-- Settings → Environments → `dify-cloud-master` → Secrets に `DIFY_DATASET_KEY`・`DIFY_APP_KEY_<番号>`（12 本）を登録
-- 任意：Settings → Environments → `dify-cloud-master` → Variables に `DIFY_BASE_URL`（秘密ではない。既定 `https://api.dify.ai/v1`）
+- Settings → Environments → `dify-cloud-master` → Secrets に `DIFY_DATASET_KEY` を登録（`kb` ジョブだけが読む鍵。ゲートの内側に置く）
+- Settings → Secrets and variables → Actions → **Repository secrets** に `DIFY_APP_KEY_<番号>`（12 本）を登録（**#121 でここに移した**。`tests` ジョブ〔`op: run_tests`。承認ゲート無し〕と `kb` ジョブの両方から読める）
+- 任意：Settings → Secrets and variables → Actions → **Repository variables** に `DIFY_BASE_URL`（秘密ではない。既定 `https://api.dify.ai/v1`）。Environment variable のまま既定値と異なる値を使っていた場合は、`tests` ジョブが読めるようここにも複製する
 - Settings → Actions → General → Fork pull request workflows from outside collaborators → **Require approval for all outside collaborators**
 - ラベル `run:cloud` / `run:runner` / `run:mac` を Issues → Labels で作成（無くてもワークフローは動くが、PR への自動付与ができない）
 
