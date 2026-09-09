@@ -4,7 +4,8 @@ test_console_api.py / test_run_tests.py と同じ作法。mock_server.py を子�
 
     python3 scripts/dify/tests/test_cloud_deploy.py     # exit 0 で全件 PASS。ネットワークは 127.0.0.1 のみ
 
-設計: docs/handoff/2026-09-08-cloud-console-deploy.md §2・§4-3・§7 PR-2（Issue #114）
+設計: docs/handoff/2026-09-08-cloud-console-deploy.md §2・§4-3・§7 PR-2（Issue #114）／
+docs/handoff/2026-09-08-cloud-auth-and-w4.md §9-2・§9-3・§11「W4-4」（Issue #121。P1・B3）
 
 CI（`npm test`）には入れない（`CLAUDE.md` §3 のコマンド集合を変えない）。実行は implementer と reviewer が手で行う。
 `dify/env/cloud-master/env.yml`・`dify/apps/*.yml` は**読むだけ**（書き換えない）。生成物 `dify/build/cloud-master/**`
@@ -12,6 +13,7 @@ CI（`npm test`）には入れない（`CLAUDE.md` §3 のコマンド集合を�
 テスト同士が同じアプリ名で衝突しない（名前一致に巻き込まれない）ようにしてある。
 """
 import glob
+import json
 import os
 import re
 import shutil
@@ -80,9 +82,15 @@ def list_apps_via_http(base, token):
         base.rstrip("/") + "/console/api/apps?page=1&limit=100",
         headers={"Authorization": f"Bearer {token}"},
     )
-    import json
     with urllib.request.urlopen(req, timeout=10) as r:
         return json.loads(r.read())["data"]
+
+
+def get_stats(base):
+    """mock_server.py の /__test__/stats（DELETE/PATCH/update_by_text/publish の累計呼び出し回数）を取る。
+    テストをまたいで累積するグローバル状態なので、P1 の検証は必ず前後の差分で見ること。"""
+    with urllib.request.urlopen(base.rstrip("/") + "/__test__/stats", timeout=10) as r:
+        return json.loads(r.read())
 
 
 def cleanup_build():
@@ -326,6 +334,86 @@ def test_t12_no_token_leak_anywhere(base, tmpdir):
         check("T12: 保存したログファイルにもトークンが現れない", token not in fh.read())
 
 
+def test_p1_no_publish_on_partial_import_failure(base):
+    """P1（設計書 §9-2・§11「W4-4」。Issue #121）: 2 番号のうち 1 本のインポートが失敗したら、
+    もう 1 本が正常にインポートできていても公開を 1 件も行わない。mock_server の /__test__/stats
+    で publish の呼び出し回数（グローバル累計）を前後で比較し、差分が 0 であることを機械確認する。"""
+    before = get_stats(base)
+    token = "p1-test-token"
+    ok_app_id = "p1-test-ok-app"
+    r = run_cli(
+        [
+            "--env", "cloud-master", "KN-02", "GN-01",
+            "--app-id", f"KN-02={ok_app_id}",
+            "--app-id", f"GN-01={mock_server.MOCK_FORCE_IMPORT_FAIL}",
+            "--no-adopt-by-name",
+        ],
+        {"DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base},
+    )
+    combined = r.stdout + r.stderr
+    check("P1: 1 本失敗すると exit 1", r.returncode == 1, combined)
+    check("P1: KN-02（成功した番号）のインポートは完了する", "[KN-02] インポート完了" in combined, combined)
+    check("P1: GN-01（失敗させた番号）は [FAIL] と記録される", "[GN-01] [FAIL]" in combined, combined)
+    check("P1: 「公開は 1 件も行いません」のログが出る", "公開は 1 件も行いません" in combined, combined)
+    check("P1: 成功した番号の公開完了ログが出ない（公開していない証拠）",
+          f"公開完了: app_id={ok_app_id}" not in combined, combined)
+
+    after = get_stats(base)
+    check("P1: publish が 1 回も呼ばれていない（mock_server の呼び出し回数を機械確認）",
+          after.get("publish", 0) == before.get("publish", 0), (before, after))
+
+
+def test_p1_all_succeed_publishes_all(base):
+    """P1 の裏側: 全件インポートが成功すれば、まとめて公開されること
+    （publish の呼び出し回数が対象の番号数ぶん増える）。"""
+    before = get_stats(base)
+    token = "p1-success-test-token"
+    r = run_cli(
+        [
+            "--env", "cloud-master", "KN-02", "GN-01",
+            "--app-id", "KN-02=p1-success-kn02",
+            "--app-id", "GN-01=p1-success-gn01",
+            "--no-adopt-by-name",
+        ],
+        {"DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base},
+    )
+    combined = r.stdout + r.stderr
+    check("P1（成功系）: exit 0", r.returncode == 0, combined)
+    check("P1（成功系）: 全件インポート成功のログが出る", "全件インポート成功" in combined, combined)
+    check("P1（成功系）: KN-02 が公開される", "公開完了: app_id=p1-success-kn02" in combined, combined)
+    check("P1（成功系）: GN-01 が公開される", "公開完了: app_id=p1-success-gn01" in combined, combined)
+
+    after = get_stats(base)
+    check("P1（成功系）: publish が対象の番号数ぶん（2 回）増える",
+          after.get("publish", 0) - before.get("publish", 0) == 2, (before, after))
+
+
+def test_b3_logout_called_for_refresh_auth(base):
+    """B3（設計書 §8-7・§9-3。Issue #121 W4-4）: DIFY_CONSOLE_REFRESH で認証した実行は、
+    ジョブ末尾で必ず logout を試みる（成功ログが出る）。値はどこにも現れない。"""
+    seed = "b3-cloud-deploy-seed-refresh-token"
+    r = run_cli(
+        ["--env", "cloud-master", "KN-02", "--app-id", "KN-02=b3-refresh-app", "--no-adopt-by-name"],
+        {"DIFY_CONSOLE_REFRESH": seed, "DIFY_CONSOLE_TOKEN": "", "DIFY_CONSOLE_URL": base},
+    )
+    combined = r.stdout + r.stderr
+    check("B3: exit 0", r.returncode == 0, combined)
+    check("B3: logout 完了のログが出る", "logout 完了" in combined, combined)
+    check("B3: seed のリフレッシュトークン値が出力に現れない", seed not in combined, combined)
+
+
+def test_b3_logout_not_called_for_legacy_token(base):
+    """B3 の対象外: 非推奨の DIFY_CONSOLE_TOKEN（レガシー）経路では logout を呼ばない
+    （設計書 §8-7 B3 は Cookie 案＝リフレッシュトークンのセッションに限った歯止めのため）。"""
+    r = run_cli(
+        ["--env", "cloud-master", "KN-02", "--app-id", "KN-02=b3-legacy-app", "--no-adopt-by-name"],
+        {"DIFY_CONSOLE_TOKEN": "b3-legacy-token", "DIFY_CONSOLE_URL": base},
+    )
+    combined = r.stdout + r.stderr
+    check("B3（レガシー）: exit 0", r.returncode == 0, combined)
+    check("B3（レガシー）: logout 関連のログが出ない", "logout" not in combined, combined)
+
+
 def main():
     check("前提: cloud_deploy.py が存在する", os.path.isfile(CLOUD_DEPLOY))
     check("前提: mock_server.py が存在する", os.path.isfile(MOCK_SERVER))
@@ -356,6 +444,10 @@ def main():
         test_t11_no_token_unset_exit2()
         with tempfile.TemporaryDirectory(prefix="cloud_deploy_test_") as tmpdir:
             test_t12_no_token_leak_anywhere(base, tmpdir)
+        test_p1_no_publish_on_partial_import_failure(base)
+        test_p1_all_succeed_publishes_all(base)
+        test_b3_logout_called_for_refresh_auth(base)
+        test_b3_logout_not_called_for_legacy_token(base)
     finally:
         proc.terminate()
         try:

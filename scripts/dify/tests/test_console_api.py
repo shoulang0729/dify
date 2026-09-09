@@ -104,7 +104,7 @@ def test_t1b_mask_case_insensitive():
 
 def test_t2_endpoints_table():
     for key in ("login", "refresh_token", "apps", "apps_imports", "apps_imports_confirm",
-                "workflows_publish", "workflows_draft"):
+                "workflows_publish", "workflows_draft", "logout"):
         check(f"T2: ENDPOINTS['{key}'] が定義されている", key in console_api.ENDPOINTS, str(console_api.ENDPOINTS.keys()))
 
 
@@ -394,6 +394,68 @@ def test_t16_selfhost_still_uses_legacy_no_csrf(base):
     check("T16: csrf 無しでも selfhost 経路の list_apps は成功する", isinstance(apps, list))
 
 
+def test_w17_logout_invalidates_session(base):
+    """B3（設計書 §8-7・§9-3。Issue #121 W4-4）: refresh 経由のセッションで logout() を呼ぶと、
+    以後その access_token では認証済みリクエストが 401 になること。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.refresh("w17-seed-refresh-token")
+    check("W17: refresh 直後は list_apps が成功する", isinstance(client.list_apps(), list))
+
+    ok = client.logout()
+    check("W17: logout() が True を返す", ok is True)
+
+    try:
+        client.list_apps()
+        check("W17: logout 後は同じセッションで list_apps が失敗する", False)
+    except console_api.ConsoleAuthError:
+        check("W17: logout 後は同じセッションで list_apps が失敗する", True)
+
+
+def test_w18_logout_skips_when_unauthenticated():
+    """未認証（_token が無い）の logout() は例外を投げず False を返す（ネットワークも呼ばない）。"""
+    client = console_api.ConsoleClient("http://127.0.0.1:1", timeout=10)
+    ok = client.logout()
+    check("W18: 未認証の logout() は False", ok is False)
+
+
+def test_w19_auth_mode_tracks_route(base):
+    """_auth_mode が認証経路ごとに正しく記録される（cloud_deploy.py の B3 ゲートが使う値）。"""
+    c1 = console_api.ConsoleClient(base, timeout=10)
+    c1.set_token("w19-legacy-token")
+    check("W19: set_token 後は _auth_mode == 'token'", c1._auth_mode == "token", c1._auth_mode)
+
+    c2 = console_api.ConsoleClient(base, timeout=10)
+    c2.refresh("w19-seed-refresh-token")
+    check("W19: refresh() 後は _auth_mode == 'refresh'", c2._auth_mode == "refresh", c2._auth_mode)
+
+    c3 = console_api.ConsoleClient(base, timeout=10)
+    c3.login("w19@example.com", "dummy-password")
+    check("W19: login() 後は _auth_mode == 'password'", c3._auth_mode == "password", c3._auth_mode)
+
+
+def test_w20_logout_no_delete_and_no_leak(base):
+    """logout() は POST のみを使い（tools/verify.mjs §15 の許可外に触れない）、
+    リフレッシュ/アクセス/CSRF トークンの値が logout の呼び出し前後で標準出力に現れないこと。"""
+    with open(CONSOLE_API, encoding="utf-8") as fh:
+        src = fh.read()
+    m = re.search(r"    def logout\(self\):.*?(?=\n    def |\Z)", src, re.DOTALL)
+    logout_func = m.group(0) if m else ""
+    check("W20: logout() の関数本体が見つかる", bool(logout_func), src[:0])
+    check("W20: logout() は _req に \"POST\" を渡している", '_req("POST", ENDPOINTS["logout"]' in logout_func, logout_func)
+    check("W20: logout() は \"DELETE\" を渡していない", '"DELETE"' not in logout_func, logout_func)
+
+    client = console_api.ConsoleClient(base, timeout=10)
+    seed = "w20-seed-refresh-token-xyz"
+    client.refresh(seed)
+    access, csrf, refresh_after = client._token, client._csrf, client._refresh_token
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        client.logout()
+    out = buf.getvalue()
+    for secret, label in ((access, "access_token"), (csrf, "csrf_token"), (refresh_after, "refresh_token"), (seed, "seed refresh_token")):
+        check(f"W20: logout() の出力に {label} の値が現れない", secret not in out, out)
+
+
 def main():
     check("前提: console_api.py が存在する", os.path.isfile(CONSOLE_API))
     check("前提: mock_server.py が存在する", os.path.isfile(MOCK_SERVER))
@@ -430,6 +492,10 @@ def main():
         test_t13_csrf_mismatch_when_already_retried(base)
         test_t15_no_secret_leak_in_normal_flow(base)
         test_t16_selfhost_still_uses_legacy_no_csrf(base)
+        test_w17_logout_invalidates_session(base)
+        test_w18_logout_skips_when_unauthenticated()
+        test_w19_auth_mode_tracks_route(base)
+        test_w20_logout_no_delete_and_no_leak(base)
     finally:
         proc.terminate()
         try:

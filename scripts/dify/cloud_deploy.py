@@ -8,17 +8,24 @@
 
 設計: docs/handoff/2026-09-08-cloud-console-deploy.md §2・§4-3（Issue #114 PR-2）
 
-流れ（§2-1）
+流れ（§2-1。P1〔全件インポート成功後にまとめて公開〕は 3〜6 の並びに反映済み。Issue #121 W4-4）
   0 preflight   env.yml / PyYAML / DIFY_CONSOLE_TOKEN（か email/password）の有無 → 無ければ exit 2
                 （値は出さない。"set"/"unset" だけ表示）
   1 render      render.py --env <env> --strict <番号...> → dify/build/<env>/*.yml
   2 resolve     app_id を決める（優先順: --app-id → env の apps.<番号>.id → 名前一致 → 新規作成）
-  3 import      POST /console/api/apps/imports（app_id 付きなら上書き）。401/403 は exit 3 で即停止
+  3 import      対象番号すべてに POST /console/api/apps/imports（app_id 付きなら上書き）。
+                401/403 は exit 3 で即停止。それ以外の失敗は記録して次の番号へ進む（--stop-on-error で中断）
   4 confirm     console_api.import_dsl() が pending を自動で confirm する（既存実装）
   5 kb          --bind-kb draft のときだけ get_draft/update_draft で dataset_ids を差し替える
                 （既定は dsl＝render 済み DSL に knowledge.*.id が焼き込まれている前提。何もしない）
-  6 publish     POST …/workflows/publish（--no-publish で飛ばす）
+  6 publish     **P1**: 3〜5 で 1 件でも失敗していたら、6 は 1 件も実行しない（§9-2）。
+                全件成功していれば POST …/workflows/publish をまとめて実行（--no-publish で飛ばす）
   7 report      番号 → app_id の表と、env.yml へ書き戻す断片を表示（--write-env のときだけファイルを書く）
+  8 logout      **B3**（§8-7・§9-3）: 本番実行でセッションを確立できていた場合
+                （DIFY_CONSOLE_REFRESH 経由の "refresh" 認証のときだけ）、3〜7 の成否によらず
+                最後に必ず POST /console/api/logout を試みる（失敗しても deploy 全体の終了コードは変えない）。
+                DIFY_CONSOLE_TOKEN（非推奨）・selfhost の email/password 認証では何もしない
+                （設計書 §8-7 B3 は Cookie 案＝リフレッシュトークンのセッションに限った歯止めのため）
 
 冪等性の核（§2-2）：同じ番号を 2 回流してもアプリが増えないこと。
   1. --app-id <番号>=<id>
@@ -27,7 +34,8 @@
      --no-adopt-by-name で無効化
   4. 新規作成 → 書き戻し断片を出す
 
-終了コード: 0 全件成功（--dry-run 正常終了含む） / 1 1 件以上の失敗 / 2 引数・環境不備・到達不可 / 3 認証エラー（401/403）
+終了コード: 0 全件成功（--dry-run 正常終了含む） / 1 1 件以上の失敗（インポートまたは公開） /
+           2 引数・環境不備・到達不可 / 3 認証エラー（401/403）
 
 値をログに出さない：DIFY_CONSOLE_TOKEN・Authorization ヘッダ・API キーの値。本モジュールの log() は
 console_api._mask() を必ず通す（CLAUDE.md §2-10）。
@@ -160,17 +168,24 @@ def resolve_codes(all_flag, codes_arg):
 
 
 def preflight(env_name):
-    """env.yml / PyYAML / トークン（か email+password）の有無を確認する。値は出さない。"""
+    """env.yml / PyYAML / 認証情報（DIFY_CONSOLE_REFRESH〔推奨。Cloud〕／DIFY_CONSOLE_TOKEN〔非推奨〕／
+    email+password〔selfhost〕のいずれか）の有無を確認する。値は出さない。
+
+    Issue #121 W4-4 で修正：以前は DIFY_CONSOLE_REFRESH を見ていなかった
+    （console_api.client_from_env() の優先順〔refresh → token → email/password〕と食い違っており、
+    `dify-ops.yml` の `deploy` ジョブが Environment secret に登録する想定の DIFY_CONSOLE_REFRESH
+    だけを設定した場合に、ここで「未設定」として弾かれてしまうバグだった）。"""
     if yaml is None:
         raise CloudDeployError("PyYAML がありません: pip3 install pyyaml")
     env_path = os.path.join(ENV_DIR, env_name, "env.yml")
     if not os.path.isfile(env_path):
         raise CloudDeployError(f"env が見つかりません: {os.path.relpath(env_path, ROOT)}")
+    refresh_set = bool(os.environ.get("DIFY_CONSOLE_REFRESH", "").strip())
     token_set = bool(os.environ.get("DIFY_CONSOLE_TOKEN", "").strip())
     email_pw_set = bool(
         os.environ.get("DIFY_CONSOLE_EMAIL", "").strip() and os.environ.get("DIFY_CONSOLE_PASSWORD", "").strip()
     )
-    return env_path, token_set, (token_set or email_pw_set)
+    return env_path, refresh_set, token_set, (refresh_set or token_set or email_pw_set)
 
 
 def parse_app_id_args(values):
@@ -296,6 +311,23 @@ def print_report(results, failures):
             log(f"  [{code}] {msg}")
 
 
+def safe_logout(client):
+    """B3（設計書 §8-7・§9-3。Issue #121 W4-4）: ジョブの最後に必ずセッションの無効化を試みる。
+    `client._auth_mode == "refresh"`（DIFY_CONSOLE_REFRESH 経由。Cookie 案。§8-1）のときだけ実行する
+    ——非推奨の DIFY_CONSOLE_TOKEN・selfhost の email/password 認証は対象外（設計書 §8-7 B3 は
+    Cookie 案のセッションに限った歯止めのため。既存のテスト・運用〔レガシートークンの再利用〕を壊さない）。
+
+    logout 自体が失敗しても deploy 全体の終了コードには影響させない（既にインポート・公開の結果で
+    決まっているため）。失敗はログに残す（値は console_api.log() が _mask() を通すので出ない）。
+    呼び出し元は try/finally で「import/publish の成否によらず必ず呼ばれる」ことを保証する。"""
+    if getattr(client, "_auth_mode", None) != "refresh":
+        return
+    try:
+        client.logout()
+    except console_api.ConsoleAPIError as e:
+        log(f"[logout] 失敗しました（無視して続行。手動での即時失効手順は dify/DEPLOY.md §9 を参照）: {e}")
+
+
 def print_write_env_fragment(new_ids):
     log("\nenv.yml に書き戻す差分（--write-env を付けると自動で書きます）:")
     log("  apps:")
@@ -372,7 +404,7 @@ def main():
 
     try:
         cli_app_ids = parse_app_id_args(args.app_id)
-        env_path, token_set, creds_available = preflight(env_name)
+        env_path, refresh_set, token_set, creds_available = preflight(env_name)
         _, env_raw = load_env_raw(env_name)
         codes = resolve_codes(args.all, args.codes)
     except CloudDeployError as e:
@@ -380,11 +412,12 @@ def main():
         return 2
 
     console_url = os.environ.get("DIFY_CONSOLE_URL", "").strip() or expand((env_raw.get("dify") or {}).get("console_url") or "")
-    log(f"DIFY_CONSOLE_TOKEN: {'set' if token_set else 'unset'}   DIFY_CONSOLE_URL: {console_url or '(未設定)'}")
+    log(f"DIFY_CONSOLE_REFRESH: {'set' if refresh_set else 'unset'}   "
+        f"DIFY_CONSOLE_TOKEN: {'set' if token_set else 'unset'}   DIFY_CONSOLE_URL: {console_url or '(未設定)'}")
     log(f"対象: {', '.join(codes)}")
 
     if not creds_available:
-        log("DIFY_CONSOLE_TOKEN、または DIFY_CONSOLE_EMAIL / DIFY_CONSOLE_PASSWORD のいずれも未設定です。")
+        log("DIFY_CONSOLE_REFRESH、DIFY_CONSOLE_TOKEN、または DIFY_CONSOLE_EMAIL / DIFY_CONSOLE_PASSWORD のいずれも未設定です。")
         log(console_api.TOKEN_HELP)
         return 2
 
@@ -428,11 +461,24 @@ def main():
         log(str(e))
         return 2
 
+    # B3（§8-7・§9-3。Issue #121 W4-4）：import/publish の成否によらず、必ず logout を試みる。
+    # ここから下で return する経路（認証エラーの即時停止・失敗の記録）はすべて try のスコープ内なので、
+    # finally は例外・return のどちらでも実行される。
+    try:
+        return run_deploy(client, codes, out_dir, cli_app_ids, env_raw, adopt_by_name, args, env_path)
+    finally:
+        safe_logout(client)
+
+
+def run_deploy(client, codes, out_dir, cli_app_ids, env_raw, adopt_by_name, args, env_path):
+    """本番実行のフェーズ 1（全件インポート）とフェーズ 2（公開）。P1（§9-2）：
+    フェーズ 1 で 1 件でも失敗したら、フェーズ 2（公開）は 1 件も実行しない。"""
     apps_cache = {"apps": None}
     results = []
     warnings = []
     failures = []
 
+    # -- フェーズ 1: インポート（＋ --bind-kb draft のときだけ KB 紐づけ） --------------------
     for code in codes:
         try:
             _, yaml_text, name = load_build(out_dir, code)
@@ -448,16 +494,11 @@ def main():
             if args.bind_kb == "draft":
                 bind_kb_draft(client, result_app_id, code, env_raw, warnings)
 
-            published = False
-            if not args.no_publish:
-                client.publish(result_app_id)
-                published = True
-
             results.append({
                 "code": code, "route": route_label, "app_id": result_app_id,
-                "published": published, "new": source == "new",
+                "published": False, "new": source == "new",
             })
-            log(f"[{code}] 完了: app_id={result_app_id}（status={status}）" + ("→ 公開" if published else ""))
+            log(f"[{code}] インポート完了: app_id={result_app_id}（status={status}）")
 
         except console_api.ConsoleAuthError as e:
             # 認証エラーは §2-4 のとおり即座に停止する（以降の番号には進まない）
@@ -482,6 +523,34 @@ def main():
 
     for w in warnings:
         log("WARN: " + w)
+
+    # -- フェーズ 2: 公開（P1。§9-2） --------------------------------------------------------
+    if args.no_publish:
+        log("[publish] --no-publish のため公開はスキップします")
+    elif failures:
+        log(
+            "[publish] [STOP] インポートに失敗した番号があるため、公開は 1 件も行いません（P1・§9-2）: "
+            + ", ".join(code for code, _ in failures)
+        )
+    elif not results:
+        log("[publish] 公開対象がありません（インポートが完了した番号が 0 件）")
+    else:
+        log(f"[publish] 全件インポート成功。{len(results)} 件をまとめて公開します（P1）")
+        for r in results:
+            try:
+                client.publish(r["app_id"])
+                r["published"] = True
+                log(f"[{r['code']}] 公開完了: app_id={r['app_id']}")
+            except console_api.ConsoleAuthError as e:
+                log(str(e))
+                log(console_api.TOKEN_HELP)
+                return 3
+            except console_api.ConsoleAPIError as e:
+                msg = str(e)
+                log(f"[{r['code']}] [FAIL] 公開に失敗しました: {msg}")
+                failures.append((r["code"], f"公開失敗: {msg}"))
+                if args.stop_on_error:
+                    break
 
     print_report(results, failures)
 

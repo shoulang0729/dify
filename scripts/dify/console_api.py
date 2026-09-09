@@ -14,8 +14,9 @@
     client = console_api.client_from_env(console_url)   # DIFY_CONSOLE_REFRESH があればそれを使う
     client.import_dsl(yaml_text)
     client.list_apps()
+    client.logout()   # B3（§8-7）: refresh 経路のセッションは使い終えたら無効化する（cloud_deploy.py が呼ぶ）
 
-設計: docs/handoff/2026-09-08-cloud-auth-and-w4.md §2・§8・§9（Issue #121 W4-3 PR-4）
+設計: docs/handoff/2026-09-08-cloud-auth-and-w4.md §2・§8・§9（Issue #121 W4-3 PR-4・W4-4 PR-6）
 前設計: docs/handoff/2026-09-07-repo-layout-v2.md §4-4・§5-1／docs/handoff/2026-09-08-cloud-console-deploy.md §1・§4-2（Issue #114）
 
 **Cloud 認証の形（§8-1・G1〜G7 の是正）**：保存するのは **リフレッシュトークン 1 個だけ**
@@ -80,6 +81,7 @@ ENDPOINTS = {
     # 確認要（Issue #114 N4 で確定）: GET/POST の body・response のトップレベルキー形（C5）
     "api_keys": "/console/api/apps/{app_id}/api-keys",
     # 確認要（Issue #114 N6 で確定）: 発行応答に平文 token が入るか（C7）。PR-4 で使用予定。PR-1 では未使用
+    "logout": "/console/api/logout",  # B3（Issue #121 W4-4）。POST。確認要: 実パス・応答形（§13。実機は W4-4 実機投入で確認）
 }
 
 # refresh-token に載せる Cookie 名の候補（Cloud は __Host- プレフィックス。selfhost・mock は無印のことがある。
@@ -194,6 +196,11 @@ class ConsoleClient:
         self._token = None
         self._csrf = None
         self._refresh_token = None
+        # 認証経路の記録（"refresh" / "token" / "password" / None）。値そのものではなく経路の種別だけ。
+        # cloud_deploy.py の B3（ジョブ末尾の logout）は "refresh"（DIFY_CONSOLE_REFRESH。Cookie 案。
+        # §8）のときだけ意味を持つ。selfhost の password 経路・非推奨の DIFY_CONSOLE_TOKEN 経路は
+        # 対象にしない（設計書 §8-7 B3 は Cookie 案のセッションに限った歯止め。Issue #121 W4-4）。
+        self._auth_mode = None
         # Cookie を保持する（G1）。Set-Cookie は自動的にここへ溜まり、以降のリクエストへ自動的に載る。
         self._cookiejar = http.cookiejar.CookieJar()
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self._cookiejar))
@@ -205,6 +212,7 @@ class ConsoleClient:
         if not token:
             raise ConsoleAPIError("token が空です")
         self._token = token
+        self._auth_mode = "token"
 
     def _cookie_value(self, name_suffix):
         """Cookie ジャーから名前が name_suffix と一致・または末尾一致する Cookie の値を返す
@@ -302,6 +310,7 @@ class ConsoleClient:
             raise ConsoleAPIError(
                 "login: access_token がレスポンスにも Cookie にもありません（API 形が想定と違う可能性）"
             )
+        self._auth_mode = "password"
         log("Console API ログイン成功（値は表示しません）")
         return True
 
@@ -335,6 +344,7 @@ class ConsoleClient:
                 "refresh-token: 応答から access_token / csrf_token の Cookie が取得できません"
                 "（API 形が想定と違う可能性。V1 の再確認が要る）"
             )
+        self._auth_mode = "refresh"
         log("Console API: リフレッシュトークンで新しいセッションを取得しました（値は表示しません）")
         return True
 
@@ -400,6 +410,25 @@ class ConsoleClient:
         """/console/api/apps/{id}/workflows/publish。"""
         self._req("POST", ENDPOINTS["workflows_publish"].format(app_id=app_id), {})
         log(f"公開完了: app_id={app_id}")
+        return True
+
+    def logout(self):
+        """POST /console/api/logout。いま保持しているセッションをサーバ側で無効化する
+        （B3。設計書 §8-7・§9-3。Issue #121 W4-4）。`revoke_token_pair` 相当で access/refresh の
+        両方が Redis 側から消える想定（実機のレスポンス形は未確認。§13）。
+
+        未認証（`_token` が無い）なら何もせず False を返す（まだセッションを確立していないのに
+        呼ばれた場合。エラーにはしない）。それ以外は通常の `_req` と同じく失敗時に
+        `ConsoleAPIError`（またはそのサブクラス）を送出する。**呼び出し側（cloud_deploy.py）が
+        deploy 全体の成否に影響させないよう、この呼び出しは必ず try/except で包むこと**
+        （このメソッド自身は握りつぶさない。他の API メソッドと形を揃えるため）。
+
+        `DELETE` は使わない（`POST`。tools/verify.mjs §15・console_api.py の docstring の歯止めに抵触しない）。"""
+        if not self._token:
+            log("Console API: logout をスキップしました（未認証）")
+            return False
+        self._req("POST", ENDPOINTS["logout"], {})
+        log("Console API: logout 完了（セッションを無効化しました）")
         return True
 
 

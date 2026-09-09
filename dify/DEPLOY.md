@@ -516,3 +516,98 @@ Issue・PR には次の 3 分類のいずれか **1 つだけ**を `run:*` ラ�
 （Issue #114 N1）。`client_from_env()` は互換のため読み込むが、**新規は使わないこと**。
 セルフホストは引き続き `DIFY_CONSOLE_EMAIL` / `DIFY_CONSOLE_PASSWORD` でログインする（§0・§1）。
 
+## 9. Dify Cloud への投入・公開を自動化する（`op: deploy`。W4-4。#121）
+
+設計: `docs/handoff/2026-09-08-cloud-auth-and-w4.md` §9-2（P1・復旧手順）・§9-3（入力検証・承認ゲート）・
+§11「W4-4」（受け入れ条件）。実装: `.github/workflows/dify-ops.yml`（`deploy` ジョブ）・
+`scripts/dify/cloud_deploy.py`（P1・B3 を実装）・`scripts/dify/console_api.py`（`logout()`）。
+
+**これで Mac の「DSL の再インポート（12 本）＋ 公開」がホストランナーから回せるようになる**
+（§6 の表の最後の行）。Cookie の取り方・切れたときの対応は §8（このファイル）を参照。
+
+### 実行のしかた（PM）
+
+1. GitHub の Actions タブ → `dify-ops` ワークフロー → **Run workflow**
+2. 入力（**正確な文字列**）
+   - `op`：**`deploy`**
+   - `codes`：対象の管理番号を空白区切りで 1〜12 件（例 `KN-01 DC-01`。12 本まとめて流す場合は
+     `dify/apps/` にある 12 本の管理番号をすべて空白区切りで列挙する。**13 件以上は Validate inputs で即
+     exit 1**）
+   - `confirm`：**固定文字列 `deploy`**（`codes` の値ではない。1〜12 件を毎回打ち直させるのは
+     非現実的なため、`kb_replace` とは異なる方式にしてある。入力が `deploy` と完全一致しないと
+     Validate inputs で即 exit 1）
+   - `env`：`cloud-master`
+3. 現状 Required reviewers は外れているため、承認待ちにならず即座に実行される（`kb` ジョブと同じ
+   Environment。§7 参照。ゲートを戻した場合はここでも承認待ちになる）
+4. ジョブが `scripts/dify/cloud_deploy.py --env <env> <codes>` を実行する。結果は Job Summary と
+   Actions のログの両方に出る（**値〔Cookie／CSRF／リフレッシュトークン／app_id の完全な UUID〕は
+   一切出ない**。`console_api._mask()` を必ず通す）
+5. **このジョブは何も commit・push しない**（新規アプリを作った場合の `env.yml` 書き戻し候補は
+   ログ・Job Summary に出るだけ。`dify/env/**` への自動書き込みは変更パスガードの対象外＝
+   意図的に実装していない。反映は人が `git diff` を見てから行う）
+6. 続けて `op: run_tests` で合否を確認することを推奨する（`op: deploy` 自体はテストを実行しない）
+
+### 何をしているか（P1・B3。`cloud_deploy.py` 側で実装）
+
+- **P1（設計書 §9-2）**：対象番号すべての **インポートが完了してから、まとめて公開**する。
+  **1 本でもインポートに失敗したら、公開は 1 本も行わない**（成功していた番号も公開しない）。
+  「半分だけ新しい」状態を作らないため
+- **B3（設計書 §8-7）**：`DIFY_CONSOLE_REFRESH` で認証したセッションは、import・publish の
+  成否によらず、ジョブの最後に必ず `POST /console/api/logout` を試みる（`console_api.ConsoleClient.logout()`）。
+  **`DIFY_CONSOLE_TOKEN`（非推奨）・selfhost の email/password 認証では何もしない**
+  （このセッション無効化は Cookie 案＝リフレッシュトークンのセッションに限った歯止めのため）。
+  logout 自体が失敗しても deploy 全体の終了コードには影響しない（ログに残るだけ）
+- インポートは **上書き**（`dify/env/cloud-master/env.yml` の `apps.<番号>.id` が `null` のときは
+  名前一致で既存アプリを探して上書きし、無ければ新規作成。§2-2）。**新規作成は想定していない**
+  （12 本は既に Mac から一度デプロイ済み）。名前が一致しない・複数一致する場合は `AmbiguousNameError`
+  として失敗に記録される（他の番号の処理は続く）
+
+### 終了コードとジョブの判定
+
+| `cloud_deploy.py` の exit code | 意味 | ジョブの表示 |
+|---|---|---|
+| 0 | 全件成功（インポート＋公開） | 完了 |
+| 1 | 1 件以上失敗（インポートまたは公開）。**P1 によりこの場合は公開を 1 件も行っていない可能性が高い**（インポート段階の失敗なら確実に 0 件） | 失敗あり |
+| 2 | 引数・環境不備（`DIFY_CONSOLE_REFRESH` 等が未設定・env.yml が無い等） | 設定不備 |
+| 3 | 認証エラー（401/403）。即座に停止し、以降の番号は処理しない | 認証エラー |
+
+### 壊れたときの復旧（設計書 §9-2）
+
+**まず事実**：Dify の DSL インポートは下書き（draft workflow）を置き換えるだけで、**公開版は
+`publish` するまで変わらない**。したがって **インポートが失敗しても、動いている公開版は壊れない**。
+壊れうるのは「インポート成功・公開まで進んだが、公開後に問題が見つかった」場合だけ。
+
+1. 症状を確認する（Studio でアプリを開き、下書きが壊れているか／公開版が動いているかを見る）
+2. **公開版が動いているなら急がない**（デモは止まらない）
+3. Git から再 render：`source ~/.config/dify/cloud-master.env && python3 scripts/dify/render.py --env cloud-master <番号>`
+4. UI の「DSL をインポート → 上書きしてインポート」で `dify/build/cloud-master/<番号>-*.yml` を流す
+   （**ダイアログの「現在の下書きをバックアップ」を押してから**）。または `op: deploy` を対象の番号
+   だけで再実行する
+5. 公開 → `op: run_tests` で合否を確認
+6. **アプリ id と API キーは上書きインポートでは変わらない**ので、環境変数の入れ替えは不要
+
+**復元用の情報は Git だけ**：インポート前の DSL をエクスポートして残す運用は**採っていない**
+（暗号化された `dataset_ids` を含む DSL を公開リポジトリの artifact に残すことになるため）。
+「どの版を投入したか」は PR 本文と `dify/CHANGELOG.md` に記録し、**復旧は Git から再 render →
+再インポート**で行う。
+
+### 既知の制限：KB を紐づけている番号（KN-01・KN-02・KN-03・GN-01）は `op: deploy` で紐づけが消える
+
+`dify/apps/KN-01-*.yml` 等のマスタ DSL は **`dataset_ids: []`（空）のまま**コミットされている
+（コメントに明記：「インポート後に UI で KB を紐づける」）。`dataset_ids` を焼き込む仕組み
+（`render.py` R5・`cloud_deploy.py --bind-kb dsl`〔既定〕）は実装済みだが、**焼き込みには
+`DIFY_DATASET_ID_KN01` 等の環境変数が要り、現時点でこれらは GitHub の secret として登録していない**
+（`docs/handoff/2026-09-08-execution-split-and-runner.md` の方針：将来 `dify/state/cloud-master.yml`
+〔W2。未実装〕から読む想定で、**それまでは置かない**）。
+
+**したがって現状のホストランナーの `op: deploy` は、`DIFY_DATASET_ID_*` を持たない。KN-01 / KN-02 /
+KN-03 / GN-01 に対して `op: deploy` を実行すると、render 結果の `dataset_ids` が空のまま上書き
+インポートされ、公開まで進めると、Cloud 側で既に紐づいている KB の紐づけが消える。**
+
+- **当面の回避策**：`codes` にこの 4 番号を含めない（KB を持たない 8 番号だけを `op: deploy` の対象にする）
+- KN-01 / KN-02 / KN-03 / GN-01 を再投入したい場合は、**引き続き Mac の手順**（§1-④・§5-4）を使う
+  （`~/.config/dify/cloud-master.env` に `DIFY_DATASET_ID_*` を置いた上で render → インポート）
+- 恒久対応は W2（`dify/state/cloud-master.yml`。未実装）で `DIFY_CONSOLE_REFRESH` と同様に
+  Environment secret 化するか、`dify/state/` からの読み出しに揃えたうえで判断する（このリスクは
+  architect・PM への報告事項。W4-4 の設計書には明記が無く、本 PR の実装時に発見した）
+
