@@ -467,3 +467,52 @@ Issue・PR には次の 3 分類のいずれか **1 つだけ**を `run:*` ラ�
 - Settings → Actions → General → Fork pull request workflows from outside collaborators → **Require approval for all outside collaborators**
 - ラベル `run:cloud` / `run:runner` / `run:mac` を Issues → Labels で作成（無くてもワークフローは動くが、PR への自動付与ができない）
 
+## 8. Cloud のコンソール認証（リフレッシュトークン）の取り方
+
+設計: `docs/handoff/2026-09-08-cloud-auth-and-w4.md` §8（Cookie 案の詳細設計）・§8-6（取り出す手順）・
+§8-4（切れたときの終了コード表）。実装: `scripts/dify/console_api.py`（Issue #121 W4-3 PR-4）。
+
+**保存するのはリフレッシュトークン 1 個だけ**（Environment secret `DIFY_CONSOLE_REFRESH`）。`console_api.py`
+がジョブの冒頭で `POST /console/api/refresh-token` を叩いて、そのジョブだけで使う
+アクセストークン・CSRF トークンをその場で取得する。**「1 回置けば 30 日もつ」ではない**——
+リフレッシュトークンは 1 回使うと無効化される（rotate）ため、**投入する回ごとに取り直す**運用になる
+（§8-3）。
+
+### 取り方（ブラウザの開発者ツール。PM が 1 人で完結）
+
+**値は画面にもチャットにも出さず、GitHub の Environment secret 入力欄に直接貼ること。**
+ターミナルの履歴にも残さない（`CLAUDE.md` §2-10）。
+
+1. Chrome 等で Dify Cloud（`https://cloud.dify.ai`）にログイン済みのタブを開く
+2. 開発者ツール（⌥⌘I）→ **Application** タブ → 左の **Cookies** → `https://cloud.dify.ai`
+3. **`__Host-refresh_token` の Value を右クリック → コピー**（画面に出したまま共有しない。スクリーンショットを撮らない）
+4. GitHub → リポジトリの **Settings → Environments → `dify-cloud-master` → Secrets** →
+   `DIFY_CONSOLE_REFRESH` を **Update**（無ければ **Add secret**）で直接貼る
+5. **そのブラウザではログアウトしない**（`logout` はサーバ側のリフレッシュトークンを無効化するので、
+   貼ったばかりの secret も同時に死ぬ）
+
+ローカルで動かす場合（Mac・ホストランナーの手元確認など）は `~/.config/dify/<env>.env` の
+`DIFY_CONSOLE_REFRESH=` に同じ値を貼る（`scripts/dify/env.example` 参照。**リポジトリの中には置かない**）。
+
+### 切れたときにどうなるか（§8-4 の再掲。値は一切出さない）
+
+| 事象 | 終了コード | 対応 |
+|---|---|---|
+| `POST /refresh-token` が 401（期限切れ・既に使用済み） | 3 | 上の手順でもう一度取り直し、`DIFY_CONSOLE_REFRESH` を更新する |
+| refresh は 200、その後の API が 401（CSRF 不一致） | 3 | 実装の不具合として `console_api.py` を確認・報告する（取り直しでは直らない） |
+| その後の API が 403 かつ本文に `error code: 1010`（Cloudflare） | 4 | User-Agent の付与を確認する（`CONSOLE_USER_AGENT`。DI-004） |
+| ジョブ途中で 401（アクセストークンが 60 分を超えた） | — | `console_api.py` がメモリ上の最新のリフレッシュトークンで自動的に 1 回だけ再取得して続行する（人の操作は不要） |
+| `DIFY_CONSOLE_REFRESH` が未設定 | 2 | 上の手順で取得し、Environment secret に登録する |
+
+### 異変時の即時失効手順
+
+1. Dify のブラウザで**ログアウト**する（当該リフレッシュトークンとその系列は即座に無効化される）
+2. GitHub の Environment secret `DIFY_CONSOLE_REFRESH` を削除する（次の実行で exit 2 になり、事故的な再利用を防ぐ）
+3. 必要なら上の手順で新しいリフレッシュトークンを取り直して貼り直す
+
+### 非推奨：`DIFY_CONSOLE_TOKEN`
+
+旧来のトークン認証（`console_token`）は Dify Cloud `1.17.0` に存在しないため Cloud には使えない
+（Issue #114 N1）。`client_from_env()` は互換のため読み込むが、**新規は使わないこと**。
+セルフホストは引き続き `DIFY_CONSOLE_EMAIL` / `DIFY_CONSOLE_PASSWORD` でログインする（§0・§1）。
+
