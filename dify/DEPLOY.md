@@ -121,7 +121,7 @@ python3 scripts/dify/cloud_deploy.py --env $DIFY_ENV --all
    `exclude_reasoning_tokens ON`** になっているかを見る（DSL の `completion_params` の指定どおりなら変更不要。
    DI-010 / DI-011 の対処）。空欄・エラーならプロバイダー未設定。
    **勝手に別のモデル・別の値に変えない**（変えるなら env とマスタを同時に直す＝`CLAUDE.md` §2-12）
-4. 右上「公開」→「公開する」。**`dataset_ids` を焼き込んだ build 版（`dify/build/<env>/*.yml`。§1 冒頭・§5）をインポートした場合は、UI での KB 紐づけ（②）が起きないため Rerank も自動 ON にならず、公開チェックリストが「Rerank モデル は必須です」で止まることがある（KB 付き 4 本＝KN-01・KN-02・KN-03・GN-01。DI-033）。**その場合は暫定として、公開前に「知識検索」ノードの検索設定を開き、**Rerank モデルを 1 つ手で選んでから**公開し直す（案 D 適用後＝#195 PR-2 マージ後はマスタ DSL 側に明示されるため、この手作業は不要になる見込み）
+4. 右上「公開」→「公開する」。**`dataset_ids` を焼き込んだ build 版（`dify/build/<env>/*.yml`。§1 冒頭・§5）をインポートした場合は、UI での KB 紐づけ（②）が起きないため Rerank も自動 ON にならず、公開チェックリストが「Rerank モデル は必須です」で止まることがある（KB 付き 4 本＝KN-01・KN-02・KN-03・GN-01。DI-033）。**その場合は暫定として、公開前に「知識検索」ノードの検索設定を開き、**Rerank モデルを 1 つ手で選んでから**公開し直す（案 D は 2026-09-09 に PM が採用を決定済み。**適用＝#195 PR-2 マージ後**はマスタ DSL 側に明示されるため、この手作業は不要になる）
 5. 左メニュー「API アクセス」→「API キー」→ 新規作成 → 値を環境変数へ（`DIFY_APP_KEY_KN01` / `DIFY_APP_KEY_DC01`）
 
 ### ② ナレッジの投入（KN-01 のみ）
@@ -137,7 +137,7 @@ python3 scripts/dify/kb_upload.py --env $DIFY_ENV --dry-run KN-01
 - **チャンクは区切り `\n\n`・最大 1024 字の custom 固定**（`kb_upload.py` が送信。UI 既定の改行区切りだと条件表・箇条書きが 1 行 1 チャンクに分断される。DI-006）
 - **新規 KB 作成時は Rerank を無効化**（`retrieval_model.reranking_enable: false` を送信）。これは **dataset（KB）単位の既定検索設定**であり、DI-005 が観測した「OpenRouter 経由の Cohere Rerank が 429 を返した」件（ノード側とは層が違う。#195 §1 Q1・§2）と混同しないこと。`POST /datasets` がこの項目を受け付けない版では、警告を出して従来どおり作成するので、その場合は Chrome で **ナレッジ → 該当 KB → 検索設定 → Rerank を OFF** にする。既存 KB を再利用する経路では設定を変更しないので、既存 KB は必ず画面で確認する
 - **KB を紐づけたら、その場で「知識検索」ノードの検索設定を開いて確認する**。Rerank が勝手に ON になり
-  Rerank モデル（`openrouter / cohere/rerank-4-pro` など）が入っていることがある（DI-012）。**2026-09-08 PM 決定（案 c）**でこれを許容していたが、W4-2（`dataset_ids` 焼き込み build 版）でその前提が崩れ、**#195 でマスタ DSL・`cloud-master` env に Rerank を明示する案 D へ移行中**（PR-2。経緯は `docs/handoff/2026-09-09-rerank-decision.md` §1 Q3）。入っていたらそのまま進めてよい
+  Rerank モデル（`openrouter / cohere/rerank-4-pro` など）が入っていることがある（DI-012）。**2026-09-08 PM 決定（案 c）**でこれを許容していたが、W4-2（`dataset_ids` 焼き込み build 版）でその前提が崩れ、**2026-09-09 に PM が案 D（マスタ DSL・`cloud-master` env に Rerank を明示）の採用を決定**（`docs/handoff/2026-09-09-rerank-decision.md` §3・§4、#195 §11 P-1）。**適用は #195 PR-2 でこれから**（本節時点のマスタ DSL は `reranking_enable: false` のまま）。入っていたらそのまま進めてよい
 
 ### ③ テスト実行と結果の commit
 ```bash
