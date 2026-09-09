@@ -456,6 +456,152 @@ def test_w20_logout_no_delete_and_no_leak(base):
         check(f"W20: logout() の出力に {label} の値が現れない", secret not in out, out)
 
 
+def test_sink_t1_unset_no_file(base):
+    """t1（設計書 §9-1。Issue #212 PR-1）: DIFY_REFRESH_SINK 未設定なら refresh() は
+    ファイルを 1 つも作らない（既存の挙動）。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    os.environ.pop(console_api.REFRESH_SINK_ENV, None)
+    ok = client.refresh("sink-t1-seed-refresh-token")
+    check("SINK t1: refresh() 自体は成功する", ok is True)
+    check("SINK t1: sink 未設定時は書き込みが起きない（_sink_write_count が 0）", client._sink_write_count == 0)
+
+
+def test_sink_t2_write_once(base, tmpdir):
+    """t2: sink 設定で refresh() 1 回 → ファイルが存在・パーミッション 0600・末尾改行なし・
+    中身が rotate 後の新トークンと一致する。"""
+    sink_path = os.path.join(tmpdir, "dify-refresh.new")
+    os.environ[console_api.REFRESH_SINK_ENV] = sink_path
+    try:
+        client = console_api.ConsoleClient(base, timeout=10)
+        client.refresh("sink-t2-seed-refresh-token")
+        check("SINK t2: sink ファイルが作られる", os.path.isfile(sink_path))
+        mode = os.stat(sink_path).st_mode & 0o777
+        check("SINK t2: パーミッションが 0600", mode == 0o600, oct(mode))
+        with open(sink_path, "rb") as fh:
+            content = fh.read()
+        check("SINK t2: 末尾改行が無い", not content.endswith(b"\n"), content)
+        check("SINK t2: 中身が rotate 後の refresh token と一致する",
+              content.decode("ascii") == client._refresh_token, content)
+        check("SINK t2: .tmp の残骸が残らない", not os.path.exists(sink_path + ".tmp"))
+    finally:
+        os.environ.pop(console_api.REFRESH_SINK_ENV, None)
+
+
+def test_sink_t3_two_rotates_keeps_last(base, tmpdir):
+    """t3: _req() の 401 自動再取得を誘発して 2 回 rotate → sink の中身は 2 回目（最後）の値。
+    かつその値でモックに refresh が通る（＝生きている＝最後の書き込みが最後の rotate になっている証拠）。"""
+    sink_path = os.path.join(tmpdir, "dify-refresh-t3.new")
+    os.environ[console_api.REFRESH_SINK_ENV] = sink_path
+    try:
+        client = console_api.ConsoleClient(base, timeout=10)
+        client.refresh("sink-t3-seed-refresh-token")  # rotate 1 回目
+        check("SINK t3: 1 回目の rotate で sink が書かれる", client._sink_write_count == 1, client._sink_write_count)
+        first_sink_value = open(sink_path, encoding="ascii").read()
+
+        old_access = client._token
+        req = urllib.request.Request(
+            base + "/__test__/expire-access-token", method="POST",
+            data=json.dumps({"access_token": old_access}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=5) as r:
+            r.read()
+
+        client.list_apps()  # 内部で 401 → 自動 refresh（rotate 2 回目）→ 再試行 → 成功
+        check("SINK t3: 2 回目の rotate でも sink が上書きされる", client._sink_write_count == 2, client._sink_write_count)
+
+        second_sink_value = open(sink_path, encoding="ascii").read()
+        check("SINK t3: sink の中身が 1 回目から変わっている（上書きされた証拠）",
+              second_sink_value != first_sink_value)
+        check("SINK t3: sink の中身が最終的な self._refresh_token と一致する（最後の書き込み＝最後の rotate）",
+              second_sink_value == client._refresh_token, (second_sink_value, client._refresh_token))
+
+        # sink の値（2 回目＝最後）が本当に生きている（まだ使われていない）ことを、
+        # 別クライアントでそのまま refresh に使って確認する。
+        fresh_client = console_api.ConsoleClient(base, timeout=10)
+        ok = fresh_client.refresh(second_sink_value)
+        check("SINK t3: sink に書かれた最後の値でモックに refresh が通る（生きている）", ok is True)
+    finally:
+        os.environ.pop(console_api.REFRESH_SINK_ENV, None)
+
+
+def test_sink_t4_repo_path_rejected(base):
+    """t4: sink パスがリポジトリ作業ツリー配下 → ConsoleAPIError。ファイルを作らない（D7）。"""
+    bad_path = os.path.join(ROOT, "dify-refresh-sink-t4-should-not-exist.tmp")
+    os.environ[console_api.REFRESH_SINK_ENV] = bad_path
+    try:
+        client = console_api.ConsoleClient(base, timeout=10)
+        raised = False
+        try:
+            client.refresh("sink-t4-seed-refresh-token")
+        except console_api.ConsoleAPIError as e:
+            raised = True
+            check("SINK t4: エラーメッセージに値が含まれない", "sink-t4-seed-refresh-token" not in str(e), str(e))
+        check("SINK t4: リポジトリ配下の sink パスは ConsoleAPIError になる", raised)
+        check("SINK t4: ファイルを作らない", not os.path.exists(bad_path))
+    finally:
+        os.environ.pop(console_api.REFRESH_SINK_ENV, None)
+        if os.path.exists(bad_path):
+            os.unlink(bad_path)
+
+
+def test_sink_t5_bad_format_rejected(base, tmpdir):
+    """t5: rotate 値が _REFRESH_VALUE_RE に合わない → ConsoleAPIError。書かない
+    （直接 _write_refresh_sink() を呼ぶ白箱テスト。t13 と同じ作法で _refresh_token を意図的に壊す）。"""
+    sink_path = os.path.join(tmpdir, "dify-refresh-t5.new")
+    os.environ[console_api.REFRESH_SINK_ENV] = sink_path
+    try:
+        client = console_api.ConsoleClient(base, timeout=10)
+        client.refresh("sink-t5-seed-refresh-token")  # 正常な 1 回目（sink に正しい値が書かれる）
+        good_value = open(sink_path, encoding="ascii").read()
+
+        client._refresh_token = "too-short"  # わざと形式違反にする（20 文字未満）
+        raised = False
+        try:
+            client._write_refresh_sink()
+        except console_api.ConsoleAPIError:
+            raised = True
+        check("SINK t5: 形式が合わない値は ConsoleAPIError になる", raised)
+
+        still = open(sink_path, encoding="ascii").read()
+        check("SINK t5: 形式違反では sink が上書きされない（直前の正しい値のまま）", still == good_value, (still, good_value))
+    finally:
+        os.environ.pop(console_api.REFRESH_SINK_ENV, None)
+
+
+def test_sink_t9_mask_pat_patterns():
+    """t9（D8）: _mask() が ghp_… / github_pat_… を伏せること。"""
+    msg = "leaked PAT: ghp_abcdefghijklmnopqrst0123 and github_pat_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    masked = console_api._mask(msg)
+    check("SINK t9: ghp_ の値がマスクされる",
+          "ghp_abcdefghijklmnopqrst0123" not in masked and "ghp_***" in masked, masked)
+    check("SINK t9: github_pat_ の値がマスクされる",
+          "github_pat_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" not in masked and "github_pat_***" in masked, masked)
+
+
+def test_sink_vb_prefers_host_prefixed_refresh_cookie(base):
+    """V-B（設計書 §4-2 b。load-bearing）: __Host-refresh_token と無印 refresh_token が
+    同時に cookiejar にいる場合、__Host-refresh_token を優先して self._refresh_token に取り込む。
+    ConsoleClient は通常どちらか一方しか受け取らないため、cookiejar を直接操作する白箱テスト。"""
+    import http.cookiejar
+
+    client = console_api.ConsoleClient(base, timeout=10)
+    client._cookiejar.set_cookie(http.cookiejar.Cookie(
+        version=0, name="refresh_token", value="legacy-unprefixed-value",
+        port=None, port_specified=False, domain="127.0.0.1", domain_specified=False,
+        domain_initial_dot=False, path="/", path_specified=True, secure=False,
+        expires=None, discard=True, comment=None, comment_url=None, rest={},
+    ))
+    client._cookiejar.set_cookie(http.cookiejar.Cookie(
+        version=0, name="__Host-refresh_token", value="host-prefixed-value",
+        port=None, port_specified=False, domain="127.0.0.1", domain_specified=False,
+        domain_initial_dot=False, path="/", path_specified=True, secure=False,
+        expires=None, discard=True, comment=None, comment_url=None, rest={},
+    ))
+    client._absorb_session_cookies()
+    check("V-B: __Host-refresh_token が優先される", client._refresh_token == "host-prefixed-value", client._refresh_token)
+
+
 def main():
     check("前提: console_api.py が存在する", os.path.isfile(CONSOLE_API))
     check("前提: mock_server.py が存在する", os.path.isfile(MOCK_SERVER))
@@ -467,6 +613,7 @@ def main():
     test_g7_mask_patterns_cover_cookie_csrf_refresh()
     test_g8_import_dsl_masks_error_field()
     test_t14_no_delete_function_in_console_api()
+    test_sink_t9_mask_pat_patterns()
 
     port = free_port()
     base = f"http://127.0.0.1:{port}"
@@ -496,6 +643,15 @@ def main():
         test_w18_logout_skips_when_unauthenticated()
         test_w19_auth_mode_tracks_route(base)
         test_w20_logout_no_delete_and_no_leak(base)
+
+        # 書き戻し（sink）関連（設計書 docs/handoff/2026-09-09-refresh-token-writeback.md §9-1。Issue #212 PR-1）
+        test_sink_t1_unset_no_file(base)
+        with tempfile.TemporaryDirectory(prefix="console_api_sink_test_") as sink_tmpdir:
+            test_sink_t2_write_once(base, sink_tmpdir)
+            test_sink_t3_two_rotates_keeps_last(base, sink_tmpdir)
+            test_sink_t5_bad_format_rejected(base, sink_tmpdir)
+        test_sink_t4_repo_path_rejected(base)
+        test_sink_vb_prefers_host_prefixed_refresh_cookie(base)
     finally:
         proc.terminate()
         try:

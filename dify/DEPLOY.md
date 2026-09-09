@@ -638,3 +638,39 @@ id を引く）は architect が設計中**（Issue #121）。
 - 機械確認：`scripts/dify/tests/test_cloud_deploy.py` の `test_kb_guard_blocks_before_phase1` /
   `test_kb_guard_allows_when_dataset_ids_baked` / `test_kb_guard_unit_detects_empty_dataset_ids`
 
+## 10. リフレッシュトークンの自動更新（rotate した新しい値をジョブが書き戻す）
+
+設計: `docs/handoff/2026-09-09-refresh-token-writeback.md`（Issue #212）。
+
+**この節は PR-1・PR-2・PR-3・PR-4 にわたって段階的に完成させる（設計書 §10 の分割案）。**
+現時点（PR-1）では §10-2（PAT の作り方）だけが入っている。§10-1（何が変わるか）・§10-3（動作確認）・
+§10-4（取り直し）・§10-6（やってはいけないこと）は PR-3 で、§10-5（今すぐ無効化）は PR-4 で追加される。
+
+### §10-2 最初の 1 回：書き戻し用の PAT を作る（10 分）
+
+**値を画面に出したまま共有しない。スクリーンショットを撮らない。チャットに貼らない**（`CLAUDE.md` §2-10）。
+
+1. GitHub の右上のアバター → **Settings**（リポジトリの Settings ではなく**アカウントの** Settings）
+2. 左メニューのいちばん下 **Developer settings**
+3. **Personal access tokens** → **Fine-grained tokens**（classic ではない）
+4. **Generate new token**
+5. **Token name**：`dify-ops refresh writeback`
+6. **Expiration**：**Custom** → **1 年後の日付**（最長 366 日）。※ **期限が切れたら、この §10-2 をもう一度やる。それが唯一の定期作業**
+7. **Resource owner**：`shoulang0729`（自分のアカウント）
+8. **Repository access**：**Only select repositories** → **`shoulang0729/dify` の 1 つだけ**を選ぶ
+9. **Repository permissions**：**`Secrets`** を **Read and write** にする。**それ以外は触らない**（`Metadata: Read-only` は自動で付く）
+   - 【V-A で `Environments: Read and write` も必要と判明した場合は、ここに 1 行足す】
+10. **Generate token** → 値が 1 度だけ表示される。**このページを離れると二度と表示されない**
+11. **別のタブ**で：リポジトリ → **Settings** → **Environments** → **`dify-cloud-master`** → **Environment secrets** → **Add secret**
+    - **Name**：`GH_SECRETS_PAT`（**綴りを間違えると書き戻しが動かない**）
+    - **Secret**：手順 10 の値を貼る（手で打たない）
+    - **Add secret**
+12. PAT のタブに戻って閉じる。**クリップボードを別の文字列で上書きする**（適当な語をコピーする）
+
+**動作確認（本物のリフレッシュトークンは 1 円も消費しない）**：Actions タブ → `dify-ops` →
+**Run workflow** → `op`：**`token_selftest`** ／ `codes`：空のまま ／ `env`：`cloud-master`。
+緑になり、Job Summary に「**成功。`GH_SECRETS_PAT` は Environment `dify-cloud-master` の secret を
+書き換えられます。**」と出れば、上の手順 9 の権限（`Secrets: Read and write` のみ）で足りている
+（V-A の答え）。403 で失敗する場合は `Environments: Read and write` も付けて再試行し、その結果を
+手順 9 の【 】欄と `docs/handoff/2026-09-09-refresh-token-writeback.md` §6-2 N-3 に反映すること。
+
