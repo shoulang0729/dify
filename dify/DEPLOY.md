@@ -121,7 +121,7 @@ python3 scripts/dify/cloud_deploy.py --env $DIFY_ENV --all
    `exclude_reasoning_tokens ON`** になっているかを見る（DSL の `completion_params` の指定どおりなら変更不要。
    DI-010 / DI-011 の対処）。空欄・エラーならプロバイダー未設定。
    **勝手に別のモデル・別の値に変えない**（変えるなら env とマスタを同時に直す＝`CLAUDE.md` §2-12）
-4. 右上「公開」→「公開する」
+4. 右上「公開」→「公開する」。**`dataset_ids` を焼き込んだ build 版（`dify/build/<env>/*.yml`。§1 冒頭・§5）をインポートした場合は、UI での KB 紐づけ（②）が起きないため Rerank も自動 ON にならず、公開チェックリストが「Rerank モデル は必須です」で止まることがある（KB 付き 4 本＝KN-01・KN-02・KN-03・GN-01。DI-033）。**その場合は暫定として、公開前に「知識検索」ノードの検索設定を開き、**Rerank モデルを 1 つ手で選んでから**公開し直す（案 D 適用後＝#195 PR-2 マージ後はマスタ DSL 側に明示されるため、この手作業は不要になる見込み）
 5. 左メニュー「API アクセス」→「API キー」→ 新規作成 → 値を環境変数へ（`DIFY_APP_KEY_KN01` / `DIFY_APP_KEY_DC01`）
 
 ### ② ナレッジの投入（KN-01 のみ）
@@ -135,10 +135,9 @@ python3 scripts/dify/kb_upload.py --env $DIFY_ENV --dry-run KN-01
 - 同名文書はスキップ（再実行しても二重登録しない）
 - 完了したら **Chrome**：KN-01 のアプリを開く → 「知識検索」ノード → **ナレッジを追加** → `KN-01 技術ナレッジQA` を選択 → 保存 → **再公開**
 - **チャンクは区切り `\n\n`・最大 1024 字の custom 固定**（`kb_upload.py` が送信。UI 既定の改行区切りだと条件表・箇条書きが 1 行 1 チャンクに分断される。DI-006）
-- **新規 KB 作成時は Rerank を無効化**（`retrieval_model.reranking_enable: false` を送信。DI-005）。`POST /datasets` がこの項目を受け付けない版では、警告を出して従来どおり作成するので、その場合は Chrome で **ナレッジ → 該当 KB → 検索設定 → Rerank を OFF** にする。既存 KB を再利用する経路では設定を変更しないので、既存 KB は必ず画面で確認する
+- **新規 KB 作成時は Rerank を無効化**（`retrieval_model.reranking_enable: false` を送信）。これは **dataset（KB）単位の既定検索設定**であり、DI-005 が観測した「OpenRouter 経由の Cohere Rerank が 429 を返した」件（ノード側とは層が違う。#195 §1 Q1・§2）と混同しないこと。`POST /datasets` がこの項目を受け付けない版では、警告を出して従来どおり作成するので、その場合は Chrome で **ナレッジ → 該当 KB → 検索設定 → Rerank を OFF** にする。既存 KB を再利用する経路では設定を変更しないので、既存 KB は必ず画面で確認する
 - **KB を紐づけたら、その場で「知識検索」ノードの検索設定を開いて確認する**。Rerank が勝手に ON になり
-  Rerank モデル（`openrouter / cohere/rerank-4-pro` など）が入っていることがある（DI-012。**cloud-master は UI 既定の Rerank ON を許容する**。方針は
-  `docs/handoff/2026-09-08-thinking-budget-and-streaming.md` §4 で PM が採択済み）。入っていたらそのまま進めてよい
+  Rerank モデル（`openrouter / cohere/rerank-4-pro` など）が入っていることがある（DI-012）。**2026-09-08 PM 決定（案 c）**でこれを許容していたが、W4-2（`dataset_ids` 焼き込み build 版）でその前提が崩れ、**#195 でマスタ DSL・`cloud-master` env に Rerank を明示する案 D へ移行中**（PR-2。経緯は `docs/handoff/2026-09-09-rerank-decision.md` §1 Q3）。入っていたらそのまま進めてよい
 
 ### ③ テスト実行と結果の commit
 ```bash
@@ -174,7 +173,7 @@ git push
    差分が `dataset_ids` / `dependencies` / `version` / Rerank 設定だけなら、そのまま 1 番へ進んでよい
 1. Studio でそのアプリを開く → 左上のアプリ名横「…」→ **「DSL をインポート」** → ローカルの `dify/apps/<番号>-*.yml` を選ぶ → **「上書きしてインポート」**（**2026-09-08 に Cloud で確認済み**：既存アプリの下書きが上書きされ、アプリ id・API キーは変わらない。このダイアログに URL タブは無いのでファイルを選ぶ。`version: 0.6.0` の警告は続行でよい）
 2. 上書きできない版だった場合は、**新規アプリとして作成し、旧アプリの名前に `(old)` を付けて残す**（`/dify-deploy` の既定動作と同じ）。API キーは新アプリで再発行し、環境変数を差し替える
-3. どちらの場合も **再インポート後に「公開」**し、KN-01 系は**知識検索ノードの KB 紐づけをやり直す**（`dataset_ids` は空で入るため）
+3. どちらの場合も **再インポート後に「公開」**し、KN-01 系は**知識検索ノードの KB 紐づけをやり直す**（`dataset_ids` は空で入るため）。**`dataset_ids` を焼き込んだ build 版（§1 冒頭・§5）を再インポートした場合は KB 紐づけが自動で保持されるぶん、KB 紐づけ操作が起きず Rerank も自動 ON にならないため、公開時に「Rerank モデル は必須です」で止まることがある（DI-033。①4 と同じ現象）。**その場合は公開前に検索設定で Rerank モデルを 1 つ手で選ぶ
 4. 反映できたら `python3 scripts/dify/run_tests.py --env $DIFY_ENV <番号...>` を回し、結果を `dify/results/<env>/` に commit する
 
 ## 2. Claude Code に渡すプロンプト例（1 行）
@@ -193,6 +192,7 @@ Playwright MCP のときは、あらかじめ同じプロファイルで Dify Cl
 - 既存アプリの更新：「対象アプリを開き、アプリ名横の『…』→『DSL をインポート』→ ローカルの `dify/apps/<番号>-*.yml` を選んで『上書きしてインポート』。終わったら右上から公開」
 - KB 紐づけ：「KN-01 技術ナレッジQA のアプリを開き、『知識検索』ノードのナレッジに『KN-01 技術ナレッジQA』を追加して保存、右上から再公開」
 - 動作確認：「KN-01 のプレビューで『SUS304 の Φ8 深穴（深さ 60mm）ドリル加工、推奨条件を教えて』と送り、回答に TR-2024-007 と 0.06 mm/rev が含まれるか教えて」
+- 公開が「Rerank モデル は必須です」で止まったとき（`dataset_ids` を焼き込んだ build 版。DI-033）：「公開できないので『知識検索』ノードを開き、検索設定で Rerank モデルを 1 つ選んで保存してから、もう一度公開して」
 
 ## 4. トラブル時
 
