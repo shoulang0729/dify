@@ -59,7 +59,7 @@ set -a; source ~/.config/dify/$DIFY_ENV.env; set +a
 
 | env | edition | 接続先の種類 | モデルプロバイダ | chat | reasoning | embedding | rerank | 外部到達 | 確認状態 | 確認日 | 根拠 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| `cloud-master` | cloud | Dify Cloud（PM のワークスペース） | `langgenius/openrouter/openrouter` | `qwen/qwen3.8-max` | `moonshotai/kimi-k3` | （空＝ワークスペース既定） | （空＝無効） | OpenRouter に出られる | **確認済**（PM の契約） | 2026-09-07 | Issue #82 のコメント／`docs/handoff/2026-09-07-china-models-and-syncback.md` §1-1／`completion_params` は 2026-09-08 追加（`docs/handoff/2026-09-08-thinking-budget-and-streaming.md` §2）。**パラメータの実機確認は未了** |
+| `cloud-master` | cloud | Dify Cloud（PM のワークスペース） | `langgenius/openrouter/openrouter` | `qwen/qwen3.8-max` | `moonshotai/kimi-k3` | （空＝ワークスペース既定） | `langgenius/openrouter/openrouter` / `cohere/rerank-4-pro` | OpenRouter に出られる | **未確認** | — | Issue #82 のコメント／`docs/handoff/2026-09-07-china-models-and-syncback.md` §1-1／`completion_params` は 2026-09-08 追加（`docs/handoff/2026-09-08-thinking-budget-and-streaming.md` §2）。**パラメータの実機確認は未了**。**rerank は 2026-09-09 に案 D で明示（#195 PR-2）。値は E1（`op: inspect` の実測、GitHub Actions run #11）。ルール 4 によりモデル入れ替えで確認状態を未確認に戻す。E2/E3 完了後 PR-3 で確認済＋日付＋根拠に戻す** |
 | `inhouse` | selfhost | 社内セルフホスト（Community 1.15.x 想定） | `langgenius/ollama/ollama` | `${INHOUSE_CHAT_MODEL}` | `${INHOUSE_REASON_MODEL}` | `${INHOUSE_EMBED_MODEL}` | （空＝無効） | 外部 API に出られるか**未確認** | **未確認** | — | PM 談（2026-09-07）「Ollama とかだと思う」 |
 | `customer-a` | selfhost | 顧客 A（中国拠点） | `langgenius/siliconflow/siliconflow` | `Qwen/Qwen3.5-397B-A17B` | `Pro/moonshotai/Kimi-K2.6` | `BAAI/bge-m3` | `BAAI/bge-reranker-v2-m3` | 越境 `deny`（`flags.cross_border`）。国外 API へは出さない前提 | **未確認** | — | DP-01 (a)／`decisions-pending.md` |
 
@@ -79,7 +79,7 @@ set -a; source ~/.config/dify/$DIFY_ENV.env; set +a
 | `chat` | 生成（Answer を返す LLM ノード） |
 | `reasoning` | 分類・抽出・判定（question-classifier / parameter-extractor / single_retrieval_config の判定モデル） |
 | `embedding` | KB の索引作成（`kb_upload.py` が dataset 作成時に使う） |
-| `rerank` | 検索結果の再ランク（空なら `reranking_enable: false`） |
+| `rerank` | 検索結果の再ランク（空なら `reranking_enable: false`。＝ マスタで有効にしていても env が空なら無効化される） |
 
 **既定プロバイダは cloud-master が OpenRouter**（`langgenius/openrouter/openrouter`）。`chat` = `qwen/qwen3.8-max`、`reasoning` = `moonshotai/kimi-k3`。アプリ単位で振り替えるための追加 role **`kimi`**（kimi-k3）と **`qwen_small`**（`qwen/qwen3.6-35b-a3b`）を全 env に定義してある（**`overrides` の role がその env に無いと、警告も出ずにマスタの既定モデルのまま動く**ので、role は必ず全 env に置く）。`overrides` が効くのは `llm` ノードだけ。
 
@@ -115,7 +115,7 @@ OpenRouter プラグインは **customizable-model 対応**なので、一覧に
 `reasoning_effort` / `exclude_reasoning_tokens` を持つか未確認のため。**入れる前に、その環境で
 `render.py --env <env> --all` の出力を実機にインポートして通ることを確かめる。**
 
-`embedding` は `cloud-master` だけ空（KB 作成時のモデル指定はワークスペース既定に任せる）。**KB 付き 4 本は Rerank が必須（#195）。`cloud-master` はマスタ DSL と同値を持つ設計（案 D、2026-09-09 PM 決定。現時点ではマスタ DSL・env とも `reranking_enable: false` のまま。適用は #195 PR-2）。`inhouse` は空＝無効のまま（未確認）**。
+`embedding` は `cloud-master` だけ空（KB 作成時のモデル指定はワークスペース既定に任せる）。**KB 付き 4 本は Rerank が必須（#195）。`cloud-master` はマスタ DSL と同値（`langgenius/openrouter/openrouter` / `cohere/rerank-4-pro`）を持つ（案 D、2026-09-09 PM 決定・#195 PR-2 で適用済み）。`inhouse` は空＝無効のまま（未確認）**。
 
 **`embedding` を変えたら、既存 KB は作り直しが要る**（索引ベクトルの次元・意味が変わるため）。
 

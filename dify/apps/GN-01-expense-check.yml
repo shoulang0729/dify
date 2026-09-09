@@ -196,11 +196,11 @@ workflow:
         dataset_ids: []
         desc: 'インポート後に UI でナレッジベース（dify/kb/GN-01/ の 2 文書：旅費規程・交際費規程）を選び直す'
         multiple_retrieval_config:
-          reranking_enable: false
+          reranking_enable: true
           reranking_mode: reranking_model
           reranking_model:
-            model: ''
-            provider: ''
+            model: cohere/rerank-4-pro
+            provider: langgenius/openrouter/openrouter
           score_threshold: null
           top_k: 4
         query_variable_selector:
