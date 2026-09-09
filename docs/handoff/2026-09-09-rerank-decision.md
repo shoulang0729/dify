@@ -1,7 +1,8 @@
 # 2026-09-09 Rerank の扱いを決着させる（Issue #195）
 
 - レーン：**M/L**（architect → PM 承認 → implementer → reviewer）
-- 実行場所：**設計・実装は `run:cloud`／実機確認だけ `run:mac`**（`run:*` は Issue ごとに 1 つ。§8 で PR を分けている理由）
+- 実行場所：**設計・実装は `run:cloud`／E1 の採取と E3 の再テストは `run:runner`／E2（UI の公開チェックリスト）だけ `run:mac`**（`run:*` は Issue ごとに 1 つ。§8 で PR を分けている理由）
+- **2026-09-09 追記（v1.1）**：PR #201（W4-3・`console_api.py`）のマージを受けて **§9 E1 の実行場所を `run:mac` → `run:runner` に変更**した（根拠は §9-1）。§8 の PR-2 前提条件と §11 P-5 も同時に更新。**それ以外の節は初版のまま**
 - 関連：#195・#121（W4-2 の実機確認で発覚）・#82・#114・DI-005・DI-012・DI-015・DI-016・DP-40
 - 依存：本件が決着しないと **W4-4（`op: deploy`）の受け入れ条件「12 本を 1 回で投入 → 公開」** が KB 付き 4 本で止まる（`docs/handoff/2026-09-08-cloud-auth-and-w4.md` §11 W4-4）
 
@@ -296,6 +297,10 @@ dify/KNOWN_ISSUES.md                         DI-005 追記・DI-012 追記・DI-
 docs/dify/decisions-pending.md               DP-40 に追記（行は消さない）
 dify/DEPLOY.md                               §1-①4 / §1-②の Rerank 記述 / §1-④3 / §3 の文面例
 docs/handoff/2026-09-09-rerank-decision.md   本書（PR-0 で追加済み）
+
+# PR-1b（E1 の採取口。§9-1）
+.github/workflows/dify-ops.yml               op: inspect を 1 つ足すだけ（既存 op は触らない）
+scripts/dify/<新規の小さなヘルパー>          下書きから 6 項目だけ抜いて出す（console_api.py 自体は触らない）
 ```
 
 ### 触らない（明示）
@@ -307,7 +312,9 @@ docs/handoff/2026-09-09-rerank-decision.md   本書（PR-0 で追加済み）
   **顧客環境が意図せず OpenRouter の Rerank を引き継ぐ**ので、むしろ現状のセマンティクスが正しい
 - **`scripts/dify/kb_upload.py`**（`build_retrieval_model()` は現状維持。§5-3）
 - **`scripts/dify/sync_back.py`**（N5/R3 のロジックは変えない。マスタが実機に一致することで差分が自然に消える）
-- **`scripts/dify/cloud_deploy.py`・`.github/workflows/dify-ops.yml`**（W4-4 の実装は #121 側の PR。本件はその前提条件を整えるだけ）
+- **`scripts/dify/cloud_deploy.py`**、および **`.github/workflows/dify-ops.yml` の既存 6 op**（`kb_upload`/`kb_refresh`/`kb_replace`/`run_tests`/`both`/`probe`）と既存 3 ジョブ。
+  **PR-1b で追加してよいのは `op: inspect` の 1 つと、それが走るジョブだけ**（既存 op の挙動・ゲート・secrets の配置は変えない）。W4-4 の `op: deploy` は #121 側の PR
+- **`scripts/dify/console_api.py`**（PR #201 でマージされたばかり。`get_draft()` をそのまま呼ぶだけで足り、`ENDPOINTS` に export を足す必要も無い。§9-1 の 4）
 - **`dify/env/inhouse/env.yml`・`dify/env/customer-a/env.yml`**（`models.rerank` の値は変えない。§4-3）
 - **`dify/apps/` の残り 8 本**（KB を引かないので `knowledge-retrieval` ノードが無い）
 - **`dify/tests/**`・`dify/results/**` の既存ファイル**（新しい結果の追加は E3 の産物であって、本設計の変更対象ではない）
@@ -335,10 +342,10 @@ docs/handoff/2026-09-09-rerank-decision.md   本書（PR-0 で追加済み）
 - [ ] DI-005 が「Rerank 全般の禁止根拠」として読めない状態になっている
 - [ ] `dify/env/**/env.yml` に秘密・実名・実 URL・dataset id が増えていない（`verify.mjs` §12。モデル名は対象外）
 
-### 実機で確認するもの（`run:mac`。§9）
+### 実機で確認するもの（E1・E3 は `run:runner`／E2 だけ `run:mac`。§9）
 
 - [ ] **E2**：`dify/build/cloud-master/` の 4 本をインポート → **UI で何も選ばずに公開できる**（チェックリストが止まらない）
-- [ ] **E3**：公開後 `python3 scripts/dify/run_tests.py --env cloud-master KN-01 KN-02 KN-03 GN-01` が **16/16 合格**（2026-09-08 20:45 の batch と同じ合否）。**429 が 1 件も出ない**
+- [ ] **E3**（`run:runner`）：公開後 `op: run_tests`／`codes: KN-01 KN-02 KN-03 GN-01` が **16/16 合格**（2026-09-08 20:45 の batch と同じ合否）。**429 が 1 件も出ない**
 - [ ] E3 の結果ファイルが `dify/results/cloud-master/` に commit されている
 
 ---
@@ -349,10 +356,11 @@ docs/handoff/2026-09-09-rerank-decision.md   本書（PR-0 で追加済み）
 |---|---|---|---|---|
 | **PR-0** | **本設計書の追加のみ**（コード変更なし） | `docs/handoff/2026-09-09-rerank-decision.md` | なし | `run:cloud` |
 | **PR-1** | **記録の訂正と手順の明記**（案 D の採否に関わらず要る分） | `dify/KNOWN_ISSUES.md`（DI-005 追記・DI-012 追記・DI-033 新規）／`docs/dify/decisions-pending.md`（DP-40 追記）／`dify/DEPLOY.md`（build 版を使うと Rerank で止まること、暫定の 1 手）／`dify/env/README.md`（118 行目の誤った 1 文の訂正） | PR-0 マージ。**PM の案 D 承認は不要**（事実の訂正と手順の明記だけ） | `run:cloud` |
-| **PR-2** | **案 D の適用**（マスタ 4 本＋`cloud-master` env＋台帳） | `dify/apps/{KN-01,KN-02,KN-03,GN-01}-*.yml`／`dify/env/cloud-master/env.yml`／`dify/env/README.md`（台帳行・用途表） | **PM の案 D 承認（§11 P-1）** ＋ **E1 の採取結果**（provider/model の正確な文字列） | `run:cloud`（値の入手だけ `run:mac`） |
-| **PR-3** | **実機確認の反映** | `dify/env/README.md`（`確認状態` を `確認済`＋日付＋根拠へ）／`dify/KNOWN_ISSUES.md`（DI-033 を `fixed`、DI-005/DI-012 に実測日を追記）／`dify/results/cloud-master/*.md`（E3 の結果） | PR-2 マージ＋E2/E3 実施 | `run:mac`（結果の commit は自動 PR の許可パス `dify/results/**` に収まる。**台帳と KNOWN_ISSUES は人が別 PR で**） |
+| **PR-1b** | **E1 の採取口**（読み取り専用。§9-1） | `.github/workflows/dify-ops.yml`（`op: inspect` を 1 つ）／`scripts/dify/`（下書きから 6 項目だけ抜くヘルパー。`console_api.py` 自体は触らない） | PR-0 マージ＋**PM の P-5 承認**。PR-1・PR-2 とは**触るファイルが重ならないので並列可** | 実装 `run:cloud`／実行 `run:runner` |
+| **PR-2** | **案 D の適用**（マスタ 4 本＋`cloud-master` env＋台帳） | `dify/apps/{KN-01,KN-02,KN-03,GN-01}-*.yml`／`dify/env/cloud-master/env.yml`／`dify/env/README.md`（台帳行・用途表） | **PM の案 D 承認（§11 P-1）** ＋ **E1 の採取結果**（provider/model の正確な文字列。PR-1b の `op: inspect` を 1 回回せば得られる。**Mac は不要**） | `run:cloud`（値の入手は `run:runner`） |
+| **PR-3** | **実機確認の反映** | `dify/env/README.md`（`確認状態` を `確認済`＋日付＋根拠へ）／`dify/KNOWN_ISSUES.md`（DI-033 を `fixed`、DI-005/DI-012 に実測日を追記）／`dify/results/cloud-master/*.md`（E3 の結果） | PR-2 マージ＋E2/E3 実施 | E3 の結果は `run:runner` の自動 PR（許可パス `dify/results/**` に収まる）。**台帳と KNOWN_ISSUES の更新は `run:cloud` の人の PR**。E2 の観測結果だけ Mac から報告 |
 
-**並列可否**：PR-1 と PR-2 は**直列**（どちらも `dify/env/README.md`・`dify/KNOWN_ISSUES.md` を触る）。
+**並列可否**：PR-1 と PR-2 は**直列**（どちらも `dify/env/README.md`・`dify/KNOWN_ISSUES.md` を触る）。**PR-1b はどちらとも並列可**（`.github/workflows/` と `scripts/dify/` しか触らない）。
 **#121（W4-2）・#121 系の W4-4 の PR とは並列可**（触るファイルが違う）。ただし **W4-4 の実機受け入れ（12 本投入→公開）は PR-2 のマージ後**に回すこと。
 
 **PR-3 の注意**：`docs/handoff/2026-09-08-execution-split-and-runner.md` の「実機側の自動 PR は `dify/results/**` と `dify/state/**` 以外を書かない」に反しないよう、
@@ -360,17 +368,60 @@ docs/handoff/2026-09-09-rerank-decision.md   本書（PR-0 で追加済み）
 
 ---
 
-## §9 実機で確認する項目（`run:mac`。PR-2 の前提）
+## §9 実機で確認する項目（E1・E3 は `run:runner`／E2 だけ `run:mac`。PR-2 の前提）
 
 | # | 何を | どうやって | なぜ要るか |
 |---|---|---|---|
-| **E1** | **Rerank の provider / model の正確な文字列** | Cloud で KN-01 を開く → 知識検索ノードで KB を紐づけて Rerank が自動で入った状態にする → 「DSL をエクスポート」→ `multiple_retrieval_config` の `reranking_model.provider` / `.model` / `reranking_mode` / `top_k` / `score_threshold` を**そのまま**転記する（値は秘密ではない） | **PR-2 の値を推測で書かないため。**「`langgenius/openrouter/openrouter` だろう」という見込みは git のどこにも実測がない |
-| **E2** | **build 版が手作業ゼロで公開できるか** | PR-2 のブランチで `python3 scripts/dify/render.py --env cloud-master --all` → `dify/build/cloud-master/` の KB 付き 4 本を「DSL をインポート → 上書き」→ **画面で何も選ばずに公開**を押す | #195 の本丸。ここが通らなければ案 D は無意味 |
-| **E3** | **合否が退行していないか／429 が出ないか** | `python3 scripts/dify/run_tests.py --env cloud-master KN-01 KN-02 KN-03 GN-01` → 16/16。結果を commit | DI-005 の 429 が「一過性」か「上限」かを、いま分かる範囲で確かめる唯一の手段（§1 Q1） |
+| **E1** | **Rerank の provider / model の正確な文字列** | **`run:runner`（ブラウザ・Mac 不要）。** `console_api.client_from_env()` → `find_app_id_by_name()` → **`get_draft(app_id)`** で KN-01 の下書きを取り、`knowledge-retrieval` ノードの `multiple_retrieval_config` から `reranking_enable` / `reranking_model.provider` / `.model` / `reranking_mode` / `top_k` / `score_threshold` を**そのまま**転記する（値は秘密ではない）。根拠と手順は **§9-1** | **PR-2 の値を推測で書かないため。**「`langgenius/openrouter/openrouter` だろう」という見込みは git のどこにも実測がない |
+| **E2** | **build 版が手作業ゼロで公開できるか** | **`run:mac`（ここだけブラウザが要る）。** PR-2 のブランチで `python3 scripts/dify/render.py --env cloud-master --all` → `dify/build/cloud-master/` の KB 付き 4 本を「DSL をインポート → 上書き」→ **画面で何も選ばずに公開**を押す。**W4-4（`op: deploy`）が先に入っていれば、そちらを 1 回回すことで代替できる**（API 経路で投入・公開が通れば E2 の目的は満たされる） | #195 の本丸。ここが通らなければ案 D は無意味 |
+| **E3** | **合否が退行していないか／429 が出ないか** | **`run:runner`（既存の口で足りる）。** `dify-ops.yml` の **`op: run_tests`／`codes: KN-01 KN-02 KN-03 GN-01`** を回す（承認ゲートの外。読み取りのみ）→ 16/16。結果は自動 PR で `dify/results/cloud-master/` に入る | DI-005 の 429 が「一過性」か「上限」かを、いま分かる範囲で確かめる唯一の手段（§1 Q1） |
 | **E4**（任意・ついで） | **Console API の publish がサーバ側でチェックリストを検証するか**（#114 U3／W4 §11 V8） | W4-4 の `op: deploy` を回すときに、Rerank 未指定の 1 本で `POST /console/api/apps/{id}/workflows/publish` の応答を見る | **案 D の採否には影響しない**（§3 の理由 2）。W4-4 の設計精度のために取れるなら取る |
 
 **E1 が取れないとき**：PR-2 を止める。見込み値で先に入れて「インポートは通るが公開でまた止まる」を作るくらいなら、
 PR-1（手順の明記）で運用しながら待つほうが安い。
+
+### 9-1. E1 を `run:runner` にできる根拠（`origin/main` の `console_api.py` を読んで確認した）
+
+**判定：E1 はブラウザも Mac も要らない。Console API の下書き取得で採取できる。** 根拠は 4 つ。
+
+1. **同じ値が、過去に実際に Console API から読まれている。** `dify/KNOWN_ISSUES.md` DI-012 の「原因」列にこう書いてある：
+   > Dify の UI が高品質（ベクトル）KB を選ぶと Rerank を強制 ON にし、ワークスペース既定の Rerank モデルを入れる（**ノード下書きを Console API で確認**）
+   つまり **`openrouter / cohere/rerank-4-pro`・`top_k 8` という DI-012 の記述そのものが、下書き API の応答から得られた値**である。
+   台帳には表示名に丸めて書かれてしまったが、**生の文字列は同じ経路でもう一度取れる**。これは推測ではなく git に残っている事実
+2. **エンドポイントと実装が `origin/main` にある**（PR #201 でマージ済み）。`scripts/dify/console_api.py`：
+   - `ENDPOINTS["workflows_draft"] = "/console/api/apps/{app_id}/workflows/draft"`（79 行目）
+   - `ConsoleClient.get_draft(app_id)`（387〜391 行目）＝ `GET` を投げて `_req()` の戻りをそのまま返すだけ。
+     `_req()` は `return r.status, (json.loads(raw) if raw else {})` なので、**戻り値は素の dict**。加工・間引きは一切していない
+   - アプリ id の解決も既にある：`list_apps()`（全ページ）＋ `find_app_id_by_name(name)`。
+     **`cloud-master/env.yml` の `apps.*.id` はすべて `null` なので、名前引き（マスタ DSL の `app.name`）で解決する経路が必須**であり、それは実装済み
+3. **下書きに Rerank 設定が入っていると言える理由**：PM は W4-2 の検証（V2）で **Studio の「検索設定」で Cohere Rerank 4 Pro を選んでから公開**した。
+   Dify の Studio はノードの編集を**下書き**に保存し、「公開」はその下書きを実行版に昇格させる操作なので、**選んだ Rerank は下書きに残っている**。
+   DI-012 が同じ経路で読めていることが、この推論の裏づけになっている
+4. **DSL エクスポート（`/console/api/apps/{app_id}/export`）は要らない。** `ENDPOINTS` に export は無いが、**足す必要も無い**：
+   export は下書き（または実行版）を YAML に直列化したものであって、`multiple_retrieval_config` の値そのものは下書き API で取れる。
+   **エンドポイントを 1 件増やすより、既にある `get_draft()` を使うほうが確認事項が少ない**（export の body 形は誰も実機で見ていない＝新しい未確認事項が増える）
+
+**成立の条件（ここだけが未整備）**：`origin/main` の時点で、下書きを**表示する口が無い**。
+`console_api.py` の CLI（`__main__`）は `--console-url` を取ってアプリ一覧を出すだけで、`dify-ops.yml` の `op` も
+`kb_upload` / `kb_refresh` / `kb_replace` / `run_tests` / `both` / `probe` の 6 つだけ。**`DIFY_CONSOLE_REFRESH` は
+`dify-ops.yml` にまだ 1 か所も渡されていない**（W4-4 PR-6 で入る予定）。したがって E1 を CI で回すには**小さな読み取り専用の口を 1 つ足す**必要がある。
+
+**E1 の実行手順（PR-1b で足すもの）**
+
+| | 中身 |
+|---|---|
+| 足すもの | `dify-ops.yml` に **`op: inspect`**（読み取り専用）。`environment: dify-cloud-master`／`DIFY_CONSOLE_REFRESH` を渡す／`codes` は対象の管理番号／**書き込み系 API を一切呼ばない** |
+| 実装 | `console_api.client_from_env()` → `find_app_id_by_name(<マスタ DSL の app.name>)` → `get_draft(app_id)` → **応答を再帰的に走査して `type == 'knowledge-retrieval'` のノード（または `multiple_retrieval_config` を持つ dict）を拾う** |
+| 出す値 | `reranking_enable` / `reranking_model.provider` / `.model` / `reranking_mode` / `top_k` / `score_threshold` の **6 項目だけ**。**下書き全体をログに出さない**（プロンプト本文・`dataset_ids` が入る。`dataset_ids` は出すなら `masking.short_id()` を通す＝`CLAUDE.md` §2-10） |
+| 応答形の未確認事項を回避する方法 | 下書き応答のトップレベルキー形は **#114 C5 として未確認**（`get_draft()` の docstring にもそう書いてある）。**`graph.nodes[]` というパスを決め打ちにせず、再帰走査で拾う**ことで C5 に依存しない実装にする |
+| 捨て仕事にならない理由 | **W4-4（`op: deploy`）は同じ配線（`DIFY_CONSOLE_REFRESH` をワークフローに渡す）を必ず必要とする。** ここで先に読み取り専用の口で通しておくと、W4-4 の前に認証まわりを 1 回検証できる |
+
+**順序の制約（重要）**：**E1 は「次に build 版を再インポートする前」に実行すること。**
+再インポートすると下書きが `reranking_enable: false` で上書きされ、PM が選んだ Rerank の値が下書きから消える。
+消えた場合は、UI で 1 回だけ Rerank を選び直してから E1 を回す（そのときだけ `run:mac` が要る）。
+
+**フォールバック（`run:mac`）**：`probe` が Cloudflare の 1010 で落ちる／`DIFY_CONSOLE_REFRESH` を置けない場合に限り、
+Chrome で対象アプリの「DSL をエクスポート」→ `multiple_retrieval_config` を転記する。**これは代替手段であって既定ではない。**
 
 ---
 
@@ -396,12 +447,18 @@ E3 で **429 が再発した**、または合否が退行した場合：
 | **P-2** | **`inhouse` の `models.rerank` をどうするか** | (a) 空のまま（本設計の既定）／(b) Ollama の Rerank モデル名を入れる | **(a)** | `inhouse` は台帳で **未確認**環境。実機で通ることを確かめずにモデル名を書くのは §2-12 の「入れる前に実機で確かめる」に反する。セルフホストで同じチェックリストに当たったら、その時点で実測して入れる |
 | **P-3** | **`kb_upload.py` の dataset 既定（Rerank OFF）を変えるか** | (a) 変えない（本設計の既定）／(b) ノードと同じく ON にそろえる | **(a)** | 層が違う（§2）。DI-016 で直したばかりの `POST /datasets` の body を触る利益が無い。DI-005 で 429 を出した層をわざわざ戻すことになる |
 | **P-4** | **DI-005 の行そのものを書き換えるか、追記にとどめるか** | (a) 追記のみ（本設計の既定）／(b) 症状・原因の文面も直す | **(a)** | `KNOWN_ISSUES.md` の冒頭ルールが「直したら行を消さず状態と対処に書く」。観測記録そのものは書き換えない方が台帳の価値が保てる |
+| **P-5** | **E1 の採取のために `dify-ops.yml` に読み取り専用の `op: inspect` を足すか**（§9-1） | (a) 足す（＝E1 は `run:runner`。Mac 不要）／(b) 足さず、Chrome の DSL エクスポートで採る（＝E1 は `run:mac`） | **(a)** | 下書き API は既に `origin/main` にあり（`get_draft()`）、**DI-012 の値はまさにそこから読まれている**。(b) は PM が運び屋に戻る作業を 1 つ増やす。(a) の配線（`DIFY_CONSOLE_REFRESH` をワークフローに渡す）は **W4-4 が必ず必要とするもの**なので捨て仕事にならない。書き込み系 API を 1 つも呼ばない口なので、増える面も小さい |
 
 ---
 
 ## §12 本 Issue のスコープ外（別 Issue に残す）
 
-- **`dify/state/<env>.yml` の導入**（実機の事実を機械が書く場所）。§1 Q2 で見つかった「合格時の実機構成が git に残らない」問題の恒久対応。#114 系
+- **`dify/state/<env>.yml` の導入**（実機の事実を機械が書く場所）。§1 Q2 で見つかった「合格時の実機構成が git に残らない」問題の恒久対応。#114 系。
+  **architect の意見：別 Issue を立てる価値がある（推奨：立てる）。** 理由は 3 つ —— ①今回 1 日分の作業（#195 の §1 Q2 の調査全部）が「記録が無いこと」だけのために発生した、
+  ②`docs/handoff/2026-09-08-execution-split-and-runner.md` が既に「実機の事実は `dify/state/<env>.yml`」と決めているのに**ディレクトリすら無い**＝決めたのに実装されていない状態が放置されている、
+  ③本設計の **PR-1b（`op: inspect`）が、まさに「実機の事実を機械が読んで出す」最小の実装**になるので、そのままこの Issue の第 1 歩に転用できる。
+  スコープの目安は「`run_tests.py` の結果ヘッダに、そのとき実機で使われていたモデル・Rerank・`top_k` を 1 行足す」ではなく、
+  **`op: inspect` の出力を `dify/state/cloud-master.yml` に機械が書く**（`dify/results/**`・`dify/state/**` 以外を書かない自動 PR の許可パスに収まる）。**#121 の W2 とつなげて起票するのが自然。**
 - **案 B（`weighted_score`）の検証**。DI-012 が「別 Issue で検討」として残したもの。実機確認 3 点は `2026-09-08-thinking-budget-and-streaming.md` §11-C1
 - **`sync_back.py` の N5 対象の見直し**（DI-015 の恒久対応）。案 D で R3 の雑音は消えるが、`completion_params` 由来の R1 差分は残る
 - **W4-4 の `op: deploy` の実装**（#121）。本設計はその前提条件を整えるだけで、ワークフローには触らない
