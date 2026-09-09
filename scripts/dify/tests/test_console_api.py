@@ -4,11 +4,16 @@ test_run_tests.py と同じ作法。mock_server.py を子プロセスで起動�
 
     python3 scripts/dify/tests/test_console_api.py     # exit 0 で全件 PASS。ネットワークは 127.0.0.1 のみ
 
-設計: docs/handoff/2026-09-08-cloud-console-deploy.md §4-2・§7 PR-1（Issue #114）
+設計: docs/handoff/2026-09-08-cloud-console-deploy.md §4-2・§7 PR-1（Issue #114）／
+docs/handoff/2026-09-08-cloud-auth-and-w4.md §8・§11「W4-3 PR-4」（Issue #121。G1〜G7・refresh・CSRF）
 
 CI（`npm test`）には入れない（`CLAUDE.md` §3 のコマンド集合を変えない）。実行は implementer と reviewer が手で行う。
 """
+import contextlib
+import io
+import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -98,7 +103,8 @@ def test_t1b_mask_case_insensitive():
 
 
 def test_t2_endpoints_table():
-    for key in ("login", "apps", "apps_imports", "apps_imports_confirm", "workflows_publish", "workflows_draft"):
+    for key in ("login", "refresh_token", "apps", "apps_imports", "apps_imports_confirm",
+                "workflows_publish", "workflows_draft"):
         check(f"T2: ENDPOINTS['{key}'] が定義されている", key in console_api.ENDPOINTS, str(console_api.ENDPOINTS.keys()))
 
 
@@ -182,14 +188,20 @@ def test_t5_confirm_and_draft_roundtrip(base):
 
 def test_t6_auth_error_exit3(base):
     """401（未設定・期限切れ）で exit 3、かつ再取得手順が出ること。"""
-    r_unset = run_cli(["--console-url", base], {"DIFY_CONSOLE_TOKEN": "", "DIFY_CONSOLE_EMAIL": "", "DIFY_CONSOLE_PASSWORD": ""})
-    check("T6a: トークン・email/password いずれも未設定は exit 2", r_unset.returncode == 2,
+    r_unset = run_cli(["--console-url", base], {
+        "DIFY_CONSOLE_REFRESH": "", "DIFY_CONSOLE_TOKEN": "", "DIFY_CONSOLE_EMAIL": "", "DIFY_CONSOLE_PASSWORD": "",
+    })
+    check("T6a: 秘密（REFRESH/TOKEN/email+password）いずれも未設定は exit 2", r_unset.returncode == 2,
           f"exit={r_unset.returncode} stdout={r_unset.stdout} stderr={r_unset.stderr}")
+    check("T6a: DIFY_CONSOLE_REFRESH が未設定です、と出る",
+          "DIFY_CONSOLE_REFRESH が未設定です" in (r_unset.stdout + r_unset.stderr), r_unset.stdout + r_unset.stderr)
 
-    r_expired = run_cli(["--console-url", base], {"DIFY_CONSOLE_TOKEN": mock_server.EXPIRED_TOKEN})
+    # 非推奨だが引き続き使える DIFY_CONSOLE_TOKEN（レガシー）経路の 401
+    r_expired = run_cli(["--console-url", base], {"DIFY_CONSOLE_REFRESH": "", "DIFY_CONSOLE_TOKEN": mock_server.EXPIRED_TOKEN})
     combined = r_expired.stdout + r_expired.stderr
     check("T6b: 期限切れトークンで exit 3", r_expired.returncode == 3, f"exit={r_expired.returncode} {combined}")
-    check("T6b: 取り直し手順（ブラウザ）が出る", "ブラウザ" in combined and "console_token" in combined, combined)
+    check("T6b: 取り直し手順（ブラウザ）が出る",
+          "ブラウザ" in combined and "DIFY_CONSOLE_REFRESH" in combined, combined)
     check("T6b: 出力にトークン文字列が現れない", mock_server.EXPIRED_TOKEN not in combined, combined)
 
 
@@ -211,6 +223,151 @@ def test_t8_no_token_leak_anywhere(base, tmpdir):
     check("T8: 生成ファイルにトークンの値が現れない", "yet-another-secret-token-value" not in content, content)
 
 
+def test_g3_password_base64_helper():
+    """G3: password は base64 化して送る（Cloud・selfhost 共通）。ヘルパー単体の検証。"""
+    import base64
+    encoded = console_api._b64_password("hello-world")
+    check("G3: _b64_password が base64 エンコードした値を返す",
+          encoded == base64.b64encode(b"hello-world").decode("ascii"), encoded)
+    check("G3: エンコード結果は平文と異なる", encoded != "hello-world", encoded)
+
+
+def test_g7_mask_patterns_cover_cookie_csrf_refresh():
+    """G7: _mask() が Cookie・Set-Cookie・X-CSRF-Token ヘッダ・アクセス/CSRF/リフレッシュトークンの
+    JSON エコー・JWT らしき文字列を伏せること（正規表現で検査）。"""
+    sample = (
+        "HTTP 401 GET /console/api/apps: "
+        "Cookie: access_token=abc123secret; csrf_token=def456secret; refresh_token=ghi789secret "
+        "X-CSRF-Token: def456secret "
+        "Set-Cookie: __Host-access_token=zzz999secret; Path=/; HttpOnly "
+        '{"access_token": "abc123secret", "refresh_token": "ghi789secret"} '
+        "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+    )
+    masked = console_api._mask(sample)
+    for secret in ("abc123secret", "def456secret", "ghi789secret", "zzz999secret"):
+        check(f"G7: マスク後に {secret!r} が残らない", secret not in masked, masked)
+    check("G7: JWT らしき文字列がマスクされる（<jwt>*** に置換）", "eyJhbGciOiJIUzI1NiJ9" not in masked, masked)
+
+
+def test_t9_refresh_and_csrf_flow(base):
+    """G1・G4・G6: refresh-token で access/csrf/refresh の 3 点を取得し、以降のリクエストに
+    X-CSRF-Token ヘッダと Cookie の csrf_token が付いて一致すること（一致しなければ list_apps は
+    401 で例外になるので、成功すること自体が一致の証拠になる）。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    seed = "t9-seed-refresh-token"
+    ok = client.refresh(seed)
+    check("T9: refresh() が成功する", ok is True)
+    check("T9: refresh 後に access token が保持される", bool(client._token), client._token)
+    check("T9: refresh 後に csrf token が保持される", bool(client._csrf), client._csrf)
+    check("T9: refresh 後に refresh token がローテートされて保持される（seed と異なる）",
+          bool(client._refresh_token) and client._refresh_token != seed, client._refresh_token)
+
+    apps = client.list_apps()
+    check("T9: refresh 後の list_apps が成功する（CSRF ヘッダ／Cookie 一致の証拠）", isinstance(apps, list))
+
+
+def test_t10_refresh_reuse_fails(base):
+    """G6: 同じリフレッシュトークンを 2 回使うと 2 回目は 401（rotate。S10）。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    seed = "t10-seed-refresh-token"
+    client.refresh(seed)
+    try:
+        client.refresh(seed)
+        check("T10: 使用済みリフレッシュトークンの再利用は失敗する", False)
+    except console_api.ConsoleSessionExpiredError:
+        check("T10: 使用済みリフレッシュトークンの再利用は失敗する", True)
+
+
+def test_t11_refresh_401_exit3_session_expired(base):
+    """§8-4 1 行目: refresh-token が 401 → exit 3、かつ「セッション期限切れ」のメッセージ。"""
+    r = run_cli(["--console-url", base],
+                {"DIFY_CONSOLE_REFRESH": mock_server.EXPIRED_REFRESH_TOKEN, "DIFY_CONSOLE_TOKEN": ""})
+    combined = r.stdout + r.stderr
+    check("T11: refresh 401 で exit 3", r.returncode == 3, f"exit={r.returncode} {combined}")
+    check("T11: セッション期限切れのメッセージが出る（DEPLOY.md §9 の案内込み）",
+          "セッションが期限切れ" in combined and "DIFY_CONSOLE_REFRESH" in combined and "DEPLOY.md" in combined,
+          combined)
+    check("T11: 出力にリフレッシュトークン文字列が現れない", mock_server.EXPIRED_REFRESH_TOKEN not in combined, combined)
+
+
+def test_t12_midjob_401_auto_refresh_once(base):
+    """§8-4 4 行目: ジョブ途中で 401（60 分超え）になったら、メモリの最新リフレッシュトークンで
+    1 回だけ自動再取得して継続する。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.refresh("t12-seed-refresh-token")
+    old_access = client._token
+
+    req = urllib.request.Request(
+        base + "/__test__/expire-access-token", method="POST",
+        data=json.dumps({"access_token": old_access}).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=5) as r:
+        r.read()
+
+    apps = client.list_apps()  # 内部で 401 → 自動 refresh → 再試行 → 成功するはず
+    check("T12: 期限切れ後も 1 回だけの自動再取得で継続する", isinstance(apps, list), apps)
+    check("T12: 自動再取得で access token が入れ替わる", client._token != old_access, (old_access, client._token))
+
+
+def test_t13_csrf_mismatch_when_already_retried(base):
+    """§8-4 2 行目: refresh は 200 だったのに、その後の API が 401（CSRF の組み立て誤り）
+    → ConsoleCSRFMismatchError（exit 3・専用メッセージ）。自動リトライは csrf を都度正しく
+    取り直すため、この分岐は「既に 1 回リトライした後もなお 401」というケースでしか起きない
+    （実装のバグの再現）。`_retried=True` を直接渡して分岐そのものを検査する（白箱テスト）。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.refresh("t13-seed-refresh-token")
+    client._csrf = "deliberately-wrong-csrf-value"  # わざと壊す
+    try:
+        client._req("GET", console_api.ENDPOINTS["apps"] + "?page=1&limit=100", auth=True, _retried=True)
+        check("T13: CSRF 不一致は例外になる", False)
+    except console_api.ConsoleCSRFMismatchError as e:
+        check("T13: ConsoleCSRFMismatchError が上がる", True)
+        check("T13: メッセージに「CSRF」が含まれる", "CSRF" in str(e), str(e))
+        check("T13: 壊した csrf 値が例外メッセージに現れない", "deliberately-wrong-csrf-value" not in str(e), str(e))
+
+
+def test_t14_no_delete_function_in_console_api():
+    """§9-1: console_api.py に DELETE を送る関数が 1 つも無い（tools/verify.mjs §15 と同じ検査）。"""
+    with open(CONSOLE_API, encoding="utf-8") as fh:
+        src = fh.read()
+    pattern = re.compile(r'_req\(\s*(["\'])DELETE\1|method\s*=\s*(["\'])DELETE\2', re.IGNORECASE)
+    check("T14: console_api.py に \"DELETE\" を渡す HTTP 呼び出しが無い", not pattern.search(src))
+
+
+def test_t15_no_secret_leak_in_normal_flow(base):
+    """G7: 通常の refresh → list_apps → publish の流れで、標準出力に
+    access/csrf/refresh トークンの値が一度も現れないこと。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    seed = "t15-seed-refresh-token-xyz"
+    client.refresh(seed)
+    access, csrf, refresh_after = client._token, client._csrf, client._refresh_token
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        client.list_apps()
+        try:
+            client.publish("app-1")
+        except console_api.ConsoleAPIError:
+            pass
+    out = buf.getvalue()
+    for secret, label in (
+        (access, "access_token"), (csrf, "csrf_token"),
+        (refresh_after, "refresh_token（rotate 後）"), (seed, "seed refresh_token"),
+    ):
+        check(f"T15: 標準出力に {label} の値が現れない", secret not in out, out)
+
+
+def test_t16_selfhost_still_uses_legacy_no_csrf(base):
+    """T3・T4 の後方互換をもう一段直接確認する: selfhost の /login で得たトークンは
+    STATE["sessions"] に登録されない（レガシー扱い）ため、X-CSRF-Token 無しでも通ること。"""
+    c = console_api.ConsoleClient(base, timeout=10)
+    c.login("tester2@example.com", "another-dummy-password")
+    check("T16: selfhost ログインは csrf を持たない（レガシー経路）", c._csrf is None, c._csrf)
+    apps = c.list_apps()
+    check("T16: csrf 無しでも selfhost 経路の list_apps は成功する", isinstance(apps, list))
+
+
 def main():
     check("前提: console_api.py が存在する", os.path.isfile(CONSOLE_API))
     check("前提: mock_server.py が存在する", os.path.isfile(MOCK_SERVER))
@@ -218,6 +375,9 @@ def main():
     test_t1_mask()
     test_t1b_mask_case_insensitive()
     test_t2_endpoints_table()
+    test_g3_password_base64_helper()
+    test_g7_mask_patterns_cover_cookie_csrf_refresh()
+    test_t14_no_delete_function_in_console_api()
 
     port = free_port()
     base = f"http://127.0.0.1:{port}"
@@ -236,6 +396,13 @@ def main():
         test_t7_success_exit0(base)
         with tempfile.TemporaryDirectory(prefix="console_api_test_") as tmpdir:
             test_t8_no_token_leak_anywhere(base, tmpdir)
+        test_t9_refresh_and_csrf_flow(base)
+        test_t10_refresh_reuse_fails(base)
+        test_t11_refresh_401_exit3_session_expired(base)
+        test_t12_midjob_401_auto_refresh_once(base)
+        test_t13_csrf_mismatch_when_already_retried(base)
+        test_t15_no_secret_leak_in_normal_flow(base)
+        test_t16_selfhost_still_uses_legacy_no_csrf(base)
     finally:
         proc.terminate()
         try:

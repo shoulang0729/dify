@@ -30,17 +30,33 @@ Dify サーバー（標準ライブラリのみ。開発・検証用。CI には
       リクエスト body の response_mode が "streaming" のときは Content-Type: text/event-stream の
       SSE で返す（回答を 3 分割 ＋ ping 1 フレームを挟む）。それ以外（未指定・"blocking"）は今までどおり JSON。
 
-**401 モード**：`/console/api/login` 以外の `console/api/*` は `Authorization: Bearer <token>` を要求する。
-ヘッダが無い、または token が `"expired-token"` のときは 401（`{"code": "unauthorized", ...}`）を返す
-（`console_api.ConsoleAuthError` の往復確認用。test_console_api.py が使う）。
+**401 モード（レガシー・Bearer-only）**：`/console/api/login` 以外の `console/api/*` は
+`Authorization: Bearer <token>`（または Cookie の `access_token`）を要求する。無い、または token が
+`"expired-token"` のときは 401（`{"code": "unauthorized", ...}`）を返す（`console_api.ConsoleAuthError`
+の往復確認用。test_console_api.py が使う）。**`STATE["sessions"]` に登録されていないトークン**
+（selfhost の `/login` が返す `mock-token` や `DIFY_CONSOLE_TOKEN` で直接 `set_token()` された値）は
+この従来どおりの経路（CSRF 不要）。
+
+**refresh-token 経由のセッション（Cloud 認証層。Issue #121 W4-3）**：
+  POST /console/api/refresh-token                               → Cookie の refresh_token を検証し、
+      成功すれば Set-Cookie ×3（access_token・csrf_token・refresh_token）を返す。無い／期限切れ
+      （`EXPIRED_REFRESH_TOKEN`）／既に使用済みなら 401（G6）。**login_required でも CSRF 必須でもない**
+      （S9 の再現。認証ヘッダ・Cookie 一切不要）。同じ値は 1 回しか使えない（rotate。S10 の再現）
+  このフローで発行された access_token（`STATE["sessions"]` に登録される）を使う認証済みリクエストは、
+      `X-CSRF-Token` ヘッダと Cookie の `csrf_token` の**両方**が、発行した csrf 値と一致しないと 401
+      （G4 の再現）
+  POST /__test__/expire-access-token  body: {"access_token": "..."}     → 指定した access_token を
+      「期限切れ」として扱うようにする（60 分超えの mid-job 401 を時間を待たずに再現するテスト専用 API）
 
 **テスト専用エンドポイント**（`/console/api/*` でも `/v1/*` でもないため、上記の認証は要らない）：
   GET  /__test__/stats                                          → {"DELETE": n, "PATCH": n, "update_by_text": n}
       test_kb_upload.py が「意図しない削除・更新を呼んでいないか」を差分で確認するためのカウンタ
+  POST /__test__/expire-access-token                            → 上記参照（test_console_api.py 専用）
 
 このスクリプトは検証専用。生成物（dify/results/** や dify/CHANGELOG.md の検証行）はコミットに含めない。
 """
 import argparse
+import base64
 import glob
 import http.server
 import json
@@ -84,9 +100,15 @@ STATE = {
     "apps": {}, "datasets": {}, "next_app": 1, "next_ds": 1, "next_doc": 1,
     "pending_imports": {}, "next_import": 1, "drafts": {},
     "calls": {"DELETE": 0, "PATCH": 0, "update_by_text": 0},  # /__test__/stats が返すカウンタ
+    # Issue #121 W4-3: refresh-token 経由で発行したセッション。access_token -> csrf_token。
+    # ここに登録されているトークンだけ CSRF 一致を要求する（レガシー Bearer-only との共存。G4）
+    "sessions": {},
+    "used_refresh_tokens": set(),   # 1 回使ったリフレッシュトークンの値（再利用させない。S10）
+    "expired_access_tokens": set(),  # /__test__/expire-access-token で「期限切れ」にした access_token
 }
 LOCK = threading.Lock()
-EXPIRED_TOKEN = "expired-token"  # DIFY_CONSOLE_TOKEN にこの値を入れると 401 を再現できる
+EXPIRED_TOKEN = "expired-token"  # DIFY_CONSOLE_TOKEN にこの値を入れると 401 を再現できる（レガシー経路）
+EXPIRED_REFRESH_TOKEN = "expired-refresh-token"  # refresh() にこの値を渡すと常に 401 を再現できる（G6）
 MOCK_FAIL_UPLOAD_MARKER = "MOCK_FAIL_UPLOAD"  # ファイル名に含めるとアップロード/更新が 500 で失敗する（T7 用）
 
 
@@ -164,13 +186,50 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _path(self):
         return self.path.split("?", 1)[0]
 
-    def _console_auth_ok(self):
-        """/console/api/login 以外の console API が要求する Bearer 認証。無い・"expired-token" なら False。"""
+    def _parse_cookie_header(self):
+        """Cookie ヘッダを {name: value} に分解する簡易パーサ（検証用途に限定）。"""
+        raw = self.headers.get("Cookie", "") or ""
+        out = {}
+        for part in raw.split(";"):
+            part = part.strip()
+            if "=" in part:
+                k, v = part.split("=", 1)
+                out[k.strip()] = v.strip()
+        return out
+
+    def _cookie_lookup(self, cookies, name_suffix):
+        """__Host- プレフィックスの有無を問わず名前の末尾一致で拾う（console_api._cookie_value と同じ考え方）。"""
+        for k, v in cookies.items():
+            if k == name_suffix or k.endswith(name_suffix):
+                return v
+        return None
+
+    def _extract_bearer(self):
         auth = self.headers.get("Authorization", "")
-        if not auth.startswith("Bearer "):
+        if auth.startswith("Bearer "):
+            return auth[len("Bearer "):]
+        return None
+
+    def _console_auth_ok(self):
+        """console API の認証。Authorization: Bearer か Cookie の access_token のどちらかが要る
+        （extract_access_token() の再現。S1）。`"expired-token"` は常に無効。
+        `STATE["sessions"]` に登録されているトークン（refresh-token 経由）だけ、
+        X-CSRF-Token ヘッダと Cookie の csrf_token の一致を追加で要求する（G4。Issue #121 W4-3）。
+        登録されていないトークン（selfhost の /login・DIFY_CONSOLE_TOKEN 直指定）はレガシー扱いで
+        CSRF 不要（従来どおり。後方互換）。"""
+        cookies = self._parse_cookie_header()
+        token = self._extract_bearer() or self._cookie_lookup(cookies, "access_token")
+        if not token or token == EXPIRED_TOKEN:
             return False
-        token = auth[len("Bearer "):]
-        return bool(token) and token != EXPIRED_TOKEN
+        with LOCK:
+            if token in STATE["expired_access_tokens"]:
+                return False
+            session_csrf = STATE["sessions"].get(token)
+        if session_csrf is None:
+            return True  # レガシー Bearer-only（selfhost の access_token・DIFY_CONSOLE_TOKEN 相当）
+        header_csrf = self.headers.get("X-CSRF-Token", "")
+        cookie_csrf = self._cookie_lookup(cookies, "csrf_token")
+        return bool(header_csrf) and header_csrf == cookie_csrf and header_csrf == session_csrf
 
     def _unauthorized(self):
         return self._json(401, {"code": "unauthorized", "message": "Invalid or expired token."})
@@ -194,8 +253,44 @@ class Handler(http.server.BaseHTTPRequestHandler):
         except Exception:
             payload = {}
 
+        # テスト専用（/console/api/* でも /v1/* でもないため認証不要。Issue #121 W4-3）
+        if path == "/__test__/expire-access-token":
+            with LOCK:
+                STATE["expired_access_tokens"].add(payload.get("access_token", ""))
+            return self._json(200, {"ok": True})
+
         if path == "/console/api/login":
+            # G3: password は base64 化されている前提（サーバがデコードする。libs/encryption.py）。
+            # デコードできない値は AuthenticationFailedError 相当として 401 を返す
+            pw_field = payload.get("password", "")
+            try:
+                base64.b64decode(pw_field, validate=True)
+            except Exception:
+                return self._json(401, {"code": "unauthorized", "message": "mock: password is not base64-encoded (G3)"})
             return self._json(200, {"result": "success", "data": {"access_token": "mock-token", "refresh_token": "mock-refresh"}})
+
+        if path == "/console/api/refresh-token":
+            # G6: login_required でも CSRF 必須でもない（S9）。Cookie の refresh_token だけを見る
+            cookies = self._parse_cookie_header()
+            refresh_val = self._cookie_lookup(cookies, "refresh_token")
+            with LOCK:
+                if not refresh_val or refresh_val == EXPIRED_REFRESH_TOKEN or refresh_val in STATE["used_refresh_tokens"]:
+                    return self._unauthorized()
+                STATE["used_refresh_tokens"].add(refresh_val)  # 1 回使ったら無効化（rotate。S10）
+                new_access = f"acc-{uuid.uuid4()}"
+                new_csrf = f"csrf-{uuid.uuid4()}"
+                new_refresh = f"ref-{uuid.uuid4()}"
+                STATE["sessions"][new_access] = new_csrf
+            payload_bytes = json.dumps({"result": "success"}, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload_bytes)))
+            self.send_header("Set-Cookie", f"access_token={new_access}; Path=/; HttpOnly")
+            self.send_header("Set-Cookie", f"csrf_token={new_csrf}; Path=/")
+            self.send_header("Set-Cookie", f"refresh_token={new_refresh}; Path=/; HttpOnly")
+            self.end_headers()
+            self.wfile.write(payload_bytes)
+            return
 
         if path.startswith("/console/api/") and not self._console_auth_ok():
             return self._unauthorized()

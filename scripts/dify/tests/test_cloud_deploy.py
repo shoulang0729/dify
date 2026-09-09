@@ -291,7 +291,9 @@ def test_t10_auth_error_exit3(base):
     r = run_cli(["--env", "cloud-master", "KN-01"], {"DIFY_CONSOLE_TOKEN": mock_server.EXPIRED_TOKEN, "DIFY_CONSOLE_URL": base})
     combined = r.stdout + r.stderr
     check("T10: 期限切れトークンで exit 3", r.returncode == 3, f"exit={r.returncode} {combined}")
-    check("T10: 取り直し手順（ブラウザ）が出る", "ブラウザ" in combined and "console_token" in combined, combined)
+    # TOKEN_HELP は Issue #121 W4-3（G5）で DIFY_CONSOLE_REFRESH 前提の文言に書き直された
+    # （旧 console_token の localStorage 手順は 1.17.0 に存在しないため廃止）。
+    check("T10: 取り直し手順（ブラウザ）が出る", "ブラウザ" in combined and "DIFY_CONSOLE_REFRESH" in combined, combined)
     check("T10: 出力にトークン文字列が現れない", mock_server.EXPIRED_TOKEN not in combined, combined)
 
 
