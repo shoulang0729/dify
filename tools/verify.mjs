@@ -44,6 +44,18 @@
  *        scripts/dify/kb_upload.py の delete_document() だけであること（他ファイルに現れたら FAIL）
  *        （設計書 docs/handoff/2026-09-08-cloud-auth-and-w4.md §4-2・§9-1。Issue #121 W4-1 K8。
  *        設計書は §14 としているが §14 は Issue #124 が先に取ったため §15 を使う。§13 は #121 W2 用に予約済み）
+ *   16.  （新規）デモ資材（dify/samples/**）の契約：dify/samples/ が無ければ節ごと skip。
+ *        16-a ディレクトリ名が ^[A-Z]{2}-\d{2}$ で SVCS に実在する管理番号（FAIL）／
+ *        16-b ファイル名が ^<管理番号>-S\d{2}-[a-z0-9-]+\.md$ で S 番号がディレクトリ内で重複しない（FAIL）／
+ *        16-c フロントマター必須キー id/app/type/lang/industry/mode/world/points と値域（FAIL）／
+ *        16-d mode: chat は query のみ・mode: workflow は inputs のみを持ち、@body（本文を差す指示子）は
+ *        高々 1 つで、あるとき本文が空でない（FAIL）／
+ *        16-e dify/apps/<番号>-*.yml が実在するとき mode と inputs キー集合が dify/tests/<番号>.json と
+ *        完全一致（FAIL）／16-f 実在しないとき「実機 DSL 未実装（W4 で投入予定）」（warn）／
+ *        16-g world: のパスが data/world/ に実在（FAIL）／16-h 生 URL が無い（FAIL）／
+ *        16-i dify/apps/ にある管理番号に dify/samples/<番号>/ が無い、または 3 件未満（warn）
+ *        （設計書 docs/handoff/2026-09-09-demo-assets.md §D5。Issue #205 PR-1。
+ *        §13 は #121 W2 用に予約済み・§14 は Issue #124・§15 は Issue #121 W4-1 が先に使っているため §16 を使う）
  *
  * データの取り出しは tools/lib/load.mjs（node:vm で js/data/** を実行順に評価）を使う。
  * grab()（正規表現抽出）は廃止。
@@ -953,6 +965,226 @@ section('15. 削除系 API 呼び出しの機械検査（scripts/dify/**.py）')
     fail(`削除系 API 呼び出し（"DELETE"）が 1 件も見つからない。${ALLOWED_FILE} の ${[...ALLOWED_FUNCS].join('/')} が実装されているか確認してください`);
   } else {
     ok(`削除系 API 呼び出し（"DELETE"）は ${ALLOWED_FILE} の ${[...ALLOWED_FUNCS].join('/')} 1 か所のみ`);
+  }
+}
+
+/* ---------- 16. デモ資材（dify/samples/**）の契約 ---------- */
+// 設計書 docs/handoff/2026-09-09-demo-assets.md §D5（Issue #205 PR-1）。
+// §13 は #121 W2（dify/state/）用に予約済み、§14 は Issue #124、§15 は Issue #121 W4-1 が
+// 先に使っているため、この検査は §16 を使う。
+// dify/samples/ が無ければ節ごと skip（PR-1 より前でも npm test が通る）。
+// dify/samples/build/ は .gitignore 対象なので走査から除外する。
+section('16. デモ資材（dify/samples/**）の契約');
+{
+  const SAMPLES_ROOT = resolve(ROOT, 'dify/samples');
+  if (!existsSync(SAMPLES_ROOT)) {
+    ok('dify/samples/ が無いため §16 は skip');
+  } else {
+    const svcIds = new Set((SVCS || []).map(s => s.id));
+    const APPS_DIR = resolve(ROOT, 'dify/apps');
+    const TESTS_DIR = resolve(ROOT, 'dify/tests');
+    const WORLD_DIR = resolve(ROOT, 'data/world');
+    const appFiles = existsSync(APPS_DIR) ? readdirSync(APPS_DIR).filter(f => f.endsWith('.yml')) : [];
+    // dify/apps/ にある管理番号一覧（重複除去。§14 と同じ抽出方法）
+    const appCodes = [...new Set(appFiles.map(f => f.split('-').slice(0, 2).join('-')))].sort();
+
+    // 管理番号（KN-01）⇄ 内部 id（kn1）の相互変換（CLAUDE.md §2-11）
+    const dirToInternalId = (dir) => {
+      const m = dir.match(/^([A-Z]{2})-(\d{2})$/);
+      if (!m) return null;
+      return m[1].toLowerCase() + String(parseInt(m[2], 10));
+    };
+
+    // フロントマターの自前パーサ（YAML ライブラリは使わない。設計書 §D5）
+    // 対応: `---` で挟まれた `key: value` ／ `key:` + 字下げ `- item` のリスト／
+    //       `key:` + 字下げ `subkey: value` の 1 段ネスト
+    const stripQuotes = (s) => {
+      s = s.trim();
+      if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) return s.slice(1, -1);
+      return s;
+    };
+    function parseFrontmatter(raw) {
+      const lines = raw.split(/\r?\n/);
+      if (!lines[0] || lines[0].trim() !== '---') return null;
+      let end = -1;
+      for (let i = 1; i < lines.length; i++) { if (lines[i].trim() === '---') { end = i; break; } }
+      if (end === -1) return null;
+      const fm = {};
+      let currentKey = null;
+      for (const line of lines.slice(1, end)) {
+        if (!line.trim()) continue;
+        const top = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$/);
+        if (top) {
+          currentKey = top[1];
+          const val = top[2];
+          fm[currentKey] = val === '' ? undefined : stripQuotes(val);
+          continue;
+        }
+        const listItem = line.match(/^\s+-\s?(.*)$/);
+        if (listItem && currentKey) {
+          if (!Array.isArray(fm[currentKey])) fm[currentKey] = [];
+          fm[currentKey].push(stripQuotes(listItem[1]));
+          continue;
+        }
+        const nested = line.match(/^\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$/);
+        if (nested && currentKey) {
+          if (typeof fm[currentKey] !== 'object' || fm[currentKey] === null || Array.isArray(fm[currentKey])) fm[currentKey] = {};
+          fm[currentKey][nested[1]] = stripQuotes(nested[2]);
+          continue;
+        }
+      }
+      const body = lines.slice(end + 1).join('\n');
+      return { frontmatter: fm, body };
+    }
+
+    const URL_RE_16 = /https?:\/\//;
+    const dirEntries = readdirSync(SAMPLES_ROOT, { withFileTypes: true })
+      .filter(d => d.isDirectory() && d.name !== 'build')
+      .map(d => d.name)
+      .sort();
+
+    let bad16 = 0;
+    const dirsWithValidSamples = new Map(); // 管理番号 -> 有効ファイル数（16-i 用）
+
+    for (const dir of dirEntries) {
+      // 16-a: ディレクトリ名の形式 と SVCS 実在
+      if (!/^[A-Z]{2}-\d{2}$/.test(dir)) {
+        fail(`dify/samples/${dir}: ディレクトリ名が ^[A-Z]{2}-\\d{2}$ に一致しない`); bad16++;
+        continue;
+      }
+      const internalId = dirToInternalId(dir);
+      if (!svcIds.has(internalId)) {
+        fail(`dify/samples/${dir}: SVCS に実在しない管理番号（変換後 id: ${internalId}）`); bad16++;
+        continue;
+      }
+
+      const dirPath = resolve(SAMPLES_ROOT, dir);
+      const files = readdirSync(dirPath, { withFileTypes: true })
+        .filter(f => f.isFile() && f.name !== 'README.md')
+        .map(f => f.name)
+        .sort();
+
+      const seenS = new Set();
+      let validCount = 0;
+
+      for (const fname of files) {
+        // 16-b: ファイル名の形式・S 番号の重複
+        const m = fname.match(new RegExp(`^${dir}-S(\\d{2})-[a-z0-9-]+\\.md$`));
+        if (!m) {
+          fail(`dify/samples/${dir}/${fname}: ファイル名が ^${dir}-S\\d{2}-[a-z0-9-]+\\.md$ に一致しない`); bad16++;
+          continue;
+        }
+        const sNum = m[1];
+        if (seenS.has(sNum)) {
+          fail(`dify/samples/${dir}/${fname}: S 番号 ${sNum} がディレクトリ内で重複している`); bad16++;
+          continue;
+        }
+        seenS.add(sNum);
+
+        const filePath = resolve(dirPath, fname);
+        const raw = readFileSync(filePath, 'utf8');
+        const rel = `dify/samples/${dir}/${fname}`;
+
+        // 16-h: 生 URL が無いこと（本文・フロントマター全体）
+        if (URL_RE_16.test(raw)) {
+          fail(`${rel}: 生 URL（http:// または https://）が含まれている（CLAUDE.md §2-10）`); bad16++;
+        }
+
+        const parsed = parseFrontmatter(raw);
+        if (!parsed) {
+          fail(`${rel}: フロントマター（先頭の --- ... ---）が見つからない`); bad16++;
+          continue;
+        }
+        const { frontmatter: fm, body } = parsed;
+
+        // 16-c: 必須キーと値域
+        const REQUIRED_KEYS = ['id', 'app', 'type', 'lang', 'industry', 'mode', 'world', 'points'];
+        const missingKeys = REQUIRED_KEYS.filter(k => fm[k] === undefined || fm[k] === null);
+        if (missingKeys.length) {
+          fail(`${rel}: フロントマター必須キーが無い: ${missingKeys.join(', ')}`); bad16++;
+          continue;
+        }
+        const expectedId = `${dir} S${sNum}`;
+        if (fm.id !== expectedId) { fail(`${rel}: id が "${expectedId}" ではない（実際: "${fm.id}"）`); bad16++; }
+        if (fm.app !== dir) { fail(`${rel}: app が ディレクトリ名 "${dir}" と一致しない（実際: "${fm.app}"）`); bad16++; }
+        if (!['normal', 'volume', 'edge'].includes(fm.type)) { fail(`${rel}: type "${fm.type}" は normal/volume/edge のいずれでもない`); bad16++; }
+        if (!['ja', 'zh'].includes(fm.lang)) { fail(`${rel}: lang "${fm.lang}" は ja/zh のいずれでもない`); bad16++; }
+        if (!['mfg', 'fin'].includes(fm.industry)) { fail(`${rel}: industry "${fm.industry}" は mfg/fin のいずれでもない`); bad16++; }
+        if (!['chat', 'workflow'].includes(fm.mode)) { fail(`${rel}: mode "${fm.mode}" は chat/workflow のいずれでもない`); bad16++; }
+        if (!Array.isArray(fm.points) || fm.points.length < 1) { fail(`${rel}: points が 1 件以上の配列でない`); bad16++; }
+        if (!Array.isArray(fm.world) || fm.world.length < 1) { fail(`${rel}: world が 1 件以上の配列でない`); bad16++; }
+        else {
+          // 16-g: world: のパスが data/world/ に実在
+          const missingWorld = fm.world.filter(p => !existsSync(resolve(WORLD_DIR, p)));
+          if (missingWorld.length) { fail(`${rel}: world: のパスが data/world/ に無い: ${missingWorld.join(', ')}`); bad16++; }
+        }
+
+        // 16-d: mode ごとの query/inputs の排他と @body の個数
+        const hasQuery = Object.prototype.hasOwnProperty.call(fm, 'query');
+        const hasInputs = Object.prototype.hasOwnProperty.call(fm, 'inputs');
+        let bodyRefCount = 0;
+        if (fm.mode === 'chat') {
+          if (!hasQuery) { fail(`${rel}: mode: chat なのに query が無い`); bad16++; }
+          if (hasInputs) { fail(`${rel}: mode: chat なのに inputs を持っている`); bad16++; }
+          if (hasQuery && fm.query === '@body') bodyRefCount++;
+        } else if (fm.mode === 'workflow') {
+          if (!hasInputs || typeof fm.inputs !== 'object' || Array.isArray(fm.inputs)) { fail(`${rel}: mode: workflow なのに inputs が無い`); bad16++; }
+          if (hasQuery) { fail(`${rel}: mode: workflow なのに query を持っている`); bad16++; }
+          if (hasInputs && fm.inputs && typeof fm.inputs === 'object') {
+            bodyRefCount = Object.values(fm.inputs).filter(v => v === '@body').length;
+          }
+        }
+        if (bodyRefCount > 1) { fail(`${rel}: @body（本文を差す指示子）が 2 つ以上ある（高々 1 つ）`); bad16++; }
+        if (bodyRefCount === 1 && !body.trim()) { fail(`${rel}: @body があるのに本文が空`); bad16++; }
+
+        // 16-e / 16-f: 実機 DSL・テストとの整合
+        const testPath = resolve(TESTS_DIR, `${dir}.json`);
+        if (appFiles.some(f => f.startsWith(`${dir}-`))) {
+          if (!existsSync(testPath)) {
+            warn(`${rel}: dify/apps/${dir}-*.yml はあるが dify/tests/${dir}.json が無いため 16-e を検査できない`);
+          } else {
+            try {
+              const testJson = JSON.parse(readFileSync(testPath, 'utf8'));
+              if (testJson.mode !== fm.mode) {
+                fail(`${rel}: mode "${fm.mode}" が dify/tests/${dir}.json の mode "${testJson.mode}" と一致しない`); bad16++;
+              }
+              if (fm.mode === 'workflow') {
+                const testInputKeys = new Set();
+                for (const c of testJson.cases || []) {
+                  for (const k of Object.keys(c.inputs || {})) testInputKeys.add(k);
+                }
+                const sampleInputKeys = new Set(Object.keys(fm.inputs || {}));
+                const onlyInSample = [...sampleInputKeys].filter(k => !testInputKeys.has(k));
+                const onlyInTest = [...testInputKeys].filter(k => !sampleInputKeys.has(k));
+                if (onlyInSample.length || onlyInTest.length) {
+                  fail(`${rel}: inputs キー集合が dify/tests/${dir}.json と一致しない（サンプルのみ: ${onlyInSample.join(',') || 'なし'} / テストのみ: ${onlyInTest.join(',') || 'なし'}）`);
+                  bad16++;
+                }
+              }
+            } catch (e) {
+              fail(`${rel}: dify/tests/${dir}.json の解析に失敗: ${e.message}`); bad16++;
+            }
+          }
+        } else {
+          // 16-f: 実機 DSL が無い（金融など。W4 で投入予定）
+          warn(`${rel}: dify/apps/${dir}-*.yml が無い（実機 DSL 未実装。W4 で投入予定）`);
+        }
+
+        validCount++;
+      }
+
+      dirsWithValidSamples.set(dir, validCount);
+    }
+
+    // 16-i: dify/apps/ にある管理番号に dify/samples/<番号>/ が無い、または 3 件未満は warn
+    const under3 = [];
+    for (const code of appCodes) {
+      const count = dirsWithValidSamples.has(code) ? dirsWithValidSamples.get(code) : 0;
+      if (count < 3) under3.push(`${code}(${count})`);
+    }
+    if (under3.length) warn(`dify/apps/ にある管理番号のうち dify/samples/ が無い/3 件未満: ${under3.join(', ')}`);
+
+    if (!bad16) ok(`dify/samples/ 配下 ${dirEntries.length} ディレクトリすべてが §16-a〜16-h を満たす`);
   }
 }
 
