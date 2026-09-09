@@ -7,6 +7,40 @@ name: dify-ops
 # 到達できるかだけを、秘密を一切使わずに確かめる（V5）。設計書: 同ファイル §10・§11「W4-3」。
 # 設計書: docs/handoff/2026-09-08-execution-split-and-runner.md（W1 の節・§9 セルフホストランナーの安全性）
 #
+# PM 決定（#121。2026-09-09、案 B）：読み取り系の op（probe・run_tests）を承認ゲートの
+# 外に出す。probe は秘密を一切使わない疎通確認、run_tests は Dify の状態を変えない読み取りで、
+# どちらも「ゲートを通す安全上の意味」が無い。
+#
+# **ゲートの外し方は「Environment `dify-cloud-master` の Required reviewers チェックを外す」
+# （PM が GitHub の UI で 1 回行う）。ワークフロー側は tests ジョブにも
+# `environment: dify-cloud-master` を宣言したままにする**（Required reviewers が無い
+# Environment は承認を発生させず、単に secrets/vars のスコープとして機能する）。
+# こうすることで DIFY_APP_KEY_* を Repository secret に複製する必要が無くなる
+# （12 個のコピーは PM の負担が大きいため却下。案 A は不採用）。
+# KB を書き換える op（kb_upload / kb_refresh / kb_replace / both）は元から
+# `environment: dify-cloud-master` を宣言しており、変更なし。
+# ジョブを 3 つに分け、op ごとに if: でどれか 1 つだけが走るようにする（下の対応表）。
+#
+#   op          | 走るジョブ | environment          | 使う secrets
+#   ------------|-----------|-----------------------|----------------------------------------------
+#   probe       | probe     | 無し                  | 無し
+#   run_tests   | tests     | dify-cloud-master     | DIFY_APP_KEY_*（Environment secret。承認は
+#               |           | （承認ゲート無し）    | 発生しない＝Required reviewers を外したため）
+#   kb_upload   | kb        | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*
+#   kb_refresh  | kb        | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*
+#   kb_replace  | kb        | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*
+#   both        | kb        | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*（kb_upload と
+#               |           |                       | run_tests の両方を行う＝KB を書くためゲート内）
+#
+# 前提（PM が先に行う。dify/DEPLOY.md §7 参照）：
+#   - Settings → Environments → `dify-cloud-master` → **Required reviewers のチェックを外す**
+#     （これだけ。secrets の再配置は不要）。
+#
+# ゲートを戻すには Required reviewers を再度有効にすればよい（`tests` と `kb` の両方に
+# 承認が復活する。`probe` は environment を持たないので影響を受けない）。`kb` だけに
+# 戻したい場合は `kb` 専用の Environment を別に作り、DIFY_DATASET_KEY と DIFY_APP_KEY_*
+# をそちらへ移す（`dify/DEPLOY.md` §7 に詳細）。
+#
 # 重要：トリガは workflow_dispatch だけ。pull_request 系・push 系は絶対に付けない
 # （fork PR や push から secrets を含むこのワークフローが起動しないようにするため）。
 on:
@@ -47,26 +81,12 @@ permissions:
   contents: read
 
 jobs:
-  ops:
+  # 3 ジョブ共通の入力検証。ここで落ちれば probe / tests / kb はどれも走らない
+  # （needs: validate）。検証ロジックは分割前と同一（挙動を変えない）。
+  validate:
+    name: Validate inputs
     runs-on: ubuntu-latest
-    # Environment `dify-cloud-master` に required reviewers（PM）を付けるのは GitHub UI 側の設定。
-    # ワークフローはこの environment を宣言するだけで、承認が済むまでここで止まる。
-    environment: dify-cloud-master
-    permissions:
-      contents: write        # 結果ブランチの push（PR は作らないので pull-requests は不要）
-    timeout-minutes: 45
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Install Python dependencies
-        run: pip install pyyaml
-
       # 入力は env: 経由でのみ参照する（${{ inputs.* }} を run: の本文に直接書かない）。
       # これにより workflow_dispatch の入力文字列がそのまま shell スクリプトとして
       # 解釈されることを防ぐ（コマンドインジェクション対策）。choice 型でも API 経由の
@@ -118,143 +138,26 @@ jobs:
 
           echo "検証 OK: op=$OP codes=$CODES env=$ENV_NAME"
 
-      # キーの値は一切出力しない。「設定されているか」だけを確認する。
-      # set -x は使わない。env / printenv は使わない。
-      - name: Check secrets presence (values are never printed)
-        # op=probe は秘密を一切使わない（V5。設計書 §10・§11 W4-3）。このステップは
-        # DIFY_DATASET_KEY / DIFY_APP_KEY_* を参照するため、probe のときは実行しない。
-        if: ${{ inputs.op != 'probe' }}
-        env:
-          DIFY_DATASET_KEY: ${{ secrets.DIFY_DATASET_KEY }}
-          CODES: ${{ inputs.codes }}
-        run: |
-          set -euo pipefail
-          [ -n "${DIFY_DATASET_KEY:-}" ] && echo "DIFY_DATASET_KEY: set" || echo "DIFY_DATASET_KEY: unset（kb_upload / kb_refresh / kb_replace で必要）"
-          for code in $CODES; do
-            var="DIFY_APP_KEY_${code//-/}"
-            if [ -n "${!var:-}" ]; then
-              echo "$var: set"
-            else
-              echo "$var: unset（run_tests で $code を使う場合は必要）"
-            fi
-          done
-        # per-code の app key は次のステップで env: に列挙して渡す（GitHub Actions は
-        # secrets.<name> を実行時に動的合成できないため、使いうるものを列挙する）
-
-      - name: Run kb_upload.py / run_tests.py
-        id: run
-        # op=probe は秘密を一切使わない別ステップ（Probe Dify Cloud reachability）で処理する。
-        # このステップは DIFY_DATASET_KEY / DIFY_APP_KEY_* を env: に列挙するため、
-        # probe のときは実行自体をスキップし、secrets の値がそのステップの実行環境に
-        # 一切渡らないようにする（load-bearing。設計書 §11 W4-3 PR-5「秘密を一切使わない」）。
-        if: ${{ inputs.op != 'probe' }}
-        env:
-          OP: ${{ inputs.op }}
-          CODES: ${{ inputs.codes }}
-          ENV_NAME: ${{ inputs.env }}
-          DIFY_DATASET_KEY: ${{ secrets.DIFY_DATASET_KEY }}
-          DIFY_BASE_URL: ${{ vars.DIFY_BASE_URL }}
-          # 12 本の Service API キー（dify/apps/*.yml の管理番号ぶん）。無いものは空文字のまま
-          # スクリプト側が「未設定」として扱う（値は出力しない）。新しいアプリを足したら
-          # この一覧にも 1 行足す（dify/DEPLOY.md §7 に運用メモあり）。
-          DIFY_APP_KEY_DC01: ${{ secrets.DIFY_APP_KEY_DC01 }}
-          DIFY_APP_KEY_DC02: ${{ secrets.DIFY_APP_KEY_DC02 }}
-          DIFY_APP_KEY_DC04: ${{ secrets.DIFY_APP_KEY_DC04 }}
-          DIFY_APP_KEY_GN01: ${{ secrets.DIFY_APP_KEY_GN01 }}
-          DIFY_APP_KEY_GN02: ${{ secrets.DIFY_APP_KEY_GN02 }}
-          DIFY_APP_KEY_GN05: ${{ secrets.DIFY_APP_KEY_GN05 }}
-          DIFY_APP_KEY_KN01: ${{ secrets.DIFY_APP_KEY_KN01 }}
-          DIFY_APP_KEY_KN02: ${{ secrets.DIFY_APP_KEY_KN02 }}
-          DIFY_APP_KEY_KN03: ${{ secrets.DIFY_APP_KEY_KN03 }}
-          DIFY_APP_KEY_LG01: ${{ secrets.DIFY_APP_KEY_LG01 }}
-          DIFY_APP_KEY_LG04: ${{ secrets.DIFY_APP_KEY_LG04 }}
-          DIFY_APP_KEY_NM03: ${{ secrets.DIFY_APP_KEY_NM03 }}
-        run: |
-          set -euo pipefail
-          overall_rc=0
-
-          {
-            echo "## dify-ops 実行結果"
-            echo
-            echo "- 操作: \`$OP\`"
-            echo "- 対象: \`$CODES\`"
-            echo "- 環境: \`$ENV_NAME\`"
-            echo
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          # $1: kb_upload.py に渡す追加フラグ（"" / "--refresh" / "--replace"）
-          # $2: Job Summary に出す操作名のラベル
-          run_kb() {
-            local flag="$1"
-            local label="$2"
-            for code in $CODES; do
-              if [ ! -d "dify/kb/$code" ]; then
-                echo "- KB \`$code\` (\`$label\`): スキップ（dify/kb/$code が無い）" >> "$GITHUB_STEP_SUMMARY"
-                continue
-              fi
-              echo "== kb_upload.py ${flag:+$flag }$code =="
-              out_file="$(mktemp)"
-              # shellcheck disable=SC2086  # flag は "" か固定の 1 語のみ（呼び出し元で決め打ち。inputs は渡さない）
-              if python3 scripts/dify/kb_upload.py --env "$ENV_NAME" $flag "$code" 2>&1 | tee "$out_file"; then
-                echo "- KB \`$code\` (\`$label\`): OK" >> "$GITHUB_STEP_SUMMARY"
-              else
-                rc=$?
-                echo "- KB \`$code\` (\`$label\`): 失敗（exit $rc）" >> "$GITHUB_STEP_SUMMARY"
-                overall_rc=1
-              fi
-              # 歯止め K7（設計書 §4-2）：kb_upload.py の標準出力（--replace 時は削除前の
-              # id〔マスク済み〕・name を含む）を Job Summary にも残す。Actions のログだけでなく
-              # 事後にレビューしやすい場所に置くため。
-              {
-                echo "<details><summary>kb_upload.py ${label} ${code} の出力</summary>"
-                echo
-                echo '```'
-                cat "$out_file"
-                echo '```'
-                echo "</details>"
-                echo
-              } >> "$GITHUB_STEP_SUMMARY"
-              rm -f "$out_file"
-            done
-          }
-
-          run_tests_op() {
-            echo "== run_tests.py $CODES =="
-            if python3 scripts/dify/run_tests.py --env "$ENV_NAME" $CODES; then
-              echo "- run_tests: 全件合格" >> "$GITHUB_STEP_SUMMARY"
-            else
-              rc=$?
-              if [ "$rc" -eq 2 ]; then
-                echo "- run_tests: 設定不備（exit 2。API キー未設定などを確認）" >> "$GITHUB_STEP_SUMMARY"
-              else
-                echo "- run_tests: 不合格あり（exit $rc）" >> "$GITHUB_STEP_SUMMARY"
-              fi
-              overall_rc=1
-            fi
-          }
-
-          case "$OP" in
-            kb_upload) run_kb "" "kb_upload" ;;
-            kb_refresh) run_kb "--refresh" "kb_refresh" ;;
-            kb_replace) run_kb "--replace" "kb_replace" ;;
-            run_tests) run_tests_op ;;
-            both) run_kb "" "kb_upload"; run_tests_op ;;
-          esac
-
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "OVERALL_RC=$overall_rc" >> "$GITHUB_ENV"
-          # このステップ自体は失敗させない。結果の合否はサマリと生成される
-          # dify/results/**/*.md（PR の diff）で判断する（設計書 §4-3）。
-          exit 0
-
-      # W4-3 PR-5（#121）：op: probe。GitHub ホストランナーから cloud.dify.ai の前段
+  # op: probe。秘密を一切使わない（environment 無し・secrets 参照無し）。
+  # GitHub ホストランナーから cloud.dify.ai の前段（Cloudflare）に到達できるかだけを確かめる
+  # （設計書 §10・§11「W4-3」V5）。読み取りのみで Dify 側に副作用は無いため、承認ゲート
+  # （environment）の外に出す（PM 決定。#121）。
+  probe:
+    name: "probe（op: probe）"
+    needs: validate
+    if: ${{ inputs.op == 'probe' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read   # push しないので read のみでよい
+    timeout-minutes: 45
+    steps:
+      # W4-3 PR-5（#121）：GitHub ホストランナーから cloud.dify.ai の前段
       # （Cloudflare）に到達できるかだけを確かめる（設計書 §10・§11「W4-3」V5）。
       # なぜ secrets を一切参照しないか：見たいのは Cloudflare の前段だけであり、
       # 認証が通る必要が無いため。Dify のアカウントに紐づく秘密（DIFY_DATASET_KEY /
-      # DIFY_APP_KEY_*）はこのステップの env: に一切書かない（load-bearing）。
-      # GET のみ（POST/PUT/DELETE を送らない）。Dify 側に副作用は出さない。
+      # DIFY_APP_KEY_*）はこのジョブに一切渡らない（job に environment を付けていない。
+      # load-bearing）。GET のみ（POST/PUT/DELETE を送らない）。Dify 側に副作用は出さない。
       - name: "Probe Dify Cloud reachability (op: probe)"
-        if: ${{ inputs.op == 'probe' }}
         run: |
           set -euo pipefail
 
@@ -279,7 +182,7 @@ jobs:
 
           # 判定（judge）の結果にかかわらず、レスポンス本文を Job Summary に残す。
           # なぜ本文をそのまま出してよいか：`GET /console/api/setup` は認証情報を
-          # 送らない公開エンドポイントで、この probe ステップは secrets.* を 1 つも
+          # 送らない公開エンドポイントで、この probe ジョブは secrets.* を 1 つも
           # 参照しない（reviewer が機械的に確認済み）。**将来このステップに認証を
           # 足す場合は、この「本文をそのまま出す」前提を見直すこと**（load-bearing）。
           # 本文が「成功」判定でも人が目視で確認できないと、judge() の見逃し
@@ -377,6 +280,12 @@ jobs:
             final_code="$code2"
           fi
 
+          # 標準出力にも判定材料を出す（Job Summary は Actions API から読めないため。#121）。
+          echo "probe: 1 回目 HTTP status=${code1}"
+          if [ "$retried" = true ]; then
+            echo "probe: 2 回目（再試行）HTTP status=${code2}"
+          fi
+
           {
             echo "## probe（op: probe）— Dify Cloud への到達性確認"
             echo
@@ -404,28 +313,411 @@ jobs:
 
           case "$final_result" in
             0)
+              echo "probe: 判定=成功 (final_code=${final_code})"
               echo "**結果: 成功。** 200 / 401 / 403（本文に Cloudflare のシグネチャ \`error code: 1010\` を含まない）を確認した。前段（Cloudflare）は通っている。Cookie 案（W4-3）は成立しうる。" >> "$GITHUB_STEP_SUMMARY"
               echo "OVERALL_RC=0" >> "$GITHUB_ENV"
               ;;
             1)
+              echo "probe: 判定=失敗（Cloudflare error code: 1010） (final_code=${final_code})"
               echo "**結果: 失敗。Cloudflare が弾いている（403 かつ本文に \`error code: 1010\`）。** User-Agent を変えて再試行しても解消しなかった。**W4-3 は保留**とし、DI として起票すること。" >> "$GITHUB_STEP_SUMMARY"
               echo "::error::probe 失敗: Cloudflare（error code: 1010）にホストランナーが弾かれた。W4-3 は保留。DI 起票が必要。"
               echo "OVERALL_RC=1" >> "$GITHUB_ENV"
               ;;
             2)
+              echo "probe: 判定=判定不能（接続失敗）"
               echo "**結果: 判定不能。** 接続に失敗した（タイムアウト・DNS 失敗など。HTTP status を取得できなかった）。ネットワーク自体の問題の可能性がある。再実行するか、ランナーの egress を確認すること。" >> "$GITHUB_STEP_SUMMARY"
               echo "::error::probe 判定不能: 接続に失敗した（HTTP status 000）。"
               echo "OVERALL_RC=1" >> "$GITHUB_ENV"
               ;;
             *)
+              echo "probe: 判定=判定不能（想定外の HTTP status ${final_code}）"
               echo "**結果: 判定不能。** 想定外の HTTP status \`${final_code}\` を受け取った。設計書 §10 の想定（200/401/403）の外なので、手動で確認すること。" >> "$GITHUB_STEP_SUMMARY"
               echo "::error::probe 判定不能: 想定外の HTTP status ${final_code}。"
               echo "OVERALL_RC=1" >> "$GITHUB_ENV"
               ;;
           esac
 
+      - name: Fail the job if probe failed
+        if: always()
+        run: |
+          set -euo pipefail
+          rc="${OVERALL_RC:-0}"
+          if [ "$rc" != "0" ]; then
+            echo "::error::probe が失敗しました（詳細は上のログと Job Summary を参照）。"
+            exit 1
+          fi
+
+  # op: run_tests。Dify の状態を変えない読み取り専用の操作なので、承認は要らない
+  # （PM 決定・案 B。#121）。**`environment: dify-cloud-master` はあえて宣言したままにする**：
+  # Required reviewers は PM が GitHub の UI で外しているため承認は発生しないが、
+  # environment を宣言することで DIFY_APP_KEY_*（Environment secret）をそのまま読める。
+  # これにより DIFY_APP_KEY_* を Repository secret に複製する必要が無い（上部コメント参照）。
+  tests:
+    name: "tests（op: run_tests）"
+    needs: validate
+    if: ${{ inputs.op == 'run_tests' }}
+    runs-on: ubuntu-latest
+    # Required reviewers を外してあるため、ここで承認待ちにはならない（PM 決定・案 B）。
+    # 宣言する目的は secrets/vars のスコープを dify-cloud-master に合わせることだけ。
+    environment: dify-cloud-master
+    permissions:
+      contents: write   # 結果ブランチの push（PR は作らないので pull-requests は不要）
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Python dependencies
+        run: pip install pyyaml
+
+      # キーの値は一切出力しない。「設定されているか」だけを確認する。
+      # set -x は使わない。env / printenv は使わない。
+      # run_tests は DIFY_DATASET_KEY（KB 書き換え用の鍵）を使わないため確認しない。
+      - name: Check secrets presence (values are never printed)
+        env:
+          CODES: ${{ inputs.codes }}
+        run: |
+          set -euo pipefail
+          for code in $CODES; do
+            var="DIFY_APP_KEY_${code//-/}"
+            if [ -n "${!var:-}" ]; then
+              echo "$var: set"
+            else
+              echo "$var: unset（run_tests で $code を使う場合は必要）"
+            fi
+          done
+        # per-code の app key は次のステップで env: に列挙して渡す（GitHub Actions は
+        # secrets.<name> を実行時に動的合成できないため、使いうるものを列挙する）
+
+      - name: Run run_tests.py
+        id: run
+        env:
+          OP: ${{ inputs.op }}
+          CODES: ${{ inputs.codes }}
+          ENV_NAME: ${{ inputs.env }}
+          DIFY_BASE_URL: ${{ vars.DIFY_BASE_URL }}
+          # 12 本の Service API キー（dify/apps/*.yml の管理番号ぶん）。無いものは空文字のまま
+          # スクリプト側が「未設定」として扱う（値は出力しない）。新しいアプリを足したら
+          # この一覧にも 1 行足す（dify/DEPLOY.md §7 に運用メモあり）。
+          # このジョブは environment: dify-cloud-master を宣言しているので、
+          # Environment secret（kb ジョブと同じもの）をそのまま読める。
+          DIFY_APP_KEY_DC01: ${{ secrets.DIFY_APP_KEY_DC01 }}
+          DIFY_APP_KEY_DC02: ${{ secrets.DIFY_APP_KEY_DC02 }}
+          DIFY_APP_KEY_DC04: ${{ secrets.DIFY_APP_KEY_DC04 }}
+          DIFY_APP_KEY_GN01: ${{ secrets.DIFY_APP_KEY_GN01 }}
+          DIFY_APP_KEY_GN02: ${{ secrets.DIFY_APP_KEY_GN02 }}
+          DIFY_APP_KEY_GN05: ${{ secrets.DIFY_APP_KEY_GN05 }}
+          DIFY_APP_KEY_KN01: ${{ secrets.DIFY_APP_KEY_KN01 }}
+          DIFY_APP_KEY_KN02: ${{ secrets.DIFY_APP_KEY_KN02 }}
+          DIFY_APP_KEY_KN03: ${{ secrets.DIFY_APP_KEY_KN03 }}
+          DIFY_APP_KEY_LG01: ${{ secrets.DIFY_APP_KEY_LG01 }}
+          DIFY_APP_KEY_LG04: ${{ secrets.DIFY_APP_KEY_LG04 }}
+          DIFY_APP_KEY_NM03: ${{ secrets.DIFY_APP_KEY_NM03 }}
+        run: |
+          set -euo pipefail
+          overall_rc=0
+
+          {
+            echo "## dify-ops 実行結果"
+            echo
+            echo "- 操作: \`$OP\`"
+            echo "- 対象: \`$CODES\`"
+            echo "- 環境: \`$ENV_NAME\`"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "== run_tests.py $CODES =="
+          # run_tests.py 自身が末尾に "合計: 合格数 / 総数 合格" を標準出力へ print する
+          # （パイプ・リダイレクトを挟まないのでそのまま Actions のログに出る。#121 観測性）。
+          if python3 scripts/dify/run_tests.py --env "$ENV_NAME" $CODES; then
+            echo "run_tests: 判定=全件合格 (rc=0)"
+            echo "- run_tests: 全件合格" >> "$GITHUB_STEP_SUMMARY"
+          else
+            rc=$?
+            if [ "$rc" -eq 2 ]; then
+              echo "run_tests: 判定=設定不備 (rc=2)"
+              echo "- run_tests: 設定不備（exit 2。API キー未設定などを確認）" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "run_tests: 判定=不合格あり (rc=$rc)"
+              echo "- run_tests: 不合格あり（exit $rc）" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            overall_rc=1
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "OVERALL_RC=$overall_rc" >> "$GITHUB_ENV"
+          # このステップ自体は失敗させない。結果の合否はサマリと生成される
+          # dify/results/**/*.md（PR の diff）で判断する（設計書 §4-3）。
+          exit 0
+
       # push の直前に、ステージ済みファイルがすべて許容パターンに一致するかを確認する。
       # 1 つでも外れたら push せずに失敗させる（#121「生成物の二重生成」対策。load-bearing）。
+      - name: Stage results and guard changed paths
+        run: |
+          set -euo pipefail
+          # 生成物の置き場だけを対象にステージする。
+          # 注意：git add は複数 pathspec のうち 1 つでも存在しないと全体が失敗する。
+          # dify/state/ は W2 で導入予定でまだ無いため、必ず 1 つずつ add する
+          # （まとめて書くと dify/results/ までステージされない。実測で確認済み）。
+          for p in dify/results/ dify/state/; do
+            [ -d "$p" ] || continue
+            git add -A -- "$p"
+          done
+
+          changed="$(git diff --cached --name-only)"
+          if [ -z "$changed" ]; then
+            echo "変更なし。push しません。" >> "$GITHUB_STEP_SUMMARY"
+            echo "HAS_CHANGES=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          echo "$changed" > /tmp/dify-ops-changed.txt
+
+          bad=0
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            if ! [[ "$f" =~ ^dify/results/[^/]+/[^/]+\.md$ ]] && ! [[ "$f" =~ ^dify/state/[^/]+\.yml$ ]]; then
+              echo "::error::変更パスガード違反（許容パターン外）: $f"
+              bad=1
+            fi
+          done < /tmp/dify-ops-changed.txt
+
+          if [ "$bad" -eq 1 ]; then
+            {
+              echo ""
+              echo "**変更パスガードに違反したため push していません。** dify/results/<env>/*.md・dify/state/<env>.yml 以外が生成されています。"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "HAS_CHANGES=true" >> "$GITHUB_ENV"
+          echo "変更パスガード: OK（$(echo "$changed" | wc -l) 件）" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit and push the result branch
+        if: env.HAS_CHANGES == 'true'
+        env:
+          OP: ${{ inputs.op }}
+          CODES: ${{ inputs.codes }}
+          ENV_NAME: ${{ inputs.env }}
+          BRANCH: bot/dify-ops-${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          git config user.name "dify-ops-bot"
+          git config user.email "dify-ops-bot@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git commit \
+            -m "dify-ops(${ENV_NAME}): ${OP} ${CODES}" \
+            -m "Run: ${RUN_URL}" \
+            -m "Co-Authored-By: dify-ops-bot <dify-ops-bot@users.noreply.github.com>"
+          git push -u origin "$BRANCH"
+
+          {
+            echo "## dify-ops 自動実行結果"
+            echo
+            echo "- 操作: \`${OP}\`"
+            echo "- 対象: \`${CODES}\`"
+            echo "- 環境: \`${ENV_NAME}\`"
+            echo "- 結果ブランチ: \`${BRANCH}\`"
+            echo "- 実行ログ: ${RUN_URL}"
+            echo
+            echo "**PR はこのワークフローでは作りません。** 人が次のリンクから作ってください。"
+            echo
+            echo "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/new/${BRANCH}"
+            echo
+            echo "PR 作成を自動化するには Settings → Actions → General の"
+            echo "「Allow GitHub Actions to create and approve pull requests」を ON にする必要があるが、"
+            echo "この設定は PR の**承認**能力も同時に与えるため、PM 判断で ON にしない（#121 W1）。"
+            echo
+            echo "**main への直 push は行っていません。マージは人が内容を読んでから**（CLAUDE.md §5）。"
+            echo
+            echo "### 変更ファイル"
+            echo
+            echo '```'
+            cat /tmp/dify-ops-changed.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail the job if run_tests failed
+        if: always()
+        run: |
+          set -euo pipefail
+          rc="${OVERALL_RC:-0}"
+          if [ "$rc" != "0" ]; then
+            echo "::error::run_tests が失敗しました（詳細は Job Summary と PR の結果ファイルを参照）。"
+            exit 1
+          fi
+
+  # op: kb_upload / kb_refresh / kb_replace / both。KB を書き換えるため、
+  # Environment `dify-cloud-master`（required reviewers）の承認ゲートを残す。
+  kb:
+    name: "kb（op: kb_upload / kb_refresh / kb_replace / both）"
+    needs: validate
+    if: ${{ inputs.op == 'kb_upload' || inputs.op == 'kb_refresh' || inputs.op == 'kb_replace' || inputs.op == 'both' }}
+    runs-on: ubuntu-latest
+    # Environment `dify-cloud-master` に required reviewers（PM）を付けるのは GitHub UI 側の設定。
+    # ワークフローはこの environment を宣言するだけで、承認が済むまでここで止まる。
+    environment: dify-cloud-master
+    permissions:
+      contents: write        # 結果ブランチの push（PR は作らないので pull-requests は不要）
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Python dependencies
+        run: pip install pyyaml
+
+      # キーの値は一切出力しない。「設定されているか」だけを確認する。
+      # set -x は使わない。env / printenv は使わない。
+      - name: Check secrets presence (values are never printed)
+        env:
+          DIFY_DATASET_KEY: ${{ secrets.DIFY_DATASET_KEY }}
+          CODES: ${{ inputs.codes }}
+        run: |
+          set -euo pipefail
+          [ -n "${DIFY_DATASET_KEY:-}" ] && echo "DIFY_DATASET_KEY: set" || echo "DIFY_DATASET_KEY: unset（kb_upload / kb_refresh / kb_replace で必要）"
+          for code in $CODES; do
+            var="DIFY_APP_KEY_${code//-/}"
+            if [ -n "${!var:-}" ]; then
+              echo "$var: set"
+            else
+              echo "$var: unset（both で run_tests も行う場合は必要）"
+            fi
+          done
+        # per-code の app key は次のステップで env: に列挙して渡す（GitHub Actions は
+        # secrets.<name> を実行時に動的合成できないため、使いうるものを列挙する）
+
+      - name: Run kb_upload.py / run_tests.py
+        id: run
+        env:
+          OP: ${{ inputs.op }}
+          CODES: ${{ inputs.codes }}
+          ENV_NAME: ${{ inputs.env }}
+          DIFY_DATASET_KEY: ${{ secrets.DIFY_DATASET_KEY }}
+          DIFY_BASE_URL: ${{ vars.DIFY_BASE_URL }}
+          # 12 本の Service API キー（dify/apps/*.yml の管理番号ぶん）。無いものは空文字のまま
+          # スクリプト側が「未設定」として扱う（値は出力しない）。新しいアプリを足したら
+          # この一覧にも 1 行足す（dify/DEPLOY.md §7 に運用メモあり）。both のときの
+          # run_tests 実行にも使う。
+          DIFY_APP_KEY_DC01: ${{ secrets.DIFY_APP_KEY_DC01 }}
+          DIFY_APP_KEY_DC02: ${{ secrets.DIFY_APP_KEY_DC02 }}
+          DIFY_APP_KEY_DC04: ${{ secrets.DIFY_APP_KEY_DC04 }}
+          DIFY_APP_KEY_GN01: ${{ secrets.DIFY_APP_KEY_GN01 }}
+          DIFY_APP_KEY_GN02: ${{ secrets.DIFY_APP_KEY_GN02 }}
+          DIFY_APP_KEY_GN05: ${{ secrets.DIFY_APP_KEY_GN05 }}
+          DIFY_APP_KEY_KN01: ${{ secrets.DIFY_APP_KEY_KN01 }}
+          DIFY_APP_KEY_KN02: ${{ secrets.DIFY_APP_KEY_KN02 }}
+          DIFY_APP_KEY_KN03: ${{ secrets.DIFY_APP_KEY_KN03 }}
+          DIFY_APP_KEY_LG01: ${{ secrets.DIFY_APP_KEY_LG01 }}
+          DIFY_APP_KEY_LG04: ${{ secrets.DIFY_APP_KEY_LG04 }}
+          DIFY_APP_KEY_NM03: ${{ secrets.DIFY_APP_KEY_NM03 }}
+        run: |
+          set -euo pipefail
+          overall_rc=0
+
+          {
+            echo "## dify-ops 実行結果"
+            echo
+            echo "- 操作: \`$OP\`"
+            echo "- 対象: \`$CODES\`"
+            echo "- 環境: \`$ENV_NAME\`"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # $1: kb_upload.py に渡す追加フラグ（"" / "--refresh" / "--replace"）
+          # $2: Job Summary・標準出力に出す操作名のラベル
+          run_kb() {
+            local flag="$1"
+            local label="$2"
+            local ok_count=0 fail_count=0 skip_count=0
+            for code in $CODES; do
+              if [ ! -d "dify/kb/$code" ]; then
+                echo "kb_upload($label): $code スキップ（dify/kb/$code が無い）"
+                echo "- KB \`$code\` (\`$label\`): スキップ（dify/kb/$code が無い）" >> "$GITHUB_STEP_SUMMARY"
+                skip_count=$((skip_count + 1))
+                continue
+              fi
+              echo "== kb_upload.py ${flag:+$flag }$code =="
+              out_file="$(mktemp)"
+              # shellcheck disable=SC2086  # flag は "" か固定の 1 語のみ（呼び出し元で決め打ち。inputs は渡さない）
+              if python3 scripts/dify/kb_upload.py --env "$ENV_NAME" $flag "$code" 2>&1 | tee "$out_file"; then
+                echo "kb_upload($label): $code OK"
+                echo "- KB \`$code\` (\`$label\`): OK" >> "$GITHUB_STEP_SUMMARY"
+                ok_count=$((ok_count + 1))
+              else
+                rc=$?
+                echo "kb_upload($label): $code 失敗（exit $rc）"
+                echo "- KB \`$code\` (\`$label\`): 失敗（exit $rc）" >> "$GITHUB_STEP_SUMMARY"
+                fail_count=$((fail_count + 1))
+                overall_rc=1
+              fi
+              # 歯止め K7（設計書 §4-2）：kb_upload.py の標準出力（--replace 時は削除前の
+              # id〔マスク済み〕・name を含む）を Job Summary にも残す。Actions のログだけでなく
+              # 事後にレビューしやすい場所に置くため。
+              {
+                echo "<details><summary>kb_upload.py ${label} ${code} の出力</summary>"
+                echo
+                echo '```'
+                cat "$out_file"
+                echo '```'
+                echo "</details>"
+                echo
+              } >> "$GITHUB_STEP_SUMMARY"
+              rm -f "$out_file"
+            done
+            # 標準出力にも要約を出す（Job Summary は Actions API から読めないため。#121 観測性）。
+            echo "kb_upload($label) 合計: OK $ok_count / 失敗 $fail_count / スキップ $skip_count"
+          }
+
+          run_tests_op() {
+            echo "== run_tests.py $CODES =="
+            # run_tests.py 自身が末尾に "合計: 合格数 / 総数 合格" を標準出力へ print する
+            # （パイプ・リダイレクトを挟まないのでそのまま Actions のログに出る。#121 観測性）。
+            if python3 scripts/dify/run_tests.py --env "$ENV_NAME" $CODES; then
+              echo "run_tests: 判定=全件合格 (rc=0)"
+              echo "- run_tests: 全件合格" >> "$GITHUB_STEP_SUMMARY"
+            else
+              rc=$?
+              if [ "$rc" -eq 2 ]; then
+                echo "run_tests: 判定=設定不備 (rc=2)"
+                echo "- run_tests: 設定不備（exit 2。API キー未設定などを確認）" >> "$GITHUB_STEP_SUMMARY"
+              else
+                echo "run_tests: 判定=不合格あり (rc=$rc)"
+                echo "- run_tests: 不合格あり（exit $rc）" >> "$GITHUB_STEP_SUMMARY"
+              fi
+              overall_rc=1
+            fi
+          }
+
+          case "$OP" in
+            kb_upload) run_kb "" "kb_upload" ;;
+            kb_refresh) run_kb "--refresh" "kb_refresh" ;;
+            kb_replace) run_kb "--replace" "kb_replace" ;;
+            both) run_kb "" "kb_upload"; run_tests_op ;;
+          esac
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "OVERALL_RC=$overall_rc" >> "$GITHUB_ENV"
+          # このステップ自体は失敗させない。結果の合否はサマリと生成される
+          # dify/results/**/*.md（PR の diff）で判断する（設計書 §4-3）。
+          exit 0
+
+      # push の直前に、ステージ済みファイルがすべて許容パターンに一致するかを確認する。
+      # 1 つでも外れたら push せずに失敗させる（#121「生成物の二重生成」対策。load-bearing）。
+      # kb_upload / kb_refresh / kb_replace はローカルファイルを書かないため通常は
+      # 変更無しで終わる（HAS_CHANGES=false）。both のときだけ run_tests.py の結果が
+      # dify/results/ に生成されうる。
       - name: Stage results and guard changed paths
         run: |
           set -euo pipefail
@@ -518,6 +810,6 @@ jobs:
           set -euo pipefail
           rc="${OVERALL_RC:-0}"
           if [ "$rc" != "0" ]; then
-            echo "::error::kb_upload / kb_refresh / kb_replace / run_tests / probe のいずれかが失敗しました（詳細は Job Summary と PR の結果ファイルを参照）。"
+            echo "::error::kb_upload / kb_refresh / kb_replace / run_tests のいずれかが失敗しました（詳細は Job Summary と PR の結果ファイルを参照）。"
             exit 1
           fi
