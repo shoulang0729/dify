@@ -39,20 +39,29 @@ name: dify-ops
 # `confirm` に固定文字列 `deploy` の入力を要求する（`codes` は最大 12 件のうち何本でもよいため、
 # `kb_replace` のように対象そのものを打たせる方式にはしていない。§9-3）。
 #
-#   op          | 走るジョブ | environment          | 使う secrets
-#   ------------|-----------|-----------------------|----------------------------------------------
-#   probe       | probe     | 無し                  | 無し
-#   run_tests   | tests     | dify-cloud-master     | DIFY_APP_KEY_*（Environment secret。承認は
-#               |           | （承認ゲート無し）    | 発生しない＝Required reviewers を外したため）
-#   inspect     | inspect   | dify-cloud-master     | DIFY_CONSOLE_REFRESH（Environment secret。
-#               |           | （承認ゲート無し）    | 承認は発生しない。読み取りのみ＝GET だけ。#195 E1）
-#   kb_upload   | kb        | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*
-#   kb_refresh  | kb        | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*
-#   kb_replace  | kb        | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*
-#   both        | kb        | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*（kb_upload と
-#               |           |                       | run_tests の両方を行う＝KB を書くためゲート内）
-#   deploy      | deploy    | dify-cloud-master     | DIFY_CONSOLE_REFRESH（Environment secret。
-#               |           |                       | 書き込み系。§11「W4-4」）
+# PR-1（#212。2026-09-09）：op: token_selftest を追加。リフレッシュトークンの自動更新（rotate した
+# 値をジョブが Environment secret へ書き戻す）の前段として、**Dify を一切呼ばず**、固定のダミー値を
+# 捨て用の別 secret `DIFY_CONSOLE_REFRESH_SELFTEST` に `gh secret set` するだけの自己診断。
+# 本物のリフレッシュトークンを 1 回も消費せずに、書き戻し用 PAT `GH_SECRETS_PAT`（Environment secret）
+# の権限（V-A：`Secrets` だけで足りるか `Environments` も要るか）・`gh` の封印・Environment 名の綴りを
+# 実測できる。設計書 docs/handoff/2026-09-09-refresh-token-writeback.md §4-1・§10 PR-1・§11 V-A・V-D。
+#
+#   op              | 走るジョブ    | environment          | 使う secrets
+#   ----------------|--------------|-----------------------|----------------------------------------------
+#   probe           | probe        | 無し                  | 無し
+#   run_tests       | tests        | dify-cloud-master     | DIFY_APP_KEY_*（Environment secret。承認は
+#                   |              | （承認ゲート無し）    | 発生しない＝Required reviewers を外したため）
+#   inspect         | inspect      | dify-cloud-master     | DIFY_CONSOLE_REFRESH（Environment secret。
+#                   |              | （承認ゲート無し）    | 承認は発生しない。読み取りのみ＝GET だけ。#195 E1）
+#   kb_upload       | kb           | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*
+#   kb_refresh      | kb           | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*
+#   kb_replace      | kb           | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*
+#   both            | kb           | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*（kb_upload と
+#                   |              |                       | run_tests の両方を行う＝KB を書くためゲート内）
+#   deploy          | deploy       | dify-cloud-master     | DIFY_CONSOLE_REFRESH（Environment secret。
+#                   |              |                       | 書き込み系。§11「W4-4」）
+#   token_selftest  | token_selftest | dify-cloud-master   | GH_SECRETS_PAT（Environment secret。Dify は
+#                   |              |                       | 一切呼ばない。#212 PR-1）
 #
 # 前提（PM が先に行う。dify/DEPLOY.md §7 参照）：
 #   - Settings → Environments → `dify-cloud-master` → **Required reviewers のチェックを外す**
@@ -69,7 +78,7 @@ on:
   workflow_dispatch:
     inputs:
       op:
-        description: "実行する操作（kb_refresh=同名文書の中身だけ差し替え／kb_replace=削除して入れ直し。まず kb_refresh を試すこと／probe=秘密を使わない Dify Cloud への到達性確認。codes 不要／inspect=下書きから Rerank 関連 6 項目だけを読み取り専用で採取。#195 E1／deploy=render→インポート→公開。全件インポート成功後にまとめて公開〔P1〕。confirm に \"deploy\" が必須。#121 W4-4）"
+        description: "実行する操作（kb_refresh=同名文書の中身だけ差し替え／kb_replace=削除して入れ直し。まず kb_refresh を試すこと／probe=秘密を使わない Dify Cloud への到達性確認。codes 不要／inspect=下書きから Rerank 関連 6 項目だけを読み取り専用で採取。#195 E1／deploy=render→インポート→公開。全件インポート成功後にまとめて公開〔P1〕。confirm に \"deploy\" が必須。#121 W4-4／token_selftest=Dify を一切呼ばず、捨て用 secret に書き戻しの自己診断。codes 不要。#212 PR-1）"
         required: true
         type: choice
         options:
@@ -81,9 +90,10 @@ on:
           - probe
           - inspect
           - deploy
+          - token_selftest
         default: run_tests
       codes:
-        description: "対象の管理番号（空白区切り、例: KN-01 DC-01）。kb_replace は削除を伴うため 1 件のみ。op=probe では不要（空でよい）。op=inspect では必須（例: KN-01 KN-02 KN-03 GN-01）。op=deploy は 1〜12 件（12 本全部なら dify/apps/ の全番号を空白区切りで列挙。confirm も必須）"
+        description: "対象の管理番号（空白区切り、例: KN-01 DC-01）。kb_replace は削除を伴うため 1 件のみ。op=probe・op=token_selftest では不要（空でよい）。op=inspect では必須（例: KN-01 KN-02 KN-03 GN-01）。op=deploy は 1〜12 件（12 本全部なら dify/apps/ の全番号を空白区切りで列挙。confirm も必須）"
         required: false
         type: string
         default: ""
@@ -124,14 +134,16 @@ jobs:
         run: |
           set -euo pipefail
           case "$OP" in
-            kb_upload|kb_refresh|kb_replace|run_tests|both|probe|inspect|deploy) ;;
+            kb_upload|kb_refresh|kb_replace|run_tests|both|probe|inspect|deploy|token_selftest) ;;
             *) echo "::error::op の値が不正です: $OP"; exit 1 ;;
           esac
-          # op=probe は秘密を一切使わない疎通確認のみで、対象アプリ／KB を指定する
-          # 意味が無いため codes を要求しない（設計書 §11 W4-3 PR-5）。それ以外の op は
-          # 従来どおり codes の形式を検証する（op=inspect も対象の管理番号が必須なのでここを通る）。
-          if [ "$OP" = "probe" ]; then
-            echo "op=probe のため codes の検証をスキップします（codes=${CODES:-<空>}）"
+          # op=probe・op=token_selftest は秘密を一切使わない、または Dify を一切呼ばない
+          # 自己診断のみで、対象アプリ／KB を指定する意味が無いため codes を要求しない
+          # （設計書 §11 W4-3 PR-5・docs/handoff/2026-09-09-refresh-token-writeback.md §10 PR-1）。
+          # それ以外の op は従来どおり codes の形式を検証する（op=inspect も対象の管理番号が
+          # 必須なのでここを通る）。
+          if [ "$OP" = "probe" ] || [ "$OP" = "token_selftest" ]; then
+            echo "op=$OP のため codes の検証をスキップします（codes=${CODES:-<空>}）"
           elif ! [[ "$CODES" =~ ^[A-Z]{2}-[0-9]{2}(\ [A-Z]{2}-[0-9]{2})*$ ]]; then
             echo "::error::codes の形式が不正です（例: KN-01 DC-01）: $CODES"
             exit 1
@@ -1072,3 +1084,98 @@ jobs:
             echo "::error::deploy が失敗しました（詳細は上のログと Job Summary を参照。P1 により、失敗があった場合は公開を 1 件も行っていません）。"
             exit 1
           fi
+
+  # op: token_selftest（PR-1。Issue #212）。リフレッシュトークンの自動更新（書き戻し）の前段の
+  # 自己診断。**Dify を一切呼ばない**（scripts/dify/*.py を 1 つも実行しない。console_api.py の
+  # refresh()/logout() も呼ばない）。固定のダミー値を捨て用の Environment secret
+  # `DIFY_CONSOLE_REFRESH_SELFTEST` に `gh secret set` するだけで、書き戻し用 PAT
+  # `GH_SECRETS_PAT`（Environment secret）が Environment secret を書ける権限を持つか
+  # （V-A：`Secrets: Read and write` だけで足りるか、`Environments` も要るか）・`gh` の封印・
+  # Environment 名 `dify-cloud-master` の綴りを、**本物のリフレッシュトークンを 1 円も
+  # 消費せずに**実測する（設計書 docs/handoff/2026-09-09-refresh-token-writeback.md
+  # §4-1・§10 PR-1・§11 V-A・V-D）。
+  #
+  # 本物のリフレッシュトークンを消費しないと言える理由：
+  #   - このジョブは DIFY_CONSOLE_REFRESH を env: にすら渡さない（secrets.DIFY_CONSOLE_REFRESH を
+  #     参照する行が無い）
+  #   - python3 で console_api.py / cloud_deploy.py / console_session.py のいずれも呼ばない
+  #   - ネットワーク呼び出しは `gh` コマンド（GitHub API）のみ。cloud.dify.ai への通信は無い
+  #
+  # `concurrency`（D5）は付けない：deploy・inspect・token_refresh・token_revoke の 4 つ
+  # （コンソールセッションを使う操作）だけが対象で、token_selftest は Dify のコンソール
+  # セッションを一切扱わないため対象外（設計書 §3 D5）。
+  token_selftest:
+    name: "token_selftest（op: token_selftest）"
+    needs: validate
+    if: ${{ inputs.op == 'token_selftest' }}
+    runs-on: ubuntu-latest
+    # GH_SECRETS_PAT（Environment secret）を読むためだけに宣言する。Dify 側の秘密は一切使わない。
+    environment: dify-cloud-master
+    permissions:
+      contents: read   # 書き戻しは GITHUB_TOKEN ではなく GH_SECRETS_PAT（PAT）で行うため read のまま
+    timeout-minutes: 10
+    steps:
+      - name: Preflight (PAT の有無だけを見る。値は出さない)
+        env:
+          GH_SECRETS_PAT: ${{ secrets.GH_SECRETS_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -n "${GH_SECRETS_PAT:-}" ]; then
+            echo "GH_SECRETS_PAT: set"
+          else
+            echo "::error::[要対応] GH_SECRETS_PAT が未設定です（Environment dify-cloud-master の secret）。dify/DEPLOY.md §10-2 の手順で作成してください。"
+            echo "[WB] PAT 未設定（Environment secret GH_SECRETS_PAT が空）"
+            exit 1
+          fi
+
+      - name: "Write a dummy value to the throwaway secret (op: token_selftest)"
+        env:
+          GH_TOKEN: ${{ secrets.GH_SECRETS_PAT }}
+          GH_REPO: ${{ github.repository }}
+          TARGET_ENV: dify-cloud-master                   # 固定。inputs.* からは作らない
+          TARGET_SECRET: DIFY_CONSOLE_REFRESH_SELFTEST     # 固定。捨て用（本物の DIFY_CONSOLE_REFRESH ではない）
+        run: |
+          set -euo pipefail            # set -x は禁止。env / printenv も使わない
+
+          # 値はテスト用のダミー（Dify のリフレッシュトークンとは無関係）。stdin で渡す（--body は使わない）。
+          dummy_file="$(mktemp)"
+          printf 'selftest-dummy-%s-%s' "$(date -u +%Y%m%dT%H%M%SZ)" "$GITHUB_RUN_ID" > "$dummy_file"
+
+          ok=0
+          for i in 1 2 3; do
+            if gh secret set "$TARGET_SECRET" --env "$TARGET_ENV" < "$dummy_file"; then
+              ok=1
+              break
+            fi
+            echo "gh secret set が失敗しました（${i} 回目）。再試行します…"
+            sleep $((i * 5))
+          done
+          rm -f "$dummy_file"
+
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::[要対応] token_selftest: gh secret set が失敗しました（3 回リトライ後）。PAT の権限不足（V-A：Secrets だけで 403 になる場合は Environments も要る可能性）、または Environment 名／secret 名の綴りを dify/DEPLOY.md §10-2 で確認してください。"
+            echo "[WB] gh secret set 失敗（3 回リトライ後）"
+            exit 1
+          fi
+
+          # V-D: --json 対応の gh バージョンかどうかもここで分かる。使えなければ名前と更新日だけの表示にフォールバックする。
+          if gh secret list --env "$TARGET_ENV" --json name,updatedAt > "$RUNNER_TEMP/token-selftest-list.json" 2>/dev/null; then
+            echo "V-D: gh secret list --json name,updatedAt が使えます"
+            python3 -c 'import json,os; p=os.path.join(os.environ["RUNNER_TEMP"], "token-selftest-list.json"); data=json.load(open(p, encoding="utf-8")); rows=[r for r in data if r.get("name") == os.environ["TARGET_SECRET"]]; print(rows[0] if rows else "(見つかりません)")'
+          else
+            echo "V-D: --json 未対応の gh バージョンのため、名前と更新日だけのフォールバック表示を使います"
+            gh secret list --env "$TARGET_ENV" | grep "$TARGET_SECRET" || true
+          fi
+
+          {
+            echo "## token_selftest（op: token_selftest）"
+            echo
+            echo "設計書: docs/handoff/2026-09-09-refresh-token-writeback.md §4-1・§10 PR-1・§11 V-A・V-D（Issue #212）"
+            echo
+            echo "**成功。** \`GH_SECRETS_PAT\` は Environment \`${TARGET_ENV}\` の secret を書き換えられます。"
+            echo "**Dify へは 1 回もアクセスしていません**（リフレッシュトークンは消費していません）。"
+            echo
+            echo "この結果を dify/DEPLOY.md §10-2 手順 9 の V-A 判定（\`Secrets\` だけで足りたか）に反映してください。"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "token_selftest: 成功（Dify へは 1 回もアクセスしていません）"

@@ -50,6 +50,7 @@ import base64
 import http.cookiejar
 import json
 import os
+import pathlib
 import re
 import sys
 import time
@@ -60,6 +61,18 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import masking  # noqa: E402  (scripts/dify/masking.py。上の sys.path.insert が必要)
 
 DEFAULT_TIMEOUT = 60
+
+# 書き戻し（rotate した値をランナーの一時ファイルへ上書きする）用の環境変数名。
+# 設計: docs/handoff/2026-09-09-refresh-token-writeback.md §4-2（Issue #212 PR-1）。
+# 未設定なら refresh() は sink に一切触らない（既存の挙動・ローカル実行・selfhost に影響しない）。
+REFRESH_SINK_ENV = "DIFY_REFRESH_SINK"
+
+# 書き戻す値として許すかたち（値そのものはログに出さない。長さと文字種だけを見る。§4-2）
+_REFRESH_VALUE_RE = re.compile(r"\A[A-Za-z0-9._~+/=-]{20,4096}\Z")
+
+# sink パスがこのリポジトリの作業ツリー配下を指していたら書かずに ConsoleAPIError にする（D7）。
+# scripts/dify/console_api.py から見て 2 つ上（scripts/dify → scripts → リポジトリ直下）。
+_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 # Service API と同じ独自 User-Agent（Cloudflare の error 1010 対策。run_tests.py の USER_AGENT と同一文字列）
 CONSOLE_USER_AGENT = "dify-scripts/1.0 (+https://github.com/shoulang0729/dify)"
@@ -137,6 +150,11 @@ _MASK_PATTERNS = (
     (re.compile(r"\b(access_token|refresh_token|csrf_token)\s*=\s*[^;\s\"'&]+", re.IGNORECASE), r"\1=***"),
     (re.compile(r'"(access_token|refresh_token|csrf_token)"\s*:\s*"[^"]*"', re.IGNORECASE), r'"\1": "***"'),
     (re.compile(r"\beyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]*\b"), "<jwt>***"),
+    # D8（設計書 §3。Issue #212 PR-1）: GitHub の fine-grained / classic PAT らしき文字列を伏せる。
+    # PAT は設計上この Python プロセスには渡らない（workflow の shell ステップだけが GH_TOKEN として
+    # 持つ）が、将来の事故に備えた保険として足す。
+    (re.compile(r"\bghp_[A-Za-z0-9]{20,}"), "ghp_***"),
+    (re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}"), "github_pat_***"),
 )
 
 
@@ -204,6 +222,9 @@ class ConsoleClient:
         # Cookie を保持する（G1）。Set-Cookie は自動的にここへ溜まり、以降のリクエストへ自動的に載る。
         self._cookiejar = http.cookiejar.CookieJar()
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self._cookiejar))
+        # 書き戻し（sink）の通算 rotate 回数。ログの「rotate 通算 N 回目」に使うだけで、値そのものは
+        # 保持しない（設計書 §4-2 a。Issue #212 PR-1）。
+        self._sink_write_count = 0
 
     # -- 低レベル ------------------------------------------------------
     def set_token(self, token):
@@ -223,16 +244,65 @@ class ConsoleClient:
         return None
 
     def _absorb_session_cookies(self):
-        """直近のレスポンスで Set-Cookie された access/csrf/refresh をインスタンスへ取り込む（§8-1）。"""
+        """直近のレスポンスで Set-Cookie された access/csrf/refresh をインスタンスへ取り込む（§8-1）。
+
+        refresh の取得だけは優先順を明示する（V-B。設計書 §4-2 b・load-bearing。Issue #212 PR-1）：
+        `_cookie_value()` は名前の末尾一致で cookiejar を順不同に走査するため、`refresh_token` と
+        `__Host-refresh_token` が同時に jar にいると、どちらが返るかが不定になる。ふだんは同じ値
+        なので害が無いが、書き戻し（sink）では「古い方を書いて secret を殺す」事故になりうる唯一の
+        箇所なので、`__Host-refresh_token` を優先し、無ければ `refresh_token` という明示の優先順に
+        する。access/csrf の取り方は変えない。"""
         access = self._cookie_value(_ACCESS_COOKIE_SUFFIX)
         if access:
             self._token = access
         csrf = self._cookie_value(_CSRF_COOKIE_SUFFIX)
         if csrf:
             self._csrf = csrf
-        refresh = self._cookie_value(_REFRESH_COOKIE_SUFFIX)
+        refresh = self._cookie_value("__Host-" + _REFRESH_COOKIE_SUFFIX) or self._cookie_value(_REFRESH_COOKIE_SUFFIX)
         if refresh:
             self._refresh_token = refresh
+
+    def _write_refresh_sink(self):
+        """rotate のたびに DIFY_REFRESH_SINK（設計書 §4-2 a。Issue #212 PR-1）へ新しいリフレッシュ
+        トークンを上書きする。契約（設計書どおり。implementer は変えない）：
+
+        1. 環境変数が空なら何もせず False を返す（既存の挙動・ローカル実行・selfhost に影響しない）
+        2. sink パスがこのリポジトリの作業ツリー配下なら書かずに ConsoleAPIError（D7。コミット事故
+           を機械で止める）
+        3. self._refresh_token が _REFRESH_VALUE_RE に一致しなければ書かずに ConsoleAPIError
+           （形が想定と違う＝実装の不具合。ゴミを書かない）
+        4. 0600・末尾改行なしで一時ファイルに書き、os.replace() で原子的に差し替える（追記しない）
+        5. 値は一切ログに出さない（「rotate 通算 N 回目」とだけ出す）
+
+        戻り値: 書いたら True、sink 未設定で何もしなければ False。失敗時は ConsoleAPIError。"""
+        path = os.environ.get(REFRESH_SINK_ENV, "").strip()
+        if not path:
+            return False
+
+        real_path = pathlib.Path(os.path.realpath(path))
+        if real_path == _REPO_ROOT or _REPO_ROOT in real_path.parents:
+            raise ConsoleAPIError(
+                f"{REFRESH_SINK_ENV} がリポジトリの作業ツリー配下を指しています。書き込みを拒否しました"
+                "（設計書 docs/handoff/2026-09-09-refresh-token-writeback.md §4-2 D7）"
+            )
+
+        if not self._refresh_token or not _REFRESH_VALUE_RE.match(self._refresh_token):
+            raise ConsoleAPIError(
+                "rotate したリフレッシュトークンの形式が想定と違います。書き込みを拒否しました"
+                "（実装の不具合の可能性。値は表示しません）"
+            )
+
+        tmp_path = path + ".tmp"
+        fd = os.open(tmp_path, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
+        try:
+            os.write(fd, self._refresh_token.encode("ascii"))
+        finally:
+            os.close(fd)
+        os.replace(tmp_path, path)
+
+        self._sink_write_count += 1
+        log(f"新しいリフレッシュトークンを書き出しました（値は表示しません。rotate 通算 {self._sink_write_count} 回目）")
+        return True
 
     def _raise_for_error_body(self, e, context):
         """HTTPError の本文を読み、Cloudflare の 1010 シグネチャを最優先で判定する（§8-4・§10）。
@@ -345,6 +415,7 @@ class ConsoleClient:
                 "（API 形が想定と違う可能性。V1 の再確認が要る）"
             )
         self._auth_mode = "refresh"
+        self._write_refresh_sink()  # rotate のたびに sink を上書きする（設計書 §4-2 a。Issue #212 PR-1）
         log("Console API: リフレッシュトークンで新しいセッションを取得しました（値は表示しません）")
         return True
 
