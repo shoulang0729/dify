@@ -1040,7 +1040,7 @@ jobs:
           else
             rc=$?
             case "$rc" in
-              2) echo "deploy: 判定=設定不備 (rc=2)"; echo "- deploy: 設定不備（exit 2。env・認証情報の未設定などを確認）" >> "$GITHUB_STEP_SUMMARY" ;;
+              2) echo "deploy: 判定=設定不備 (rc=2)"; echo "- deploy: 設定不備、または KB 紐づけの安全弁に抵触（exit 2。出力の [STOP] メッセージを確認。env・認証情報の未設定、または dataset_ids が空のまま KB を持つ番号が含まれていないかを見る。dify/DEPLOY.md §9「既知の制限」）" >> "$GITHUB_STEP_SUMMARY" ;;
               3) echo "deploy: 判定=認証エラー (rc=3)"; echo "- deploy: 認証エラー（exit 3。dify/DEPLOY.md §8 の手順で DIFY_CONSOLE_REFRESH を取り直す）" >> "$GITHUB_STEP_SUMMARY" ;;
               *) echo "deploy: 判定=失敗あり (rc=$rc)"; echo "- deploy: 1 件以上失敗（exit $rc。**P1 によりこの場合は公開を 1 件も行っていない**）" >> "$GITHUB_STEP_SUMMARY" ;;
             esac

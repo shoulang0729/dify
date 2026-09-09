@@ -568,7 +568,7 @@ Issue・PR には次の 3 分類のいずれか **1 つだけ**を `run:*` ラ�
 |---|---|---|
 | 0 | 全件成功（インポート＋公開） | 完了 |
 | 1 | 1 件以上失敗（インポートまたは公開）。**P1 によりこの場合は公開を 1 件も行っていない可能性が高い**（インポート段階の失敗なら確実に 0 件） | 失敗あり |
-| 2 | 引数・環境不備（`DIFY_CONSOLE_REFRESH` 等が未設定・env.yml が無い等） | 設定不備 |
+| 2 | 引数・環境不備（`DIFY_CONSOLE_REFRESH` 等が未設定・env.yml が無い等）、**または KB 紐づけの安全弁に抵触**（下記「既知の制限」） | 設定不備 |
 | 3 | 認証エラー（401/403）。即座に停止し、以降の番号は処理しない | 認証エラー |
 
 ### 壊れたときの復旧（設計書 §9-2）
@@ -591,23 +591,50 @@ Issue・PR には次の 3 分類のいずれか **1 つだけ**を `run:*` ラ�
 「どの版を投入したか」は PR 本文と `dify/CHANGELOG.md` に記録し、**復旧は Git から再 render →
 再インポート**で行う。
 
-### 既知の制限：KB を紐づけている番号（KN-01・KN-02・KN-03・GN-01）は `op: deploy` で紐づけが消える
+### 既知の制限：KB を紐づけている番号（KN-01・KN-02・KN-03・GN-01）は `dataset_ids` が空のままだと `op: deploy` が上書きで紐づけを消しうる —— **ただし機械が止める**
 
 `dify/apps/KN-01-*.yml` 等のマスタ DSL は **`dataset_ids: []`（空）のまま**コミットされている
 （コメントに明記：「インポート後に UI で KB を紐づける」）。`dataset_ids` を焼き込む仕組み
 （`render.py` R5・`cloud_deploy.py --bind-kb dsl`〔既定〕）は実装済みだが、**焼き込みには
 `DIFY_DATASET_ID_KN01` 等の環境変数が要り、現時点でこれらは GitHub の secret として登録していない**
 （`docs/handoff/2026-09-08-execution-split-and-runner.md` の方針：将来 `dify/state/cloud-master.yml`
-〔W2。未実装〕から読む想定で、**それまでは置かない**）。
+〔W2。未実装〕から読む想定で、**それまでは置かない**）。**恒久対応（実行時に Datasets API から
+id を引く）は architect が設計中**（Issue #121）。
 
-**したがって現状のホストランナーの `op: deploy` は、`DIFY_DATASET_ID_*` を持たない。KN-01 / KN-02 /
-KN-03 / GN-01 に対して `op: deploy` を実行すると、render 結果の `dataset_ids` が空のまま上書き
-インポートされ、公開まで進めると、Cloud 側で既に紐づいている KB の紐づけが消える。**
+**外し忘れても機械が止めます。** `cloud_deploy.py` に **KB 紐づけの安全弁**（`find_empty_kb_bindings()`。
+モジュール docstring の「1.5 kb-guard」）を追加した：render 結果に `knowledge-retrieval` ノードを
+持つのに `dataset_ids` が空のままの番号が `codes` に **1 本でも**含まれていたら、**Phase 1（インポート）
+どころかセッション確立（`client_from_env`）より前に、実行全体を `exit 2` で停止する**（P1 と同じ
+「1 本でも該当したら全体を止める」思想。`--force` のような回避フラグは意図的に用意していない）。
+判定材料に「レンダ済み DSL の `knowledge-retrieval` ノードの `dataset_ids`」を選んだ理由は、
+`dify/kb/<番号>/` ディレクトリの有無という運用上の慣習ではなく、**実際にアップロードする DSL
+そのもの**を見るのがもっとも確実なため（`cloud_deploy.py` のコード内コメントに詳細）。
 
-- **当面の回避策**：`codes` にこの 4 番号を含めない（KB を持たない 8 番号だけを `op: deploy` の対象にする）
+止まったときのメッセージ（実物。値は出ない）:
+
+```
+[STOP] KB を要求しているのに dataset_ids が空のままのアプリがあります。このまま上書きインポート・公開
+すると、Dify 上で既に紐づいている知識ベースの紐づけが空にリセットされる可能性があります（PM 報告に
+基づく追加の歯止め。Issue #121 W4-4）。
+
+対象（管理番号: knowledge-retrieval ノード名）:
+  - KN-02: 知識検索（設備マニュアル・アラームコード表・保全規程）
+
+どうすればよいか（どちらか）:
+  1. これらの番号を codes から外して再実行する（KB を持たないアプリだけを deploy する）
+  2. DIFY_DATASET_ID_<番号>（例 DIFY_DATASET_ID_KN01）を設定して dataset_ids を焼き込んでから
+     再実行する（dify/DEPLOY.md §1-④・§9「既知の制限」を参照）
+
+恒久対応（実行時に Datasets API から id を引く）は architect が設計中です（Issue #121）。それが入る
+まで --force のような回避フラグはありません。1 本でも該当したら実行全体を停止します（P1 と同じ思想。
+半分だけ危険な状態で進めない）。
+```
+
 - KN-01 / KN-02 / KN-03 / GN-01 を再投入したい場合は、**引き続き Mac の手順**（§1-④・§5-4）を使う
-  （`~/.config/dify/cloud-master.env` に `DIFY_DATASET_ID_*` を置いた上で render → インポート）
-- 恒久対応は W2（`dify/state/cloud-master.yml`。未実装）で `DIFY_CONSOLE_REFRESH` と同様に
-  Environment secret 化するか、`dify/state/` からの読み出しに揃えたうえで判断する（このリスクは
-  architect・PM への報告事項。W4-4 の設計書には明記が無く、本 PR の実装時に発見した）
+  （`~/.config/dify/cloud-master.env` に `DIFY_DATASET_ID_*` を置いた上で render → インポート）か、
+  同じ環境変数をホストランナーのジョブに渡して `op: deploy` を実行する（現時点では secret 未登録）
+- `--dry-run` では警告のみ表示し、停止しない（プレビュー用途のため。「本番実行ではこのまま
+  exit 2 で停止します」と併記される）
+- 機械確認：`scripts/dify/tests/test_cloud_deploy.py` の `test_kb_guard_blocks_before_phase1` /
+  `test_kb_guard_allows_when_dataset_ids_baked` / `test_kb_guard_unit_detects_empty_dataset_ids`
 

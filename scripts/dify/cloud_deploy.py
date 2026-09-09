@@ -12,6 +12,10 @@
   0 preflight   env.yml / PyYAML / DIFY_CONSOLE_TOKEN（か email/password）の有無 → 無ければ exit 2
                 （値は出さない。"set"/"unset" だけ表示）
   1 render      render.py --env <env> --strict <番号...> → dify/build/<env>/*.yml
+  1.5 kb-guard  **KB 紐づけの安全弁**（PM 報告に基づく追加。§9-2 相当・Issue #121 W4-4）：
+                render 結果に knowledge-retrieval ノードを持つのに dataset_ids が空の番号が
+                1 本でもあれば、Phase 2（resolve 以降）に入る前に exit 2 で全体を停止する
+                （--dry-run では警告のみ表示して停止しない。ネットワークは呼ばない）
   2 resolve     app_id を決める（優先順: --app-id → env の apps.<番号>.id → 名前一致 → 新規作成）
   3 import      対象番号すべてに POST /console/api/apps/imports（app_id 付きなら上書き）。
                 401/403 は exit 3 で即停止。それ以外の失敗は記録して次の番号へ進む（--stop-on-error で中断）
@@ -35,7 +39,10 @@
   4. 新規作成 → 書き戻し断片を出す
 
 終了コード: 0 全件成功（--dry-run 正常終了含む） / 1 1 件以上の失敗（インポートまたは公開） /
-           2 引数・環境不備・到達不可 / 3 認証エラー（401/403）
+           2 引数・環境不備・到達不可・**KB 紐づけの安全弁に抵触**（1.5 kb-guard。新しい意味の
+           終了コードを増やさず、既存の「実行前の設定不備」区分〔2〕を再利用した。KB 安全弁は
+           まだセッションすら確立していない preflight 段階の停止であり、401/403〔3〕でも
+           import/publish の実行時失敗〔1〕でもないため） / 3 認証エラー（401/403）
 
 値をログに出さない：DIFY_CONSOLE_TOKEN・Authorization ヘッダ・API キーの値。本モジュールの log() は
 console_api._mask() を必ず通す（CLAUDE.md §2-10）。
@@ -293,6 +300,84 @@ def bind_kb_draft(client, app_id, code, env_raw, warnings):
 
 
 # ---------------------------------------------------------------------------
+# 5.5 KB 紐づけの安全弁（Phase 1 の前。PM 報告での追加指示。Issue #121 W4-4）
+# ---------------------------------------------------------------------------
+#
+# 判定材料を「レンダ済み DSL の knowledge-retrieval ノードに dataset_ids が入っているか」に
+# した理由（設計書には無い、実装時に見つかった歯止め。PM 指示で追加）：
+#
+#   - PM が最初に挙げた候補は「dify/kb/<番号>/ ディレクトリの有無」だったが、これは
+#     「文書を置く場所」という運用上の慣習であり、DSL の実際のノード構造と機械的に
+#     同期している保証が無い（ディレクトリはあるがノードが無い／ノードはあるが
+#     ディレクトリが無い、という食い違いが将来起きても検出できない）。
+#   - 一方 cloud_deploy.py が実際にインポートするのは「レンダ済み DSL そのもの」。
+#     この DSL の knowledge-retrieval ノードに dataset_ids が入っているかどうかが、
+#     上書きインポートで Cloud 側の既存の KB 紐づけを空で潰してしまうかどうかを
+#     直接・確実に決める。したがって「これからアップロードする物そのもの」を
+#     見るのがもっとも確実（render.py 自身が R5 でこの同じノード構造を書き換えている
+#     こととも整合する）。
+#   - 副次的な利点：恒久対応（実行時に Datasets API から id を引く。architect が設計中）が
+#     入れば、dataset_ids は自動的に空でなくなるため、この関数は改修なしで
+#     ブロックしなくなる（判定ロジックの寿命が短くならない）。
+#
+# 1 本でも該当したら Phase 1（インポート）に入る前に実行全体を停止する（P1 と同じ思想。
+# --force のような回避フラグは意図的に用意しない。恒久対応が入るまではこの状態が正しい）。
+
+def find_empty_kb_bindings(out_dir, codes):
+    """レンダ済み DSL（dify/build/<env>/<番号>-*.yml）を読み、knowledge-retrieval ノードを
+    1 つ以上持つのに dataset_ids が空（[] または未設定）のままの番号を集める。
+    戻り値: [(code, [node_title, ...]), ...]（該当が無ければ空リスト）。
+
+    render.py の render_app() と同じ場所（workflow.graph.nodes[].data）を見る（§ 参照）。
+    ノード自体が読めない（build ファイルが無い等）番号はここでは無視する
+    （そちらは run_render() / load_build() 側で別途エラーになっているはず）。"""
+    hits = []
+    for code in codes:
+        try:
+            path = build_file_for(out_dir, code)
+        except CloudDeployError:
+            continue
+        with open(path, encoding="utf-8") as fh:
+            data = yaml.safe_load(fh.read()) or {}
+        nodes = (((data.get("workflow") or {}).get("graph")) or {}).get("nodes") or []
+        empty_titles = []
+        for n in nodes:
+            d = n.get("data") or {}
+            if d.get("type") == "knowledge-retrieval" and not d.get("dataset_ids"):
+                empty_titles.append(d.get("title") or n.get("id") or "(無題)")
+        if empty_titles:
+            hits.append((code, empty_titles))
+    return hits
+
+
+def format_kb_binding_guard_message(hits):
+    """find_empty_kb_bindings() の戻り値から、なぜ止めたか／どうすればよいかが分かるメッセージを作る。
+    dataset id の値は（そもそも空なので）出さない。将来この関数が値を扱うようになった場合は
+    masking.short_id() を必ず通すこと（CLAUDE.md §2-10）。"""
+    lines = [
+        "[STOP] KB を要求しているのに dataset_ids が空のままのアプリがあります。"
+        "このまま上書きインポート・公開すると、Dify 上で既に紐づいている知識ベースの"
+        "紐づけが空にリセットされる可能性があります（PM 報告に基づく追加の歯止め。Issue #121 W4-4）。",
+        "",
+        "対象（管理番号: knowledge-retrieval ノード名）:",
+    ]
+    for code, titles in hits:
+        lines.append(f"  - {code}: {', '.join(titles)}")
+    lines += [
+        "",
+        "どうすればよいか（どちらか）:",
+        "  1. これらの番号を codes から外して再実行する（KB を持たないアプリだけを deploy する）",
+        "  2. DIFY_DATASET_ID_<番号>（例 DIFY_DATASET_ID_KN01）を設定して dataset_ids を焼き込んでから"
+        " 再実行する（dify/DEPLOY.md §1-④・§9「既知の制限」を参照）",
+        "",
+        "恒久対応（実行時に Datasets API から id を引く）は architect が設計中です（Issue #121）。"
+        "それが入るまで --force のような回避フラグはありません。"
+        "1 本でも該当したら実行全体を停止します（P1 と同じ思想。半分だけ危険な状態で進めない）。",
+    ]
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # 7. report / env.yml 書き戻し（§4-5）
 # ---------------------------------------------------------------------------
 
@@ -447,8 +532,22 @@ def main():
                 log(f"[{code}] (dry-run) 新規作成予定（名前一致の判定は実行時にのみ行います）")
             if not args.no_publish:
                 log(f"[{code}] (dry-run) 公開予定")
+        kb_hits = find_empty_kb_bindings(out_dir, codes)
+        if kb_hits:
+            log("")
+            log(format_kb_binding_guard_message(kb_hits))
+            log("\n(dry-run のため停止しません。本番実行〔--dry-run 無し〕ではこのまま exit 2 で停止します)")
         log("\n== dry-run 完了（ネットワークは呼んでいません） ==")
         return 0
+
+    # KB 紐づけの安全弁（5.5 節）: Phase 1（インポート）どころか、セッション確立（client_from_env）
+    # より前に判定する。実行を伴わない dry-run では判定しない（上のブロックで警告のみ表示する）。
+    # ネットワークを一切呼ばずに判定できるため、ここで止めれば DIFY_CONSOLE_REFRESH の
+    # 1 回使い切りのリフレッシュトークンも消費しない（無駄打ちしない）。
+    kb_hits = find_empty_kb_bindings(out_dir, codes)
+    if kb_hits:
+        log(format_kb_binding_guard_message(kb_hits))
+        return 2
 
     # ---- 本番実行 ----
     try:
