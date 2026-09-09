@@ -98,7 +98,7 @@ _CLOUDFLARE_1010_RE = re.compile(r"error\s*code\s*:\s*1010", re.IGNORECASE)
 # 終了コード表（設計書 §8-4）のメッセージ。値は一切含めない。
 MSG_SESSION_EXPIRED = (
     "Dify Cloud のセッションが期限切れです（または既に使用済み）。"
-    "dify/DEPLOY.md §9 の手順でリフレッシュトークンを取り直し、"
+    "dify/DEPLOY.md §8 の手順でリフレッシュトークンを取り直し、"
     "Environment secret DIFY_CONSOLE_REFRESH を更新してください。"
 )
 MSG_CSRF_MISMATCH = "CSRF ヘッダ／Cookie の不一致。実装の不具合として報告してください（V1 の再確認が要る）"
@@ -117,7 +117,7 @@ TOKEN_HELP = (
     "  3. __Host-refresh_token の Value をコピー（画面に出したまま共有しない）\n"
     "  4. GitHub → Settings → Environments → dify-cloud-master → Secrets →\n"
     "     DIFY_CONSOLE_REFRESH を Update で貼り直す\n"
-    "  手順の詳細: dify/DEPLOY.md §9\n"
+    "  手順の詳細: dify/DEPLOY.md §8\n"
     "  （DIFY_CONSOLE_TOKEN は非推奨です。DIFY_CONSOLE_REFRESH への移行を推奨します）"
 )
 

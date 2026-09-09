@@ -310,7 +310,7 @@ def test_t11_refresh_401_exit3_session_expired(base):
                 {"DIFY_CONSOLE_REFRESH": mock_server.EXPIRED_REFRESH_TOKEN, "DIFY_CONSOLE_TOKEN": ""})
     combined = r.stdout + r.stderr
     check("T11: refresh 401 で exit 3", r.returncode == 3, f"exit={r.returncode} {combined}")
-    check("T11: セッション期限切れのメッセージが出る（DEPLOY.md §9 の案内込み）",
+    check("T11: セッション期限切れのメッセージが出る（DEPLOY.md §8 の案内込み）",
           "セッションが期限切れ" in combined and "DIFY_CONSOLE_REFRESH" in combined and "DEPLOY.md" in combined,
           combined)
     check("T11: 出力にリフレッシュトークン文字列が現れない", mock_server.EXPIRED_REFRESH_TOKEN not in combined, combined)

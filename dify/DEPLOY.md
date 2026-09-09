@@ -467,7 +467,7 @@ Issue・PR には次の 3 分類のいずれか **1 つだけ**を `run:*` ラ�
 - Settings → Actions → General → Fork pull request workflows from outside collaborators → **Require approval for all outside collaborators**
 - ラベル `run:cloud` / `run:runner` / `run:mac` を Issues → Labels で作成（無くてもワークフローは動くが、PR への自動付与ができない）
 
-## 9. Cloud のコンソール認証（リフレッシュトークン）の取り方
+## 8. Cloud のコンソール認証（リフレッシュトークン）の取り方
 
 設計: `docs/handoff/2026-09-08-cloud-auth-and-w4.md` §8（Cookie 案の詳細設計）・§8-6（取り出す手順）・
 §8-4（切れたときの終了コード表）。実装: `scripts/dify/console_api.py`（Issue #121 W4-3 PR-4）。
