@@ -249,6 +249,32 @@ def test_g7_mask_patterns_cover_cookie_csrf_refresh():
     check("G7: JWT らしき文字列がマスクされる（<jwt>*** に置換）", "eyJhbGciOiJIUzI1NiJ9" not in masked, masked)
 
 
+def test_g8_import_dsl_masks_error_field():
+    """レビュー指摘1: import_dsl が status: failed を返したとき、応答の error フィールドを
+    そのまま例外メッセージへ埋めず _mask() を通すこと（console_api.py L41 の docstring どおり）。
+    サーバ応答に秘密らしき文字列（JWT・__Host-refresh_token）が紛れ込んでいても、例外の str() に
+    生の値が現れないことを確認する（実サーバ不要。_req をスタブして status: failed を直接作る）。"""
+    client = console_api.ConsoleClient("http://127.0.0.1:1", timeout=10)
+    client.set_token("dummy-token")
+    leaked_refresh = "__Host-refresh_token=leaked-refresh-secret-value"
+    leaked_jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+    secret_error = f"internal error: {leaked_refresh}; token={leaked_jwt}"
+
+    def fake_req(method, path, body=None, auth=True, _retried=False):
+        return 200, {"status": "failed", "error": secret_error}
+
+    client._req = fake_req
+    try:
+        client.import_dsl(SAMPLE_YAML)
+        check("G8: status=failed で ConsoleAPIError が上がる", False)
+    except console_api.ConsoleAPIError as e:
+        msg = str(e)
+        check("G8: 例外メッセージに __Host-refresh_token の生値が現れない",
+              "leaked-refresh-secret-value" not in msg, msg)
+        check("G8: 例外メッセージに JWT らしき値の生値が現れない",
+              "eyJhbGciOiJIUzI1NiJ9" not in msg, msg)
+
+
 def test_t9_refresh_and_csrf_flow(base):
     """G1・G4・G6: refresh-token で access/csrf/refresh の 3 点を取得し、以降のリクエストに
     X-CSRF-Token ヘッダと Cookie の csrf_token が付いて一致すること（一致しなければ list_apps は
@@ -377,6 +403,7 @@ def main():
     test_t2_endpoints_table()
     test_g3_password_base64_helper()
     test_g7_mask_patterns_cover_cookie_csrf_refresh()
+    test_g8_import_dsl_masks_error_field()
     test_t14_no_delete_function_in_console_api()
 
     port = free_port()

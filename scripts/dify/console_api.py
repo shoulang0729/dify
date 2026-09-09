@@ -153,7 +153,13 @@ def log(msg):
 
 def _b64_password(password):
     """password を base64 化して送る（G3。Cloud・selfhost 共通）。
-    サーバは base64 デコードする（Dify 本体 `libs/encryption.py` の `decrypt_password_field`）。"""
+    サーバは base64 デコードする（Dify 本体 `libs/encryption.py` の `decrypt_password_field`）。
+
+    設計書 docs/handoff/2026-09-08-cloud-auth-and-w4.md §13 V6 は「Cloud だけに限る」案も
+    挙げていたが、本 PR（#121 W4-3 PR-4）で **selfhost にも共通適用する**ことに確定した。
+    根拠は上記のとおりサーバ側が decrypt_password_field でデコードする前提であること。
+    将来 inhouse（selfhost）環境を実際に立てて Console ログインが 401 で失敗するようなら、
+    その版の Dify がこのデコードをしていない可能性があるため、まずこの base64 化を疑うこと。"""
     return base64.b64encode(password.encode("utf-8")).decode("ascii")
 
 
@@ -363,7 +369,8 @@ class ConsoleClient:
             confirmed_app_id, status = self.confirm_import(import_id)
             result_app_id = confirmed_app_id or result_app_id
         if status == "failed":
-            raise ConsoleAPIError(f"import_dsl 失敗: {res.get('error', '(詳細不明。確認要: Issue #114 C2)')}")
+            err = _mask(res.get("error", "(詳細不明。確認要: Issue #114 C2)"))
+            raise ConsoleAPIError(f"import_dsl 失敗: {err}")
         if not result_app_id:
             raise ConsoleAPIError("import_dsl: app_id がレスポンスから取得できません（API 形が想定と違う可能性）")
         log(f"DSL インポート完了: app_id={result_app_id}（status={status}）")
