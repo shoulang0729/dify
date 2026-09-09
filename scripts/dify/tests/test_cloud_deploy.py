@@ -4,7 +4,8 @@ test_console_api.py / test_run_tests.py と同じ作法。mock_server.py を子�
 
     python3 scripts/dify/tests/test_cloud_deploy.py     # exit 0 で全件 PASS。ネットワークは 127.0.0.1 のみ
 
-設計: docs/handoff/2026-09-08-cloud-console-deploy.md §2・§4-3・§7 PR-2（Issue #114）
+設計: docs/handoff/2026-09-08-cloud-console-deploy.md §2・§4-3・§7 PR-2（Issue #114）／
+docs/handoff/2026-09-08-cloud-auth-and-w4.md §9-2・§9-3・§11「W4-4」（Issue #121。P1・B3）
 
 CI（`npm test`）には入れない（`CLAUDE.md` §3 のコマンド集合を変えない）。実行は implementer と reviewer が手で行う。
 `dify/env/cloud-master/env.yml`・`dify/apps/*.yml` は**読むだけ**（書き換えない）。生成物 `dify/build/cloud-master/**`
@@ -12,6 +13,7 @@ CI（`npm test`）には入れない（`CLAUDE.md` §3 のコマンド集合を�
 テスト同士が同じアプリ名で衝突しない（名前一致に巻き込まれない）ようにしてある。
 """
 import glob
+import json
 import os
 import re
 import shutil
@@ -80,9 +82,15 @@ def list_apps_via_http(base, token):
         base.rstrip("/") + "/console/api/apps?page=1&limit=100",
         headers={"Authorization": f"Bearer {token}"},
     )
-    import json
     with urllib.request.urlopen(req, timeout=10) as r:
         return json.loads(r.read())["data"]
+
+
+def get_stats(base):
+    """mock_server.py の /__test__/stats（DELETE/PATCH/update_by_text/publish の累計呼び出し回数）を取る。
+    テストをまたいで累積するグローバル状態なので、P1 の検証は必ず前後の差分で見ること。"""
+    with urllib.request.urlopen(base.rstrip("/") + "/__test__/stats", timeout=10) as r:
+        return json.loads(r.read())
 
 
 def cleanup_build():
@@ -221,17 +229,19 @@ def test_t5_pending_confirm_roundtrip(base):
 
 def test_t6_new_creation_and_idempotent(base):
     """① 新規作成で app_id を得る／② 同じ番号を 2 回流してもアプリが増えない（名前一致による上書き）。
-    KN-03 は他のテストで使っていない管理番号（cloud-master の apps.KN-03.id は null）。"""
+    DC-02 は他のテストで使っていない管理番号（cloud-master の apps.DC-02.id は null）で、
+    KB 安全弁（5.5 節。Issue #121 W4-4）の対象外＝knowledge-retrieval ノードを持たない
+    （KN-01/KN-02/KN-03/GN-01 は対象なので、KB と無関係なこのテストでは使わない）。"""
     token = "idempotent-test-token"
     before = list_apps_via_http(base, token)
 
-    r1 = run_cli(["--env", "cloud-master", "KN-03"], {"DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base})
+    r1 = run_cli(["--env", "cloud-master", "DC-02"], {"DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base})
     check("T6: 1 回目が exit 0", r1.returncode == 0, r1.stdout + r1.stderr)
     check("T6: 1 回目は新規作成", "新規作成" in r1.stdout, r1.stdout)
     after1 = list_apps_via_http(base, token)
     check("T6: 1 回目でアプリが 1 件増える", len(after1) == len(before) + 1, (len(before), len(after1)))
 
-    r2 = run_cli(["--env", "cloud-master", "KN-03"], {"DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base})
+    r2 = run_cli(["--env", "cloud-master", "DC-02"], {"DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base})
     check("T6: 2 回目が exit 0", r2.returncode == 0, r2.stdout + r2.stderr)
     check("T6: 2 回目は上書き（名前一致）", "上書き" in r2.stdout, r2.stdout)
     after2 = list_apps_via_http(base, token)
@@ -287,8 +297,11 @@ def test_t9_dry_run_no_network():
 
 
 def test_t10_auth_error_exit3(base):
-    """期限切れトークンで exit 3、かつ再取得手順が出て、トークン文字列が出力に現れないこと。"""
-    r = run_cli(["--env", "cloud-master", "KN-01"], {"DIFY_CONSOLE_TOKEN": mock_server.EXPIRED_TOKEN, "DIFY_CONSOLE_URL": base})
+    """期限切れトークンで exit 3、かつ再取得手順が出て、トークン文字列が出力に現れないこと。
+    LG-01 は knowledge-retrieval ノードを持たない番号（KB 安全弁の対象外。5.5 節）を使う。
+    KN-01 だと KB 安全弁が client_from_env より先に判定して exit 2 になってしまい、
+    このテストが確かめたい認証エラー（exit 3）の経路に到達できない。"""
+    r = run_cli(["--env", "cloud-master", "LG-01"], {"DIFY_CONSOLE_TOKEN": mock_server.EXPIRED_TOKEN, "DIFY_CONSOLE_URL": base})
     combined = r.stdout + r.stderr
     check("T10: 期限切れトークンで exit 3", r.returncode == 3, f"exit={r.returncode} {combined}")
     # TOKEN_HELP は Issue #121 W4-3（G5）で DIFY_CONSOLE_REFRESH 前提の文言に書き直された
@@ -307,10 +320,13 @@ def test_t11_no_token_unset_exit2():
 
 
 def test_t12_no_token_leak_anywhere(base, tmpdir):
-    """成功する 1 回の実行を通して、stdout/stderr/生成ファイルにトークンの値が一度も現れないこと。"""
+    """成功する 1 回の実行を通して、stdout/stderr/生成ファイルにトークンの値が一度も現れないこと。
+    LG-04 は knowledge-retrieval ノードを持たない番号（KB 安全弁の対象外。5.5 節）を使う
+    （GN-01 だと DIFY_DATASET_ID_GN01 未設定のため KB 安全弁が exit 2 で止め、
+    この「成功する 1 回の実行」という前提が満たせない）。"""
     token = "yet-another-secret-cloud-deploy-token"
     r = run_cli(
-        ["--env", "cloud-master", "GN-01", "--app-id", "GN-01=cd-test-leak-check", "--no-adopt-by-name"],
+        ["--env", "cloud-master", "LG-04", "--app-id", "LG-04=cd-test-leak-check", "--no-adopt-by-name"],
         {"DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base},
     )
     combined = r.stdout + r.stderr
@@ -319,11 +335,176 @@ def test_t12_no_token_leak_anywhere(base, tmpdir):
         fh.write(combined)
     check("T12: 実行が成功する（前提）", r.returncode == 0, combined)
     check("T12: 標準出力・標準エラーにトークンが現れない", token not in combined, combined)
-    matches = glob.glob(os.path.join(BUILD_DIR, "GN-01-*.yml")) + glob.glob(os.path.join(ROOT, "dify", "build", "cloud-master", "render-report.md"))
+    matches = glob.glob(os.path.join(BUILD_DIR, "LG-04-*.yml")) + glob.glob(os.path.join(ROOT, "dify", "build", "cloud-master", "render-report.md"))
     leaked_files = [p for p in matches if token in open(p, encoding="utf-8").read()]
     check("T12: 生成ファイル（render 出力・レポート）にトークンが現れない", not leaked_files, leaked_files)
     with open(log_path, encoding="utf-8") as fh:
         check("T12: 保存したログファイルにもトークンが現れない", token not in fh.read())
+
+
+def test_p1_no_publish_on_partial_import_failure(base):
+    """P1（設計書 §9-2・§11「W4-4」。Issue #121）: 2 番号のうち 1 本のインポートが失敗したら、
+    もう 1 本が正常にインポートできていても公開を 1 件も行わない。mock_server の /__test__/stats
+    で publish の呼び出し回数（グローバル累計）を前後で比較し、差分が 0 であることを機械確認する。
+    DC-04・GN-02 は knowledge-retrieval ノードを持たない番号（KB 安全弁の対象外。5.5 節）を使う
+    （KN-02・GN-01 だと DIFY_DATASET_ID_* 未設定のため KB 安全弁が Phase 1 に入る前に exit 2 で
+    止めてしまい、このテストが確かめたい P1 の分岐〔インポートまでは進む〕に到達できない）。"""
+    before = get_stats(base)
+    token = "p1-test-token"
+    ok_app_id = "p1-test-ok-app"
+    r = run_cli(
+        [
+            "--env", "cloud-master", "DC-04", "GN-02",
+            "--app-id", f"DC-04={ok_app_id}",
+            "--app-id", f"GN-02={mock_server.MOCK_FORCE_IMPORT_FAIL}",
+            "--no-adopt-by-name",
+        ],
+        {"DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base},
+    )
+    combined = r.stdout + r.stderr
+    check("P1: 1 本失敗すると exit 1", r.returncode == 1, combined)
+    check("P1: DC-04（成功した番号）のインポートは完了する", "[DC-04] インポート完了" in combined, combined)
+    check("P1: GN-02（失敗させた番号）は [FAIL] と記録される", "[GN-02] [FAIL]" in combined, combined)
+    check("P1: 「公開は 1 件も行いません」のログが出る", "公開は 1 件も行いません" in combined, combined)
+    check("P1: 成功した番号の公開完了ログが出ない（公開していない証拠）",
+          f"公開完了: app_id={ok_app_id}" not in combined, combined)
+
+    after = get_stats(base)
+    check("P1: publish が 1 回も呼ばれていない（mock_server の呼び出し回数を機械確認）",
+          after.get("publish", 0) == before.get("publish", 0), (before, after))
+
+
+def test_p1_all_succeed_publishes_all(base):
+    """P1 の裏側: 全件インポートが成功すれば、まとめて公開されること
+    （publish の呼び出し回数が対象の番号数ぶん増える）。DC-04・GN-02 の選定理由は上記と同じ
+    （KB 安全弁の対象外）。"""
+    before = get_stats(base)
+    token = "p1-success-test-token"
+    r = run_cli(
+        [
+            "--env", "cloud-master", "DC-04", "GN-02",
+            "--app-id", "DC-04=p1-success-dc04",
+            "--app-id", "GN-02=p1-success-gn02",
+            "--no-adopt-by-name",
+        ],
+        {"DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base},
+    )
+    combined = r.stdout + r.stderr
+    check("P1（成功系）: exit 0", r.returncode == 0, combined)
+    check("P1（成功系）: 全件インポート成功のログが出る", "全件インポート成功" in combined, combined)
+    check("P1（成功系）: DC-04 が公開される", "公開完了: app_id=p1-success-dc04" in combined, combined)
+    check("P1（成功系）: GN-02 が公開される", "公開完了: app_id=p1-success-gn02" in combined, combined)
+
+    after = get_stats(base)
+    check("P1（成功系）: publish が対象の番号数ぶん（2 回）増える",
+          after.get("publish", 0) - before.get("publish", 0) == 2, (before, after))
+
+
+def test_b3_logout_called_for_refresh_auth(base):
+    """B3（設計書 §8-7・§9-3。Issue #121 W4-4）: DIFY_CONSOLE_REFRESH で認証した実行は、
+    ジョブ末尾で必ず logout を試みる（成功ログが出る）。値はどこにも現れない。
+    NM-03 は knowledge-retrieval ノードを持たない番号（KB 安全弁の対象外。5.5 節）を使う。"""
+    seed = "b3-cloud-deploy-seed-refresh-token"
+    r = run_cli(
+        ["--env", "cloud-master", "NM-03", "--app-id", "NM-03=b3-refresh-app", "--no-adopt-by-name"],
+        {"DIFY_CONSOLE_REFRESH": seed, "DIFY_CONSOLE_TOKEN": "", "DIFY_CONSOLE_URL": base},
+    )
+    combined = r.stdout + r.stderr
+    check("B3: exit 0", r.returncode == 0, combined)
+    check("B3: logout 完了のログが出る", "logout 完了" in combined, combined)
+    check("B3: seed のリフレッシュトークン値が出力に現れない", seed not in combined, combined)
+
+
+def test_b3_logout_not_called_for_legacy_token(base):
+    """B3 の対象外: 非推奨の DIFY_CONSOLE_TOKEN（レガシー）経路では logout を呼ばない
+    （設計書 §8-7 B3 は Cookie 案＝リフレッシュトークンのセッションに限った歯止めのため）。
+    GN-05 は knowledge-retrieval ノードを持たない番号（KB 安全弁の対象外。5.5 節）を使う。"""
+    r = run_cli(
+        ["--env", "cloud-master", "GN-05", "--app-id", "GN-05=b3-legacy-app", "--no-adopt-by-name"],
+        {"DIFY_CONSOLE_TOKEN": "b3-legacy-token", "DIFY_CONSOLE_URL": base},
+    )
+    combined = r.stdout + r.stderr
+    check("B3（レガシー）: exit 0", r.returncode == 0, combined)
+    check("B3（レガシー）: logout 関連のログが出ない", "logout" not in combined, combined)
+
+
+def test_kb_guard_unit_detects_empty_dataset_ids():
+    """find_empty_kb_bindings() の単体検証（ネットワーク不要）: dataset_ids が空の
+    knowledge-retrieval ノードだけを拾い、値が入っているものは拾わないこと。"""
+    tmp_dir = tempfile.mkdtemp(prefix="cloud_deploy_kbguard_test_")
+    try:
+        with open(os.path.join(tmp_dir, "ZZ-01-empty.yml"), "w", encoding="utf-8") as fh:
+            fh.write(
+                "workflow:\n  graph:\n    nodes:\n"
+                "      - id: n1\n        data: { type: knowledge-retrieval, title: '知識検索', dataset_ids: [] }\n"
+            )
+        with open(os.path.join(tmp_dir, "ZZ-02-baked.yml"), "w", encoding="utf-8") as fh:
+            fh.write(
+                "workflow:\n  graph:\n    nodes:\n"
+                "      - id: n1\n        data: { type: knowledge-retrieval, title: '知識検索', dataset_ids: ['ds-abc'] }\n"
+            )
+        with open(os.path.join(tmp_dir, "ZZ-03-none.yml"), "w", encoding="utf-8") as fh:
+            fh.write("workflow:\n  graph:\n    nodes:\n      - id: n1\n        data: { type: llm, title: LLM }\n")
+
+        hits = cloud_deploy.find_empty_kb_bindings(tmp_dir, ["ZZ-01", "ZZ-02", "ZZ-03"])
+        codes_hit = [c for c, _ in hits]
+        check("KB安全弁(unit): dataset_ids が空のノードを持つ番号だけを拾う", codes_hit == ["ZZ-01"], hits)
+        check("KB安全弁(unit): ノード名（タイトル）を含む", hits and "知識検索" in hits[0][1], hits)
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def test_kb_guard_blocks_before_phase1(base):
+    """KB 安全弁（5.5 節。Issue #121 W4-4。PM 報告に基づく追加の歯止め）: KN-02 は
+    knowledge-retrieval ノードを持つが、DIFY_DATASET_ID_KN02 を設定していないため
+    dataset_ids が空のまま render される。この状態で deploy しようとすると、
+    Phase 1（インポート）どころか認証（client_from_env）にも入る前に exit 2 で止まり、
+    mock_server の publish カウンタ・アプリ一覧のどちらも動かない
+    （import すら 1 回も呼んでいない証拠）ことを機械確認する。"""
+    token = "kb-guard-test-token"
+    before_stats = get_stats(base)
+    before_apps = list_apps_via_http(base, token)
+
+    r = run_cli(
+        ["--env", "cloud-master", "KN-02", "--app-id", "KN-02=kb-guard-should-not-be-used", "--no-adopt-by-name"],
+        {"DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base},
+    )
+    combined = r.stdout + r.stderr
+    check("KB安全弁: exit 2", r.returncode == 2, combined)
+    check("KB安全弁: 「なぜ」の説明が出る（dataset_ids が空）", "dataset_ids が空" in combined, combined)
+    check("KB安全弁: 対象番号 KN-02 が出る", "KN-02" in combined, combined)
+    check("KB安全弁: 「どうすればよいか」の案内が出る（DIFY_DATASET_ID_ の設定 or 対象から外す）",
+          "DIFY_DATASET_ID_" in combined and "codes から外して" in combined, combined)
+    check("KB安全弁: 恒久対応の言及がある（architect が設計中）", "architect が設計中" in combined, combined)
+
+    force_opts = [opt for a in cloud_deploy.build_arg_parser()._actions for opt in a.option_strings if "force" in opt]
+    check("KB安全弁: --force 相当の回避フラグをそもそも実装していない（PM 指示）", not force_opts, force_opts)
+    check("KB安全弁: 指定した app_id（kb-guard-should-not-be-used）が使われていない",
+          "kb-guard-should-not-be-used" not in combined, combined)
+
+    after_stats = get_stats(base)
+    after_apps = list_apps_via_http(base, token)
+    check("KB安全弁: publish が 1 回も呼ばれていない（機械確認）",
+          after_stats.get("publish", 0) == before_stats.get("publish", 0), (before_stats, after_stats))
+    check("KB安全弁: アプリが増えていない（import すら呼んでいない証拠）",
+          len(after_apps) == len(before_apps), (len(before_apps), len(after_apps)))
+
+
+def test_kb_guard_allows_when_dataset_ids_baked(base):
+    """KB 安全弁の裏側: DIFY_DATASET_ID_GN01 を設定して dataset_ids が焼き込まれていれば、
+    KB 安全弁は反応せず通常どおり進む（誤検出しないことの確認。T8 とは別番号で確認する）。"""
+    token = "kb-guard-baked-test-token"
+    env_extra = {
+        "DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base,
+        "DIFY_DATASET_ID_GN01": "ds-kb-guard-baked-test",
+    }
+    r = run_cli(
+        ["--env", "cloud-master", "GN-01", "--app-id", "GN-01=kb-guard-baked-app", "--no-adopt-by-name"],
+        env_extra,
+    )
+    combined = r.stdout + r.stderr
+    check("KB安全弁(裏側): dataset_ids が焼き込まれていれば exit 0", r.returncode == 0, combined)
+    check("KB安全弁(裏側): KB 安全弁のブロックメッセージが出ない", "[STOP] KB を要求している" not in combined, combined)
 
 
 def main():
@@ -335,6 +516,7 @@ def main():
     test_t1_env_app_id_priority()
     test_t2_resolve_app_id_cli_and_env_priority()
     test_t3_write_env_null_only()
+    test_kb_guard_unit_detects_empty_dataset_ids()
 
     port = free_port()
     base = f"http://127.0.0.1:{port}"
@@ -356,6 +538,12 @@ def main():
         test_t11_no_token_unset_exit2()
         with tempfile.TemporaryDirectory(prefix="cloud_deploy_test_") as tmpdir:
             test_t12_no_token_leak_anywhere(base, tmpdir)
+        test_p1_no_publish_on_partial_import_failure(base)
+        test_p1_all_succeed_publishes_all(base)
+        test_b3_logout_called_for_refresh_auth(base)
+        test_b3_logout_not_called_for_legacy_token(base)
+        test_kb_guard_blocks_before_phase1(base)
+        test_kb_guard_allows_when_dataset_ids_baked(base)
     finally:
         proc.terminate()
         try:

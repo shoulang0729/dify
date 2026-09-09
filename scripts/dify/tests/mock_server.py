@@ -8,10 +8,13 @@ Dify サーバー（標準ライブラリのみ。開発・検証用。CI には
   POST /console/api/login                                    → access_token（認証不要）
   POST /console/api/apps/imports                              → app_id（新規 or 上書き）。
       yaml_content に "MOCK_FORCE_PENDING" を含めると status: pending を返し、
-      続く POST …/imports/{id}/confirm で確定させる必要がある（Issue #114 C2・C3 の往復確認用）
+      続く POST …/imports/{id}/confirm で確定させる必要がある（Issue #114 C2・C3 の往復確認用）。
+      app_id に "MOCK_FORCE_IMPORT_FAIL" を指定すると status: failed を返す（cloud_deploy.py の
+      P1〔全件インポート成功後にまとめて公開〕を機械確認するため。Issue #121 W4-4）
   POST /console/api/apps/imports/{id}/confirm                  → pending だった import を確定
   GET  /console/api/apps                                       → 一覧
-  POST /console/api/apps/{id}/workflows/publish                → 成功
+  POST /console/api/apps/{id}/workflows/publish                → 成功（呼ばれた回数を
+      /__test__/stats の "publish" に記録。P1 の機械確認に使う）
   GET  /console/api/apps/{id}/workflows/draft                  → 下書き（無ければ空の既定値）
   POST /console/api/apps/{id}/workflows/draft                  → 下書きを保存して返す
   GET  /v1/datasets, POST /v1/datasets                         → KB 一覧・作成
@@ -47,6 +50,10 @@ Dify サーバー（標準ライブラリのみ。開発・検証用。CI には
       （G4 の再現）
   POST /__test__/expire-access-token  body: {"access_token": "..."}     → 指定した access_token を
       「期限切れ」として扱うようにする（60 分超えの mid-job 401 を時間を待たずに再現するテスト専用 API）
+  POST /console/api/logout                                       → 認証済みの access_token（と、
+      refresh-token 経由で発行されていれば対になる refresh_token）を無効化する（B3。Issue #121 W4-4）。
+      未認証なら 401（他の console/api/* と同じ）。以後、同じ access_token での認証済みリクエストは
+      すべて 401 になる
 
 **テスト専用エンドポイント**（`/console/api/*` でも `/v1/*` でもないため、上記の認証は要らない）：
   GET  /__test__/stats                                          → {"DELETE": n, "PATCH": n, "update_by_text": n}
@@ -105,10 +112,14 @@ STATE = {
     "sessions": {},
     "used_refresh_tokens": set(),   # 1 回使ったリフレッシュトークンの値（再利用させない。S10）
     "expired_access_tokens": set(),  # /__test__/expire-access-token で「期限切れ」にした access_token
+    # Issue #121 W4-4: refresh-token 経由で発行した access_token -> その時点の refresh_token。
+    # logout() が「対になる refresh_token」も一緒に無効化する（revoke_token_pair の再現。B3）ために使う。
+    "access_to_refresh": {},
 }
 LOCK = threading.Lock()
 EXPIRED_TOKEN = "expired-token"  # DIFY_CONSOLE_TOKEN にこの値を入れると 401 を再現できる（レガシー経路）
 EXPIRED_REFRESH_TOKEN = "expired-refresh-token"  # refresh() にこの値を渡すと常に 401 を再現できる（G6）
+MOCK_FORCE_IMPORT_FAIL = "MOCK_FORCE_IMPORT_FAIL"  # --app-id にこの値を渡すと import が status: failed になる（P1 検証用）
 MOCK_FAIL_UPLOAD_MARKER = "MOCK_FAIL_UPLOAD"  # ファイル名に含めるとアップロード/更新が 500 で失敗する（T7 用）
 
 
@@ -281,6 +292,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 new_csrf = f"csrf-{uuid.uuid4()}"
                 new_refresh = f"ref-{uuid.uuid4()}"
                 STATE["sessions"][new_access] = new_csrf
+                STATE["access_to_refresh"][new_access] = new_refresh  # logout() が対で無効化するため（B3）
             payload_bytes = json.dumps({"result": "success"}, ensure_ascii=False).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -295,7 +307,25 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path.startswith("/console/api/") and not self._console_auth_ok():
             return self._unauthorized()
 
+        if path == "/console/api/logout":
+            # B3（Issue #121 W4-4）: 認証済みの access_token（ここまでの _console_auth_ok() で確認済み）
+            # と、refresh-token 経由で発行されていれば対になる refresh_token の両方を無効化する
+            # （revoke_token_pair の再現）。レガシー Bearer（selfhost の /login・DIFY_CONSOLE_TOKEN 直指定）
+            # でも同じ token 値を無効化するので、以後その値では 401 になる。
+            cookies = self._parse_cookie_header()
+            token = self._extract_bearer() or self._cookie_lookup(cookies, "access_token")
+            with LOCK:
+                STATE["sessions"].pop(token, None)
+                STATE["expired_access_tokens"].add(token)
+                refresh_val = STATE["access_to_refresh"].pop(token, None)
+                if refresh_val:
+                    STATE["used_refresh_tokens"].add(refresh_val)
+            return self._json(200, {"result": "success"})
+
         if path == "/console/api/apps/imports":
+            if payload.get("app_id") == MOCK_FORCE_IMPORT_FAIL:
+                # P1（Issue #121 W4-4）の機械確認用: このアプリだけインポートを failed にする。
+                return self._json(200, {"id": "imp-forced-fail", "status": "failed", "error": "mock: forced import failure (P1 test)"})
             with LOCK:
                 app_id = payload.get("app_id")
                 name = app_name_from_yaml(payload.get("yaml_content") or "") or "unnamed"
@@ -321,6 +351,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._json(200, {"app_id": pending["app_id"], "status": "completed"})
 
         if re.match(r"^/console/api/apps/[^/]+/workflows/publish$", path):
+            with LOCK:
+                STATE["calls"]["publish"] = STATE["calls"].get("publish", 0) + 1
             return self._json(200, {"result": "success"})
 
         m = re.match(r"^/console/api/apps/([^/]+)/workflows/draft$", path)

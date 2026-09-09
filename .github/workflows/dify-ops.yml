@@ -28,6 +28,17 @@ name: dify-ops
 # `environment: dify-cloud-master` を宣言しており、変更なし。
 # ジョブを 3 つに分け、op ごとに if: でどれか 1 つだけが走るようにする（下の対応表）。
 #
+# W4-4 PR-6（#121）：op: deploy を追加。`scripts/dify/cloud_deploy.py` を呼び、
+# dify/apps/*.yml を render → インポート → 公開する（Mac のドラッグ＆ドロップ 12 回を置き換える本丸。
+# 設計書 docs/handoff/2026-09-08-cloud-auth-and-w4.md §9-2・§9-3・§11「W4-4」）。
+# 書き込み系のため、`kb` ジョブと同じ扱い（environment を宣言。現状 Required reviewers は
+# 外れているため承認は発生しないが、外した／戻した場合の挙動は `kb` と揃う）。
+# P1（cloud_deploy.py 側で実装。§9-2）：1 本でもインポートに失敗したら公開は 1 本も行わない。
+# B3（cloud_deploy.py 側で実装。§8-7）：DIFY_CONSOLE_REFRESH で認証したセッションは、
+# import/publish の成否によらずジョブの最後に必ず logout を試みる。
+# `confirm` に固定文字列 `deploy` の入力を要求する（`codes` は最大 12 件のうち何本でもよいため、
+# `kb_replace` のように対象そのものを打たせる方式にはしていない。§9-3）。
+#
 #   op          | 走るジョブ | environment          | 使う secrets
 #   ------------|-----------|-----------------------|----------------------------------------------
 #   probe       | probe     | 無し                  | 無し
@@ -40,6 +51,8 @@ name: dify-ops
 #   kb_replace  | kb        | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*
 #   both        | kb        | dify-cloud-master     | DIFY_DATASET_KEY・DIFY_APP_KEY_*（kb_upload と
 #               |           |                       | run_tests の両方を行う＝KB を書くためゲート内）
+#   deploy      | deploy    | dify-cloud-master     | DIFY_CONSOLE_REFRESH（Environment secret。
+#               |           |                       | 書き込み系。§11「W4-4」）
 #
 # 前提（PM が先に行う。dify/DEPLOY.md §7 参照）：
 #   - Settings → Environments → `dify-cloud-master` → **Required reviewers のチェックを外す**
@@ -56,7 +69,7 @@ on:
   workflow_dispatch:
     inputs:
       op:
-        description: "実行する操作（kb_refresh=同名文書の中身だけ差し替え／kb_replace=削除して入れ直し。まず kb_refresh を試すこと／probe=秘密を使わない Dify Cloud への到達性確認。codes 不要／inspect=下書きから Rerank 関連 6 項目だけを読み取り専用で採取。#195 E1）"
+        description: "実行する操作（kb_refresh=同名文書の中身だけ差し替え／kb_replace=削除して入れ直し。まず kb_refresh を試すこと／probe=秘密を使わない Dify Cloud への到達性確認。codes 不要／inspect=下書きから Rerank 関連 6 項目だけを読み取り専用で採取。#195 E1／deploy=render→インポート→公開。全件インポート成功後にまとめて公開〔P1〕。confirm に \"deploy\" が必須。#121 W4-4）"
         required: true
         type: choice
         options:
@@ -67,14 +80,15 @@ on:
           - both
           - probe
           - inspect
+          - deploy
         default: run_tests
       codes:
-        description: "対象の管理番号（空白区切り、例: KN-01 DC-01）。kb_replace は削除を伴うため 1 件のみ。op=probe では不要（空でよい）。op=inspect では必須（例: KN-01 KN-02 KN-03 GN-01）"
+        description: "対象の管理番号（空白区切り、例: KN-01 DC-01）。kb_replace は削除を伴うため 1 件のみ。op=probe では不要（空でよい）。op=inspect では必須（例: KN-01 KN-02 KN-03 GN-01）。op=deploy は 1〜12 件（12 本全部なら dify/apps/ の全番号を空白区切りで列挙。confirm も必須）"
         required: false
         type: string
         default: ""
       confirm:
-        description: "kb_replace のときだけ必須：codes と完全一致する文字列を入力（削除を伴う操作の誤操作防止。他の op では未使用）"
+        description: "kb_replace／deploy のときだけ必須：kb_replace は codes と完全一致する文字列、deploy は固定文字列 \"deploy\" を入力（誤操作防止。他の op では未使用）"
         required: false
         type: string
         default: ""
@@ -110,7 +124,7 @@ jobs:
         run: |
           set -euo pipefail
           case "$OP" in
-            kb_upload|kb_refresh|kb_replace|run_tests|both|probe|inspect) ;;
+            kb_upload|kb_refresh|kb_replace|run_tests|both|probe|inspect|deploy) ;;
             *) echo "::error::op の値が不正です: $OP"; exit 1 ;;
           esac
           # op=probe は秘密を一切使わない疎通確認のみで、対象アプリ／KB を指定する
@@ -142,6 +156,25 @@ jobs:
             fi
             if [ "$CONFIRM" != "$CODES" ]; then
               echo "::error::kb_replace には confirm に対象の管理番号（$CODES）と完全一致する文字列を入力してください"
+              exit 1
+            fi
+          fi
+
+          # deploy は書き込み系（インポート＋公開）のため、誤操作防止の歯止めを 2 つ入れる
+          # （設計書 §9-3。Issue #121 W4-4）：
+          #   1) codes は最大 12 件（dify/apps/ の本数を超える一括投入を機械的に防ぐ）
+          #   2) confirm に固定文字列 "deploy" の入力を要求する（choice の初期値のままでは通らない）。
+          #      kb_replace と違い codes と一致させる方式にしていないのは、deploy は 1〜12 件を
+          #      柔軟に指定できるため「対象を全部打ち直させる」のが非現実的（12 件を正確に
+          #      再入力させるのは誤操作防止としてかえって非現実的）なため
+          if [ "$OP" = "deploy" ]; then
+            code_count=$(wc -w <<< "$CODES")
+            if [ "$code_count" -lt 1 ] || [ "$code_count" -gt 12 ]; then
+              echo "::error::deploy は codes を 1〜12 件で指定してください（現在: $code_count 件）"
+              exit 1
+            fi
+            if [ "$CONFIRM" != "deploy" ]; then
+              echo "::error::deploy には confirm に固定文字列 \"deploy\" を入力してください"
               exit 1
             fi
           fi
@@ -926,5 +959,116 @@ jobs:
           rc="${OVERALL_RC:-0}"
           if [ "$rc" != "0" ]; then
             echo "::error::kb_upload / kb_refresh / kb_replace / run_tests のいずれかが失敗しました（詳細は Job Summary と PR の結果ファイルを参照）。"
+            exit 1
+          fi
+
+  # op: deploy（W4-4 PR-6。#121）。scripts/dify/cloud_deploy.py を呼び、対象番号を
+  # render → インポート → 公開する。書き込み系のため `kb` ジョブと同じ扱い（environment を宣言。
+  # 現状 Required reviewers は外れているため承認は発生しないが、戻した場合は kb と同様に承認が要る）。
+  #
+  # P1（設計書 §9-2）・B3（設計書 §8-7）は cloud_deploy.py 側で実装済み（1 本でもインポートに
+  # 失敗したら公開は 1 本も行わない／import・publish の成否によらずセッションを logout する）。
+  # このジョブは「呼ぶだけ」で、追加のロジックは持たない。
+  #
+  # 生成物は無い（dify/results/**・dify/state/** のどちらにも書かない。env.yml への書き戻しが
+  # 要る場合〔新規アプリを作った場合〕は、cloud_deploy.py が候補をログ・Job Summary に出すだけに
+  # 留め、このジョブは commit・push しない。dify/env/** への自動書き込みは変更パスガードの許容
+  # パターン外であり、`CLAUDE.md` §2-9 のとおり人が読んでから直す）。そのため
+  # `kb`/`tests` ジョブと違い「Stage results and guard changed paths」「Commit and push」の
+  # ステップを持たない。
+  deploy:
+    name: "deploy（op: deploy）"
+    needs: validate
+    if: ${{ inputs.op == 'deploy' }}
+    runs-on: ubuntu-latest
+    # kb ジョブと同じ Environment。現状 Required reviewers は外れているため承認は発生しないが、
+    # 戻した場合はここでも承認待ちになる（PM 決定・#121。dify/DEPLOY.md §7）。
+    environment: dify-cloud-master
+    permissions:
+      contents: read   # 何も commit・push しないため read のみでよい
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Python dependencies
+        run: pip install pyyaml
+
+      # 値は一切出力しない。「設定されているか」だけを確認する（他ジョブと同じ作法）。
+      - name: Check secrets presence (values are never printed)
+        env:
+          DIFY_CONSOLE_REFRESH: ${{ secrets.DIFY_CONSOLE_REFRESH }}
+        run: |
+          set -euo pipefail
+          if [ -n "${DIFY_CONSOLE_REFRESH:-}" ]; then
+            echo "DIFY_CONSOLE_REFRESH: set"
+          else
+            echo "DIFY_CONSOLE_REFRESH: unset（op: deploy に必須。dify/DEPLOY.md §9 を参照）"
+          fi
+
+      - name: "Run cloud_deploy.py (op: deploy)"
+        id: run
+        env:
+          CODES: ${{ inputs.codes }}
+          ENV_NAME: ${{ inputs.env }}
+          DIFY_CONSOLE_REFRESH: ${{ secrets.DIFY_CONSOLE_REFRESH }}
+        run: |
+          set -euo pipefail
+          overall_rc=0
+
+          {
+            echo "## dify-ops 実行結果（op: deploy）"
+            echo
+            echo "- 操作: \`deploy\`"
+            echo "- 対象: \`$CODES\`"
+            echo "- 環境: \`$ENV_NAME\`"
+            echo "- 設計書: docs/handoff/2026-09-08-cloud-auth-and-w4.md §9-2・§9-3・§11「W4-4」（Issue #121）"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          out_file="$(mktemp)"
+          echo "== cloud_deploy.py --env $ENV_NAME $CODES =="
+          # shellcheck disable=SC2086  # CODES は validate ジョブで正規表現・件数（1〜12）を検証済み
+          if python3 scripts/dify/cloud_deploy.py --env "$ENV_NAME" $CODES 2>&1 | tee "$out_file"; then
+            echo "deploy: 判定=完了 (rc=0)"
+            echo "- deploy: 全件インポート成功・公開完了" >> "$GITHUB_STEP_SUMMARY"
+          else
+            rc=$?
+            case "$rc" in
+              2) echo "deploy: 判定=設定不備 (rc=2)"; echo "- deploy: 設定不備、または KB 紐づけの安全弁に抵触（exit 2。出力の [STOP] メッセージを確認。env・認証情報の未設定、または dataset_ids が空のまま KB を持つ番号が含まれていないかを見る。dify/DEPLOY.md §9「既知の制限」）" >> "$GITHUB_STEP_SUMMARY" ;;
+              3) echo "deploy: 判定=認証エラー (rc=3)"; echo "- deploy: 認証エラー（exit 3。dify/DEPLOY.md §8 の手順で DIFY_CONSOLE_REFRESH を取り直す）" >> "$GITHUB_STEP_SUMMARY" ;;
+              *) echo "deploy: 判定=失敗あり (rc=$rc)"; echo "- deploy: 1 件以上失敗（exit $rc。**P1 によりこの場合は公開を 1 件も行っていない**）" >> "$GITHUB_STEP_SUMMARY" ;;
+            esac
+            overall_rc=1
+          fi
+
+          {
+            echo
+            echo "<details><summary>cloud_deploy.py の出力</summary>"
+            echo
+            echo '```'
+            cat "$out_file"
+            echo '```'
+            echo "</details>"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          rm -f "$out_file"
+
+          echo "OVERALL_RC=$overall_rc" >> "$GITHUB_ENV"
+          # このステップ自体は失敗させない。合否は次の Fail the job ステップで判定する（他ジョブと同じ作法）。
+          exit 0
+
+      - name: Fail the job if deploy failed
+        if: always()
+        run: |
+          set -euo pipefail
+          rc="${OVERALL_RC:-0}"
+          if [ "$rc" != "0" ]; then
+            echo "::error::deploy が失敗しました（詳細は上のログと Job Summary を参照。P1 により、失敗があった場合は公開を 1 件も行っていません）。"
             exit 1
           fi
