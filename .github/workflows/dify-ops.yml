@@ -619,6 +619,9 @@ jobs:
   # （dify/results/**・dify/state/** 以外を書かない歯止めの対象ですらない＝そもそも何も書かない設計）。
   # 結果は Job Summary と標準出力の両方に残す（PR #198 レビュー指摘：Job Summary だけだと
   # Actions API から読めず目視確認ができないため）。
+  #
+  # PR-2（#212）：deploy ジョブと同じ書き戻し（Preflight → 本体 → Write back。if: always()）と
+  # concurrency を持つ（inspect も DIFY_CONSOLE_REFRESH を消費するため。設計書 §4-1〜§4-5・§5）。
   inspect:
     name: "inspect（op: inspect）"
     needs: validate
@@ -628,8 +631,12 @@ jobs:
     # DIFY_CONSOLE_REFRESH（Environment secret。kb/tests ジョブと同じもの）を読むためだけ。
     environment: dify-cloud-master
     permissions:
-      contents: read   # 何も commit しないため read のみでよい
+      contents: read   # 何も commit しないため read のみでよい（書き戻しは GH_SECRETS_PAT で行う）
     timeout-minutes: 30
+    concurrency:
+      group: dify-console-${{ inputs.env }}
+      # cancel-in-progress は絶対に true にしない（deploy ジョブのコメント参照。load-bearing）。
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -654,12 +661,34 @@ jobs:
             echo "DIFY_CONSOLE_REFRESH: unset（op: inspect に必須。dify/DEPLOY.md §8 を参照）"
           fi
 
+      # PR-2（#212）：GH_SECRETS_PAT の有無だけを見る（値は出さない）。あれば書き戻し運用を
+      # 有効にする（DIFY_REFRESH_SINK を設定）。無ければ何も設定しない＝従来どおり（B7。§4-5）。
+      - name: "Preflight (write-back): PAT の有無だけを見る"
+        env:
+          GH_SECRETS_PAT: ${{ secrets.GH_SECRETS_PAT }}
+        run: |
+          set -euo pipefail
+          echo "JOB_START_EPOCH=$(date -u +%s)" >> "$GITHUB_ENV"
+          if [ -n "${GH_SECRETS_PAT:-}" ]; then
+            echo "GH_SECRETS_PAT: set（書き戻し運用が有効になります）"
+            echo "WRITEBACK=1" >> "$GITHUB_ENV"
+            echo "DIFY_REFRESH_SINK=${RUNNER_TEMP}/dify-refresh.new" >> "$GITHUB_ENV"
+          else
+            echo "GH_SECRETS_PAT: unset"
+            echo "WRITEBACK=0" >> "$GITHUB_ENV"
+            {
+              echo "> \`GH_SECRETS_PAT\` が未設定のため、**従来どおりの使い切り運用**で実行します（実行後にリフレッシュトークンは無効化されます。次回は取り直しが必要です）。自動更新を有効にする手順は \`dify/DEPLOY.md\` §10-2。"
+              echo
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: "Run inspect_rerank.py (op: inspect)"
         id: run
         env:
           CODES: ${{ inputs.codes }}
           ENV_NAME: ${{ inputs.env }}
           DIFY_CONSOLE_REFRESH: ${{ secrets.DIFY_CONSOLE_REFRESH }}
+          DIFY_REFRESH_SINK: ${{ env.DIFY_REFRESH_SINK }}
         run: |
           set -euo pipefail
           overall_rc=0
@@ -702,6 +731,112 @@ jobs:
           echo "OVERALL_RC=$overall_rc" >> "$GITHUB_ENV"
           # このステップ自体は失敗させない。合否は Fail the job ステップで判定する（他ジョブと同じ作法）。
           exit 0
+
+      - name: "Write back the rotated refresh token, if any (PR-2. #212)"
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_SECRETS_PAT }}
+          GH_REPO: ${{ github.repository }}
+          SINK: ${{ runner.temp }}/dify-refresh.new
+          TARGET_ENV: dify-cloud-master        # 固定。inputs.* からは作らない（r3）
+          TARGET_SECRET: DIFY_CONSOLE_REFRESH  # 固定。inputs.* からは作らない（r3）
+        run: |
+          set -euo pipefail            # set -x は禁止。env / printenv も使わない
+
+          if [ ! -s "$SINK" ]; then
+            echo "[WB] rotate していないため書き戻し不要（sink が無い、または空）"
+            exit 0
+          fi
+
+          fail_writeback() {
+            echo "::error::[要対応] リフレッシュトークンの書き戻しに失敗しました。Environment secret DIFY_CONSOLE_REFRESH はもう使えません（この実行で rotate 済み＝古い値は失効しています）。次回の実行は必ず認証エラー（exit 3）になります。dify/DEPLOY.md §10-4 の手順で取り直してください。"
+            echo "$1"
+            {
+              echo "## ⚠️ リフレッシュトークンの書き戻しに失敗しました（要対応）"
+              echo
+              echo "**いま何が起きているか**"
+              echo
+              echo "- この実行はリフレッシュトークンを 1 回使いました（rotate）。**Environment secret \`DIFY_CONSOLE_REFRESH\` に入っている値は、もう死んでいます。**"
+              echo "- 新しい値はこのランナーの中にだけありましたが、**GitHub の secret に書き戻せませんでした**。ランナーは実行後に破棄されるため、**新しい値は失われました**。"
+              echo "- **Dify 側は壊れていません**（この実行の結果は上の欄のとおりです）。次回の実行が認証エラー（exit 3）になるだけです。"
+              echo
+              echo "**PM がすること（3 分。1 回だけ）**"
+              echo
+              echo "1. \`dify/DEPLOY.md\` §10-4「取り直し」の手順でリフレッシュトークンを取り直す"
+              echo "2. Environment \`dify-cloud-master\` の \`DIFY_CONSOLE_REFRESH\` を **Update** で貼り直す"
+              echo "3. \`op: token_refresh\` を 1 回だけ回して、書き戻しが直っているかを確かめる（**Dify には何も書き込みません**）"
+              echo
+              echo "**原因の切り分け（上のログの \`[WB]\` 行を見る）**"
+              echo
+              echo "| \`[WB]\` の行 | 原因 | 直し方 |"
+              echo "|---|---|---|"
+              echo "| \`PAT 未設定\` | Environment secret \`GH_SECRETS_PAT\` が無い／空 | \`dify/DEPLOY.md\` §10-2 |"
+              echo "| \`gh secret set 失敗\` かつ HTTP 403 | PAT の権限不足、または期限切れ | §10-2 の権限表を確認。期限切れなら作り直す |"
+              echo "| \`gh secret set 失敗\` かつ HTTP 404 | PAT のリポジトリ選択違い／Environment 名の綴り違い | §10-2 の手順 7・10 |"
+              echo "| \`形式検査に失敗\` | 実装の不具合（secret には**書き込んでいません**） | Issue を立てる。取り直しでは直らない |"
+              echo "| \`反映が確認できない\` | GitHub 側の一時障害の可能性 | もう一度 \`op: token_refresh\` を試す |"
+            } >> "$GITHUB_STEP_SUMMARY"
+            rm -f "$SINK"
+            exit 1
+          }
+
+          if [ -z "${GH_TOKEN:-}" ]; then
+            fail_writeback "[WB] PAT 未設定（Environment secret GH_SECRETS_PAT が空）"
+          fi
+
+          # 形式検査（設計書 §4-7 手順 3）：想定の文字種・長さ・行数 1・末尾改行なし。
+          line_count="$(awk 'END{print NR}' "$SINK")"
+          trailing_nl="$(tail -c 1 "$SINK" | wc -l | tr -d ' ')"
+          format_ok=0
+          if LC_ALL=C grep -qE '^[A-Za-z0-9._~+/=-]{20,4096}$' "$SINK" && [ "$line_count" = "1" ] && [ "$trailing_nl" = "0" ]; then
+            format_ok=1
+          fi
+          if [ "$format_ok" -ne 1 ]; then
+            fail_writeback "[WB] 形式検査に失敗（実装の不具合。secret には書き込んでいません）"
+          fi
+
+          ok=0
+          for i in 1 2 3; do
+            if gh secret set "$TARGET_SECRET" --env "$TARGET_ENV" < "$SINK"; then
+              ok=1
+              break
+            fi
+            echo "gh secret set が失敗しました（${i} 回目）。再試行します…"
+            sleep $((i * 5))
+          done
+
+          if [ "$ok" -ne 1 ]; then
+            fail_writeback "[WB] gh secret set 失敗（3 回リトライ後）"
+          fi
+
+          rm -f "$SINK"
+
+          # 反映確認（設計書 §4-7 手順 7）：updatedAt がこのジョブの開始時刻より後であること。
+          updated_ok=0
+          updated_at=""
+          if gh secret list --env "$TARGET_ENV" --json name,updatedAt > "$RUNNER_TEMP/writeback-list.json" 2>/dev/null; then
+            updated_at="$(python3 -c 'import json,os; data=json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "writeback-list.json"), encoding="utf-8")); rows=[r.get("updatedAt") for r in data if r.get("name")==os.environ["TARGET_SECRET"]]; print(rows[0] if rows else "")')"
+            if [ -n "$updated_at" ]; then
+              updated_epoch="$(date -u -d "$updated_at" +%s 2>/dev/null || echo 0)"
+              if [ "$updated_epoch" -gt "${JOB_START_EPOCH:-0}" ]; then
+                updated_ok=1
+              fi
+            fi
+          else
+            echo "V-D: --json 未対応の gh バージョンのため名前だけのフォールバック表示を使います（値は出ません）"
+            if gh secret list --env "$TARGET_ENV" | grep -q "$TARGET_SECRET"; then
+              updated_ok=1   # 時刻での厳密な確認はできないため、secret の存在確認のみで成功扱いとする
+            fi
+          fi
+
+          if [ "$updated_ok" -ne 1 ]; then
+            fail_writeback "[WB] 反映が確認できない（gh は成功を返したが updatedAt が更新されていない）"
+          fi
+
+          echo "[WB] 書き戻し成功（updated_at: ${updated_at:-不明}）"
+          {
+            echo "🔑 リフレッシュトークンを更新しました（updated_at: ${updated_at:-不明}）。次回もそのまま実行できます。"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail the job if inspect failed
         if: always()
@@ -988,6 +1123,17 @@ jobs:
   # パターン外であり、`CLAUDE.md` §2-9 のとおり人が読んでから直す）。そのため
   # `kb`/`tests` ジョブと違い「Stage results and guard changed paths」「Commit and push」の
   # ステップを持たない。
+  #
+  # PR-2（#212）：リフレッシュトークンの自動更新（書き戻し）。rotate のたびに console_api.py が
+  # ランナー一時ファイル（sink）へ書き出す値を、ジョブ末尾で Environment secret
+  # DIFY_CONSOLE_REFRESH へ書き戻す（成否・キャンセルを問わず if: always()）。GH_SECRETS_PAT が
+  # 未設定なら sink を作らない＝従来どおりの使い切り運用（B7。§4-5）。concurrency は
+  # deploy・inspect・token_refresh・token_revoke の 4 つで同じグループ名を共有し、
+  # cancel-in-progress は **false のままにする（load-bearing）**：true にすると
+  # 「rotate 済み・書き戻し前」の実行が別の実行に割り込まれてキャンセルされ、rotate した新しい値が
+  # ランナーごと消えて secret が死ぬ（次回 100% 認証エラー）。待たされた側は、先行ジョブの
+  # 書き戻し完了後に新しい値で走るだけなので、待たせても secret は壊れない。
+  # 設計書 docs/handoff/2026-09-09-refresh-token-writeback.md §3 D3・D5・§4-1〜§4-5・§5。
   deploy:
     name: "deploy（op: deploy）"
     needs: validate
@@ -997,8 +1143,12 @@ jobs:
     # 戻した場合はここでも承認待ちになる（PM 決定・#121。dify/DEPLOY.md §7）。
     environment: dify-cloud-master
     permissions:
-      contents: read   # 何も commit・push しないため read のみでよい
+      contents: read   # 何も commit・push しないため read のみでよい（書き戻しは GH_SECRETS_PAT で行う）
     timeout-minutes: 30
+    concurrency:
+      group: dify-console-${{ inputs.env }}
+      # cancel-in-progress は絶対に true にしない（上のコメント参照。load-bearing）。
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -1023,12 +1173,34 @@ jobs:
             echo "DIFY_CONSOLE_REFRESH: unset（op: deploy に必須。dify/DEPLOY.md §9 を参照）"
           fi
 
+      # PR-2（#212）：GH_SECRETS_PAT の有無だけを見る（値は出さない）。あれば書き戻し運用を
+      # 有効にする（DIFY_REFRESH_SINK を設定）。無ければ何も設定しない＝従来どおり（B7。§4-5）。
+      - name: "Preflight (write-back): PAT の有無だけを見る"
+        env:
+          GH_SECRETS_PAT: ${{ secrets.GH_SECRETS_PAT }}
+        run: |
+          set -euo pipefail
+          echo "JOB_START_EPOCH=$(date -u +%s)" >> "$GITHUB_ENV"
+          if [ -n "${GH_SECRETS_PAT:-}" ]; then
+            echo "GH_SECRETS_PAT: set（書き戻し運用が有効になります）"
+            echo "WRITEBACK=1" >> "$GITHUB_ENV"
+            echo "DIFY_REFRESH_SINK=${RUNNER_TEMP}/dify-refresh.new" >> "$GITHUB_ENV"
+          else
+            echo "GH_SECRETS_PAT: unset"
+            echo "WRITEBACK=0" >> "$GITHUB_ENV"
+            {
+              echo "> \`GH_SECRETS_PAT\` が未設定のため、**従来どおりの使い切り運用**で実行します（実行後にリフレッシュトークンは無効化されます。次回は取り直しが必要です）。自動更新を有効にする手順は \`dify/DEPLOY.md\` §10-2。"
+              echo
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: "Run cloud_deploy.py (op: deploy)"
         id: run
         env:
           CODES: ${{ inputs.codes }}
           ENV_NAME: ${{ inputs.env }}
           DIFY_CONSOLE_REFRESH: ${{ secrets.DIFY_CONSOLE_REFRESH }}
+          DIFY_REFRESH_SINK: ${{ env.DIFY_REFRESH_SINK }}
         run: |
           set -euo pipefail
           overall_rc=0
@@ -1074,6 +1246,112 @@ jobs:
           echo "OVERALL_RC=$overall_rc" >> "$GITHUB_ENV"
           # このステップ自体は失敗させない。合否は次の Fail the job ステップで判定する（他ジョブと同じ作法）。
           exit 0
+
+      - name: "Write back the rotated refresh token, if any (PR-2. #212)"
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_SECRETS_PAT }}
+          GH_REPO: ${{ github.repository }}
+          SINK: ${{ runner.temp }}/dify-refresh.new
+          TARGET_ENV: dify-cloud-master        # 固定。inputs.* からは作らない（r3）
+          TARGET_SECRET: DIFY_CONSOLE_REFRESH  # 固定。inputs.* からは作らない（r3）
+        run: |
+          set -euo pipefail            # set -x は禁止。env / printenv も使わない
+
+          if [ ! -s "$SINK" ]; then
+            echo "[WB] rotate していないため書き戻し不要（sink が無い、または空）"
+            exit 0
+          fi
+
+          fail_writeback() {
+            echo "::error::[要対応] リフレッシュトークンの書き戻しに失敗しました。Environment secret DIFY_CONSOLE_REFRESH はもう使えません（この実行で rotate 済み＝古い値は失効しています）。次回の実行は必ず認証エラー（exit 3）になります。dify/DEPLOY.md §10-4 の手順で取り直してください。"
+            echo "$1"
+            {
+              echo "## ⚠️ リフレッシュトークンの書き戻しに失敗しました（要対応）"
+              echo
+              echo "**いま何が起きているか**"
+              echo
+              echo "- この実行はリフレッシュトークンを 1 回使いました（rotate）。**Environment secret \`DIFY_CONSOLE_REFRESH\` に入っている値は、もう死んでいます。**"
+              echo "- 新しい値はこのランナーの中にだけありましたが、**GitHub の secret に書き戻せませんでした**。ランナーは実行後に破棄されるため、**新しい値は失われました**。"
+              echo "- **Dify 側は壊れていません**（この実行の結果は上の欄のとおりです）。次回の実行が認証エラー（exit 3）になるだけです。"
+              echo
+              echo "**PM がすること（3 分。1 回だけ）**"
+              echo
+              echo "1. \`dify/DEPLOY.md\` §10-4「取り直し」の手順でリフレッシュトークンを取り直す"
+              echo "2. Environment \`dify-cloud-master\` の \`DIFY_CONSOLE_REFRESH\` を **Update** で貼り直す"
+              echo "3. \`op: token_refresh\` を 1 回だけ回して、書き戻しが直っているかを確かめる（**Dify には何も書き込みません**）"
+              echo
+              echo "**原因の切り分け（上のログの \`[WB]\` 行を見る）**"
+              echo
+              echo "| \`[WB]\` の行 | 原因 | 直し方 |"
+              echo "|---|---|---|"
+              echo "| \`PAT 未設定\` | Environment secret \`GH_SECRETS_PAT\` が無い／空 | \`dify/DEPLOY.md\` §10-2 |"
+              echo "| \`gh secret set 失敗\` かつ HTTP 403 | PAT の権限不足、または期限切れ | §10-2 の権限表を確認。期限切れなら作り直す |"
+              echo "| \`gh secret set 失敗\` かつ HTTP 404 | PAT のリポジトリ選択違い／Environment 名の綴り違い | §10-2 の手順 7・10 |"
+              echo "| \`形式検査に失敗\` | 実装の不具合（secret には**書き込んでいません**） | Issue を立てる。取り直しでは直らない |"
+              echo "| \`反映が確認できない\` | GitHub 側の一時障害の可能性 | もう一度 \`op: token_refresh\` を試す |"
+            } >> "$GITHUB_STEP_SUMMARY"
+            rm -f "$SINK"
+            exit 1
+          }
+
+          if [ -z "${GH_TOKEN:-}" ]; then
+            fail_writeback "[WB] PAT 未設定（Environment secret GH_SECRETS_PAT が空）"
+          fi
+
+          # 形式検査（設計書 §4-7 手順 3）：想定の文字種・長さ・行数 1・末尾改行なし。
+          line_count="$(awk 'END{print NR}' "$SINK")"
+          trailing_nl="$(tail -c 1 "$SINK" | wc -l | tr -d ' ')"
+          format_ok=0
+          if LC_ALL=C grep -qE '^[A-Za-z0-9._~+/=-]{20,4096}$' "$SINK" && [ "$line_count" = "1" ] && [ "$trailing_nl" = "0" ]; then
+            format_ok=1
+          fi
+          if [ "$format_ok" -ne 1 ]; then
+            fail_writeback "[WB] 形式検査に失敗（実装の不具合。secret には書き込んでいません）"
+          fi
+
+          ok=0
+          for i in 1 2 3; do
+            if gh secret set "$TARGET_SECRET" --env "$TARGET_ENV" < "$SINK"; then
+              ok=1
+              break
+            fi
+            echo "gh secret set が失敗しました（${i} 回目）。再試行します…"
+            sleep $((i * 5))
+          done
+
+          if [ "$ok" -ne 1 ]; then
+            fail_writeback "[WB] gh secret set 失敗（3 回リトライ後）"
+          fi
+
+          rm -f "$SINK"
+
+          # 反映確認（設計書 §4-7 手順 7）：updatedAt がこのジョブの開始時刻より後であること。
+          updated_ok=0
+          updated_at=""
+          if gh secret list --env "$TARGET_ENV" --json name,updatedAt > "$RUNNER_TEMP/writeback-list.json" 2>/dev/null; then
+            updated_at="$(python3 -c 'import json,os; data=json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "writeback-list.json"), encoding="utf-8")); rows=[r.get("updatedAt") for r in data if r.get("name")==os.environ["TARGET_SECRET"]]; print(rows[0] if rows else "")')"
+            if [ -n "$updated_at" ]; then
+              updated_epoch="$(date -u -d "$updated_at" +%s 2>/dev/null || echo 0)"
+              if [ "$updated_epoch" -gt "${JOB_START_EPOCH:-0}" ]; then
+                updated_ok=1
+              fi
+            fi
+          else
+            echo "V-D: --json 未対応の gh バージョンのため名前だけのフォールバック表示を使います（値は出ません）"
+            if gh secret list --env "$TARGET_ENV" | grep -q "$TARGET_SECRET"; then
+              updated_ok=1   # 時刻での厳密な確認はできないため、secret の存在確認のみで成功扱いとする
+            fi
+          fi
+
+          if [ "$updated_ok" -ne 1 ]; then
+            fail_writeback "[WB] 反映が確認できない（gh は成功を返したが updatedAt が更新されていない）"
+          fi
+
+          echo "[WB] 書き戻し成功（updated_at: ${updated_at:-不明}）"
+          {
+            echo "🔑 リフレッシュトークンを更新しました（updated_at: ${updated_at:-不明}）。次回もそのまま実行できます。"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail the job if deploy failed
         if: always()
