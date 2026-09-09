@@ -12,7 +12,9 @@ CI（`npm test`）には入れない（`CLAUDE.md` §3 のコマンド集合を�
 は gitignore 対象（`dify/build/`）。テストは --app-id での override や専用の管理番号を使って、
 テスト同士が同じアプリ名で衝突しない（名前一致に巻き込まれない）ようにしてある。
 """
+import contextlib
 import glob
+import io
 import json
 import os
 import re
@@ -428,6 +430,66 @@ def test_b3_logout_not_called_for_legacy_token(base):
     check("B3（レガシー）: logout 関連のログが出ない", "logout" not in combined, combined)
 
 
+def test_t6_sink_enabled_skips_logout_and_value_stays_alive(base, tmpdir):
+    """t6（設計書 §9-1・§4-4。Issue #212 PR-2）: DIFY_REFRESH_SINK が設定されている（書き戻し運用が
+    有効）とき、safe_logout() は logout を呼ばない。かつ sink に書かれた rotate 後の値が
+    （logout で殺されていないので）そのままモックへの refresh に使える＝生きている。
+
+    §4-4 が「両立しない」とした矛盾のうち、書き戻し運用側（sink 有効）が正しく解決できていることの
+    証明。cloud_deploy.safe_logout() を直接呼ぶ白箱テスト（test_kb_guard_unit_* と同じ作法）。"""
+    sink_path = os.path.join(tmpdir, "dify-refresh-t6.new")
+    os.environ["DIFY_REFRESH_SINK"] = sink_path
+    try:
+        client = console_api.ConsoleClient(base, timeout=10)
+        client.refresh("t6-seed-refresh-token")  # rotate → sink に書かれる（DIFY_REFRESH_SINK 設定済み）
+        check("T6(B3'): refresh 後に auth_mode が refresh になる", client._auth_mode == "refresh", client._auth_mode)
+        check("T6(B3'): sink ファイルが作られている", os.path.isfile(sink_path))
+        sink_value = open(sink_path, encoding="ascii").read()
+
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            cloud_deploy.safe_logout(client)
+        out = buf.getvalue()
+        check("T6(B3'): logout をスキップするログが出る", "[logout] スキップ" in out, out)
+        check("T6(B3'): logout 完了のログは出ない（実際に呼んでいない証拠）", "logout 完了" not in out, out)
+
+        fresh_client = console_api.ConsoleClient(base, timeout=10)
+        ok = fresh_client.refresh(sink_value)
+        check("T6(B3'): sink に書かれた値でモックに refresh が通る（生きている＝矛盾が解けている証拠）",
+              ok is True)
+    finally:
+        os.environ.pop("DIFY_REFRESH_SINK", None)
+
+
+def test_t7_no_sink_logout_still_called_and_kills_rotated_value(base):
+    """t7（設計書 §9-1。Issue #212 PR-2）: DIFY_REFRESH_SINK が未設定のときは従来どおり
+    safe_logout() が logout を呼ぶ（B3 の既存挙動を維持）。かつ、その後は rotate 後の値で
+    再認証しようとすると 401 になる（B3 の「実行後は無価値」という性質が残っていることの証明。
+    設計書 §4-4 が「logout は対になるリフレッシュトークンも殺す」と述べている挙動そのもの）。"""
+    os.environ.pop("DIFY_REFRESH_SINK", None)  # 未設定であることを明示する
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.refresh("t7-seed-refresh-token")
+    check("T7(B3'): refresh 後に auth_mode が refresh になる", client._auth_mode == "refresh", client._auth_mode)
+    rotated_value = client._refresh_token
+    check("T7(B3'): sink 未設定なので書き込みが起きない", client._sink_write_count == 0, client._sink_write_count)
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        cloud_deploy.safe_logout(client)
+    out = buf.getvalue()
+    check("T7(B3'): logout 完了のログが出る（従来どおり呼ばれる）", "logout 完了" in out, out)
+    check("T7(B3'): logout スキップのログは出ない", "[logout] スキップ" not in out, out)
+
+    fresh_client = console_api.ConsoleClient(base, timeout=10)
+    raised = False
+    try:
+        fresh_client.refresh(rotated_value)
+    except console_api.ConsoleSessionExpiredError:
+        raised = True
+    check("T7(B3'): logout 後は rotate 済みの値で再認証すると 401（ConsoleSessionExpiredError）になる"
+          "（B3『実行後は無価値』の性質が残っている証拠）", raised)
+
+
 def test_kb_guard_unit_detects_empty_dataset_ids():
     """find_empty_kb_bindings() の単体検証（ネットワーク不要）: dataset_ids が空の
     knowledge-retrieval ノードだけを拾い、値が入っているものは拾わないこと。"""
@@ -542,6 +604,9 @@ def main():
         test_p1_all_succeed_publishes_all(base)
         test_b3_logout_called_for_refresh_auth(base)
         test_b3_logout_not_called_for_legacy_token(base)
+        with tempfile.TemporaryDirectory(prefix="cloud_deploy_sink_test_") as sink_tmpdir:
+            test_t6_sink_enabled_skips_logout_and_value_stays_alive(base, sink_tmpdir)
+        test_t7_no_sink_logout_still_called_and_kills_rotated_value(base)
         test_kb_guard_blocks_before_phase1(base)
         test_kb_guard_allows_when_dataset_ids_baked(base)
     finally:

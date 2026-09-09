@@ -29,7 +29,11 @@
                 （DIFY_CONSOLE_REFRESH 経由の "refresh" 認証のときだけ）、3〜7 の成否によらず
                 最後に必ず POST /console/api/logout を試みる（失敗しても deploy 全体の終了コードは変えない）。
                 DIFY_CONSOLE_TOKEN（非推奨）・selfhost の email/password 認証では何もしない
-                （設計書 §8-7 B3 は Cookie 案＝リフレッシュトークンのセッションに限った歯止めのため）
+                （設計書 §8-7 B3 は Cookie 案＝リフレッシュトークンのセッションに限った歯止めのため）。
+                **B3 の停止（Issue #212 PR-2）**: DIFY_REFRESH_SINK が設定されている（書き戻し運用が
+                有効）ときはこの logout をスキップする。書き戻したリフレッシュトークンを logout が
+                道連れで殺してしまうため（設計書 docs/handoff/2026-09-09-refresh-token-writeback.md
+                §4-4「両立しない」）。手動で無効化したいときは op: token_revoke（PR-4）を使う
 
 冪等性の核（§2-2）：同じ番号を 2 回流してもアプリが増えないこと。
   1. --app-id <番号>=<id>
@@ -402,10 +406,26 @@ def safe_logout(client):
     ——非推奨の DIFY_CONSOLE_TOKEN・selfhost の email/password 認証は対象外（設計書 §8-7 B3 は
     Cookie 案のセッションに限った歯止めのため。既存のテスト・運用〔レガシートークンの再利用〕を壊さない）。
 
+    **B3 の停止（設計書 §4-3・§4-4。Issue #212 PR-2）**：`DIFY_REFRESH_SINK` が設定されている
+    （＝書き戻し運用が有効）ときは、この logout をスキップする。理由：`logout` は対になる
+    リフレッシュトークンもサーバ側で無効化する（`revoke_token_pair` 相当）ため、rotate 直後に
+    logout すると、sink に書いた「これから secret へ書き戻す値」も同時に死ぬ（rotate → sink →
+    logout（サーバ側で死ぬ）→ 死体を書き戻す → 次回は 100% exit 3）。書き戻し運用ではこの
+    セッションを次回まで意図的に持ち越すため、B3（自動 logout）とは正面から両立しない
+    （設計書 §4-4「両立しない」の判定）。手動で今すぐ無効化したいときは `op: token_revoke`
+    （PR-4）を使う。`ConsoleClient.logout()` 自体は変えない（`op: token_revoke` が明示的に呼ぶため）。
+
     logout 自体が失敗しても deploy 全体の終了コードには影響させない（既にインポート・公開の結果で
     決まっているため）。失敗はログに残す（値は console_api.log() が _mask() を通すので出ない）。
     呼び出し元は try/finally で「import/publish の成否によらず必ず呼ばれる」ことを保証する。"""
     if getattr(client, "_auth_mode", None) != "refresh":
+        return
+    if os.environ.get(console_api.REFRESH_SINK_ENV, "").strip():
+        log(
+            "[logout] スキップ（書き戻し運用：このセッションのリフレッシュトークンを次回に引き継ぐため。"
+            "設計書 docs/handoff/2026-09-09-refresh-token-writeback.md §4-4。"
+            "手動で失効させたいときは op: token_revoke）"
+        )
         return
     try:
         client.logout()
