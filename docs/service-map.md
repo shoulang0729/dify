@@ -7,9 +7,9 @@
 
 | 管理番号 | サービス | 分類 | 業種 | 成熟度 | ①台本(製造) | ①台本(金融) | ②DSL | ③ユースケース | ④KB | ④テスト |
 |---|---|---|---|---|---|---|---|---|---|---|
-| KN-01 | 技術ナレッジQA | KN/tech | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | [KN-01-tech-knowledge-qa.yml](../dify/apps/KN-01-tech-knowledge-qa.yml) | [KN-01.md](./dify/usecases/KN-01.md) | [3 件](../dify/kb/KN-01/) | [4 件](../dify/tests/KN-01.json) |
-| KN-02 | 設備マニュアル・取扱説明書の検索 | KN/tech | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | [KN-02-equipment-manual-search.yml](../dify/apps/KN-02-equipment-manual-search.yml) | [KN-02.md](./dify/usecases/KN-02.md) | [3 件](../dify/kb/KN-02/) | [4 件](../dify/tests/KN-02.json) |
-| KN-03 | 社内規程・就業規則QA | KN/rule | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | [KN-03-internal-rules-qa.yml](../dify/apps/KN-03-internal-rules-qa.yml) | [KN-03.md](./dify/usecases/KN-03.md) | [3 件](../dify/kb/KN-03/) | [4 件](../dify/tests/KN-03.json) |
+| KN-01 | 技術ナレッジQA | KN/tech | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | [KN-01-tech-knowledge-qa.yml](../dify/apps/KN-01-tech-knowledge-qa.yml) | [KN-01.md](./dify/usecases/KN-01.md) | [6 件](../dify/kb/KN-01/) | [4 件](../dify/tests/KN-01.json) |
+| KN-02 | 設備マニュアル・取扱説明書の検索 | KN/tech | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | [KN-02-equipment-manual-search.yml](../dify/apps/KN-02-equipment-manual-search.yml) | [KN-02.md](./dify/usecases/KN-02.md) | [6 件](../dify/kb/KN-02/) | [4 件](../dify/tests/KN-02.json) |
+| KN-03 | 社内規程・就業規則QA | KN/rule | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | [KN-03-internal-rules-qa.yml](../dify/apps/KN-03-internal-rules-qa.yml) | [KN-03.md](./dify/usecases/KN-03.md) | [6 件](../dify/kb/KN-03/) | [4 件](../dify/tests/KN-03.json) |
 | KN-04 | 社内問い合わせ受付とFAQ蓄積 | KN/rule | 製造・金融 | 試行版 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | [KN-04.md](./dify/usecases/KN-04.md) | — | — |
 | KN-05 | 当局通達の影響分析・マニュアル反映 | KN/rule | 製造・金融 | 試行版 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) upload | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | [KN-05.md](./dify/usecases/KN-05.md) | — | — |
 | QA-01 | 不具合原因分析・報告書（8D）作成 | QA/defect | 製造 | 試行版 | [mfg/qa.js](../mock/js/data/scenarios/mfg/qa.js) upload | — | — | [QA-01.md](./dify/usecases/QA-01.md) | — | — |
@@ -36,7 +36,7 @@
 | EN-01 | 仕様改訂の差分検出・取引先用語対応 | EN/spec | 製造 | 試行版 | [mfg/en.js](../mock/js/data/scenarios/mfg/en.js) diff | — | — | [EN-01.md](./dify/usecases/EN-01.md) | — | — |
 | EN-02 | BOM逆引き | EN/bom | 製造 | 試行版 | [mfg/en.js](../mock/js/data/scenarios/mfg/en.js) lookup | — | — | [EN-02.md](./dify/usecases/EN-02.md) | — | — |
 | EN-03 | 図面の類似検索 | EN/bom | 製造 | 構想 | [mfg/en.js](../mock/js/data/scenarios/mfg/en.js) upload | — | — | [EN-03.md](./dify/usecases/EN-03.md) | — | — |
-| GN-01 | 経費精算チェック | GN/office | 製造 | 提供中 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) upload | — | [GN-01-expense-check.yml](../dify/apps/GN-01-expense-check.yml) | [GN-01.md](./dify/usecases/GN-01.md) | [2 件](../dify/kb/GN-01/) | [4 件](../dify/tests/GN-01.json) |
+| GN-01 | 経費精算チェック | GN/office | 製造 | 提供中 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) upload | — | [GN-01-expense-check.yml](../dify/apps/GN-01-expense-check.yml) | [GN-01.md](./dify/usecases/GN-01.md) | [5 件](../dify/kb/GN-01/) | [4 件](../dify/tests/GN-01.json) |
 | GN-02 | 請求書（発票）処理 | GN/office | 製造 | 提供中 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) upload | — | [GN-02-invoice-fapiao.yml](../dify/apps/GN-02-invoice-fapiao.yml) | [GN-02.md](./dify/usecases/GN-02.md) | — | [4 件](../dify/tests/GN-02.json) |
 | GN-03 | 受注・発注書の読み取りと登録支援 | GN/office | 製造 | 試行版 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) upload | — | — | [GN-03.md](./dify/usecases/GN-03.md) | — | — |
 | GN-04 | スケジュール調整 | GN/daily | 製造 | 試行版 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) qa | — | — | [GN-04.md](./dify/usecases/GN-04.md) | — | — |
