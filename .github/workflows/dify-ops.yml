@@ -56,6 +56,15 @@ name: dify-ops
 # ため）。rotate した値は `console_api.py` が sink へ自動で書き、`deploy`・`inspect` と同じ
 # 書き戻しステップ・concurrency グループを持つ。設計書 §4-6・§10 PR-3。
 #
+# PR-4（#212）：op: token_revoke を追加。書き戻し運用（PR-2）で失った B3（実行後に必ず
+# セッションを殺す）の代わりとなる**手動キルスイッチ**（B3'。設計書 §4-4・§4-6・§10-5）。
+# `scripts/dify/console_session.py revoke` が `client.logout()` を呼んで Dify サーバ側の
+# セッションを無効化し、続けてこのジョブが `gh secret delete DIFY_CONSOLE_REFRESH` で
+# Environment secret も消す（**revoke が失敗しても secret 削除は試みる**。安全側＝次回の実行を
+# 確実に「未設定」で止める。§4-4 の対応表 B3'）。書き込み・無効化系のため `confirm` に固定文字列
+# `revoke` を要求する。`deploy`・`inspect`・`token_refresh` と同じ concurrency グループに入れる
+# （書き戻し中の実行と競合させないため。cancel-in-progress は false のまま）。
+#
 #   op              | 走るジョブ    | environment          | 使う secrets
 #   ----------------|--------------|-----------------------|----------------------------------------------
 #   probe           | probe        | 無し                  | 無し
@@ -74,6 +83,9 @@ name: dify-ops
 #                   |              |                       | 一切呼ばない。#212 PR-1）
 #   token_refresh   | token_refresh | dify-cloud-master    | DIFY_CONSOLE_REFRESH・GH_SECRETS_PAT
 #                   |              |                       | （読み取りのみ。logout はしない。#212 PR-3）
+#   token_revoke    | token_revoke | dify-cloud-master     | DIFY_CONSOLE_REFRESH・GH_SECRETS_PAT
+#                   |              |                       | （logout ＋ secret 削除。confirm="revoke"
+#                   |              |                       | が必須。#212 PR-4）
 #
 # 前提（PM が先に行う。dify/DEPLOY.md §7 参照）：
 #   - Settings → Environments → `dify-cloud-master` → **Required reviewers のチェックを外す**
@@ -90,7 +102,7 @@ on:
   workflow_dispatch:
     inputs:
       op:
-        description: "実行する操作（kb_refresh=同名文書の中身だけ差し替え／kb_replace=削除して入れ直し。まず kb_refresh を試すこと／probe=秘密を使わない Dify Cloud への到達性確認。codes 不要／inspect=下書きから Rerank 関連 6 項目だけを読み取り専用で採取。#195 E1／deploy=render→インポート→公開。全件インポート成功後にまとめて公開〔P1〕。confirm に \"deploy\" が必須。#121 W4-4／token_selftest=Dify を一切呼ばず、捨て用 secret に書き戻しの自己診断。codes 不要。#212 PR-1／token_refresh=DIFY_CONSOLE_REFRESH でセッションが有効か確認するだけ（読み取りのみ・logout しない）。codes 不要。#212 PR-3）"
+        description: "実行する操作（kb_refresh=同名文書の中身だけ差し替え／kb_replace=削除して入れ直し。まず kb_refresh を試すこと／probe=秘密を使わない Dify Cloud への到達性確認。codes 不要／inspect=下書きから Rerank 関連 6 項目だけを読み取り専用で採取。#195 E1／deploy=render→インポート→公開。全件インポート成功後にまとめて公開〔P1〕。confirm に \"deploy\" が必須。#121 W4-4／token_selftest=Dify を一切呼ばず、捨て用 secret に書き戻しの自己診断。codes 不要。#212 PR-1／token_refresh=DIFY_CONSOLE_REFRESH でセッションが有効か確認するだけ（読み取りのみ・logout しない）。codes 不要。#212 PR-3／token_revoke=今すぐ Dify のセッションを無効化し DIFY_CONSOLE_REFRESH を削除する手動キルスイッチ。codes 不要。confirm に \"revoke\" が必須。#212 PR-4）"
         required: true
         type: choice
         options:
@@ -104,14 +116,15 @@ on:
           - deploy
           - token_selftest
           - token_refresh
+          - token_revoke
         default: run_tests
       codes:
-        description: "対象の管理番号（空白区切り、例: KN-01 DC-01）。kb_replace は削除を伴うため 1 件のみ。op=probe・op=token_selftest・op=token_refresh では不要（空でよい）。op=inspect では必須（例: KN-01 KN-02 KN-03 GN-01）。op=deploy は 1〜12 件（12 本全部なら dify/apps/ の全番号を空白区切りで列挙。confirm も必須）"
+        description: "対象の管理番号（空白区切り、例: KN-01 DC-01）。kb_replace は削除を伴うため 1 件のみ。op=probe・op=token_selftest・op=token_refresh・op=token_revoke では不要（空でよい）。op=inspect では必須（例: KN-01 KN-02 KN-03 GN-01）。op=deploy は 1〜12 件（12 本全部なら dify/apps/ の全番号を空白区切りで列挙。confirm も必須）"
         required: false
         type: string
         default: ""
       confirm:
-        description: "kb_replace／deploy のときだけ必須：kb_replace は codes と完全一致する文字列、deploy は固定文字列 \"deploy\" を入力（誤操作防止。他の op では未使用）"
+        description: "kb_replace／deploy／token_revoke のときだけ必須：kb_replace は codes と完全一致する文字列、deploy は固定文字列 \"deploy\"、token_revoke は固定文字列 \"revoke\" を入力（誤操作防止。他の op では未使用）"
         required: false
         type: string
         default: ""
@@ -147,15 +160,16 @@ jobs:
         run: |
           set -euo pipefail
           case "$OP" in
-            kb_upload|kb_refresh|kb_replace|run_tests|both|probe|inspect|deploy|token_selftest|token_refresh) ;;
+            kb_upload|kb_refresh|kb_replace|run_tests|both|probe|inspect|deploy|token_selftest|token_refresh|token_revoke) ;;
             *) echo "::error::op の値が不正です: $OP"; exit 1 ;;
           esac
-          # op=probe・op=token_selftest・op=token_refresh は秘密を一切使わない、または対象
-          # アプリ／KB を指定する意味が無い自己診断・セッション確認のみのため codes を要求しない
-          # （設計書 §11 W4-3 PR-5・docs/handoff/2026-09-09-refresh-token-writeback.md §10 PR-1・PR-3）。
+          # op=probe・op=token_selftest・op=token_refresh・op=token_revoke は秘密を一切使わない、
+          # または対象アプリ／KB を指定する意味が無い自己診断・セッション確認・無効化のみのため
+          # codes を要求しない（設計書 §11 W4-3 PR-5・
+          # docs/handoff/2026-09-09-refresh-token-writeback.md §10 PR-1・PR-3・PR-4）。
           # それ以外の op は従来どおり codes の形式を検証する（op=inspect も対象の管理番号が
           # 必須なのでここを通る）。
-          if [ "$OP" = "probe" ] || [ "$OP" = "token_selftest" ] || [ "$OP" = "token_refresh" ]; then
+          if [ "$OP" = "probe" ] || [ "$OP" = "token_selftest" ] || [ "$OP" = "token_refresh" ] || [ "$OP" = "token_revoke" ]; then
             echo "op=$OP のため codes の検証をスキップします（codes=${CODES:-<空>}）"
           elif ! [[ "$CODES" =~ ^[A-Z]{2}-[0-9]{2}(\ [A-Z]{2}-[0-9]{2})*$ ]]; then
             echo "::error::codes の形式が不正です（例: KN-01 DC-01）: $CODES"
@@ -200,6 +214,16 @@ jobs:
             fi
             if [ "$CONFIRM" != "deploy" ]; then
               echo "::error::deploy には confirm に固定文字列 \"deploy\" を入力してください"
+              exit 1
+            fi
+          fi
+
+          # token_revoke は Dify のセッションを殺し、Environment secret DIFY_CONSOLE_REFRESH を
+          # 削除する破壊的操作（手動キルスイッチ。B3'）のため、confirm に固定文字列 "revoke" の
+          # 入力を要求する（設計書 §4-7・§10-5。Issue #212 PR-4）。
+          if [ "$OP" = "token_revoke" ]; then
+            if [ "$CONFIRM" != "revoke" ]; then
+              echo "::error::token_revoke には confirm に固定文字列 \"revoke\" を入力してください"
               exit 1
             fi
           fi
@@ -1703,3 +1727,217 @@ jobs:
             echo "::error::token_refresh が失敗しました（詳細は上のログと Job Summary を参照）。"
             exit 1
           fi
+
+  # op: token_revoke（PR-4。Issue #212）。手動キルスイッチ（B3'。設計書 §4-4・§4-6・§10-5）。
+  # PR-2 で B3（ジョブ末尾の自動 logout）を書き戻し運用のために止めた代わりに、PM が
+  # Actions の画面から明示的に「今すぐ無効化」できる操作を用意する。
+  #
+  # 順序（値は一切出力しない）：
+  #   1) scripts/dify/console_session.py revoke … client_from_env() → client.logout()。
+  #      Dify サーバ側のセッションを無効化する（対になるリフレッシュトークンも一緒に死ぬ）。
+  #   2) gh secret delete DIFY_CONSOLE_REFRESH … Environment secret 自体を削除する。
+  #      次回の実行は「未設定」で exit 2 になり、事故的な再利用が起きない（§10-5）。
+  #
+  # 失敗時の扱い（設計書に明記が無いため、安全側で決めた。Issue #212 PR-4 の PR 本文に理由を残す）：
+  # **1) の logout が失敗しても、2) の secret 削除は必ず試みる**（if: always()）。
+  # 理由：logout に失敗する状況（すでにセッションが死んでいる・Dify 側の一時的な不調等）でも、
+  # 「次回の実行を確実に止める」という B3' の目的は secret 削除だけで達成できる。
+  # 逆に「secret 削除が失敗したら logout もしない」という順序にすると、両方失敗したときに
+  # 生きたセッションと生きた secret の両方が残ってしまい、キルスイッチとして最悪の結果になる。
+  # `GH_SECRETS_PAT` が未設定で secret を削除できない場合は、dify/DEPLOY.md §10-5 の手動手順
+  # （ブラウザでログアウト → GitHub で DIFY_CONSOLE_REFRESH を削除）を案内してジョブを失敗させる。
+  #
+  # 破壊的操作（無効化）のため confirm に固定文字列 "revoke" を要求する（validate ジョブで検証済み）。
+  # deploy・inspect・token_refresh と同じ concurrency グループ（cancel-in-progress は false のまま。
+  # 書き戻し中の実行と衝突させないため）。
+  token_revoke:
+    name: "token_revoke（op: token_revoke）"
+    needs: validate
+    if: ${{ inputs.op == 'token_revoke' }}
+    runs-on: ubuntu-latest
+    environment: dify-cloud-master
+    permissions:
+      contents: read   # 何も commit しないため read のみでよい（secret 削除は GH_SECRETS_PAT で行う）
+    timeout-minutes: 10
+    concurrency:
+      group: dify-console-${{ inputs.env }}
+      # cancel-in-progress は絶対に true にしない（deploy ジョブのコメント参照。load-bearing）。
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Python dependencies
+        run: pip install pyyaml
+
+      # 値は一切出力しない。「設定されているか」だけを確認する（他ジョブと同じ作法）。
+      - name: Check secrets presence (values are never printed)
+        env:
+          DIFY_CONSOLE_REFRESH: ${{ secrets.DIFY_CONSOLE_REFRESH }}
+        run: |
+          set -euo pipefail
+          if [ -n "${DIFY_CONSOLE_REFRESH:-}" ]; then
+            echo "DIFY_CONSOLE_REFRESH: set"
+          else
+            echo "DIFY_CONSOLE_REFRESH: unset（logout は何もせずスキップされます。secret はすでに『未設定』です）"
+          fi
+
+      # GH_SECRETS_PAT の有無だけを見る（値は出さない）。無ければ secret 削除ができないため、
+      # 後続のステップで案内を出してジョブを失敗させる（§10-5 の手動手順に誘導する）。
+      - name: "Preflight: GH_SECRETS_PAT の有無だけを見る"
+        env:
+          GH_SECRETS_PAT: ${{ secrets.GH_SECRETS_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -n "${GH_SECRETS_PAT:-}" ]; then
+            echo "GH_SECRETS_PAT: set"
+          else
+            echo "GH_SECRETS_PAT: unset"
+            {
+              echo "> \`GH_SECRETS_PAT\` が未設定のため、\`DIFY_CONSOLE_REFRESH\` を自動削除できません。Dify 側のセッション無効化（logout）は試みますが、secret の削除は \`dify/DEPLOY.md\` §10-5 の手動手順で行ってください。"
+              echo
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: "Run console_session.py revoke (op: token_revoke)"
+        id: run
+        env:
+          ENV_NAME: ${{ inputs.env }}
+          DIFY_CONSOLE_REFRESH: ${{ secrets.DIFY_CONSOLE_REFRESH }}
+        run: |
+          set -euo pipefail
+          overall_rc=0
+
+          {
+            echo "## dify-ops 実行結果（op: token_revoke）"
+            echo
+            echo "- 操作: \`token_revoke\`"
+            echo "- 環境: \`$ENV_NAME\`"
+            echo "- 設計書: docs/handoff/2026-09-09-refresh-token-writeback.md §4-4・§4-6・§10-5（Issue #212 PR-4）"
+            echo "- **Dify のセッションを無効化します（logout）。アプリ・KB の書き換えは行いません。**"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          out_file="$(mktemp)"
+          echo "== console_session.py revoke --env $ENV_NAME =="
+          if python3 scripts/dify/console_session.py --env "$ENV_NAME" revoke 2>&1 | tee "$out_file"; then
+            echo "token_revoke(logout): 判定=完了 (rc=0)"
+            echo "- logout: 完了（Dify 側のセッションを無効化しました）" >> "$GITHUB_STEP_SUMMARY"
+          else
+            rc=$?
+            case "$rc" in
+              2) echo "token_revoke(logout): 判定=設定不備 (rc=2)"; echo "- logout: 設定不備（exit 2。DIFY_CONSOLE_REFRESH は未設定＝すでにセッションを持っていません）" >> "$GITHUB_STEP_SUMMARY" ;;
+              3) echo "token_revoke(logout): 判定=認証エラー (rc=3)"; echo "- logout: 認証エラー（exit 3。すでに期限切れのセッションの可能性）" >> "$GITHUB_STEP_SUMMARY" ;;
+              4) echo "token_revoke(logout): 判定=Cloudflare 遮断 (rc=4)"; echo "- logout: Cloudflare に弾かれました（exit 4）" >> "$GITHUB_STEP_SUMMARY" ;;
+              *) echo "token_revoke(logout): 判定=失敗 (rc=$rc)"; echo "- logout: 失敗（exit $rc）" >> "$GITHUB_STEP_SUMMARY" ;;
+            esac
+            overall_rc=1
+          fi
+
+          {
+            echo
+            echo "<details><summary>console_session.py revoke の出力</summary>"
+            echo
+            echo '```'
+            cat "$out_file"
+            echo '```'
+            echo "</details>"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          rm -f "$out_file"
+
+          echo "OVERALL_RC=$overall_rc" >> "$GITHUB_ENV"
+          # このステップ自体は失敗させない。合否は最後の Fail the job ステップで判定する
+          # （secret 削除が logout の成否に関わらず必ず試みられるようにするため。上のコメント参照）。
+          exit 0
+
+      - name: "Delete the Environment secret DIFY_CONSOLE_REFRESH (op: token_revoke)"
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_SECRETS_PAT }}
+          GH_REPO: ${{ github.repository }}
+          TARGET_ENV: dify-cloud-master        # 固定。inputs.* からは作らない（r3 相当）
+          TARGET_SECRET: DIFY_CONSOLE_REFRESH  # 固定。inputs.* からは作らない（r3 相当）
+        run: |
+          set -euo pipefail            # set -x は禁止。env / printenv も使わない
+
+          fail_delete() {
+            echo "::error::[要対応] DIFY_CONSOLE_REFRESH の削除に失敗しました。$1 dify/DEPLOY.md §10-5 の手動手順（ブラウザでログアウト → GitHub で DIFY_CONSOLE_REFRESH を削除）を今すぐ行ってください。"
+            echo "[WB] $1"
+            {
+              echo "## ⚠️ DIFY_CONSOLE_REFRESH の自動削除に失敗しました（要対応）"
+              echo
+              echo "$1"
+              echo
+              echo "**今すぐ手動で行ってください（\`dify/DEPLOY.md\` §10-5）**："
+              echo "1. Dify のブラウザでログアウトする"
+              echo "2. GitHub → Settings → Environments → \`dify-cloud-master\` → \`DIFY_CONSOLE_REFRESH\` を削除する"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "DELETE_RC=1" >> "$GITHUB_ENV"
+            exit 0
+          }
+
+          if [ -z "${GH_TOKEN:-}" ]; then
+            fail_delete "Environment secret \`GH_SECRETS_PAT\` が空です。"
+          fi
+
+          ok=0
+          for i in 1 2 3; do
+            if gh secret delete "$TARGET_SECRET" --env "$TARGET_ENV" 2>"$RUNNER_TEMP/token-revoke-delete-err.log"; then
+              ok=1
+              break
+            fi
+            # すでに削除済み（前回の revoke がここまで成功していた等）なら目的は達成済みとみなす。
+            if grep -qiE "not found|does not exist|no secret" "$RUNNER_TEMP/token-revoke-delete-err.log" 2>/dev/null; then
+              echo "[WB] $TARGET_SECRET はすでに存在しません（削除済み扱い）"
+              ok=1
+              break
+            fi
+            echo "gh secret delete が失敗しました（${i} 回目）。再試行します…"
+            sleep $((i * 5))
+          done
+          rm -f "$RUNNER_TEMP/token-revoke-delete-err.log"
+
+          if [ "$ok" -ne 1 ]; then
+            fail_delete "gh secret delete が 3 回リトライ後も失敗しました。"
+          fi
+
+          # 反映確認：一覧から消えていること（値は出さない。名前だけ）。
+          gone=0
+          if gh secret list --env "$TARGET_ENV" --json name > "$RUNNER_TEMP/token-revoke-list.json" 2>/dev/null; then
+            if python3 -c 'import json,os,sys; p=os.path.join(os.environ["RUNNER_TEMP"], "token-revoke-list.json"); data=json.load(open(p, encoding="utf-8")); sys.exit(0 if not any(r.get("name")==os.environ["TARGET_SECRET"] for r in data) else 1)'; then
+              gone=1
+            fi
+          else
+            echo "V-D: --json 未対応の gh バージョンのため名前だけのフォールバック表示を使います（値は出ません）"
+            if ! gh secret list --env "$TARGET_ENV" | grep -q "$TARGET_SECRET"; then
+              gone=1
+            fi
+          fi
+
+          if [ "$gone" -ne 1 ]; then
+            fail_delete "gh は成功を返しましたが、一覧からまだ消えていません。"
+          fi
+
+          echo "DELETE_RC=0" >> "$GITHUB_ENV"
+          echo "[WB] $TARGET_SECRET を削除しました"
+          {
+            echo "🔒 \`DIFY_CONSOLE_REFRESH\` を削除しました。次回の実行は「未設定」で exit 2 になります（事故的な再利用は起きません）。"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail the job if token_revoke did not fully succeed
+        if: always()
+        run: |
+          set -euo pipefail
+          logout_rc="${OVERALL_RC:-0}"
+          delete_rc="${DELETE_RC:-1}"
+          if [ "$logout_rc" != "0" ] || [ "$delete_rc" != "0" ]; then
+            echo "::error::token_revoke が完全には成功しませんでした（logout rc=$logout_rc, secret 削除 rc=$delete_rc）。詳細は上のログと Job Summary を参照してください。"
+            exit 1
+          fi
+          echo "token_revoke: 完了（logout ＋ secret 削除の両方が成功しました）"

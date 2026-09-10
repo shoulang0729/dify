@@ -643,8 +643,8 @@ id を引く）は architect が設計中**（Issue #121）。
 設計: `docs/handoff/2026-09-09-refresh-token-writeback.md`（Issue #212）。
 
 **この節は PR-1・PR-2・PR-3・PR-4 にわたって段階的に完成させる（設計書 §10 の分割案）。**
-PR-1・PR-2・PR-3 で §10-1〜§10-4・§10-6 が入った。**§10-5（今すぐ無効化。`op: token_revoke`）は
-PR-4 でまだ実装されていない**。
+PR-1・PR-2・PR-3 で §10-1〜§10-4・§10-6 が入り、**本 PR（PR-4）で §10-5（今すぐ無効化。
+`op: token_revoke`）が入った。これで §10 は完成している**。
 
 ### §10-1 何が変わるか
 
@@ -654,8 +654,7 @@ GitHub の secret に貼り直していた（§8）。
 **これから**：**ジョブが自分で新しい値を書き戻す。** PM の手作業は **PAT を 1 回作るだけ**になる。
 
 **注意（トレードオフ）**：この運用では、ジョブの後も Dify のセッションが**生きたまま**残る（従来は
-毎回 `logout` して殺していた）。今すぐ無効化したいときは **§10-5** を使う（PR-4 で追加予定。
-それまでの間は、異変時はブラウザでログアウト → `DIFY_CONSOLE_REFRESH` を手動で削除する）。
+毎回 `logout` して殺していた）。今すぐ無効化したいときは **§10-5** を使う。
 
 ### §10-2 最初の 1 回：書き戻し用の PAT を作る（10 分）
 
@@ -710,6 +709,27 @@ GitHub の secret に貼り直していた（§8）。
 4. GitHub → **Settings → Environments → `dify-cloud-master` → `DIFY_CONSOLE_REFRESH` → Update** に貼る
 5. **シークレットウィンドウを、ログアウトせずにそのまま閉じる**（ログアウトすると貼った値も死ぬ）
 6. §10-3 の動作確認を 1 回だけ回す
+
+### §10-5 今すぐセッションを無効化したいとき（異変時）
+
+**`op: token_revoke`**（`confirm` に固定文字列 `revoke`）を回す。ジョブは
+`POST /console/api/logout`（Dify 側のセッションを殺す）→ `DIFY_CONSOLE_REFRESH` の削除、の順に行う。
+次回の実行は「未設定」で `exit 2` になるので、事故的な再利用が起きない。
+
+**回し方**：Actions タブ → `dify-ops` → **Run workflow** → `op`：**`token_revoke`** ／
+`codes`：空のまま ／ `confirm`：**`revoke`**（1 文字も違わずに入力すること。他の文字列では検証で
+弾かれる）／ `env`：`cloud-master`。
+
+**`logout` に失敗しても secret の削除は必ず試みる**（順序が逆になることはない。安全側の判断：
+サーバ側のセッションを殺せなくても、少なくとも secret を消せば「次回の実行を確実に止める」という
+このキルスイッチの目的は達成できる。逆に secret 削除が先に失敗したら logout もしない、という順序に
+すると、両方失敗したときに生きたセッションと生きた secret の両方が残ってしまい、キルスイッチとして
+最悪の結果になるため）。`GH_SECRETS_PAT` が未設定で secret を自動削除できないときは、ジョブが
+Job Summary で下の手動手順を案内して赤くなる。
+
+急いでいる／Actions が使えないときの手動手順（§8 の「異変時の即時失効手順」と同じ）：
+Dify のブラウザでログアウト → GitHub で `DIFY_CONSOLE_REFRESH` を削除。
+**PAT も止めたいときは** github.com → Settings → Developer settings → Fine-grained tokens → 当該トークン → **Delete**。
 
 ### §10-6 やってはいけないこと
 
