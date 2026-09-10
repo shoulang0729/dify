@@ -185,4 +185,4 @@ npm run world             # data/world/ と台本・文書の食い違いを報�
   **Dify のログイン情報（メール・パスワード）と、② 以外のセッション情報は Mac から出さない**（§2-10）。
   ③ は**このリポジトリのすべての secret を書き換えられる**強い資格情報である（値は読めない）。
   **4 つ目を足すのは PM 判断**で、足したらこの一覧を同時に更新する。
-- **公開リポジトリなのでセルフホストランナーは `workflow_dispatch` 限定・`--ephemeral`・専用ユーザーで動かす**（`docs/handoff/2026-09-08-execution-split-and-runner.md` §4-2 の S1〜S7）
+- **セルフホストランナーは現在使っていない**（`.github/workflows/**` は全ジョブ `runs-on: ubuntu-latest`）。**「入れない」が判断**（`docs/handoff/2026-09-08-cloud-auth-and-w4.md` §12 判断 8。W4-1〜W4-4 が全部駄目だったときの最後の手段として残す）。**将来入れるなら**、公開リポジトリなので `workflow_dispatch` 限定・`--ephemeral`・専用ユーザーで動かすこと（`docs/handoff/2026-09-08-execution-split-and-runner.md` §4-2 の S1〜S7 を全部満たすことが前提）
