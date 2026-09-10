@@ -403,6 +403,7 @@ Preflight ステップは**値を出さず** `set` / `unset` だけを出し、`
 | P-1 | `DIFY_CONSOLE_REFRESH`・`DIFY_DATASET_KEY`・`DIFY_APP_KEY_*`（12 本）・`GH_SECRETS_PAT` 自身を**別の値に書き換える** | ワークフローが動かなくなる（**DoS**）。PM は各キーを貼り直すことになる |
 | P-2 | `DIFY_CONSOLE_REFRESH` を**攻撃者のワークスペースのトークン**にすり替える → その後 PM が `op: deploy` を回すと、**このリポジトリの DSL が攻撃者のワークスペースに投入される** | 投入されるのは `dify/apps/**`（**公開リポジトリにあるものと同じ架空世界のマスタ**）。**機密の流出にはならない**が、気持ちの悪い事態ではある |
 | P-3 | `GH_SECRETS_PAT` 自身を書き換えて**締め出す** | PM は github.com の PAT 画面から作り直す（5 分） |
+| P-4 | **（V-A 確認済み・危険評価の更新）** `Environments` の権限を持つため、**Environment `dify-cloud-master` の保護ルール**（Required reviewers・deployment branches 等）に対して GitHub が同じ権限カテゴリで括っている操作が可能になる可能性がある | **GitHub がこの権限カテゴリで実際にどの操作まで許可するかは未確認**（推測で書かない）。**ただし現状の実害は小さい**：Required reviewers は PR #199 で既に外してあり、`dify-cloud-master` に戻すべき保護ルールが現状ない。リポジトリの所有者は PM 1 人のみで、環境の保護ルールを設定・変更できる人の集合はもともと PM だけ（他に「奪える」権限者がいない） |
 
 **できないこと（重要）**
 
@@ -410,7 +411,7 @@ Preflight ステップは**値を出さず** `set` / `unset` だけを出し、`
 |---|---|---|
 | N-1 | **secret の値を読む** | GitHub の API は secret の値を返さない。`Secrets: Read and write` でも読めるのは**名前と更新日時だけ**。**「盗み見」は原理的にできない** |
 | N-2 | **コードの書き換え**（`main` への push・ワークフローの改変） | PAT に `Contents` / `Actions` / `Workflows` を**与えない**ため。**ワークフローを書き換えて秘密を印字させる**という古典的な攻撃経路が塞がれている |
-| N-3 | **Environment の保護ルールの変更**（Required reviewers を外す等） | PAT に `Environments` を**与えない**ため（**ただし V-A で `Environments: Read and write` が必要と判明した場合、この行は成立しなくなる**。判明したら本表を更新すること） |
+| N-3 | ~~Environment の保護ルールの変更（Required reviewers を外す等）~~ **→ この行は成立しない（V-A 確認済み：2026-09-10、GitHub Actions run #13。`Secrets: Read and write` だけでは Environment secret の public key 取得が 403 になり、`Environments: Read and write` が必須と判明した）。危険評価は上の P-4 に移した** | — |
 | N-4 | 他のリポジトリへの操作 | `Only select repositories` で `shoulang0729/dify` **1 つだけ**を選ぶため |
 | N-5 | Actions の実行（`workflow_dispatch` の起動） | `Actions` 権限を与えないため |
 
@@ -615,7 +616,7 @@ Dify のブラウザでログアウト → GitHub で `DIFY_CONSOLE_REFRESH` を
 
 | # | 未確認 | 確かめ方 | いつ |
 |---|---|---|---|
-| **V-A** | Environment secret の更新に fine-grained PAT が要求する権限（`Secrets` だけか、`Environments` も要るか） | PR-1 の `op: token_selftest`（捨て secret に書く）。403 なら `Environments` を足して再試行 | PR-1。**結果を `DEPLOY.md` §10-2 手順 9 と §6-2 N-3 に反映する** |
+| **V-A** | ~~Environment secret の更新に fine-grained PAT が要求する権限（`Secrets` だけか、`Environments` も要るか）~~ | **確認済み（2026-09-10、GitHub Actions run #13）：`Secrets: Read and write` だけでは足りない。**`op: token_selftest` が 3 回リトライしてすべて `HTTP 403: Resource not accessible by personal access token`（エンドポイント `.../environments/dify-cloud-master/secrets/public-key`）。**`Environments: Read and write` も必要。** `DEPLOY.md` §10-2 手順 9・§6-2 N-3／P-4 に反映済み | 済み |
 | **V-B** | 実機の Set-Cookie が `__Host-refresh_token` か無印 `refresh_token` か（両方来るか） | PR-2 の実機ログ（**名前だけ**を出す。値は出さない） | PR-3 の実機検証。§4-2 b の優先順で**どちらでも正しく動く**ようにしてあるが、事実は記録する |
 | **V-C** | `environment:` を持つジョブの `secrets.*` が「ジョブ開始時点の値」で展開されるか（`concurrency` で待たせた 2 本目が新しい値を読むか） | `op: token_refresh` を 2 本ほぼ同時に投げ、2 本目が緑になるか | PR-3 の実機検証。**赤なら D5 の方針を「待たせる」から「2 本目を即座に落とす」へ変える**（§12 判断 3） |
 | **V-D** | `gh secret list --json name,updatedAt` がランナー同梱の `gh` の版で使えるか | PR-1 の `op: token_selftest` の出力 | PR-1。使えなければ `--json` なしにフォールバック |

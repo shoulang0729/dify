@@ -669,8 +669,8 @@ GitHub の secret に貼り直していた（§8）。
 6. **Expiration**：**Custom** → **1 年後の日付**（最長 366 日）。※ **期限が切れたら、この §10-2 をもう一度やる。それが唯一の定期作業**
 7. **Resource owner**：`shoulang0729`（自分のアカウント）
 8. **Repository access**：**Only select repositories** → **`shoulang0729/dify` の 1 つだけ**を選ぶ
-9. **Repository permissions**：**`Secrets`** を **Read and write** にする。**それ以外は触らない**（`Metadata: Read-only` は自動で付く）
-   - 【V-A で `Environments: Read and write` も必要と判明した場合は、ここに 1 行足す】
+9. **Repository permissions**：**`Secrets`** を **Read and write** にする。**さらに同じ「Repository permissions」の一覧から `Environments` を探し、これも `Read and write` にする**（`Secrets` だけでは 403 になることを実測済み。V-A：2026-09-10、GitHub Actions run #13）。**それ以外は触らない**（`Metadata: Read-only` は自動で付く）
+   - **すでに `Secrets: Read and write` だけで PAT を作ってしまった場合、作り直しは不要。** github.com の **Settings → Developer settings → Personal access tokens → Fine-grained tokens** で該当トークン（`dify-ops refresh writeback`）を開き、**`Environments` を `Read and write` に変更して `Update token`** すればよい（トークンの値は変わらない。secret の貼り直しも不要）
 10. **Generate token** → 値が 1 度だけ表示される。**このページを離れると二度と表示されない**
 11. **別のタブ**で：リポジトリ → **Settings** → **Environments** → **`dify-cloud-master`** → **Environment secrets** → **Add secret**
     - **Name**：`GH_SECRETS_PAT`（**綴りを間違えると書き戻しが動かない**）
@@ -681,9 +681,12 @@ GitHub の secret に貼り直していた（§8）。
 **動作確認（本物のリフレッシュトークンは 1 円も消費しない）**：Actions タブ → `dify-ops` →
 **Run workflow** → `op`：**`token_selftest`** ／ `codes`：空のまま ／ `env`：`cloud-master`。
 緑になり、Job Summary に「**成功。`GH_SECRETS_PAT` は Environment `dify-cloud-master` の secret を
-書き換えられます。**」と出れば、上の手順 9 の権限（`Secrets: Read and write` のみ）で足りている
-（V-A の答え）。403 で失敗する場合は `Environments: Read and write` も付けて再試行し、その結果を
-手順 9 の【 】欄と `docs/handoff/2026-09-09-refresh-token-writeback.md` §6-2 N-3 に反映すること。
+書き換えられます。**」と出れば OK。**`Secrets: Read and write` だけでは足りないことは確認済み**
+（V-A の答え。2026-09-10、run #13：`Secrets` のみの PAT で 3 回リトライしてすべて
+`HTTP 403: Resource not accessible by personal access token`。エンドポイントは
+`.../environments/dify-cloud-master/secrets/public-key` で、repository secret ではなく
+**environment secret** の公開鍵取得が拒否されていた）。**上の手順 9 のとおり `Environments` も
+`Read and write` にしてから実行すること。**
 
 ### §10-3 動作確認（1 回だけ・Dify には何も書き込まない）
 
