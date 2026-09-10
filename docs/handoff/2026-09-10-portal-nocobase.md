@@ -1,6 +1,6 @@
 # 社内向けポータルサイト（NocoBase）— リポジトリ分離と第 1 段の設計
 
-- Issue: （本書と同時に起票）
+- Issue: #242
 - 種別: **M/L**（architect 成果物。本 PR は**設計書のみ**。アプリコード・データ層は 1 バイトも変えない）
 - ラベル: `run:cloud`
 - 前提設計書: `docs/dify/platform-components.md`（PC-01 / PC-02 / PC-04 / PC-16 / PC-17）・`docs/handoff/2026-09-07-repo-layout-v2.md` §3・§4（4 区分・env レイヤー）・`docs/handoff/2026-09-08-execution-split-and-runner.md` §1-1（実行場所）・`docs/handoff/2026-09-08-live-links.md`（`LIVE`）

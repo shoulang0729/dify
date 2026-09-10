@@ -1,7 +1,7 @@
 # 社内向けポータルサイト（NocoBase）— リポジトリ分離と第 1 段（P0）
 
 設計書: `docs/handoff/2026-09-10-portal-nocobase.md`
-レーン: **M/L** ／ ラベル: `run:cloud`
+レーン: **M/L** ／ ラベル: `run:cloud` ／ Issue: #242 ／ PR: #243
 
 ## 背景
 
