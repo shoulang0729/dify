@@ -260,8 +260,6 @@ def cmd_site_probe(console_url, timeout):
 
     try:
         detail = client.get_app_detail(app_id)
-    except console_api.ConsoleAuthError as e:
-        return _exit_code_for_error(e)
     except console_api.ConsoleAPIError as e:
         if "HTTP 404" in str(e):
             console_api.log(
@@ -269,8 +267,15 @@ def cmd_site_probe(console_url, timeout):
                 "（エンドポイントが無い、または対応していない可能性。想定内の結果です）"
             )
             return 0
-        console_api.log(f"site_probe(detail): 取得に失敗しました（想定外のエラー）: {e}")
-        return 0
+        # レビュー指摘（PR #235）: 404 以外（Cloudflare ブロック・401/403・5xx・接続失敗等）を
+        # ここで黙って exit 0 にしていた（ConsoleCloudflareBlockedError は ConsoleAuthError の
+        # 子ではなく ConsoleAPIError の直下なので、以前の
+        # `except ConsoleAuthError: ... / except ConsoleAPIError: ... return 0` という 2 段構成では
+        # 2 番目の except に落ちて exit 0 に化けていた）。list_apps() 側（上の except 節）と
+        # 同じ規約に揃え、_exit_code_for_error() 1 本で 0/2/3/4 の表どおりにマップする
+        # （ConsoleAuthError は 3、ConsoleCloudflareBlockedError は 4、それ以外の
+        # ConsoleAPIError は 2。_exit_code_for_error() 自身が str(e) をログに出す）。
+        return _exit_code_for_error(e)
 
     _report_site_and_urls("detail", detail)
     return 0

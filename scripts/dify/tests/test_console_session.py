@@ -362,6 +362,72 @@ def test_site_probe_detail_404(base):
           "site_probe(list): 見つかりませんでした（'site' を名前に含むキーがありません）" in out, out)
 
 
+# ---------------------------------------------------------------------------
+# PR #235 レビュー指摘の再発防止: 404 以外の ConsoleAPIError（Cloudflare ブロック・5xx・
+# 401/403）が detail 側で黙って exit 0 に化けないこと。console_api._exit_code_for_error() と
+# 同じ終了コード表（0/2/3/4）どおりにマップされることを確認する。
+# ---------------------------------------------------------------------------
+
+def test_site_probe_detail_cloudflare_block_exit4(base):
+    """detail 側が 403＋Cloudflare の 1010 シグネチャを返すとき、ConsoleCloudflareBlockedError
+    になり exit 4 になること（修正前は 2 番目の except に落ちて exit 0 になっていたバグ）。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.set_token("site-probe-detail-cf-token")
+    yaml_text = "app:\n  name: 'site-probe-app-detail-cf'\n  description: t\nkind: app\nversion: 0.6.0\n" \
+                "dependencies: []\nworkflow:\n  graph:\n    nodes: []\n    edges: []\n"
+    app_id = client.import_dsl(yaml_text)
+    _post_json(base, "/__test__/force-app-detail-status", {
+        "app_id": app_id, "status": 403, "body": "mock: forced Cloudflare block. error code: 1010",
+    })
+
+    r = run_cli(["--env", "cloud-master", "site_probe"], {
+        "DIFY_CONSOLE_URL": base, "DIFY_CONSOLE_TOKEN": "site-probe-detail-cf-token", "DIFY_CONSOLE_REFRESH": "",
+    })
+    out = r.stdout + r.stderr
+    check("site_probe(detail Cloudflare): exit 4（黙って exit 0 に化けない）", r.returncode == 4,
+          f"exit={r.returncode} {out}")
+
+
+def test_site_probe_detail_http500_exit2(base):
+    """detail 側が HTTP 500 を返すとき、ConsoleAPIError（Cloudflare でも認証エラーでもない）
+    になり exit 2 になること（修正前は exit 0 になっていたバグ）。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.set_token("site-probe-detail-500-token")
+    yaml_text = "app:\n  name: 'site-probe-app-detail-500'\n  description: t\nkind: app\nversion: 0.6.0\n" \
+                "dependencies: []\nworkflow:\n  graph:\n    nodes: []\n    edges: []\n"
+    app_id = client.import_dsl(yaml_text)
+    _post_json(base, "/__test__/force-app-detail-status", {
+        "app_id": app_id, "status": 500, "body": "mock: forced internal server error",
+    })
+
+    r = run_cli(["--env", "cloud-master", "site_probe"], {
+        "DIFY_CONSOLE_URL": base, "DIFY_CONSOLE_TOKEN": "site-probe-detail-500-token", "DIFY_CONSOLE_REFRESH": "",
+    })
+    out = r.stdout + r.stderr
+    check("site_probe(detail HTTP 500): exit 2（黙って exit 0 に化けない）", r.returncode == 2,
+          f"exit={r.returncode} {out}")
+
+
+def test_site_probe_detail_401_exit3(base):
+    """detail 側が 401 を返すとき、ConsoleAuthError になり exit 3 になること
+    （list_apps() 側の既存の 401/403 経路〔test_site_probe_unset_exit2 等〕と同じ表に揃う。
+    壊れていないことの確認）。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.set_token("site-probe-detail-401-token")
+    yaml_text = "app:\n  name: 'site-probe-app-detail-401'\n  description: t\nkind: app\nversion: 0.6.0\n" \
+                "dependencies: []\nworkflow:\n  graph:\n    nodes: []\n    edges: []\n"
+    app_id = client.import_dsl(yaml_text)
+    _post_json(base, "/__test__/force-app-detail-status", {
+        "app_id": app_id, "status": 401, "body": "mock: forced unauthorized",
+    })
+
+    r = run_cli(["--env", "cloud-master", "site_probe"], {
+        "DIFY_CONSOLE_URL": base, "DIFY_CONSOLE_TOKEN": "site-probe-detail-401-token", "DIFY_CONSOLE_REFRESH": "",
+    })
+    out = r.stdout + r.stderr
+    check("site_probe(detail 401): exit 3", r.returncode == 3, f"exit={r.returncode} {out}")
+
+
 def test_revoke_removes_stale_sink_even_if_absent():
     """revoke: DIFY_REFRESH_SINK が設定されていてもファイルが存在しない場合はエラーにならない
     （sink 削除は「あれば消す」であり必須ではない）。"""
@@ -414,6 +480,9 @@ def main():
         test_site_probe_detail_200_with_site_and_url,
         test_site_probe_detail_200_without_site,
         test_site_probe_detail_404,
+        test_site_probe_detail_cloudflare_block_exit4,
+        test_site_probe_detail_http500_exit2,
+        test_site_probe_detail_401_exit3,
     ):
         proc2, base2 = start_mock_server()
         try:
