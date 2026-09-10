@@ -6,16 +6,29 @@
     python3 scripts/dify/cloud_deploy.py --env cloud-master KN-01 DC-01
     python3 scripts/dify/cloud_deploy.py --env cloud-master --all --write-env
 
-設計: docs/handoff/2026-09-08-cloud-console-deploy.md §2・§4-3（Issue #114 PR-2）
+設計: docs/handoff/2026-09-08-cloud-console-deploy.md §2・§4-3（Issue #114 PR-2）／
+docs/handoff/2026-09-09-dataset-ids-in-ci.md §4-1〜§4-4（0.5 段・1.5 段の恒久対応。Issue #209 PR-2）
 
-流れ（§2-1。P1〔全件インポート成功後にまとめて公開〕は 3〜6 の並びに反映済み。Issue #121 W4-4）
+流れ（§2-1。P1〔全件インポート成功後にまとめて公開〕は 3〜6 の並びに反映済み。Issue #121 W4-4。
+0.5 段・1.5 段は Issue #209 PR-2 で追加）
   0 preflight   env.yml / PyYAML / DIFY_CONSOLE_TOKEN（か email/password）の有無 → 無ければ exit 2
                 （値は出さない。"set"/"unset" だけ表示）
+  0.5 dataset   **dataset id の解決**（scripts/dify/dataset_ids.py。GET のみ）：対象番号のうち
+                knowledge-retrieval ノードを持つもの（dataset_ids.kb_codes()）について、
+                dify/env/<env>/env.yml の knowledge.<番号>.name を Datasets API で名前引きする。
+                環境変数 DIFY_DATASET_ID_<番号> が既に設定されていればそれを採り API を呼ばない
+                （R0-a）。名前が 0 件／2 件以上／DIFY_DATASET_KEY 未設定／API 到達不可はここで
+                exit 2（Dify には 1 バイトも書き込んでいない）。--dry-run・--no-resolve-datasets の
+                ときはネットワークを呼ばず、既に設定済みの環境変数だけを拾う（未解決分は 1.5 段に委ねる）
   1 render      render.py --env <env> --strict <番号...> → dify/build/<env>/*.yml
-  1.5 kb-guard  **KB 紐づけの安全弁**（PM 報告に基づく追加。§9-2 相当・Issue #121 W4-4）：
-                render 結果に knowledge-retrieval ノードを持つのに dataset_ids が空の番号が
+                （0.5 段で解決した値は render サブプロセス専用の env にだけ渡す。親の os.environ・
+                render.py 自体は変更しない＝§2-12 の --check バイト一致を保つ）
+  1.5 kb-guard  **KB 紐づけの安全弁（G-KB2）**（PM 報告に基づく追加。§9-2 相当・Issue #121 W4-4。
+                恒久対応後は「最後の砦」として昇格。Issue #209 PR-2）：dataset_ids.assert_bound() が
+                render 結果を読み、knowledge-retrieval ノードを持つのに dataset_ids が空の番号が
                 1 本でもあれば、Phase 2（resolve 以降）に入る前に exit 2 で全体を停止する
-                （--dry-run では警告のみ表示して停止しない。ネットワークは呼ばない）
+                （--dry-run では find_empty_kb_bindings() による警告のみ表示して停止しない。
+                ネットワークは呼ばない）
   2 resolve     app_id を決める（優先順: --app-id → env の apps.<番号>.id → 名前一致 → 新規作成）
   3 import      対象番号すべてに POST /console/api/apps/imports（app_id 付きなら上書き）。
                 401/403 は exit 3 で即停止。それ以外の失敗は記録して次の番号へ進む（--stop-on-error で中断）
@@ -43,10 +56,11 @@
   4. 新規作成 → 書き戻し断片を出す
 
 終了コード: 0 全件成功（--dry-run 正常終了含む） / 1 1 件以上の失敗（インポートまたは公開） /
-           2 引数・環境不備・到達不可・**KB 紐づけの安全弁に抵触**（1.5 kb-guard。新しい意味の
-           終了コードを増やさず、既存の「実行前の設定不備」区分〔2〕を再利用した。KB 安全弁は
-           まだセッションすら確立していない preflight 段階の停止であり、401/403〔3〕でも
-           import/publish の実行時失敗〔1〕でもないため） / 3 認証エラー（401/403）
+           2 引数・環境不備・到達不可・**dataset id の解決に失敗（0.5 段）**・**KB 紐づけの
+           安全弁に抵触**（1.5 kb-guard。新しい意味の終了コードを増やさず、既存の「実行前の
+           設定不備」区分〔2〕を再利用した。0.5 段・1.5 段とも、まだセッションすら確立していない
+           preflight 相当の停止であり、401/403〔3〕でも import/publish の実行時失敗〔1〕でも
+           ないため） / 3 認証エラー（401/403）
 
 値をログに出さない：DIFY_CONSOLE_TOKEN・Authorization ヘッダ・API キーの値。本モジュールの log() は
 console_api._mask() を必ず通す（CLAUDE.md §2-10）。
@@ -68,6 +82,7 @@ except ImportError:  # pragma: no cover
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import console_api  # noqa: E402  (scripts/dify/console_api.py。上の sys.path.insert が必要)
+import dataset_ids  # noqa: E402  (scripts/dify/dataset_ids.py。0.5 段・1.5 段。GET のみ。Issue #209 PR-2)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 APPS_DIR = os.path.join(ROOT, "dify", "apps")
@@ -209,15 +224,90 @@ def parse_app_id_args(values):
     return out
 
 
+def resolve_base_url(env_raw):
+    """Datasets API の base_url を決める。DIFY_BASE_URL があればそれ、無ければ
+    env.yml の dify.base_url（既定 https://api.dify.ai/v1）。kb_upload.py の既定と揃える
+    （設計書 §4-3）。"""
+    return (
+        os.environ.get("DIFY_BASE_URL", "").strip()
+        or expand((env_raw.get("dify") or {}).get("base_url") or "")
+        or "https://api.dify.ai/v1"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 0.5. dataset id の解決（scripts/dify/dataset_ids.py。GET のみ。Issue #209 PR-2）
+# ---------------------------------------------------------------------------
+#
+# 恒久対応（設計書 docs/handoff/2026-09-09-dataset-ids-in-ci.md §4）：KB を要求する番号
+# （dataset_ids.kb_codes()）の dataset id を、Dify に書き込む前にすべて解決する。
+# 環境変数 DIFY_DATASET_ID_<番号> が既に設定されていればそれを使い、API を呼ばない（R0-a。
+# Mac のローカル手順を壊さない）。未解決分は GET /v1/datasets を名前で引く。
+# 0 件／2 件以上／DIFY_DATASET_KEY 未設定／API 到達不可は dataset_ids.DatasetResolveError と
+# なり、呼び出し元（main）が exit 2 にする——この時点では render すら呼んでいないので、
+# Dify には 1 バイトも書き込まれていない（§7）。
+#
+# --dry-run・--no-resolve-datasets のときは API を一切呼ばない（既存の受け入れ条件 A5・
+# 設計書 §4-4）。その代わり、環境変数が既に設定されている番号だけを拾う。未解決のまま
+# render すると dataset_ids が空で焼き込まれ、1.5 段の G-KB2（dataset_ids.assert_bound()）が
+# 最後の砦として捕まえる（--dry-run では警告のみ・停止しない）。
+
+def resolve_dataset_env(env_name, targets, env_raw, base_url, *, dry_run, no_resolve_datasets):
+    """0.5 段。render サブプロセスへ渡す追加 env dict（{環境変数名: dataset id}）を返す。
+
+    dry_run または no_resolve_datasets のときはネットワークを呼ばず、os.environ に既に
+    設定されている変数だけを拾う（env.yml 自体の形が不正な場合は警告を出すだけで止めない
+    ——実行を伴わない・API を意図的に飛ばす経路なので、最終判定は 1.5 段の G-KB2 に委ねる）。
+
+    それ以外（実行時・かつ --no-resolve-datasets 無し）は dataset_ids.resolve() を呼ぶ。
+    失敗は dataset_ids.DatasetResolveError のまま呼び出し元へ伝播する（呼び出し元が
+    catch して exit 2 にする。Dify への書き込みはまだ 1 つも起きていない）。
+    """
+    if not targets:
+        return {}
+
+    if dry_run or no_resolve_datasets:
+        collected = {}
+        for code in targets:
+            try:
+                planned = dataset_ids.planned_vars(env_raw, code)
+            except dataset_ids.DatasetResolveError as e:
+                log(f"WARN: [dataset] {e}")
+                continue
+            for _logical, var_name, _kb_name in planned:
+                if var_name in os.environ:
+                    collected[var_name] = os.environ[var_name]
+                else:
+                    log(
+                        f"WARN: [dataset] {code}: {var_name} が未設定です"
+                        "（--dry-run/--no-resolve-datasets のため Datasets API を呼びません）"
+                    )
+        return collected
+
+    key = os.environ.get("DIFY_DATASET_KEY", "").strip()
+    resolved = dataset_ids.resolve(env_name, targets, environ=os.environ, base_url=base_url, key=key)
+    for var_name, ds_id in sorted(resolved.items()):
+        source = "環境変数が設定済み" if var_name in os.environ else "Datasets API 名前引き"
+        log(f"[dataset] {var_name}: id={ds_id}（{source}）")  # log() が masking.mask_ids() を通す（M3）
+    return resolved
+
+
 # ---------------------------------------------------------------------------
 # 1. render（サブプロセス。release.py の run_render と同じ作法）
 # ---------------------------------------------------------------------------
 
-def run_render(env_name, codes, all_flag):
+def run_render(env_name, codes, all_flag, extra_env=None):
+    """render.py をサブプロセスとして呼ぶ。extra_env（0.5 段で解決した dataset id）は
+    このサブプロセス専用の env dict にだけ足す。親プロセスの os.environ は一切変更しない
+    （C1・C2。設計書 docs/handoff/2026-09-09-dataset-ids-in-ci.md §5。Issue #209 PR-2。
+    render.py 自体は 1 バイトも変えないので、extra_env が無い呼び出しは今までと完全に同じ）。"""
     cmd = [sys.executable, RENDER_PY, "--env", env_name, "--strict"]
     cmd += ["--all"] if all_flag else codes
     log(f"[render] {' '.join(cmd[1:])} → dify/build/{env_name}/")
-    res = subprocess.run(cmd, cwd=ROOT, env=os.environ.copy(), capture_output=True, text=True, timeout=120)
+    sub_env = os.environ.copy()
+    if extra_env:
+        sub_env.update(extra_env)
+    res = subprocess.run(cmd, cwd=ROOT, env=sub_env, capture_output=True, text=True, timeout=120)
     sys.stdout.write(res.stdout)
     sys.stderr.write(res.stderr)
     if res.returncode != 0:
@@ -496,6 +586,9 @@ def build_arg_parser():
                      help="env.yml の apps.<番号>.id が null の行だけを実 id に書き換える")
     ap.add_argument("--stop-on-error", action="store_true", help="最初の失敗で中断（既定は残りを続行）")
     ap.add_argument("--timeout", type=int, default=120, help="Console API 呼び出しのタイムアウト秒（既定 120）")
+    ap.add_argument("--no-resolve-datasets", action="store_true",
+                     help="0.5 段の Datasets API 呼び出しを丸ごと飛ばす（環境変数が設定済みならそれは使う）。"
+                          "G-KB2（1.5 段）は飛ばさない＝dataset_ids が空のままなら停止する（Issue #209）")
     return ap
 
 
@@ -526,8 +619,23 @@ def main():
         log(console_api.TOKEN_HELP)
         return 2
 
+    # 0.5 段（設計書 §4-1・§4-3。Issue #209 PR-2）: KB 付き番号の dataset id を解決する。
+    # ここで失敗すれば render すら呼ばない＝Dify には 1 バイトも書き込まれていない（§7）。
+    targets = dataset_ids.kb_codes(codes)
+    if targets:
+        log(f"[dataset] KB 付きの対象: {', '.join(targets)}")
+    base_url = resolve_base_url(env_raw)
     try:
-        out_dir = run_render(env_name, codes, args.all)
+        resolved_dataset_env = resolve_dataset_env(
+            env_name, targets, env_raw, base_url,
+            dry_run=args.dry_run, no_resolve_datasets=args.no_resolve_datasets,
+        )
+    except dataset_ids.DatasetResolveError as e:
+        log(f"[STOP] {e}")
+        return 2
+
+    try:
+        out_dir = run_render(env_name, codes, args.all, extra_env=resolved_dataset_env)
     except CloudDeployError as e:
         log(f"[STOP] {e}")
         return 2
@@ -560,13 +668,20 @@ def main():
         log("\n== dry-run 完了（ネットワークは呼んでいません） ==")
         return 0
 
-    # KB 紐づけの安全弁（5.5 節）: Phase 1（インポート）どころか、セッション確立（client_from_env）
-    # より前に判定する。実行を伴わない dry-run では判定しない（上のブロックで警告のみ表示する）。
-    # ネットワークを一切呼ばずに判定できるため、ここで止めれば DIFY_CONSOLE_REFRESH の
-    # 1 回使い切りのリフレッシュトークンも消費しない（無駄打ちしない）。
-    kb_hits = find_empty_kb_bindings(out_dir, codes)
-    if kb_hits:
-        log(format_kb_binding_guard_message(kb_hits))
+    # 1.5 段（G-KB2。設計書 §4-2・§4-4・§7。Issue #209 PR-2）: Phase 1（インポート）どころか、
+    # セッション確立（client_from_env）より前に判定する。実行を伴わない dry-run では判定しない
+    # （上のブロックで find_empty_kb_bindings() による警告のみ表示する）。ネットワークを一切
+    # 呼ばずに判定できるため、ここで止めれば DIFY_CONSOLE_REFRESH の 1 回使い切りの
+    # リフレッシュトークンも消費しない（無駄打ちしない）。
+    #
+    # 歯止めは 1 か所に集約する（CLAUDE.md／設計書 §12「歯止めを 2 か所に置かない」）：実行を
+    # 止める判定はここ（dataset_ids.assert_bound()）だけが行う。find_empty_kb_bindings() は
+    # 削除していない——上の dry-run ブロックの advisory 表示と、既存の単体テスト
+    # （test_kb_guard_unit_detects_empty_dataset_ids）が引き続き使う。
+    try:
+        dataset_ids.assert_bound(out_dir, targets)
+    except dataset_ids.DatasetResolveError as e:
+        log(str(e))
         return 2
 
     # ---- 本番実行 ----
