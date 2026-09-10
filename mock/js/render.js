@@ -81,6 +81,25 @@ function renderSidebar() {
 /** NEW バッジ 1 個。新着でなければ空文字（呼び出し側に分岐を書かない） */
 const newBadgeHTML = (x) => isNew(x) ? `<span class="badge-new">${esc(t('newBadge'))}</span>` : '';
 
+/* ---- 本番リンク（設計書 2026-09-08-live-links.md §5-5）----
+   LIVE にエントリが無ければ空文字を返す（呼び出し側に分岐を書かない＝newBadgeHTML と同じ作法）。
+   成熟度バッジ（塗り）とは形（枠線＋外部リンク矢印）で区別する。色だけに頼らない。 */
+const liveArrowSvg = '<svg class="ic-live" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 17L17 7M9 7h8v8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+/** カード／`.d-meta`／`.use-row`／`.feed-item` の「いま使える」印（クリックできない <span>） */
+function liveMarkHTML(x) {
+  const live = liveOf(x.id);
+  if (!live) return '';
+  const aria = t('liveMarkAria').replace('{name}', L(x.name));
+  return `<span class="live-mark" title="${esc(aria)}" aria-label="${esc(aria)}">${liveArrowSvg}${esc(t('liveMark'))}</span>`;
+}
+/** 詳細画面の「本番を開く」ボタン（新しいタブで開く通常のリンク。data-act は持たない） */
+function liveBtnHTML(x) {
+  const live = liveOf(x.id);
+  if (!live) return '';
+  const title = t('liveOpenTitle').replace('{updated}', live.updated);
+  return `<a class="btn-live" href="${esc(live.url)}" target="_blank" rel="noopener noreferrer" title="${esc(title)}">${liveArrowSvg}${esc(t('liveOpen'))}</a>`;
+}
+
 /* ---- お気に入り（星）ボタン（設計書 2026-09-08-favorites.md §3-1・§3-5・§3-6） ----
    塗り/輪郭という「形」で on/off を区別する（色だけに頼らない）。既存トークンのみ使用（--action-primary / --text-secondary）。
    toggleFav 後の書き換えは syncFavButtons() が担い、renderAll()/renderMain() は呼ばない（§3-8：一覧のスクロール位置を飛ばさない）。 */
@@ -141,6 +160,7 @@ function cardHTML(x) {
     <div class="c-desc">${esc(L(x.desc))}</div>
     <div class="c-meta">
       <span class="status"><span class="dot ${statusClass(x.st)}"></span>${esc(statusText(x.st))}</span>
+      ${liveMarkHTML(x)}
       ${x.tags.map(k => `<span class="tag">${esc(tag(k))}</span>`).join('')}
     </div>
   </div>`;
@@ -235,7 +255,7 @@ function dashSectionsHTML() {
               <span class="use-name">${catIcon(x.cat, 'ic-sm')}${esc(L(x.name))}
                 <span class="code">${esc(svcCode(x.id))}</span></span>
               <span class="use-sub">${esc(L(c.name))}
-                <span class="status"><span class="dot ${statusClass(x.st)}"></span>${esc(statusText(x.st))}</span></span>
+                <span class="status"><span class="dot ${statusClass(x.st)}"></span>${esc(statusText(x.st))}</span>${liveMarkHTML(x)}</span>
             </span>
             <span class="use-bar"><span class="use-fill" style="width:${w}%"></span></span>
             <span class="use-n">${esc(t('usesUnit').replace('{n}', f.uses))}</span>
@@ -403,6 +423,7 @@ function feedItemHTML(it) {
       <span class="fi-foot">
         <span class="fi-cat">${esc(L(c.name))}</span>
         <span class="status"><span class="dot ${statusClass(x.st)}"></span>${esc(statusText(x.st))}</span>
+        ${liveMarkHTML(x)}
         <span class="fi-open">${esc(t('feedOpen'))} ›</span>
       </span>
     </span>
@@ -635,6 +656,7 @@ function renderMain() {
         <h1>${esc(L(x.name))}</h1>
         <div class="d-meta">
           <span class="badge ${statusClass(x.st)}">${esc(statusText(x.st))}</span>
+          ${liveMarkHTML(x)}
           ${x.tags.map(k => `<span class="tag">${esc(tag(k))}</span>`).join('')}
         </div>
         <div class="keyline"></div>
@@ -664,8 +686,10 @@ function renderMain() {
         </ol>` : ''}
         <div class="cta-row">
           <button class="btn-primary" data-act="start">${esc(scn ? t('startDemo') : t('startUse'))}</button>
+          ${liveBtnHTML(x)}
           ${favToggleHTML(x)}
           <span class="cta-note">${esc(t('mockNote'))}</span>
+          ${liveOf(x.id) ? `<span class="cta-note cta-note-live">${esc(t('liveNote'))}</span>` : ''}
         </div>
       </div>
     </div>`;

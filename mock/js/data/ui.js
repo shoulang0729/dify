@@ -124,7 +124,20 @@ const T = {
   favSeeAll:     { ja: 'すべて見る（{n}）', zh: '查看全部（{n}）', en: 'See all ({n})' },
   favNote:       { ja: '自分で選んだエージェント',
                    zh: '您自己收藏的智能体',
-                   en: 'Agents you picked yourself' }
+                   en: 'Agents you picked yourself' },
+
+  /* ---- 本番リンク（設計書 2026-09-08-live-links.md §5-3。5 キー） ---- */
+  liveOpen:      { ja: '本番を開く', zh: '打开正式版', en: 'Open live app' },
+  liveMark:      { ja: 'いま使える', zh: '已可使用', en: 'Live now' },
+  liveMarkAria:  { ja: '「{name}」は Dify 上で実際に使えます',
+                   zh: '「{name}」已在 Dify 上实际可用',
+                   en: '"{name}" is live on Dify and usable now' },
+  liveOpenTitle: { ja: 'Dify 上の本番アプリを新しいタブで開きます（{updated} 時点で動作確認済み）',
+                   zh: '在新标签页中打开 Dify 上的正式应用（截至 {updated} 已确认可用）',
+                   en: 'Opens the live app on Dify in a new tab (verified working as of {updated})' },
+  liveNote:      { ja: '※ 本番アプリは架空データのデモ環境です',
+                   zh: '※ 正式应用运行在使用虚构数据的演示环境上',
+                   en: '* The live app runs on a demo environment that contains fictional data only.' }
 };
 
 /* ============================================================
