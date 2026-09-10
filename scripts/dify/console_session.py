@@ -4,7 +4,8 @@
 
     python3 scripts/dify/console_session.py --env cloud-master refresh      # 既定。PR-3 で実装
     python3 scripts/dify/console_session.py --env cloud-master revoke      # PR-4 で実装
-    python3 scripts/dify/console_session.py --env cloud-master site_probe  # 本 PR（Issue #124）で実装
+    python3 scripts/dify/console_session.py --env cloud-master site_probe            # codes 省略。従来の挙動
+    python3 scripts/dify/console_session.py --env cloud-master site_probe KN-01 DC-01  # 本 PR（Issue #124 最終ピース）
 
 `refresh`（既定）：`console_api.client_from_env()` で `DIFY_CONSOLE_REFRESH` を使ってセッションを
 確立する（rotate した値は `DIFY_REFRESH_SINK` が設定されていれば `console_api.py` が自動で
@@ -31,36 +32,77 @@
 見つからなければ「見つからなかった」と明示する（黙って空を出さない）。
 
 **run #21（実機。2026-09-10）で確定**：`list_apps()`（`GET /console/api/apps` 一覧）には
-`site` らしきキーも `https://` の値も**含まれない**。そこで本 PR（Issue #124 拡張）で、
-一覧 1 件目の `id` を使って **`GET /console/api/apps/{id}`（アプリ単体の詳細。`apps_detail`。
-確認要・実機未確認）**も追加で叩き、同じ 3 点を調べる。404（エンドポイントが無い、または
-対応していない）は**落ちずに「404 だった」と明示する想定内の結果**として扱う。一覧側の
-結果（「一覧には無かった」という事実）は詳細を調べたあとも変わらず出力に残す。
+`site` らしきキーも `https://` の値も**含まれない**。そこで前 PR（Issue #124 拡張。#235）で、
+一覧 1 件目の `id` を使って **`GET /console/api/apps/{id}`（アプリ単体の詳細。`apps_detail`）**
+も追加で叩き、同じ 3 点を調べるようにした。404（エンドポイントが無い、または対応していない）は
+**落ちずに「404 だった」と明示する想定内の結果**として扱う。一覧側の結果（「一覧には無かった」
+という事実）は詳細を調べたあとも変わらず出力に残す。
+
+**run #22（実機。2026-09-10）で確定**：`GET /console/api/apps/{id}`（詳細）の応答に **`site`**
+があり、`site.app_base_url`（例 `https://udify.app`）・`site.code` を組み合わせれば公開 URL が
+作れることが分かった（`mode` も応答に含まれる）。そこで本 PR（Issue #124 の最後のピース）で
+`site_probe` に **`codes`（管理番号。空白区切り。省略可）** を追加した：
+
+  1. `codes` で指定した管理番号ごとに、マスタ DSL（`dify/apps/<番号>-*.yml` の `app.name`）を
+     読み、`find_app_id_by_name()`（`cloud_deploy.py`・`inspect_rerank.py` と同じ経路）で
+     Cloud 上の app_id を解決する
+  2. `get_app_detail(app_id)`（GET のみ）を叩く
+  3. 応答から `mode`・`site.code`・`site.app_base_url` **だけ**を取り出して、管理番号ごとに
+     1 行で出す（`mock/js/data/live.js` へ手で写しやすい形）
+
+  **公開 URL そのものは組み立てていない**：`mode`（`chat`/`workflow`/`completion` 等）によって
+  公開 URL のパスの形（`/chat/<code>` 等）が変わるはずだが、実機でそのパス形式そのものは
+  まだ確認できていない。推測で決め打ちにせず、確認できた材料（`mode`・`site.code`・
+  `site.app_base_url`）をそのまま出し、URL の組み立ては次の段階（PM が実機で 1 つ開いて
+  パス形式を確認したあと）に回す。
+
+  管理番号が `dify/apps/` に無い・Cloud に同名アプリが無い・`apps_detail` が 404、のいずれも
+  **落ちずに「見つかりませんでした」と明示して次の管理番号へ進む**（想定内の結果。exit は 0 の
+  まま）。404 以外の失敗（認証エラー・Cloudflare ブロック・5xx 等）は、以降の管理番号を続けても
+  同じ失敗を繰り返すだけなので、そこで打ち切って通常の終了コード表（0/2/3/4）にマップする。
+
+  ついでに、`dify/apps/*.yml`（git 側のマスタの本数）と `list_apps()`（実機の件数）を並べて出す
+  （run #22 で「git 12 本・実機 13 件」という食い違いが見つかったため。名前が一致しないアプリが
+  あれば、その**名前**も出す。id は他の出力と同じく `log()` が masking するが、名前は
+  `CLAUDE.md` §2-10 の理由により秘密ではないので出してよい）。
+
+  `codes` を省略したときは、**従来どおり** `list_apps()` の応答 1 件目 → その `id` での
+  `get_app_detail()` という単発の構造調査を行う（既存の挙動は変えない）。
 
 Dify のアプリ・KB を書き換える API は一切呼ばない（`refresh` は `list_apps()` の GET のみ、
-`revoke` は `logout()` の POST のみ、`site_probe` も `list_apps()` と `get_app_detail()` の
-GET のみ）。
+`revoke` は `logout()` の POST のみ、`site_probe` も `list_apps()` と `get_app_detail()` と
+`find_app_id_by_name()`〔内部で `list_apps()` を呼ぶだけ〕の GET のみ）。
 
 終了コード（`console_api._print_and_exit_for_error` と同じ表。0/2/3/4）:
     0 セッションが有効（`refresh`：`list_apps()` まで成功／`revoke`：`logout()` まで成功／
       `site_probe`：`list_apps()`（と `get_app_detail()`。404 を含む）まで成功。URL が
-      見つかったかどうかは終了コードに含めない＝見つかる・見つからないのどちらも正常な観測結果）
+      見つかったかどうか・管理番号が見つかったかどうかは終了コードに含めない＝見つかる・
+      見つからないのどちらも正常な観測結果）
     2 引数・環境・認証情報の不備（`DIFY_CONSOLE_REFRESH` 未設定等）
     3 認証エラー（401/403。セッション期限切れ・CSRF 不一致）
     4 Cloudflare に弾かれた（403 かつ本文に `error code: 1010`）
 
 値をログに出さない：本モジュールの出力はすべて `console_api.log()`（内部で `_mask()` を通し、
 UUID 形式の値は `masking.mask_ids()` 経由で先頭 8 文字に丸められる）を使う（`CLAUDE.md` §2-10）。
-`site_probe` が出す `https://` の URL だけは値ごと出す（公開 Web アプリの URL は公開されるべき
-値であり、`CLAUDE.md` §2-10 は架空データのみの環境の URL を公開 Pages に載せてよいと明示している。
-`cloud-master` の 12 本は PM が架空データのみと確認済み）。
+`site_probe` が出す `https://` の URL・`mode`・`site.code` の値だけは値ごと出す（公開 Web アプリ
+の URL の材料は公開されるべき値であり、`CLAUDE.md` §2-10 は架空データのみの環境の URL を
+公開 Pages に載せてよいと明示している。`cloud-master` の 12 本は PM が架空データのみと確認済み）。
+`site.access_token` 等の秘密系キーは `_SECRET_LIKE_KEY_RE` に一致し、配下ごと読まない
+（`mode`・`site.code`・`site.app_base_url` はこの正規表現に一致しない値だけを個別に取り出して
+いるので、秘密系キーの値が紛れ込む経路はそもそも無い）。
 
 設計: docs/handoff/2026-09-09-refresh-token-writeback.md §4-4・§4-6（Issue #212 PR-3・PR-4）
 """
 import argparse
+import glob
 import os
 import re
 import sys
+
+try:
+    import yaml  # site_probe の codes 解決（マスタ DSL の app.name 読み取り）にだけ使う。
+except ImportError:  # pragma: no cover
+    yaml = None  # PyYAML が無い環境では codes 付き site_probe だけが使えない（他の action には影響しない）
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import console_api  # noqa: E402  (scripts/dify/console_api.py。上の sys.path.insert が必要。list_apps() は変更せずそのまま呼ぶ)
@@ -68,6 +110,11 @@ import cloud_deploy  # noqa: E402  (env.yml の読み方・console_url 解決を
 # masking.py はここでは直接 import しない：site_probe の出力はすべて console_api.log() を通し、
 # その内部の _mask() が masking.mask_ids() を既に適用する（UUID 形式の値が紛れていれば丸められる）。
 # console_api.py・kb_upload.py と同じ二重 import を避けるための整理（Issue #178 の設計方針どおり）。
+
+# site_probe（codes 付き）: マスタ DSL の置き場所。cloud_deploy.py・inspect_rerank.py と同じ
+# dify/apps/*.yml を読むだけ（書き換えない）。モジュール属性にしてテストから差し替えられるように
+# する（inspect_rerank.APPS_DIR と同じ作法。test_console_session.py 参照）。
+APPS_DIR = cloud_deploy.APPS_DIR
 
 # site_probe: 名前にこれを含むキーの配下は一切読まない（値はもちろん、その下に隠れた
 # https:// の値も対象にしない。安全側。Issue #124）。
@@ -223,22 +270,16 @@ def _report_site_and_urls(label, obj):
         console_api.log(f"site_probe({label}): https:// の値を発見: {path} = {value}")
 
 
-def cmd_site_probe(console_url, timeout):
-    """DIFY_CONSOLE_REFRESH でセッションを確立し、まず list_apps()（変更なし・GET のみ）の
-    応答 1 件目を読み取り専用で調べる（"list" ラベル）。続けて、1 件目の id を使って
-    get_app_detail()（`GET /console/api/apps/{id}`。確認要・実機未確認）も叩き、同じ 3 点を
-    調べる（"detail" ラベル）。404（エンドポイントが無い・対応していない）は落ちずに明示する
-    想定内の結果として扱う。list 側の結果は detail を調べたあとも出力に残る
+def _cmd_site_probe_single(client):
+    """codes 省略時の従来の挙動：list_apps()（変更なし・GET のみ）の応答 1 件目を読み取り専用で
+    調べる（"list" ラベル）。続けて、1 件目の id を使って get_app_detail()（`GET /console/api/apps/{id}`）
+    も叩き、同じ 3 点を調べる（"detail" ラベル）。404（エンドポイントが無い・対応していない）は
+    落ちずに明示する想定内の結果として扱う。list 側の結果は detail を調べたあとも出力に残る
     （run #21 で「一覧には無い」と確定したため、その事実がログに残り続けるほうがよい）。
 
     戻り値: 終了コード（int）。URL が見つかったかどうかは終了コードに含めない（0 は
     「list_apps()（と get_app_detail()。404 を含む）までは成功した」という意味。
     見つかる／見つからないのどちらも正常な観測結果）。"""
-    try:
-        client = console_api.client_from_env(console_url, timeout=timeout)
-    except console_api.ConsoleAPIError as e:
-        return _exit_code_for_error(e)
-
     try:
         apps = client.list_apps()
     except console_api.ConsoleAPIError as e:
@@ -281,6 +322,165 @@ def cmd_site_probe(console_url, timeout):
     return 0
 
 
+# ---------------------------------------------------------------------------
+# site_probe に codes を渡したとき（Issue #124 の最後のピース）：管理番号ごとに
+# 公開 URL の材料（mode・site.code・site.app_base_url）を出す。
+# ---------------------------------------------------------------------------
+
+def _app_name_for_code(code):
+    """dify/apps/<code>-*.yml の app.name を返す（cloud_deploy.py・inspect_rerank.py と同じ経路）。
+    見つからない・PyYAML が無い・app.name が空、のいずれも例外にせず (None, 理由) を返す
+    （呼び出し側〔_probe_url_for_code〕が「見つかりませんでした」と明示して次の管理番号へ
+    進めるようにするため。inspect_rerank.app_name_for_code() は例外を送出する点だけが異なる）。"""
+    if yaml is None:
+        return None, "PyYAML がありません: pip3 install pyyaml"
+    matches = sorted(glob.glob(os.path.join(APPS_DIR, f"{code}-*.yml")))
+    if not matches:
+        return None, f"マスタ DSL が見つかりません: dify/apps/{code}-*.yml"
+    with open(matches[0], encoding="utf-8") as fh:
+        data = yaml.safe_load(fh) or {}
+    name = ((data.get("app") or {}).get("name") or "").strip()
+    if not name:
+        return None, f"app.name が空です（{os.path.relpath(matches[0], cloud_deploy.ROOT)}）"
+    return name, None
+
+
+def _extract_site_info(detail):
+    """get_app_detail() の応答から mode・site.code・site.app_base_url だけを取り出す
+    （他のフィールドは見ない。値を出してよいのはこの 3 つだけ。§2-10・docstring 参照）。"""
+    site = detail.get("site") if isinstance(detail, dict) else None
+    site = site if isinstance(site, dict) else {}
+    return {
+        "mode": detail.get("mode") if isinstance(detail, dict) else None,
+        "site_code": site.get("code"),
+        "app_base_url": site.get("app_base_url"),
+    }
+
+
+def _git_vs_live_app_count(client):
+    """git 側（dify/apps/*.yml）の本数と実機（list_apps()）の件数を並べて出す。名前が一致しない
+    アプリがあれば、その名前を出す（id は log() が masking するが、名前は CLAUDE.md §2-10 の
+    理由により秘密ではない）。run #22 で「git 12 本・実機 13 件」の食い違いが見つかったことを、
+    この機会に毎回機械的に分かるようにする（Issue #124 要件 5）。戻り値: list_apps() の結果
+    （呼び出し側が使い回せるように。ネットワーク呼び出しを 2 回にしないため）。"""
+    master_files = sorted(glob.glob(os.path.join(APPS_DIR, "*.yml")))
+    master_names = set()
+    for path in master_files:
+        try:
+            with open(path, encoding="utf-8") as fh:
+                data = yaml.safe_load(fh) or {} if yaml is not None else {}
+            name = ((data.get("app") or {}).get("name") or "").strip()
+            if name:
+                master_names.add(name)
+        except Exception:
+            continue  # 壊れたマスタ DSL があってもこの件数チェック自体は止めない（他の検証が別途検出する）
+
+    apps = client.list_apps()
+    console_api.log(
+        f"site_probe(count): git 側 dify/apps/*.yml は {len(master_files)} 本、"
+        f"実機 list_apps() は {len(apps)} 件です（差 {len(apps) - len(master_files)} 件）"
+    )
+    extra = [a for a in apps if isinstance(a, dict) and a.get("name") not in master_names]
+    for a in extra:
+        console_api.log(f"site_probe(count): git に無いアプリ: name={a.get('name')!r}")
+    if not extra and len(apps) != len(master_files):
+        console_api.log(
+            "site_probe(count): 件数は一致しませんが、名前の突き合わせでは git に無いアプリを特定できませんでした"
+        )
+    return apps
+
+
+def _probe_url_for_code(client, raw_code):
+    """1 件の管理番号について、site_probe(url) の 1 行を出す。戻り値: 終了コード（int）か None
+    （None は「この管理番号の処理を続けてよい」＝見つからなかった・404 だった、のどちらも含む）。
+    None 以外（int）が返ったら、呼び出し側は直ちにそのコードで打ち切る（404 以外の失敗）。"""
+    code = raw_code.upper()
+    name, err = _app_name_for_code(code)
+    if err:
+        console_api.log(f"site_probe(url): {code}: 見つかりませんでした（{err}）")
+        return None
+
+    app_id = client.find_app_id_by_name(name)
+    if not app_id:
+        console_api.log(f"site_probe(url): {code}（{name}）: 見つかりませんでした（実機に同名アプリがありません）")
+        return None
+
+    try:
+        detail = client.get_app_detail(app_id)
+    except console_api.ConsoleAPIError as e:
+        if "HTTP 404" in str(e):
+            console_api.log(
+                f"site_probe(url): {code}（{name}）: GET /console/api/apps/<id> が 404 でした"
+                "（想定内の結果。この管理番号はスキップします）"
+            )
+            return None
+        console_api.log(f"site_probe(url): {code}（{name}）で失敗しました。以降の管理番号は打ち切ります")
+        return _exit_code_for_error(e)
+
+    info = _extract_site_info(detail)
+    if not info["site_code"] and not info["app_base_url"] and not info["mode"]:
+        console_api.log(
+            f"site_probe(url): {code}（{name}）: 見つかりませんでした"
+            "（mode／site.code／site.app_base_url がいずれもありません）"
+        )
+        return None
+
+    # mock/js/data/live.js へ手で写しやすい形（JS のオブジェクトリテラルの 1 行に近い形）で出す。
+    # URL そのものは組み立てていない（docstring 参照）。
+    console_api.log(
+        f"site_probe(url): '{code}': {{ mode: {info['mode']!r}, site_code: {info['site_code']!r}, "
+        f"app_base_url: {info['app_base_url']!r} }}"
+        "  // 公開 URL は組み立てていません。mode 別のパス形式（/chat/<code> 等）は実機未確認です"
+    )
+    return None
+
+
+def cmd_site_probe_urls(client, codes):
+    """codes（管理番号のリスト）を受け取り、管理番号ごとに公開 URL の材料を出す
+    （Issue #124 の最後のピース）。docstring 参照。
+
+    戻り値: 終了コード（int）。ある管理番号が見つからない／apps_detail が 404 は
+    「見つかりませんでした」と明示して次の管理番号へ進む（想定内の結果。exit 0 のまま）。
+    404 以外の ConsoleAPIError（認証エラー・Cloudflare ブロック・5xx 等）はそこで打ち切り、
+    通常の終了コード表（0/2/3/4）にマップして返す（セッションが壊れている可能性が高く、
+    以降の管理番号を続けても同じ失敗を繰り返すだけのため）。"""
+    if yaml is None:
+        console_api.log("site_probe(url): PyYAML がありません: pip3 install pyyaml")
+        return 2
+
+    try:
+        _git_vs_live_app_count(client)
+    except console_api.ConsoleAPIError as e:
+        return _exit_code_for_error(e)
+
+    console_api.log(
+        "site_probe(url): 公開 URL は組み立てていません（mode ごとにパスの形式が変わるはずですが"
+        "実機で確認できていないため。mode・site.code・app_base_url をそのまま出します。"
+        "組み立ては次の段階に回してください）"
+    )
+
+    for raw_code in codes:
+        rc = _probe_url_for_code(client, raw_code)
+        if rc is not None:
+            return rc
+
+    return 0
+
+
+def cmd_site_probe(console_url, timeout, codes=None):
+    """DIFY_CONSOLE_REFRESH でセッションを確立する。`codes`（管理番号のリスト）が渡されていれば
+    `cmd_site_probe_urls()`（Issue #124 最後のピース）、無ければ従来どおり `_cmd_site_probe_single()`
+    （list_apps() の 1 件目 → その id での get_app_detail()）を実行する。戻り値: 終了コード（int）。"""
+    try:
+        client = console_api.client_from_env(console_url, timeout=timeout)
+    except console_api.ConsoleAPIError as e:
+        return _exit_code_for_error(e)
+
+    if codes:
+        return cmd_site_probe_urls(client, codes)
+    return _cmd_site_probe_single(client)
+
+
 def build_arg_parser():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("action", nargs="?", default="refresh", choices=["refresh", "revoke", "site_probe"],
@@ -288,6 +488,11 @@ def build_arg_parser():
                           "revoke（手動キルスイッチ。logout してセッションを無効化する。B3'）。"
                           "site_probe（読み取り専用。list_apps() の応答に公開 Web アプリの URL らしき"
                           "値が含まれるかを調べる。Issue #124）")
+    ap.add_argument("codes", nargs="*",
+                     help="site_probe 専用（省略可）：対象の管理番号（例 KN-01 DC-01）。"
+                          "指定すると管理番号ごとに公開 URL の材料（mode・site.code・app_base_url）を出す。"
+                          "省略時は従来どおり list_apps() の 1 件目の構造を出す。"
+                          "refresh／revoke では無視される（Issue #124 最後のピース）")
     ap.add_argument("--env", default=os.environ.get("DIFY_ENV") or "cloud-master",
                      help="dify/env/<env>/env.yml（既定 $DIFY_ENV、無ければ cloud-master）")
     ap.add_argument("--timeout", type=int, default=60, help="Console API 呼び出しのタイムアウト秒（既定 60）")
@@ -304,7 +509,7 @@ def main():
     if args.action == "refresh":
         return cmd_refresh(console_url, args.timeout)
     if args.action == "site_probe":
-        return cmd_site_probe(console_url, args.timeout)
+        return cmd_site_probe(console_url, args.timeout, codes=args.codes)
     return cmd_revoke(console_url, args.timeout)
 
 

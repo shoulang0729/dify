@@ -13,6 +13,7 @@ site_probe のテスト（Issue #124）は、`list_apps()` の応答 1 件目を
 他のテストと apps の挿入順が混ざらないよう**専用の mock サーバー・プロセス**を使う
 （`start_mock_server()` / `stop_mock_server()`）。
 """
+import glob
 import json
 import os
 import socket
@@ -28,10 +29,12 @@ SCRIPTS_DIR = os.path.dirname(TESTS_DIR)
 ROOT = os.path.dirname(os.path.dirname(SCRIPTS_DIR))
 CONSOLE_SESSION = os.path.join(SCRIPTS_DIR, "console_session.py")
 MOCK_SERVER = os.path.join(TESTS_DIR, "mock_server.py")
+REAL_APPS_DIR = os.path.join(ROOT, "dify", "apps")
 
 sys.path.insert(0, SCRIPTS_DIR)
 sys.path.insert(0, TESTS_DIR)
 import console_api  # noqa: E402
+import console_session  # noqa: E402  (codes 付き site_probe の単体テスト用。_app_name_for_code 等を直接呼ぶ)
 import mock_server  # noqa: E402
 
 RESULTS = []
@@ -102,6 +105,17 @@ def run_cli(args, env_extra=None, timeout=30):
         [sys.executable, CONSOLE_SESSION, *args],
         cwd=ROOT, capture_output=True, text=True, timeout=timeout, env=env,
     )
+
+
+def _real_app_name(code):
+    """dify/apps/<code>-*.yml の app.name を返す（実在する管理番号の名前をそのまま使い、
+    フィクスチャを別途作らずに済ませる。test_inspect_rerank.py の _real_app_name() と同じ考え方）。"""
+    matches = sorted(glob.glob(os.path.join(REAL_APPS_DIR, f"{code}-*.yml")))
+    assert matches, f"fixture prerequisite missing: dify/apps/{code}-*.yml"
+    import yaml
+    with open(matches[0], encoding="utf-8") as fh:
+        data = yaml.safe_load(fh) or {}
+    return data["app"]["name"]
 
 
 def test_refresh_success_exit0(base):
@@ -428,6 +442,201 @@ def test_site_probe_detail_401_exit3(base):
     check("site_probe(detail 401): exit 3", r.returncode == 3, f"exit={r.returncode} {out}")
 
 
+# ---------------------------------------------------------------------------
+# site_probe に codes を渡したとき（Issue #124 の最後のピース）：管理番号ごとに
+# 公開 URL の材料（mode・site.code・site.app_base_url）を出す。
+# ---------------------------------------------------------------------------
+
+def test_app_name_for_code_unit(tmpdir):
+    """_app_name_for_code(): 見つかる／マスタが無い／app.name が空、のいずれも例外にせず
+    (name-or-None, 理由-or-None) を返すこと（APPS_DIR を一時ディレクトリに差し替えて実マスタと
+    切り離す。inspect_rerank.py の T6 と同じ考え方）。"""
+    original_apps_dir = console_session.APPS_DIR
+    try:
+        console_session.APPS_DIR = tmpdir
+        with open(os.path.join(tmpdir, "ZZ-01-fixture.yml"), "w", encoding="utf-8") as fh:
+            fh.write("app:\n  name: 'ZZ-01 フィクスチャ'\n")
+        name, err = console_session._app_name_for_code("ZZ-01")
+        check("app_name_for_code: 見つかれば (name, None)", name == "ZZ-01 フィクスチャ" and err is None, (name, err))
+
+        name, err = console_session._app_name_for_code("ZZ-99")
+        check("app_name_for_code: マスタが無ければ (None, 理由)", name is None and "見つかりません" in (err or ""), (name, err))
+
+        with open(os.path.join(tmpdir, "ZZ-02-empty-name.yml"), "w", encoding="utf-8") as fh:
+            fh.write("app:\n  name: ''\n")
+        name, err = console_session._app_name_for_code("ZZ-02")
+        check("app_name_for_code: app.name が空なら (None, 理由)", name is None and "空です" in (err or ""), (name, err))
+    finally:
+        console_session.APPS_DIR = original_apps_dir
+
+
+def test_extract_site_info_unit():
+    """_extract_site_info(): mode・site.code・site.app_base_url だけを取り出し、
+    site.access_token 等は一切参照しないこと（そもそもキー名を読まないので漏れる経路が無い）。"""
+    info = console_session._extract_site_info({
+        "mode": "workflow",
+        "site": {"code": "abc12345", "app_base_url": "https://udify.app", "access_token": "SHOULD-NOT-APPEAR"},
+    })
+    check("extract_site_info: mode が取れる", info["mode"] == "workflow", info)
+    check("extract_site_info: site_code が取れる", info["site_code"] == "abc12345", info)
+    check("extract_site_info: app_base_url が取れる", info["app_base_url"] == "https://udify.app", info)
+    check("extract_site_info: access_token を戻り値に含めない", "access_token" not in info, info)
+
+    info2 = console_session._extract_site_info({"mode": "chat"})
+    check("extract_site_info: site が無くても落ちない", info2["site_code"] is None and info2["app_base_url"] is None, info2)
+
+    info3 = console_session._extract_site_info("not-a-dict")
+    check("extract_site_info: dict でなくても落ちない", info3 == {"mode": None, "site_code": None, "app_base_url": None}, info3)
+
+
+def test_site_probe_codes_end_to_end(base):
+    """codes に KN-01・DC-01 を渡すと、それぞれのマスタ DSL の app.name で app_id を解決し、
+    get_app_detail() の応答から mode・site.code・app_base_url を管理番号ごとに 1 行で出すこと。
+    URL そのものは組み立てず、その旨を明示すること。site.access_token は出力に現れないこと。"""
+    name_kn01 = _real_app_name("KN-01")
+    name_dc01 = _real_app_name("DC-01")
+
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.set_token("site-probe-codes-token")
+
+    yaml_kn01 = f"app:\n  name: '{name_kn01}'\n  description: t\nkind: app\nversion: 0.6.0\n" \
+                "dependencies: []\nworkflow:\n  graph:\n    nodes: []\n    edges: []\n"
+    app_id_kn01 = client.import_dsl(yaml_kn01)
+    _post_json(base, "/__test__/set-app-detail", {"app_id": app_id_kn01, "detail": {
+        "id": app_id_kn01, "name": name_kn01, "mode": "workflow",
+        "site": {"code": "kn01-code", "app_base_url": "https://udify.app", "access_token": "SHOULD-NOT-LEAK-KN01"},
+    }})
+
+    yaml_dc01 = f"app:\n  name: '{name_dc01}'\n  description: t\nkind: app\nversion: 0.6.0\n" \
+                "dependencies: []\nworkflow:\n  graph:\n    nodes: []\n    edges: []\n"
+    app_id_dc01 = client.import_dsl(yaml_dc01)
+    _post_json(base, "/__test__/set-app-detail", {"app_id": app_id_dc01, "detail": {
+        "id": app_id_dc01, "name": name_dc01, "mode": "chat",
+        "site": {"code": "dc01-code", "app_base_url": "https://udify.app", "access_token": "SHOULD-NOT-LEAK-DC01"},
+    }})
+
+    r = run_cli(["--env", "cloud-master", "site_probe", "KN-01", "DC-01"], {
+        "DIFY_CONSOLE_URL": base, "DIFY_CONSOLE_TOKEN": "site-probe-codes-token", "DIFY_CONSOLE_REFRESH": "",
+    })
+    out = r.stdout + r.stderr
+    check("site_probe(codes): exit 0", r.returncode == 0, out)
+    check("site_probe(codes): KN-01 の行が出る", "'KN-01':" in out, out)
+    check("site_probe(codes): KN-01 の mode='workflow' が出る", "mode: 'workflow'" in out, out)
+    check("site_probe(codes): KN-01 の site_code が出る", "site_code: 'kn01-code'" in out, out)
+    check("site_probe(codes): DC-01 の行が出る", "'DC-01':" in out, out)
+    check("site_probe(codes): DC-01 の mode='chat' が出る（mode ごとに値が変わる）", "mode: 'chat'" in out, out)
+    check("site_probe(codes): DC-01 の site_code が出る", "site_code: 'dc01-code'" in out, out)
+    check("site_probe(codes): app_base_url が 2 件とも出る", out.count("https://udify.app") >= 2, out)
+    check("site_probe(codes): URL を組み立てていないと明示する", "組み立てていません" in out, out)
+    check("site_probe(codes): KN-01 の access_token が出力に現れない", "SHOULD-NOT-LEAK-KN01" not in out, out)
+    check("site_probe(codes): DC-01 の access_token が出力に現れない", "SHOULD-NOT-LEAK-DC01" not in out, out)
+    check("site_probe(codes): トークン文字列が出力に現れない", "site-probe-codes-token" not in out, out)
+    check("site_probe(codes): git 側／実機の件数が並んで出る",
+          "git 側 dify/apps/*.yml は" in out and "実機 list_apps() は" in out, out)
+
+
+def test_site_probe_codes_missing_master_reports_and_continues(base):
+    """dify/apps/ に無い管理番号（ZZ-99）を混ぜても落ちず「見つかりませんでした」と明示し、
+    残りの管理番号（KN-01）は続けて処理されること。exit 0 のまま。"""
+    name_kn01 = _real_app_name("KN-01")
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.set_token("site-probe-codes-missing-token")
+    yaml_kn01 = f"app:\n  name: '{name_kn01}'\n  description: t\nkind: app\nversion: 0.6.0\n" \
+                "dependencies: []\nworkflow:\n  graph:\n    nodes: []\n    edges: []\n"
+    app_id_kn01 = client.import_dsl(yaml_kn01)
+    _post_json(base, "/__test__/set-app-detail", {"app_id": app_id_kn01, "detail": {
+        "id": app_id_kn01, "name": name_kn01, "mode": "workflow",
+        "site": {"code": "kn01-code-2", "app_base_url": "https://udify.app"},
+    }})
+
+    r = run_cli(["--env", "cloud-master", "site_probe", "ZZ-99", "KN-01"], {
+        "DIFY_CONSOLE_URL": base, "DIFY_CONSOLE_TOKEN": "site-probe-codes-missing-token", "DIFY_CONSOLE_REFRESH": "",
+    })
+    out = r.stdout + r.stderr
+    check("site_probe(codes 一部無し): exit 0（落ちない）", r.returncode == 0, f"exit={r.returncode} {out}")
+    check("site_probe(codes 一部無し): ZZ-99 は見つかりませんでしたと明示する",
+          "ZZ-99: 見つかりませんでした" in out, out)
+    check("site_probe(codes 一部無し): KN-01 は続けて処理される", "'KN-01':" in out, out)
+
+
+def test_site_probe_codes_not_deployed_reports(base):
+    """マスタ DSL は存在するが Cloud に同名アプリが無い管理番号（KN-02）を渡すと、
+    落ちずに「実機に同名アプリがありません」と明示すること。exit 0 のまま。"""
+    r = run_cli(["--env", "cloud-master", "site_probe", "KN-02"], {
+        "DIFY_CONSOLE_URL": base, "DIFY_CONSOLE_TOKEN": "site-probe-codes-notdeployed-token", "DIFY_CONSOLE_REFRESH": "",
+    })
+    out = r.stdout + r.stderr
+    check("site_probe(codes 未デプロイ): exit 0（落ちない）", r.returncode == 0, f"exit={r.returncode} {out}")
+    check("site_probe(codes 未デプロイ): 実機に同名アプリがありませんと明示する",
+          "実機に同名アプリがありません" in out, out)
+
+
+def test_site_probe_codes_detail_404_reports_and_continues(base):
+    """apps_detail が 404（未登録）のとき、落ちずに「404 でした」と明示すること。exit 0 のまま。"""
+    name_kn03 = _real_app_name("KN-03")
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.set_token("site-probe-codes-404-token")
+    yaml_kn03 = f"app:\n  name: '{name_kn03}'\n  description: t\nkind: app\nversion: 0.6.0\n" \
+                "dependencies: []\nworkflow:\n  graph:\n    nodes: []\n    edges: []\n"
+    client.import_dsl(yaml_kn03)  # detail は登録しない → GET /console/api/apps/{id} は 404 のまま
+
+    r = run_cli(["--env", "cloud-master", "site_probe", "KN-03"], {
+        "DIFY_CONSOLE_URL": base, "DIFY_CONSOLE_TOKEN": "site-probe-codes-404-token", "DIFY_CONSOLE_REFRESH": "",
+    })
+    out = r.stdout + r.stderr
+    check("site_probe(codes 404): exit 0（想定内の結果。落ちない）", r.returncode == 0, f"exit={r.returncode} {out}")
+    check("site_probe(codes 404): 404 でしたと明示する", "が 404 でした" in out, out)
+
+
+def test_site_probe_codes_detail_error_stops_with_exit_code(base):
+    """apps_detail が 404 以外の失敗（Cloudflare ブロック）を返すとき、そこで打ち切って
+    exit 4 になること（黙って exit 0 に化けない。PR #235 レビュー指摘の再発防止と同じ規約を
+    codes 経路にも適用する）。"""
+    name_kn01 = _real_app_name("KN-01")
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.set_token("site-probe-codes-cf-token")
+    yaml_kn01 = f"app:\n  name: '{name_kn01}'\n  description: t\nkind: app\nversion: 0.6.0\n" \
+                "dependencies: []\nworkflow:\n  graph:\n    nodes: []\n    edges: []\n"
+    app_id_kn01 = client.import_dsl(yaml_kn01)
+    _post_json(base, "/__test__/force-app-detail-status", {
+        "app_id": app_id_kn01, "status": 403, "body": "mock: forced Cloudflare block. error code: 1010",
+    })
+
+    r = run_cli(["--env", "cloud-master", "site_probe", "KN-01"], {
+        "DIFY_CONSOLE_URL": base, "DIFY_CONSOLE_TOKEN": "site-probe-codes-cf-token", "DIFY_CONSOLE_REFRESH": "",
+    })
+    out = r.stdout + r.stderr
+    check("site_probe(codes Cloudflare): exit 4（黙って exit 0 に化けない）", r.returncode == 4,
+          f"exit={r.returncode} {out}")
+
+
+def test_site_probe_codes_git_vs_live_count_reports_extra_app(base):
+    """git 側（dify/apps/*.yml）に無い名前のアプリが実機に 1 件あれば、件数の食い違いと
+    そのアプリの名前が出力に現れること（run #22 の「git 12 本・実機 13 件」の再現。要件 5）。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.set_token("site-probe-codes-extra-token")
+    extra_name = "驚きの余分アプリ（git に無い）"
+    yaml_extra = f"app:\n  name: '{extra_name}'\n  description: t\nkind: app\nversion: 0.6.0\n" \
+                 "dependencies: []\nworkflow:\n  graph:\n    nodes: []\n    edges: []\n"
+    client.import_dsl(yaml_extra)
+
+    name_kn01 = _real_app_name("KN-01")
+    yaml_kn01 = f"app:\n  name: '{name_kn01}'\n  description: t\nkind: app\nversion: 0.6.0\n" \
+                "dependencies: []\nworkflow:\n  graph:\n    nodes: []\n    edges: []\n"
+    app_id_kn01 = client.import_dsl(yaml_kn01)
+    _post_json(base, "/__test__/set-app-detail", {"app_id": app_id_kn01, "detail": {
+        "id": app_id_kn01, "name": name_kn01, "mode": "workflow",
+        "site": {"code": "kn01-code-3", "app_base_url": "https://udify.app"},
+    }})
+
+    r = run_cli(["--env", "cloud-master", "site_probe", "KN-01"], {
+        "DIFY_CONSOLE_URL": base, "DIFY_CONSOLE_TOKEN": "site-probe-codes-extra-token", "DIFY_CONSOLE_REFRESH": "",
+    })
+    out = r.stdout + r.stderr
+    check("site_probe(codes git-vs-live): exit 0", r.returncode == 0, out)
+    check("site_probe(codes git-vs-live): git に無いアプリの名前が出る", extra_name in out, out)
+
+
 def test_revoke_removes_stale_sink_even_if_absent():
     """revoke: DIFY_REFRESH_SINK が設定されていてもファイルが存在しない場合はエラーにならない
     （sink 削除は「あれば消す」であり必須ではない）。"""
@@ -447,6 +656,9 @@ def main():
     test_revoke_unset_exit2()
     test_revoke_removes_stale_sink_even_if_absent()
     test_site_probe_unset_exit2()
+    test_extract_site_info_unit()
+    with tempfile.TemporaryDirectory(prefix="console_session_apps_") as tmpdir:
+        test_app_name_for_code_unit(tmpdir)
 
     port = free_port()
     base = f"http://127.0.0.1:{port}"
@@ -483,6 +695,12 @@ def main():
         test_site_probe_detail_cloudflare_block_exit4,
         test_site_probe_detail_http500_exit2,
         test_site_probe_detail_401_exit3,
+        test_site_probe_codes_end_to_end,
+        test_site_probe_codes_missing_master_reports_and_continues,
+        test_site_probe_codes_not_deployed_reports,
+        test_site_probe_codes_detail_404_reports_and_continues,
+        test_site_probe_codes_detail_error_stops_with_exit_code,
+        test_site_probe_codes_git_vs_live_count_reports_extra_app,
     ):
         proc2, base2 = start_mock_server()
         try:
