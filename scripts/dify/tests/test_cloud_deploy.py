@@ -5,7 +5,9 @@ test_console_api.py / test_run_tests.py と同じ作法。mock_server.py を子�
     python3 scripts/dify/tests/test_cloud_deploy.py     # exit 0 で全件 PASS。ネットワークは 127.0.0.1 のみ
 
 設計: docs/handoff/2026-09-08-cloud-console-deploy.md §2・§4-3・§7 PR-2（Issue #114）／
-docs/handoff/2026-09-08-cloud-auth-and-w4.md §9-2・§9-3・§11「W4-4」（Issue #121。P1・B3）
+docs/handoff/2026-09-08-cloud-auth-and-w4.md §9-2・§9-3・§11「W4-4」（Issue #121。P1・B3）／
+docs/handoff/2026-09-09-dataset-ids-in-ci.md §4-1〜§4-4・§11-3（Issue #209 PR-2。0.5 段の dataset id
+解決・1.5 段の G-KB2 一本化。T10〜T14 は関数名 test_209_*）
 
 CI（`npm test`）には入れない（`CLAUDE.md` §3 のコマンド集合を変えない）。実行は implementer と reviewer が手で行う。
 `dify/env/cloud-master/env.yml`・`dify/apps/*.yml` は**読むだけ**（書き換えない）。生成物 `dify/build/cloud-master/**`
@@ -517,12 +519,17 @@ def test_kb_guard_unit_detects_empty_dataset_ids():
 
 
 def test_kb_guard_blocks_before_phase1(base):
-    """KB 安全弁（5.5 節。Issue #121 W4-4。PM 報告に基づく追加の歯止め）: KN-02 は
-    knowledge-retrieval ノードを持つが、DIFY_DATASET_ID_KN02 を設定していないため
-    dataset_ids が空のまま render される。この状態で deploy しようとすると、
-    Phase 1（インポート）どころか認証（client_from_env）にも入る前に exit 2 で止まり、
-    mock_server の publish カウンタ・アプリ一覧のどちらも動かない
-    （import すら 1 回も呼んでいない証拠）ことを機械確認する。"""
+    """KB 安全弁（Issue #121 W4-4 の暫定歯止め → Issue #209 PR-2 で恒久対応に統合）: KN-02 は
+    knowledge-retrieval ノードを持つが、DIFY_DATASET_ID_KN02 も DIFY_DATASET_KEY も
+    設定していない。この状態で deploy しようとすると、**render すら呼ばれる前（0.5 段。
+    dataset_ids.resolve()）**に exit 2 で止まり、mock_server の publish カウンタ・
+    アプリ一覧のどちらも動かない（import すら 1 回も呼んでいない証拠）ことを機械確認する。
+
+    恒久対応前は「render 後に dataset_ids が空だったら止める」（G-KB2）だけがこの状況を
+    捕まえていたが、恒久対応後はそれより早い 0.5 段で同じ状況を検出して止める
+    （render にすら進まない）。G-KB2 は最後の砦として引き続き存在する
+    （test_kb_guard_unit_detects_empty_dataset_ids・test_t12_gkb2_blocks_when_dataset_ids_still_empty
+    を参照）。"""
     token = "kb-guard-test-token"
     before_stats = get_stats(base)
     before_apps = list_apps_via_http(base, token)
@@ -533,11 +540,10 @@ def test_kb_guard_blocks_before_phase1(base):
     )
     combined = r.stdout + r.stderr
     check("KB安全弁: exit 2", r.returncode == 2, combined)
-    check("KB安全弁: 「なぜ」の説明が出る（dataset_ids が空）", "dataset_ids が空" in combined, combined)
+    check("KB安全弁: 「なぜ」の説明が出る（DIFY_DATASET_KEY が未設定）",
+          "DIFY_DATASET_KEY が未設定です" in combined, combined)
     check("KB安全弁: 対象番号 KN-02 が出る", "KN-02" in combined, combined)
-    check("KB安全弁: 「どうすればよいか」の案内が出る（DIFY_DATASET_ID_ の設定 or 対象から外す）",
-          "DIFY_DATASET_ID_" in combined and "codes から外して" in combined, combined)
-    check("KB安全弁: 恒久対応の言及がある（architect が設計中）", "architect が設計中" in combined, combined)
+    check("KB安全弁: 解決すべき KB 名が出る", "設備マニュアル" in combined, combined)
 
     force_opts = [opt for a in cloud_deploy.build_arg_parser()._actions for opt in a.option_strings if "force" in opt]
     check("KB安全弁: --force 相当の回避フラグをそもそも実装していない（PM 指示）", not force_opts, force_opts)
@@ -567,6 +573,120 @@ def test_kb_guard_allows_when_dataset_ids_baked(base):
     combined = r.stdout + r.stderr
     check("KB安全弁(裏側): dataset_ids が焼き込まれていれば exit 0", r.returncode == 0, combined)
     check("KB安全弁(裏側): KB 安全弁のブロックメッセージが出ない", "[STOP] KB を要求している" not in combined, combined)
+
+
+# ---------------------------------------------------------------------------
+# Issue #209 PR-2: 0.5 段（dataset id の解決）・1.5 段（G-KB2 一本化）の配線
+# ---------------------------------------------------------------------------
+
+def test_209_t10_extra_env_isolated_from_parent_environ():
+    """T10（設計書 §11-3。Issue #209 PR-2）: run_render(..., extra_env=...) で渡した値は
+    render サブプロセス専用の env にだけ入り、親プロセス（このテスト自身）の os.environ には
+    決して入らない（C2）。render サブプロセスには実際に渡っていることも、焼き込み結果
+    （GN-01 の dataset_ids）から確認する。ネットワーク不要（run_render() を直接呼ぶ）。"""
+    marker_var = "DIFY_DATASET_ID_GN01"
+    marker_val = "extra-env-isolation-test-0000"
+    os.environ.pop(marker_var, None)
+    try:
+        out_dir = cloud_deploy.run_render("cloud-master", ["GN-01"], False, extra_env={marker_var: marker_val})
+        check(
+            "T10（#209）: run_render() 呼び出し後も親プロセスの os.environ に extra_env の変数が入らない",
+            marker_var not in os.environ,
+        )
+        matches = glob.glob(os.path.join(out_dir, "GN-01-*.yml"))
+        check("T10（#209・前提）: render 出力ファイルがある", bool(matches), matches)
+        if matches:
+            content = open(matches[0], encoding="utf-8").read()
+            check(
+                "T10（#209）: render サブプロセスには extra_env の値が実際に渡り、"
+                "dataset_ids に焼き込まれている",
+                marker_val in content, content[:2000],
+            )
+    finally:
+        os.environ.pop(marker_var, None)
+        cleanup_build()
+
+
+def test_209_t11_resolve_failure_no_console_calls(base):
+    """T11（設計書 §11-3）: 0.5 段の解決に失敗する（今回は名前 0 件＝Dify 側にまだ無い KB）と
+    exit 2 になり、Console API に 1 リクエストも飛ばない（import も publish も 0 回）。
+    KN-03 のダミー KB 名は他のテストで一度も作成していない前提（衝突しない）。"""
+    token = "t11-resolve-fail-token"
+    before_apps = list_apps_via_http(base, token)
+    before_stats = get_stats(base)
+    r = run_cli(
+        ["--env", "cloud-master", "KN-03", "--app-id", "KN-03=t11-should-not-be-used", "--no-adopt-by-name"],
+        {
+            "DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base,
+            "DIFY_DATASET_KEY": "t11-dataset-key", "DIFY_BASE_URL": base.rstrip("/") + "/v1",
+        },
+    )
+    combined = r.stdout + r.stderr
+    check("T11（#209）: exit 2", r.returncode == 2, combined)
+    check("T11（#209）: KB が見つからない旨のメッセージが出る（0.5 段での失敗）",
+          "見つかりません" in combined, combined)
+    after_apps = list_apps_via_http(base, token)
+    after_stats = get_stats(base)
+    check("T11（#209）: アプリが増えていない（import すら呼んでいない証拠）",
+          len(after_apps) == len(before_apps), (len(before_apps), len(after_apps)))
+    check("T11（#209）: publish が 1 回も呼ばれていない",
+          after_stats.get("publish", 0) == before_stats.get("publish", 0), (before_stats, after_stats))
+    check("T11（#209）: 指定した app_id（t11-should-not-be-used）が使われていない",
+          "t11-should-not-be-used" not in combined, combined)
+
+
+def test_209_t12_gkb2_blocks_when_dataset_ids_still_empty(base):
+    """T12（設計書 §11-3）: --no-resolve-datasets で 0.5 段の API 呼び出しを丸ごと飛ばし、
+    かつ環境変数も未設定のまま render すると dataset_ids は空で焼き込まれる。この状態は
+    1.5 段の G-KB2（dataset_ids.assert_bound()）が捕まえて exit 2 にする
+    （#208 の暫定歯止めがこの位置に一本化されている証拠。import すら 0 回）。"""
+    token = "t12-gkb2-token"
+    before_apps = list_apps_via_http(base, token)
+    r = run_cli(
+        [
+            "--env", "cloud-master", "GN-01", "--no-resolve-datasets",
+            "--app-id", "GN-01=t12-should-not-be-used", "--no-adopt-by-name",
+        ],
+        {"DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base},
+    )
+    combined = r.stdout + r.stderr
+    check("T12（#209）: exit 2", r.returncode == 2, combined)
+    check("T12（#209）: G-KB2 のメッセージが出る（dataset_ids が空のまま）",
+          "dataset_ids が空のままの" in combined, combined)
+    check("T12（#209）: 対象番号 GN-01 が出る", "GN-01" in combined, combined)
+    after_apps = list_apps_via_http(base, token)
+    check("T12（#209）: アプリが増えていない（import すら呼んでいない証拠）",
+          len(after_apps) == len(before_apps), (len(before_apps), len(after_apps)))
+
+
+def test_209_t13_dry_run_no_dataset_api_call():
+    """T13（設計書 §11-3。既存 A5 の維持）: --dry-run は Datasets API にも Console API にも
+    1 リクエストも送らない。誰も listen していないポートを DIFY_CONSOLE_URL・DIFY_BASE_URL の
+    両方に指定しても exit 0 で終わることで証明する（KN-01 は KB 付きの番号）。"""
+    dead_port = free_port()
+    dead_base = f"http://127.0.0.1:{dead_port}"
+    r = run_cli(
+        ["--env", "cloud-master", "KN-01", "--dry-run"],
+        {"DIFY_CONSOLE_TOKEN": "t13-token", "DIFY_CONSOLE_URL": dead_base, "DIFY_BASE_URL": dead_base},
+    )
+    combined = r.stdout + r.stderr
+    check("T13（#209）: 誰も listen していないポートでも --dry-run は exit 0", r.returncode == 0, combined)
+    check("T13（#209）: 出力に「ネットワークは呼んでいません」の表示がある",
+          "ネットワークは呼んでいません" in combined, combined)
+
+
+def test_209_t14_non_kb_apps_work_without_dataset_key(base):
+    """T14（設計書 §11-3）: KB を持たない番号だけを対象にしたとき、DIFY_DATASET_KEY が
+    未設定でも正常に動く（0.5 段が KB を持たない番号にまで過剰反応しない）。"""
+    token = "t14-non-kb-token"
+    r = run_cli(
+        ["--env", "cloud-master", "NM-03", "--app-id", "NM-03=t14-non-kb-app", "--no-adopt-by-name"],
+        {"DIFY_CONSOLE_TOKEN": token, "DIFY_CONSOLE_URL": base},
+    )
+    combined = r.stdout + r.stderr
+    check("T14（#209）: exit 0", r.returncode == 0, combined)
+    check("T14（#209）: dataset 解決の対象と表示されない（KB を持たない番号のため 0.5 段は何もしない）",
+          "[dataset] KB 付きの対象" not in combined, combined)
 
 
 def main():
@@ -609,6 +729,11 @@ def main():
         test_t7_no_sink_logout_still_called_and_kills_rotated_value(base)
         test_kb_guard_blocks_before_phase1(base)
         test_kb_guard_allows_when_dataset_ids_baked(base)
+        test_209_t10_extra_env_isolated_from_parent_environ()
+        test_209_t11_resolve_failure_no_console_calls(base)
+        test_209_t12_gkb2_blocks_when_dataset_ids_still_empty(base)
+        test_209_t13_dry_run_no_dataset_api_call()
+        test_209_t14_non_kb_apps_work_without_dataset_key(base)
     finally:
         proc.terminate()
         try:
