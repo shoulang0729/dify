@@ -16,6 +16,9 @@ Dify サーバー（標準ライブラリのみ。開発・検証用。CI には
   POST /console/api/apps/{id}/workflows/publish                → 成功（呼ばれた回数を
       /__test__/stats の "publish" に記録。P1 の機械確認に使う）
   GET  /console/api/apps/{id}/workflows/draft                  → 下書き（無ければ空の既定値）
+  GET  /console/api/apps/{id}                                   → アプリ単体の詳細（apps_detail。
+      確認要・実機未確認。Issue #124 site_probe 拡張）。/__test__/set-app-detail で登録した
+      app_id だけ 200 を返す。登録が無ければ 404（実機でエンドポイントが存在しない場合の再現）
   POST /console/api/apps/{id}/workflows/draft                  → 下書きを保存して返す
   GET  /v1/datasets, POST /v1/datasets                         → KB 一覧・作成。GET は page/limit（既定 1/100）
       でページングする。総数が limit を超えると has_more: true を返し、次ページには続きの要素が入る
@@ -65,6 +68,15 @@ Dify サーバー（標準ライブラリのみ。開発・検証用。CI には
       GET /console/api/apps 応答に任意のトップレベルフィールドをマージして返すようにする
       （Issue #124。console_session.py の site_probe が「site らしきフィールドがある応答／無い応答」の
       両方を機械的に再現するためのフック。実機のフィールド形はまだ未確認）
+  POST /__test__/set-app-detail  body: {"app_id": "...", "detail": {...}} → 指定した app_id への
+      GET /console/api/apps/{id}（apps_detail。確認要・実機未確認）が返す応答本文を登録する。
+      登録していない app_id への GET はそのまま 404（Issue #124 site_probe 拡張。同じく
+      「site らしきフィールドがある応答／無い応答／404」の 3 通りを機械的に再現するためのフック）
+  POST /__test__/force-app-detail-status  body: {"app_id": "...", "status": 403, "body": "..."} →
+      指定した app_id への GET /console/api/apps/{id} を、404 以外の任意の HTTP status・生の本文
+      （JSON エンコードしない）で強制的に返すようにする（set-app-detail より優先）。Cloudflare の
+      ブロック本文特有の表記 "error code: 1010" や 5xx をそのまま埋め込める（PR #235 レビュー指摘：
+      console_session.py site_probe が 404 以外のエラーを黙って exit 0 にしていたバグの再発防止用）
 
 このスクリプトは検証専用。生成物（dify/results/** や dify/CHANGELOG.md の検証行）はコミットに含めない。
 """
@@ -127,6 +139,17 @@ STATE = {
     # （console_session.py site_probe のテスト専用。実機のフィールド形はまだ未確認なので、
     # テスト側が任意の形を注入できるようにしておく）。
     "app_extra_fields": {},
+    # Issue #124 site_probe 拡張: /__test__/set-app-detail で app_id ごとに登録した
+    # GET /console/api/apps/{id}（apps_detail。確認要・実機未確認）の応答本文。
+    # 登録が無い app_id への GET はそのまま 404 になる（実機で未確認のエンドポイントが
+    # 存在しない場合の再現。console_session.py site_probe の 404 分岐のテスト用）。
+    "app_detail_response": {},
+    # PR #235 レビュー指摘: GET /console/api/apps/{id} が 404 以外の任意の HTTP status を
+    # 返す状況（Cloudflare ブロック・5xx・401 等）を再現するための強制上書き。
+    # /__test__/force-app-detail-status で app_id ごとに {"status": int, "body": str} を登録すると、
+    # app_detail_response より優先してその status・本文をそのまま返す（JSON エンコードしない。
+    # Cloudflare のブロック本文特有の表記 "error code: 1010" をそのまま埋め込めるようにするため）。
+    "app_detail_force": {},
 }
 LOCK = threading.Lock()
 EXPIRED_TOKEN = "expired-token"  # DIFY_CONSOLE_TOKEN にこの値を入れると 401 を再現できる（レガシー経路）
@@ -289,6 +312,29 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path == "/__test__/set-app-fields":
             with LOCK:
                 STATE["app_extra_fields"][payload.get("app_id", "")] = payload.get("fields") or {}
+            return self._json(200, {"ok": True})
+
+        # テスト専用（Issue #124 site_probe 拡張）: GET /console/api/apps/{id}（apps_detail。
+        # 確認要・実機未確認）の応答本文を app_id ごとに登録する。登録しなければ 404 のまま
+        # （console_session.py site_probe の 404 分岐を再現するため）。
+        # body: {"app_id": "...", "detail": {...}}
+        if path == "/__test__/set-app-detail":
+            with LOCK:
+                STATE["app_detail_response"][payload.get("app_id", "")] = payload.get("detail") or {}
+            return self._json(200, {"ok": True})
+
+        # テスト専用（PR #235 レビュー指摘）: GET /console/api/apps/{id} が 404 以外の任意の
+        # HTTP status（Cloudflare ブロック・5xx・401 等）を返すように強制する。
+        # body: {"app_id": "...", "status": 403, "body": "...error code: 1010..."}
+        # body はそのまま生テキストで返す（JSON エンコードしない）ので、Cloudflare のブロック
+        # 本文特有の表記をそのまま埋め込める。console_session.py site_probe が 404 以外の
+        # ConsoleAPIError を正しく _exit_code_for_error() にマップするかのテスト用。
+        if path == "/__test__/force-app-detail-status":
+            with LOCK:
+                STATE["app_detail_force"][payload.get("app_id", "")] = {
+                    "status": int(payload.get("status", 500)),
+                    "body": payload.get("body", ""),
+                }
             return self._json(200, {"ok": True})
 
         if path == "/console/api/login":
@@ -483,6 +529,29 @@ class Handler(http.server.BaseHTTPRequestHandler):
             with LOCK:
                 draft = STATE["drafts"].get(app_id) or {"graph": {"nodes": [], "edges": []}, "features": {}, "environment_variables": []}
             return self._json(200, dict(draft, app_id=app_id))
+
+        # apps_detail（Issue #124 site_probe 拡張。確認要・実機未確認）: /__test__/set-app-detail
+        # で登録された app_id だけ 200 を返す。登録が無ければ下の "unknown path" フォールバックで
+        # 404 になる（実機でエンドポイントが存在しない／対応していない場合の再現）。
+        # /__test__/force-app-detail-status（PR #235）が登録されていれば、404 以外の任意の
+        # HTTP status・生の本文をそのまま返す（app_detail_response より優先）。
+        m = re.match(r"^/console/api/apps/([^/]+)$", path)
+        if m:
+            app_id = m.group(1)
+            with LOCK:
+                forced = STATE["app_detail_force"].get(app_id)
+                detail = STATE["app_detail_response"].get(app_id)
+            if forced:
+                body_bytes = str(forced.get("body", "")).encode("utf-8")
+                self.send_response(forced["status"])
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(body_bytes)))
+                self.end_headers()
+                self.wfile.write(body_bytes)
+                return
+            if detail is None:
+                return self._json(404, {"error": f"mock: unknown app detail {app_id}"})
+            return self._json(200, detail)
 
         if path == "/v1/datasets":
             # ページング（Issue #209 PR-1）: page/limit を見て切り出す。既定は page=1, limit=100 で、

@@ -26,17 +26,25 @@
 まだ公開 Web アプリの URL（サイトコード）がどのフィールドに入るか実機で確認できていないため、
 **特定のフィールドを決め打ちで読まない**。代わりに (1) 1 件目のトップレベルのキー名一覧、
 (2) 名前に "site" を含むキーがあればその配下のキー名一覧、(3) `https://` で始まる文字列値が
-あればキー経路と値、の 3 点だけを出す。名前に `api_key`/`token`/`secret` を含むキーは
-**配下ごと読まない**（値はおろか、その下に隠れた URL も対象にしない。安全側）。
+あればキー経路と値、の 3 点だけを出す。名前に `api_key`/`token`/`secret`/`private_key` を含む
+キーは**配下ごと読まない**（値はおろか、その下に隠れた URL も対象にしない。安全側）。
 見つからなければ「見つからなかった」と明示する（黙って空を出さない）。
 
+**run #21（実機。2026-09-10）で確定**：`list_apps()`（`GET /console/api/apps` 一覧）には
+`site` らしきキーも `https://` の値も**含まれない**。そこで本 PR（Issue #124 拡張）で、
+一覧 1 件目の `id` を使って **`GET /console/api/apps/{id}`（アプリ単体の詳細。`apps_detail`。
+確認要・実機未確認）**も追加で叩き、同じ 3 点を調べる。404（エンドポイントが無い、または
+対応していない）は**落ちずに「404 だった」と明示する想定内の結果**として扱う。一覧側の
+結果（「一覧には無かった」という事実）は詳細を調べたあとも変わらず出力に残す。
+
 Dify のアプリ・KB を書き換える API は一切呼ばない（`refresh` は `list_apps()` の GET のみ、
-`revoke` は `logout()` の POST のみ、`site_probe` も `list_apps()` の GET のみ）。
+`revoke` は `logout()` の POST のみ、`site_probe` も `list_apps()` と `get_app_detail()` の
+GET のみ）。
 
 終了コード（`console_api._print_and_exit_for_error` と同じ表。0/2/3/4）:
     0 セッションが有効（`refresh`：`list_apps()` まで成功／`revoke`：`logout()` まで成功／
-      `site_probe`：`list_apps()` まで成功。URL が見つかったかどうかは終了コードに含めない＝
-      見つかる・見つからないのどちらも正常な観測結果）
+      `site_probe`：`list_apps()`（と `get_app_detail()`。404 を含む）まで成功。URL が
+      見つかったかどうかは終了コードに含めない＝見つかる・見つからないのどちらも正常な観測結果）
     2 引数・環境・認証情報の不備（`DIFY_CONSOLE_REFRESH` 未設定等）
     3 認証エラー（401/403。セッション期限切れ・CSRF 不一致）
     4 Cloudflare に弾かれた（403 かつ本文に `error code: 1010`）
@@ -63,7 +71,16 @@ import cloud_deploy  # noqa: E402  (env.yml の読み方・console_url 解決を
 
 # site_probe: 名前にこれを含むキーの配下は一切読まない（値はもちろん、その下に隠れた
 # https:// の値も対象にしない。安全側。Issue #124）。
-_SECRET_LIKE_KEY_RE = re.compile(r"(api_key|token|secret)", re.IGNORECASE)
+#
+# `private_key` を追加した経緯（reviewer 指摘・#231 の積み残し）：`key` を丸ごと除外すると
+# 無害なフィールド（例: `id_key` のような命名が仮にあった場合）まで巻き込みうるため、#231 の
+# 時点では `api_key|token|secret` の 3 語に留め、「実機の応答形が見えたら見直す」としていた。
+# 本 PR で run #21 の結果（一覧には site も https も無い）を受けて `apps_detail`（未確認の詳細
+# エンドポイント）を新たに叩くようになり、返ってくる可能性のあるフィールドが広がった。
+# 証明書・鍵ペア型の連携設定（例: SAML／各種プラットフォーム連携）で `private_key` という
+# フィールド名は一般的で、`api_key|token|secret` のどれにも一致しないため、この拡張に合わせて
+# 個別に追加することにした（`key` 全体は依然として除外しない＝reviewer 指摘の方針を維持）。
+_SECRET_LIKE_KEY_RE = re.compile(r"(api_key|token|secret|private_key)", re.IGNORECASE)
 
 
 def resolve_console_url(env_name):
@@ -172,12 +189,51 @@ def _find_https_values(node, path=""):
     return hits
 
 
+def _report_site_and_urls(label, obj):
+    """obj（list_apps() の 1 件目、または get_app_detail() の応答）から (1) トップレベルの
+    キー名一覧、(2) "site" を名前に含むキーがあればその配下のキー名一覧、(3) https:// で
+    始まる値、の 3 点を報告する共通処理（list 由来・detail 由来のどちらでも同じロジックを使う。
+    Issue #124）。label は出力の先頭に付ける区別用の文字列（"list" / "detail"）。"""
+    if not isinstance(obj, dict):
+        console_api.log(f"site_probe({label}): 見つかりませんでした（1 件目が dict ではありません。型: {type(obj).__name__}）")
+        return
+
+    top_keys = _top_level_key_names(obj)
+    console_api.log(f"site_probe({label}): トップレベルキー名一覧: {top_keys}")
+
+    site_like_keys = [k for k in top_keys if "site" in k.lower()]
+    if not site_like_keys:
+        console_api.log(f"site_probe({label}): 見つかりませんでした（'site' を名前に含むキーがありません）")
+    for key in site_like_keys:
+        value = obj.get(key)
+        if isinstance(value, dict):
+            console_api.log(f"site_probe({label}): '{key}' 配下のキー名一覧: {_top_level_key_names(value)}")
+        elif isinstance(value, list) and value and isinstance(value[0], dict):
+            console_api.log(f"site_probe({label}): '{key}'（リストの 1 件目）配下のキー名一覧: {_top_level_key_names(value[0])}")
+        else:
+            console_api.log(f"site_probe({label}): '{key}' は dict／dict のリストではありません（型: {type(value).__name__}。値は出しません）")
+
+    urls = _find_https_values(obj)
+    if not urls:
+        console_api.log(f"site_probe({label}): 見つかりませんでした（https:// で始まる値がありません）")
+    for path, value in urls:
+        # ここだけ値ごと出す（公開 Web アプリの URL は公開されるべき値。CLAUDE.md §2-10。
+        # docstring 参照）。masking.mask_ids() は console_api.log() 内の _mask() 経由で
+        # 適用される（URL に UUID 形式の値が紛れていればそこだけ丸められる）。
+        console_api.log(f"site_probe({label}): https:// の値を発見: {path} = {value}")
+
+
 def cmd_site_probe(console_url, timeout):
-    """DIFY_CONSOLE_REFRESH でセッションを確立し、list_apps()（変更なし・GET のみ）の応答
-    1 件目を読み取り専用で調べる。出す情報は 3 点だけ（docstring 参照）。
+    """DIFY_CONSOLE_REFRESH でセッションを確立し、まず list_apps()（変更なし・GET のみ）の
+    応答 1 件目を読み取り専用で調べる（"list" ラベル）。続けて、1 件目の id を使って
+    get_app_detail()（`GET /console/api/apps/{id}`。確認要・実機未確認）も叩き、同じ 3 点を
+    調べる（"detail" ラベル）。404（エンドポイントが無い・対応していない）は落ちずに明示する
+    想定内の結果として扱う。list 側の結果は detail を調べたあとも出力に残る
+    （run #21 で「一覧には無い」と確定したため、その事実がログに残り続けるほうがよい）。
 
     戻り値: 終了コード（int）。URL が見つかったかどうかは終了コードに含めない（0 は
-    「list_apps() までは成功した」という意味。見つかる／見つからないのどちらも正常な観測結果）。"""
+    「list_apps()（と get_app_detail()。404 を含む）までは成功した」という意味。
+    見つかる／見つからないのどちらも正常な観測結果）。"""
     try:
         client = console_api.client_from_env(console_url, timeout=timeout)
     except console_api.ConsoleAPIError as e:
@@ -191,38 +247,37 @@ def cmd_site_probe(console_url, timeout):
     console_api.log(f"site_probe: アプリ {len(apps)} 件を取得しました（list_apps() は変更していません）")
 
     if not apps:
-        console_api.log("site_probe: 見つかりませんでした（アプリが 1 件もありません）")
+        console_api.log("site_probe(list): 見つかりませんでした（アプリが 1 件もありません）")
         return 0
 
     first = apps[0]
-    if not isinstance(first, dict):
-        console_api.log(f"site_probe: 見つかりませんでした（1 件目が dict ではありません。型: {type(first).__name__}）")
+    _report_site_and_urls("list", first)
+
+    app_id = first.get("id") if isinstance(first, dict) else None
+    if not app_id:
+        console_api.log("site_probe(detail): スキップしました（1 件目から id が取れません）")
         return 0
 
-    top_keys = _top_level_key_names(first)
-    console_api.log(f"site_probe: 1 件目のトップレベルキー名一覧: {top_keys}")
+    try:
+        detail = client.get_app_detail(app_id)
+    except console_api.ConsoleAPIError as e:
+        if "HTTP 404" in str(e):
+            console_api.log(
+                "site_probe(detail): GET /console/api/apps/<id> は 404 でした"
+                "（エンドポイントが無い、または対応していない可能性。想定内の結果です）"
+            )
+            return 0
+        # レビュー指摘（PR #235）: 404 以外（Cloudflare ブロック・401/403・5xx・接続失敗等）を
+        # ここで黙って exit 0 にしていた（ConsoleCloudflareBlockedError は ConsoleAuthError の
+        # 子ではなく ConsoleAPIError の直下なので、以前の
+        # `except ConsoleAuthError: ... / except ConsoleAPIError: ... return 0` という 2 段構成では
+        # 2 番目の except に落ちて exit 0 に化けていた）。list_apps() 側（上の except 節）と
+        # 同じ規約に揃え、_exit_code_for_error() 1 本で 0/2/3/4 の表どおりにマップする
+        # （ConsoleAuthError は 3、ConsoleCloudflareBlockedError は 4、それ以外の
+        # ConsoleAPIError は 2。_exit_code_for_error() 自身が str(e) をログに出す）。
+        return _exit_code_for_error(e)
 
-    site_like_keys = [k for k in top_keys if "site" in k.lower()]
-    if not site_like_keys:
-        console_api.log("site_probe: 見つかりませんでした（'site' を名前に含むキーがありません）")
-    for key in site_like_keys:
-        value = first.get(key)
-        if isinstance(value, dict):
-            console_api.log(f"site_probe: '{key}' 配下のキー名一覧: {_top_level_key_names(value)}")
-        elif isinstance(value, list) and value and isinstance(value[0], dict):
-            console_api.log(f"site_probe: '{key}'（リストの 1 件目）配下のキー名一覧: {_top_level_key_names(value[0])}")
-        else:
-            console_api.log(f"site_probe: '{key}' は dict／dict のリストではありません（型: {type(value).__name__}。値は出しません）")
-
-    urls = _find_https_values(first)
-    if not urls:
-        console_api.log("site_probe: 見つかりませんでした（https:// で始まる値がありません）")
-    for path, value in urls:
-        # ここだけ値ごと出す（公開 Web アプリの URL は公開されるべき値。CLAUDE.md §2-10。
-        # docstring 参照）。masking.mask_ids() は console_api.log() 内の _mask() 経由で
-        # 適用される（URL に UUID 形式の値が紛れていればそこだけ丸められる）。
-        console_api.log(f"site_probe: https:// の値を発見: {path} = {value}")
-
+    _report_site_and_urls("detail", detail)
     return 0
 
 
