@@ -17,7 +17,9 @@ Dify サーバー（標準ライブラリのみ。開発・検証用。CI には
       /__test__/stats の "publish" に記録。P1 の機械確認に使う）
   GET  /console/api/apps/{id}/workflows/draft                  → 下書き（無ければ空の既定値）
   POST /console/api/apps/{id}/workflows/draft                  → 下書きを保存して返す
-  GET  /v1/datasets, POST /v1/datasets                         → KB 一覧・作成
+  GET  /v1/datasets, POST /v1/datasets                         → KB 一覧・作成。GET は page/limit（既定 1/100）
+      でページングする。総数が limit を超えると has_more: true を返し、次ページには続きの要素が入る
+      （scripts/dify/dataset_ids.py の全ページ取得テスト用。Issue #209 PR-1）
   GET  /v1/datasets/{id}/documents                              → 実際にアップロード・更新された文書の
       id/name 一覧を返す（kb_upload.py の --refresh / --replace が同名突き合わせに使うため。Issue #121 W4-1）
   POST /v1/datasets/{id}/document/create-by-file                → 成功（インデックス即完了）。
@@ -72,6 +74,7 @@ import re
 import sys
 import threading
 import time
+import urllib.parse
 import uuid
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -459,9 +462,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._json(200, dict(draft, app_id=app_id))
 
         if path == "/v1/datasets":
+            # ページング（Issue #209 PR-1）: page/limit を見て切り出す。既定は page=1, limit=100 で、
+            # 総数が limit 以下なら今までどおり 1 ページ・has_more: false のまま変わらない。
+            qs = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            page = int((qs.get("page") or ["1"])[0])
+            limit = int((qs.get("limit") or ["100"])[0])
             with LOCK:
-                data = [{"id": k, "name": v["name"]} for k, v in STATE["datasets"].items()]
-            return self._json(200, {"data": data, "has_more": False})
+                all_items = [{"id": k, "name": v["name"]} for k, v in STATE["datasets"].items()]
+            start = (page - 1) * limit
+            chunk = all_items[start:start + limit]
+            has_more = start + limit < len(all_items)
+            return self._json(200, {"data": chunk, "has_more": has_more})
 
         m = re.match(r"^/v1/datasets/([^/]+)/documents$", path)
         if m:

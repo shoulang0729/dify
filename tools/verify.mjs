@@ -27,12 +27,18 @@
  *   11.  索引の鮮度（docs/service-map.md が tools/gen-index.mjs --check と一致）＋
  *        トップ README.md の「4 区分」地図のリンク先が実在すること
  *        （設計書 docs/handoff/2026-09-07-repo-layout-v2.md §1-3・§10 Q7）
- *   12.  環境レイヤー（dify/env/**）：schema: 1 と必須キー／秘密・実名の直値が無いこと（sk- 文字列・32 文字以上の
- *        16 進 or base64 らしき文字列・cloud-master の既知 2 URL 以外の生 http(s):// URL）／
- *        `render.py --env cloud-master --all --check` が通ること（python3 が無ければ warn で skip）
+ *   12.  環境レイヤー（dify/env/** ・ワークフローの環境変数）：schema: 1 と必須キー／秘密・実名の直値が
+ *        無いこと（sk- 文字列・32 文字以上の 16 進 or base64 らしき文字列・cloud-master の既知 2 URL 以外の
+ *        生 http(s):// URL）／`render.py --env cloud-master --all --check` が通ること（python3 が無ければ
+ *        warn で skip）
  *        （設計書 docs/handoff/2026-09-07-repo-layout-v2.md §3-2・§4-2・§8 PR-2）
  *   12-e.（新規）apps: の管理番号一覧が dify/apps/*.yml と過不足なく一致し、id が null/${VAR}/UUID 形のいずれかで、
  *        cloud-master 以外に生 UUID が無いこと（設計書 docs/handoff/2026-09-08-cloud-console-deploy.md §3-4・Issue #114 PR-2）
+ *   12-f.（新規）.github/workflows/** に "DIFY_DATASET_ID_" という文字列が無いこと（コメントも含む。C1）。
+ *        dataset id は scripts/dify/dataset_ids.py が実行時に Datasets API から名前で解決し、render.py の
+ *        サブプロセス専用の env にだけ渡す（render.py 自体・ワークフローには置かない。§2-12 のバイト一致を守るため）
+ *        （設計書 docs/handoff/2026-09-09-dataset-ids-in-ci.md §4-2・§5・§6。Issue #209 PR-1。新しい節番号は
+ *        取らない＝§12 の枝番として追加する。§13 は #121 W2 用に予約済みのため使わない）
  *   14.  （新規）本番リンク（LIVE）の契約：mock/js/data/live.js が存在しオブジェクトとして読める（{} でもよい）／
  *        各キーが SVCS[].id に存在／各値が url・env・updated の 3 キーちょうど（url は https:// 始まり、
  *        env は 'cloud-master' のみ、updated は YYYY-MM-DD）／各キーの管理番号に対応する dify/apps/<番号>-*.yml が実在／
@@ -674,7 +680,7 @@ section('11. 索引の鮮度・README の 4 区分地図');
 }
 
 /* ---------- 12. 環境レイヤー（dify/env/**） ---------- */
-section('12. 環境レイヤー（dify/env/**）');
+section('12. 環境レイヤー（dify/env/** ・ワークフローの環境変数）');
 {
   const ENV_ROOT = resolve(ROOT, 'dify/env');
   const REQUIRED_ENVS = ['cloud-master', 'inhouse', 'customer-a'];
@@ -827,6 +833,26 @@ section('12. 環境レイヤー（dify/env/**）');
         fail('render.py --env cloud-master --all --check が FAIL（マスタとバイト不一致、または実行エラー）: '
           + String((e && e.stderr && e.stderr.toString()) || e.message || e).split('\n')[0]);
       }
+    }
+  }
+
+  // 12-f: DIFY_DATASET_ID_ という文字列が .github/workflows/** に無いこと（C1。設計書
+  // docs/handoff/2026-09-09-dataset-ids-in-ci.md §5・§4-5。Issue #209 PR-1）。
+  // dataset id は実行時に Datasets API から名前で解決し、render.py のサブプロセス専用の env dict にだけ
+  // 渡す（scripts/dify/dataset_ids.py・cloud_deploy.py）。ワークフロー側にこの名前の変数を 1 つでも
+  // 置くと、render.py --check のバイト一致（§2-12）が壊れる経路が生まれてしまうため、機械で検出する。
+  const WORKFLOWS_DIR = resolve(ROOT, '.github/workflows');
+  const FORBIDDEN_DATASET_ID_STR = 'DIFY_DATASET_ID_';
+  if (!existsSync(WORKFLOWS_DIR)) {
+    warn('.github/workflows/ が無いため 12-f（DIFY_DATASET_ID_ の不在検査）を skip しました');
+  } else {
+    const wfFiles = readdirSync(WORKFLOWS_DIR).filter(f => f.endsWith('.yml') || f.endsWith('.yaml'));
+    const hits = wfFiles.filter(f => readFileSync(resolve(WORKFLOWS_DIR, f), 'utf8').includes(FORBIDDEN_DATASET_ID_STR));
+    if (hits.length) {
+      fail(`.github/workflows/** に "${FORBIDDEN_DATASET_ID_STR}" という文字列がある`
+        + `（コメントも含め書かない。dataset id は render.py のプロセス環境にだけ渡す。C1）: ${hits.join(', ')}`);
+    } else {
+      ok(`.github/workflows/** に "${FORBIDDEN_DATASET_ID_STR}" という文字列が無い（12-f。C1）`);
     }
   }
 }
