@@ -283,6 +283,85 @@ def test_site_probe_no_secret_named_key_values_leak_regex(base):
           "https://udify.app/regex-check" in out, out)
 
 
+# ---------------------------------------------------------------------------
+# site_probe の detail 拡張（run #21 で一覧には無いと確定。GET /console/api/apps/{id} を
+# 追加で叩く。apps_detail は確認要・実機未確認）: 200＋site あり／200＋site なし／404 の 3 通り。
+# ---------------------------------------------------------------------------
+
+def test_site_probe_detail_200_with_site_and_url(base):
+    """詳細エンドポイント（apps_detail）が 200 で site らしきフィールドを返す場合、list 側の
+    結果（見つからない、のまま）は残しつつ、detail 側でキー名と URL が出て、`private_key` を
+    名前に含むキーの値が出ないこと（reviewer 指摘を受けて除外集合に追加した効果の確認）。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.set_token("site-probe-detail-found-token")
+    yaml_text = "app:\n  name: 'site-probe-app-detail-found'\n  description: t\nkind: app\nversion: 0.6.0\n" \
+                "dependencies: []\nworkflow:\n  graph:\n    nodes: []\n    edges: []\n"
+    app_id = client.import_dsl(yaml_text)
+    secret_value = "SHOULD-NOT-LEAK-DETAIL-PRIVATE-KEY"
+    _post_json(base, "/__test__/set-app-detail", {"app_id": app_id, "detail": {
+        "id": app_id,
+        "name": "site-probe-app-detail-found",
+        "site": {
+            "code": "detail-code-1",
+            "app_base_url": "https://udify.app/detail-found",
+            "private_key": secret_value,
+        },
+    }})
+
+    r = run_cli(["--env", "cloud-master", "site_probe"], {
+        "DIFY_CONSOLE_URL": base, "DIFY_CONSOLE_TOKEN": "site-probe-detail-found-token", "DIFY_CONSOLE_REFRESH": "",
+    })
+    out = r.stdout + r.stderr
+    check("site_probe(detail found): exit 0", r.returncode == 0, out)
+    check("site_probe(detail found): list 側は見つからないと明示され続ける（一覧には無いという事実が残る）",
+          "site_probe(list): 見つかりませんでした（'site' を名前に含むキーがありません）" in out, out)
+    check("site_probe(detail found): detail 側の 'site' 配下のキー名 'code' が出る", "'code'" in out, out)
+    check("site_probe(detail found): detail 側の URL が値ごと出る", "https://udify.app/detail-found" in out, out)
+    check("site_probe(detail found): private_key の値が出力に現れない", secret_value not in out, out)
+
+
+def test_site_probe_detail_200_without_site(base):
+    """詳細エンドポイントが 200 だが site らしきフィールドが無い場合、detail 側でも
+    「見つからなかった」と明示されること（黙って空を出さない）。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.set_token("site-probe-detail-nosite-token")
+    yaml_text = "app:\n  name: 'site-probe-app-detail-nosite'\n  description: t\nkind: app\nversion: 0.6.0\n" \
+                "dependencies: []\nworkflow:\n  graph:\n    nodes: []\n    edges: []\n"
+    app_id = client.import_dsl(yaml_text)
+    _post_json(base, "/__test__/set-app-detail", {"app_id": app_id, "detail": {
+        "id": app_id, "name": "site-probe-app-detail-nosite", "mode": "workflow",
+    }})
+
+    r = run_cli(["--env", "cloud-master", "site_probe"], {
+        "DIFY_CONSOLE_URL": base, "DIFY_CONSOLE_TOKEN": "site-probe-detail-nosite-token", "DIFY_CONSOLE_REFRESH": "",
+    })
+    out = r.stdout + r.stderr
+    check("site_probe(detail no-site): exit 0", r.returncode == 0, out)
+    check("site_probe(detail no-site): detail 側も 'site' を含むキーが無いと明示する",
+          "site_probe(detail): 見つかりませんでした（'site' を名前に含むキーがありません）" in out, out)
+    check("site_probe(detail no-site): detail 側も https:// の値が無いと明示する",
+          "site_probe(detail): 見つかりませんでした（https:// で始まる値がありません）" in out, out)
+
+
+def test_site_probe_detail_404(base):
+    """詳細エンドポイントが 404（未登録＝実機でエンドポイントが存在しない、または対応していない
+    場合の再現）のとき、落ちずに「404 だった」と明示し、exit 0 のままであること（想定内の結果）。"""
+    client = console_api.ConsoleClient(base, timeout=10)
+    client.set_token("site-probe-detail-404-token")
+    yaml_text = "app:\n  name: 'site-probe-app-detail-404'\n  description: t\nkind: app\nversion: 0.6.0\n" \
+                "dependencies: []\nworkflow:\n  graph:\n    nodes: []\n    edges: []\n"
+    client.import_dsl(yaml_text)  # detail は登録しない → GET /console/api/apps/{id} は 404 のまま
+
+    r = run_cli(["--env", "cloud-master", "site_probe"], {
+        "DIFY_CONSOLE_URL": base, "DIFY_CONSOLE_TOKEN": "site-probe-detail-404-token", "DIFY_CONSOLE_REFRESH": "",
+    })
+    out = r.stdout + r.stderr
+    check("site_probe(detail 404): exit 0（想定内の結果。落ちない）", r.returncode == 0, out)
+    check("site_probe(detail 404): 404 だったと明示する", "は 404 でした" in out, out)
+    check("site_probe(detail 404): list 側の結果も出力に残る",
+          "site_probe(list): 見つかりませんでした（'site' を名前に含むキーがありません）" in out, out)
+
+
 def test_revoke_removes_stale_sink_even_if_absent():
     """revoke: DIFY_REFRESH_SINK が設定されていてもファイルが存在しない場合はエラーにならない
     （sink 削除は「あれば消す」であり必須ではない）。"""
@@ -332,6 +411,9 @@ def main():
         test_site_probe_finds_site_fields_and_url_without_leaking_secrets,
         test_site_probe_not_found_reports_explicitly,
         test_site_probe_no_secret_named_key_values_leak_regex,
+        test_site_probe_detail_200_with_site_and_url,
+        test_site_probe_detail_200_without_site,
+        test_site_probe_detail_404,
     ):
         proc2, base2 = start_mock_server()
         try:

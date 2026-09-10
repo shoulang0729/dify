@@ -95,6 +95,12 @@ ENDPOINTS = {
     "api_keys": "/console/api/apps/{app_id}/api-keys",
     # 確認要（Issue #114 N6 で確定）: 発行応答に平文 token が入るか（C7）。PR-4 で使用予定。PR-1 では未使用
     "logout": "/console/api/logout",  # B3（Issue #121 W4-4）。POST。確認要: 実パス・応答形（§13。実機は W4-4 実機投入で確認）
+    # 確認要・実機未確認（Issue #124 site_probe 拡張）: /console/api/apps 一覧には公開 Web アプリの
+    # URL（サイトコード）が含まれないことが run #21 で確定した。一覧の子パスである
+    # workflows_draft（既に確認済み）が有効な以上、親パス自体は存在する見込みが高いため、
+    # このパスを推定で足す。404 なら「エンドポイントが無い、または対応していない」という
+    # 想定内の結果として扱う（get_app_detail() を参照）。
+    "apps_detail": "/console/api/apps/{app_id}",
 }
 
 # refresh-token に載せる Cookie 名の候補（Cloud は __Host- プレフィックス。selfhost・mock は無印のことがある。
@@ -434,6 +440,17 @@ class ConsoleClient:
             if app.get("name") == name:
                 return app.get("id")
         return None
+
+    def get_app_detail(self, app_id):
+        """GET /console/api/apps/{id}。アプリ単体の詳細（確認要・実機未確認。Issue #124
+        site_probe 拡張のために追加。公開 Web アプリの URL が一覧〔list_apps()〕には無いことが
+        run #21 で確定したため、詳細側に含まれるかを確かめるためだけに使う）。GET のみ。
+        戻り値: レスポンス dict。404 の場合はそのまま ConsoleAPIError を送出する
+        （メッセージに "HTTP 404" を含む。kb_upload.py の 404/405 フォールバックと同じ判別方法で、
+        呼び出し側〔console_session.py の site_probe〕が「エンドポイントが無い」という
+        想定内の結果として扱えるようにする）。"""
+        _, res = self._req("GET", ENDPOINTS["apps_detail"].format(app_id=app_id))
+        return res
 
     def import_dsl(self, yaml_text, app_id=None, return_details=False):
         """/console/api/apps/imports。app_id が None なら新規作成、指定すれば既存 app への上書きインポート。
