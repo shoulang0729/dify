@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Dify Cloud のコンソールセッションを単体で操作する CLI（`op: token_refresh` / `op: token_revoke` の実体）。
 
-    python3 scripts/dify/console_session.py --env cloud-master refresh   # 既定。本 PR（PR-3）で実装
-    python3 scripts/dify/console_session.py --env cloud-master revoke    # PR-4 で追加予定（未実装）
+    python3 scripts/dify/console_session.py --env cloud-master refresh   # 既定。PR-3 で実装
+    python3 scripts/dify/console_session.py --env cloud-master revoke    # 本 PR（PR-4）で実装
 
 `refresh`（既定）：`console_api.client_from_env()` で `DIFY_CONSOLE_REFRESH` を使ってセッションを
 確立する（rotate した値は `DIFY_REFRESH_SINK` が設定されていれば `console_api.py` が自動で
@@ -10,12 +10,20 @@
 「セッションが本当に使えること」を確かめ、件数だけを出す。**`logout()` は呼ばない**
 （次回の実行でもこのセッションを引き継ぐため。書き戻し運用の本体。設計書 §4-6）。
 
-Dify のアプリ・KB を書き換える API は一切呼ばない（`list_apps()` の GET のみ）。
+`revoke`（手動キルスイッチ。B3'。設計書 §4-4・§4-6）：`console_api.client_from_env()` でセッションを
+確立し、`client.logout()` で **Dify サーバ側のセッションを無効化する**。続けて、
+`DIFY_REFRESH_SINK` が設定されていてファイルが存在すれば**削除する**（このセッションはもう
+死んでいるので、後続の書き戻しステップに死んだ値を渡させないため）。
+**`logout()` に失敗しても sink の削除は試みる**（安全側＝次回の実行を確実に止める。
+サーバ側を殺せたかどうかに関わらず、少なくとも「死んだ値を書き戻させない」ことだけは保証する）。
+**`DIFY_CONSOLE_REFRESH` 自体の削除は、この Python プロセスの中では行わない**（`gh secret delete`
+は workflow のシェル側が行う。`CLAUDE.md` §2-10・`tools/verify.mjs` §15 に抵触しないため）。
 
-`revoke` はこの PR ではまだ実装しない（PR-4 で `client.logout()` ＋ sink ファイルの削除を追加する）。
+Dify のアプリ・KB を書き換える API は一切呼ばない（`refresh` は `list_apps()` の GET のみ、
+`revoke` は `logout()` の POST のみ）。
 
 終了コード（`console_api._print_and_exit_for_error` と同じ表。0/2/3/4）:
-    0 セッションが有効（`list_apps()` まで成功）
+    0 セッションが有効（`refresh`：`list_apps()` まで成功／`revoke`：`logout()` まで成功）
     2 引数・環境・認証情報の不備（`DIFY_CONSOLE_REFRESH` 未設定等）
     3 認証エラー（401/403。セッション期限切れ・CSRF 不一致）
     4 Cloudflare に弾かれた（403 かつ本文に `error code: 1010`）
@@ -23,7 +31,7 @@ Dify のアプリ・KB を書き換える API は一切呼ばない（`list_apps
 値をログに出さない：本モジュールの出力はすべて `console_api.log()`（`_mask()` を通す）を使う
 （`CLAUDE.md` §2-10）。
 
-設計: docs/handoff/2026-09-09-refresh-token-writeback.md §4-6（Issue #212 PR-3）
+設計: docs/handoff/2026-09-09-refresh-token-writeback.md §4-4・§4-6（Issue #212 PR-3・PR-4）
 """
 import argparse
 import os
@@ -75,15 +83,46 @@ def cmd_refresh(console_url, timeout):
 
 
 def cmd_revoke(console_url, timeout):
-    """PR-4 で実装予定（client.logout() ＋ sink ファイルの削除）。本 PR では未実装。"""
-    console_api.log("console_session.py revoke はまだ実装されていません（PR-4 で追加予定）。")
-    return 2
+    """手動キルスイッチ（B3'。設計書 §4-4・§4-6）：DIFY_CONSOLE_REFRESH でセッションを確立し、
+    client.logout() で Dify サーバ側のセッションを無効化する。続けて、DIFY_REFRESH_SINK が
+    設定されていてファイルが存在すれば削除する（このセッションはもう死んでいるので、後続の
+    書き戻しステップに死んだ値を渡させないため）。
+
+    logout() に失敗しても sink の削除は試みる（安全側。サーバ側を殺せなくても、少なくとも
+    「死んだ値を次回の書き戻しに使わせない」ことだけは保証する）。
+    DIFY_CONSOLE_REFRESH（GitHub の Environment secret）自体の削除はここでは行わない
+    （workflow のシェル側が `gh secret delete` で行う。§4-4）。
+
+    戻り値: 終了コード（int）。client_from_env() / logout() の失敗はそれぞれ通常の終了コード表
+    （0/2/3/4）に従う。"""
+    try:
+        client = console_api.client_from_env(console_url, timeout=timeout)
+    except console_api.ConsoleAPIError as e:
+        rc = _exit_code_for_error(e)
+    else:
+        try:
+            client.logout()
+            console_api.log(
+                "token_revoke: logout 完了（Dify 側のセッションを無効化しました）。"
+            )
+            rc = 0
+        except console_api.ConsoleAPIError as e:
+            rc = _exit_code_for_error(e)
+
+    # logout の成否に関わらず、sink ファイルが残っていれば削除する（安全側。設計書 §4-6）。
+    sink_path = os.environ.get(console_api.REFRESH_SINK_ENV, "").strip()
+    if sink_path and os.path.isfile(sink_path):
+        os.remove(sink_path)
+        console_api.log("token_revoke: sink ファイルを削除しました（死んだ値を書き戻させないため）。")
+
+    return rc
 
 
 def build_arg_parser():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("action", nargs="?", default="refresh", choices=["refresh", "revoke"],
-                     help="refresh（既定。本 PR で実装）。revoke は PR-4 で追加予定（現時点では未実装）")
+                     help="refresh（既定。セッションを維持したまま有効性だけ確認）。"
+                          "revoke（手動キルスイッチ。logout してセッションを無効化する。B3'）")
     ap.add_argument("--env", default=os.environ.get("DIFY_ENV") or "cloud-master",
                      help="dify/env/<env>/env.yml（既定 $DIFY_ENV、無ければ cloud-master）")
     ap.add_argument("--timeout", type=int, default=60, help="Console API 呼び出しのタイムアウト秒（既定 60）")

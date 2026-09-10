@@ -4,11 +4,10 @@ test_console_api.py / test_cloud_deploy.py と同じ作法。mock_server.py を�
 
     python3 scripts/dify/tests/test_console_session.py     # exit 0 で全件 PASS。ネットワークは 127.0.0.1 のみ
 
-設計: docs/handoff/2026-09-09-refresh-token-writeback.md §4-6（Issue #212 PR-3）
+設計: docs/handoff/2026-09-09-refresh-token-writeback.md §4-4・§4-6（Issue #212 PR-3・PR-4）
 
 CI（`npm test`）には入れない（`CLAUDE.md` §3 のコマンド集合を変えない。他の scripts/dify テストと同じ扱い）。
-実行は implementer と reviewer が手で行う。本 PR（PR-3）では `refresh` のみを検証する
-（`revoke` は PR-4 で実装される。現時点では未実装であることの確認だけを行う）。
+実行は implementer と reviewer が手で行う。本 PR（PR-4）で `revoke`（t8）を追加した。
 """
 import os
 import socket
@@ -121,12 +120,45 @@ def test_refresh_writes_sink_and_value_stays_alive(base, tmpdir):
     check("refresh(sink): sink の値でモックに refresh が通る（生きている＝logout していない証拠）", ok is True)
 
 
-def test_revoke_not_implemented_yet():
-    """revoke は PR-4 で実装予定。本 PR（PR-3）では未実装であることだけを確認する
-    （exit 2・値は無関係。将来 PR-4 でこのテストは置き換えられる）。"""
-    r = run_cli(["--env", "cloud-master", "revoke"], {"DIFY_CONSOLE_URL": "http://127.0.0.1:1"})
+def test_revoke_unset_exit2():
+    """revoke: 認証情報が何も無ければ exit 2（refresh と同じ preflight 相当）。"""
+    r = run_cli(
+        ["--env", "cloud-master", "revoke"],
+        {"DIFY_CONSOLE_URL": "http://127.0.0.1:1", "DIFY_CONSOLE_REFRESH": "",
+         "DIFY_CONSOLE_TOKEN": "", "DIFY_CONSOLE_EMAIL": "", "DIFY_CONSOLE_PASSWORD": ""},
+    )
+    check("revoke(未設定): exit 2", r.returncode == 2, f"exit={r.returncode} {r.stdout} {r.stderr}")
+
+
+def test_revoke_calls_logout_and_removes_sink(base, tmpdir):
+    """t8（設計書 §4-4・§4-6・§9-1。Issue #212 PR-4）: console_session.py revoke は
+    client.logout() を呼び（B3'。Dify サーバ側のセッションを無効化する）、DIFY_REFRESH_SINK が
+    設定されていれば（client_from_env() の refresh() 呼び出しで自動的に書かれた）sink ファイルを
+    削除する（死んだ値を後続の書き戻しステップに渡させないため）。値は出力に現れない。"""
+    sink_path = os.path.join(tmpdir, "dify-refresh-revoke-test.new")
+    seed = "cs-revoke-seed-refresh-token"
+    r = run_cli(["--env", "cloud-master", "revoke"],
+                {"DIFY_CONSOLE_URL": base, "DIFY_CONSOLE_REFRESH": seed, "DIFY_CONSOLE_TOKEN": "",
+                 "DIFY_REFRESH_SINK": sink_path})
     combined = r.stdout + r.stderr
-    check("revoke: 未実装のメッセージが出る（PR-4 で追加予定）", "実装されていません" in combined, combined)
+    check("revoke: exit 0", r.returncode == 0, combined)
+    check("revoke: logout 完了のログが出る（サーバ側のセッションを無効化した証拠）",
+          "logout 完了" in combined, combined)
+    check("revoke: sink ファイルを削除したログが出る", "sink ファイルを削除しました" in combined, combined)
+    check("revoke: sink ファイルが（自動生成後に）削除され、残っていない",
+          not os.path.isfile(sink_path))
+    check("revoke: 出力にリフレッシュトークン文字列が現れない", seed not in combined, combined)
+
+
+def test_revoke_removes_stale_sink_even_if_absent():
+    """revoke: DIFY_REFRESH_SINK が設定されていてもファイルが存在しない場合はエラーにならない
+    （sink 削除は「あれば消す」であり必須ではない）。"""
+    r = run_cli(["--env", "cloud-master", "revoke"],
+                {"DIFY_CONSOLE_URL": "http://127.0.0.1:1", "DIFY_CONSOLE_REFRESH": "",
+                 "DIFY_CONSOLE_TOKEN": "", "DIFY_CONSOLE_EMAIL": "", "DIFY_CONSOLE_PASSWORD": "",
+                 "DIFY_REFRESH_SINK": "/tmp/this-sink-does-not-exist-console-session-test.new"})
+    check("revoke(sink 無し): exit 2 のまま（sink 未存在で例外にならない）", r.returncode == 2,
+          f"exit={r.returncode} {r.stdout} {r.stderr}")
 
 
 def main():
@@ -134,7 +166,8 @@ def main():
     check("前提: mock_server.py が存在する", os.path.isfile(MOCK_SERVER))
 
     test_refresh_unset_exit2()
-    test_revoke_not_implemented_yet()
+    test_revoke_unset_exit2()
+    test_revoke_removes_stale_sink_even_if_absent()
 
     port = free_port()
     base = f"http://127.0.0.1:{port}"
@@ -150,6 +183,8 @@ def main():
         test_refresh_auth_error_exit3(base)
         with tempfile.TemporaryDirectory(prefix="console_session_test_") as tmpdir:
             test_refresh_writes_sink_and_value_stays_alive(base, tmpdir)
+        with tempfile.TemporaryDirectory(prefix="console_session_revoke_test_") as tmpdir2:
+            test_revoke_calls_logout_and_removes_sink(base, tmpdir2)
     finally:
         proc.terminate()
         try:
