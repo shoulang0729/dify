@@ -65,6 +65,16 @@ name: dify-ops
 # `revoke` を要求する。`deploy`・`inspect`・`token_refresh` と同じ concurrency グループに入れる
 # （書き戻し中の実行と競合させないため。cancel-in-progress は false のまま）。
 #
+# op: site_probe（Issue #124）：公開 Web アプリの URL（サイトコード）が
+# `GET /console/api/apps` の応答に含まれるかを、実機で確かめる読み取り専用プローブ。
+# `scripts/dify/console_session.py site_probe` が `list_apps()`（**変更せずそのまま呼ぶだけ**）の
+# 応答 1 件目を調べ、(1) トップレベルのキー名一覧、(2) "site" を名前に含むキーがあればその配下の
+# キー名一覧、(3) `https://` で始まる値、の 3 点だけを出す（詳細は console_session.py の
+# docstring）。読み取りのみ（GET だけ）のため `inspect`・`token_refresh` と同じ理由で承認ゲートの
+# 外に置き、同じ書き戻し（Preflight → 本体 → Write back。if: always()）・concurrency グループ
+# （`dify-console-<env>`。DIFY_CONSOLE_REFRESH を消費するため）を持つ。codes は使わない
+# （対象アプリを絞る意味が無い＝アプリ一覧の 1 件目を機械的に見るだけ）。
+#
 #   op              | 走るジョブ    | environment          | 使う secrets
 #   ----------------|--------------|-----------------------|----------------------------------------------
 #   probe           | probe        | 無し                  | 無し
@@ -86,6 +96,8 @@ name: dify-ops
 #   token_revoke    | token_revoke | dify-cloud-master     | DIFY_CONSOLE_REFRESH・GH_SECRETS_PAT
 #                   |              |                       | （logout ＋ secret 削除。confirm="revoke"
 #                   |              |                       | が必須。#212 PR-4）
+#   site_probe      | site_probe   | dify-cloud-master     | DIFY_CONSOLE_REFRESH・GH_SECRETS_PAT
+#                   |              | （承認ゲート無し）    | （読み取りのみ＝GET だけ。#124）
 #
 # 前提（PM が先に行う。dify/DEPLOY.md §7 参照）：
 #   - Settings → Environments → `dify-cloud-master` → **Required reviewers のチェックを外す**
@@ -102,7 +114,7 @@ on:
   workflow_dispatch:
     inputs:
       op:
-        description: "実行する操作（kb_refresh=同名文書の中身だけ差し替え／kb_replace=削除して入れ直し。まず kb_refresh を試すこと／probe=秘密を使わない Dify Cloud への到達性確認。codes 不要／inspect=下書きから Rerank 関連 6 項目だけを読み取り専用で採取。#195 E1／deploy=render→インポート→公開。全件インポート成功後にまとめて公開〔P1〕。confirm に \"deploy\" が必須。#121 W4-4／token_selftest=Dify を一切呼ばず、捨て用 secret に書き戻しの自己診断。codes 不要。#212 PR-1／token_refresh=DIFY_CONSOLE_REFRESH でセッションが有効か確認するだけ（読み取りのみ・logout しない）。codes 不要。#212 PR-3／token_revoke=今すぐ Dify のセッションを無効化し DIFY_CONSOLE_REFRESH を削除する手動キルスイッチ。codes 不要。confirm に \"revoke\" が必須。#212 PR-4）"
+        description: "実行する操作（kb_refresh=同名文書の中身だけ差し替え／kb_replace=削除して入れ直し。まず kb_refresh を試すこと／probe=秘密を使わない Dify Cloud への到達性確認。codes 不要／inspect=下書きから Rerank 関連 6 項目だけを読み取り専用で採取。#195 E1／deploy=render→インポート→公開。全件インポート成功後にまとめて公開〔P1〕。confirm に \"deploy\" が必須。#121 W4-4／token_selftest=Dify を一切呼ばず、捨て用 secret に書き戻しの自己診断。codes 不要。#212 PR-1／token_refresh=DIFY_CONSOLE_REFRESH でセッションが有効か確認するだけ（読み取りのみ・logout しない）。codes 不要。#212 PR-3／token_revoke=今すぐ Dify のセッションを無効化し DIFY_CONSOLE_REFRESH を削除する手動キルスイッチ。codes 不要。confirm に \"revoke\" が必須。#212 PR-4／site_probe=公開 Web アプリの URL が /console/api/apps の応答に含まれるかを読み取り専用で確認する（アプリ一覧 1 件目のキー名と https:// の値だけを出す）。codes 不要。#124）"
         required: true
         type: choice
         options:
@@ -117,9 +129,10 @@ on:
           - token_selftest
           - token_refresh
           - token_revoke
+          - site_probe
         default: run_tests
       codes:
-        description: "対象の管理番号（空白区切り、例: KN-01 DC-01）。kb_replace は削除を伴うため 1 件のみ。op=probe・op=token_selftest・op=token_refresh・op=token_revoke では不要（空でよい）。op=inspect では必須（例: KN-01 KN-02 KN-03 GN-01）。op=deploy は 1〜12 件（12 本全部なら dify/apps/ の全番号を空白区切りで列挙。confirm も必須）"
+        description: "対象の管理番号（空白区切り、例: KN-01 DC-01）。kb_replace は削除を伴うため 1 件のみ。op=probe・op=token_selftest・op=token_refresh・op=token_revoke・op=site_probe では不要（空でよい）。op=inspect では必須（例: KN-01 KN-02 KN-03 GN-01）。op=deploy は 1〜12 件（12 本全部なら dify/apps/ の全番号を空白区切りで列挙。confirm も必須）"
         required: false
         type: string
         default: ""
@@ -160,16 +173,17 @@ jobs:
         run: |
           set -euo pipefail
           case "$OP" in
-            kb_upload|kb_refresh|kb_replace|run_tests|both|probe|inspect|deploy|token_selftest|token_refresh|token_revoke) ;;
+            kb_upload|kb_refresh|kb_replace|run_tests|both|probe|inspect|deploy|token_selftest|token_refresh|token_revoke|site_probe) ;;
             *) echo "::error::op の値が不正です: $OP"; exit 1 ;;
           esac
-          # op=probe・op=token_selftest・op=token_refresh・op=token_revoke は秘密を一切使わない、
-          # または対象アプリ／KB を指定する意味が無い自己診断・セッション確認・無効化のみのため
-          # codes を要求しない（設計書 §11 W4-3 PR-5・
-          # docs/handoff/2026-09-09-refresh-token-writeback.md §10 PR-1・PR-3・PR-4）。
+          # op=probe・op=token_selftest・op=token_refresh・op=token_revoke・op=site_probe は
+          # 秘密を一切使わない、または対象アプリ／KB を指定する意味が無い自己診断・セッション確認・
+          # 無効化・アプリ一覧の 1 件目を見るだけのプローブのため codes を要求しない
+          # （設計書 §11 W4-3 PR-5・docs/handoff/2026-09-09-refresh-token-writeback.md
+          # §10 PR-1・PR-3・PR-4／site_probe は Issue #124）。
           # それ以外の op は従来どおり codes の形式を検証する（op=inspect も対象の管理番号が
           # 必須なのでここを通る）。
-          if [ "$OP" = "probe" ] || [ "$OP" = "token_selftest" ] || [ "$OP" = "token_refresh" ] || [ "$OP" = "token_revoke" ]; then
+          if [ "$OP" = "probe" ] || [ "$OP" = "token_selftest" ] || [ "$OP" = "token_refresh" ] || [ "$OP" = "token_revoke" ] || [ "$OP" = "site_probe" ]; then
             echo "op=$OP のため codes の検証をスキップします（codes=${CODES:-<空>}）"
           elif ! [[ "$CODES" =~ ^[A-Z]{2}-[0-9]{2}(\ [A-Z]{2}-[0-9]{2})*$ ]]; then
             echo "::error::codes の形式が不正です（例: KN-01 DC-01）: $CODES"
@@ -1941,3 +1955,242 @@ jobs:
             exit 1
           fi
           echo "token_revoke: 完了（logout ＋ secret 削除の両方が成功しました）"
+
+  # op: site_probe（Issue #124）。公開 Web アプリの URL（サイトコード）が
+  # `GET /console/api/apps` の応答に含まれるかを、実機で確かめる読み取り専用プローブ。
+  # `scripts/dify/console_session.py site_probe` が `list_apps()`（**変更せずそのまま呼ぶだけ**）の
+  # GET のみを呼び、応答 1 件目からトップレベルのキー名・"site" らしきキーの配下のキー名・
+  # `https://` の値だけを出す（詳細は console_session.py の docstring）。KB・アプリの書き換えは
+  # 一切行わない。token_refresh と同じ理由（読み取りのみ）で承認ゲートの外に置き、
+  # DIFY_CONSOLE_REFRESH を消費するため deploy・inspect・token_refresh・token_revoke と同じ
+  # concurrency グループ・書き戻し（Preflight → 本体 → Write back。if: always()）を持つ
+  # （token_refresh ジョブをそのまま真似た形。設計書 docs/handoff/2026-09-09-refresh-token-writeback.md
+  # §4-1〜§4-5・§5 と同じ契約）。
+  site_probe:
+    name: "site_probe（op: site_probe）"
+    needs: validate
+    if: ${{ inputs.op == 'site_probe' }}
+    runs-on: ubuntu-latest
+    # Required reviewers は外れているためここで承認待ちにはならない。宣言するのは
+    # DIFY_CONSOLE_REFRESH（Environment secret。kb/tests/inspect/token_refresh ジョブと同じもの）を
+    # 読むためだけ。
+    environment: dify-cloud-master
+    permissions:
+      contents: read   # 何も commit しないため read のみでよい（書き戻しは GH_SECRETS_PAT で行う）
+    timeout-minutes: 15
+    concurrency:
+      group: dify-console-${{ inputs.env }}
+      # cancel-in-progress は絶対に true にしない（deploy ジョブのコメント参照。load-bearing）。
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Python dependencies
+        run: pip install pyyaml
+
+      # 値は一切出力しない。「設定されているか」だけを確認する（他ジョブと同じ作法）。
+      - name: Check secrets presence (values are never printed)
+        env:
+          DIFY_CONSOLE_REFRESH: ${{ secrets.DIFY_CONSOLE_REFRESH }}
+        run: |
+          set -euo pipefail
+          if [ -n "${DIFY_CONSOLE_REFRESH:-}" ]; then
+            echo "DIFY_CONSOLE_REFRESH: set"
+          else
+            echo "DIFY_CONSOLE_REFRESH: unset（op: site_probe に必須。dify/DEPLOY.md §8 を参照）"
+          fi
+
+      # GH_SECRETS_PAT の有無だけを見る（値は出さない）。あれば書き戻し運用を有効にする
+      # （DIFY_REFRESH_SINK を設定）。無ければ何も設定しない＝従来どおり（B7。§4-5）。
+      - name: "Preflight (write-back): PAT の有無だけを見る"
+        env:
+          GH_SECRETS_PAT: ${{ secrets.GH_SECRETS_PAT }}
+        run: |
+          set -euo pipefail
+          echo "JOB_START_EPOCH=$(date -u +%s)" >> "$GITHUB_ENV"
+          if [ -n "${GH_SECRETS_PAT:-}" ]; then
+            echo "GH_SECRETS_PAT: set（書き戻し運用が有効になります）"
+            echo "WRITEBACK=1" >> "$GITHUB_ENV"
+            echo "DIFY_REFRESH_SINK=${RUNNER_TEMP}/dify-refresh.new" >> "$GITHUB_ENV"
+          else
+            echo "GH_SECRETS_PAT: unset"
+            echo "WRITEBACK=0" >> "$GITHUB_ENV"
+            {
+              echo "> \`GH_SECRETS_PAT\` が未設定のため、**従来どおりの使い切り運用**で実行します（実行後にリフレッシュトークンは無効化されます。次回は取り直しが必要です）。自動更新を有効にする手順は \`dify/DEPLOY.md\` §10-2。"
+              echo
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: "Run console_session.py site_probe (op: site_probe)"
+        id: run
+        env:
+          ENV_NAME: ${{ inputs.env }}
+          DIFY_CONSOLE_REFRESH: ${{ secrets.DIFY_CONSOLE_REFRESH }}
+          DIFY_REFRESH_SINK: ${{ env.DIFY_REFRESH_SINK }}
+        run: |
+          set -euo pipefail
+          overall_rc=0
+
+          {
+            echo "## dify-ops 実行結果（op: site_probe）"
+            echo
+            echo "- 操作: \`site_probe\`"
+            echo "- 環境: \`$ENV_NAME\`"
+            echo "- 設計: scripts/dify/console_session.py の docstring（Issue #124）"
+            echo "- **Dify へは読み取り専用リクエスト（アプリ一覧の GET）のみ**。KB・アプリの書き換えは行いません。logout もしません。"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          out_file="$(mktemp)"
+          echo "== console_session.py site_probe --env $ENV_NAME =="
+          if python3 scripts/dify/console_session.py --env "$ENV_NAME" site_probe 2>&1 | tee "$out_file"; then
+            echo "site_probe: 判定=完了 (rc=0)"
+            echo "- site_probe: 完了" >> "$GITHUB_STEP_SUMMARY"
+          else
+            rc=$?
+            case "$rc" in
+              2) echo "site_probe: 判定=設定不備 (rc=2)"; echo "- site_probe: 設定不備（exit 2。DIFY_CONSOLE_REFRESH の未設定などを確認。dify/DEPLOY.md §8）" >> "$GITHUB_STEP_SUMMARY" ;;
+              3) echo "site_probe: 判定=認証エラー (rc=3)"; echo "- site_probe: 認証エラー（exit 3。dify/DEPLOY.md §10-4 の手順で取り直す）" >> "$GITHUB_STEP_SUMMARY" ;;
+              4) echo "site_probe: 判定=Cloudflare 遮断 (rc=4)"; echo "- site_probe: Cloudflare に弾かれました（exit 4）" >> "$GITHUB_STEP_SUMMARY" ;;
+              *) echo "site_probe: 判定=失敗 (rc=$rc)"; echo "- site_probe: 失敗（exit $rc）" >> "$GITHUB_STEP_SUMMARY" ;;
+            esac
+            overall_rc=1
+          fi
+
+          {
+            echo
+            echo "<details><summary>console_session.py site_probe の出力</summary>"
+            echo
+            echo '```'
+            cat "$out_file"
+            echo '```'
+            echo "</details>"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          rm -f "$out_file"
+
+          echo "OVERALL_RC=$overall_rc" >> "$GITHUB_ENV"
+          # このステップ自体は失敗させない。合否は Fail the job ステップで判定する（他ジョブと同じ作法）。
+          exit 0
+
+      - name: "Write back the rotated refresh token, if any (site_probe. #124)"
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_SECRETS_PAT }}
+          GH_REPO: ${{ github.repository }}
+          SINK: ${{ runner.temp }}/dify-refresh.new
+          TARGET_ENV: dify-cloud-master        # 固定。inputs.* からは作らない（r3）
+          TARGET_SECRET: DIFY_CONSOLE_REFRESH  # 固定。inputs.* からは作らない（r3）
+        run: |
+          set -euo pipefail            # set -x は禁止。env / printenv も使わない
+
+          if [ ! -s "$SINK" ]; then
+            echo "[WB] rotate していないため書き戻し不要（sink が無い、または空）"
+            exit 0
+          fi
+
+          fail_writeback() {
+            echo "::error::[要対応] リフレッシュトークンの書き戻しに失敗しました。Environment secret DIFY_CONSOLE_REFRESH はもう使えません（この実行で rotate 済み＝古い値は失効しています）。次回の実行は必ず認証エラー（exit 3）になります。dify/DEPLOY.md §10-4 の手順で取り直してください。"
+            echo "$1"
+            {
+              echo "## ⚠️ リフレッシュトークンの書き戻しに失敗しました（要対応）"
+              echo
+              echo "**いま何が起きているか**"
+              echo
+              echo "- この実行はリフレッシュトークンを 1 回使いました（rotate）。**Environment secret \`DIFY_CONSOLE_REFRESH\` に入っている値は、もう死んでいます。**"
+              echo "- 新しい値はこのランナーの中にだけありましたが、**GitHub の secret に書き戻せませんでした**。ランナーは実行後に破棄されるため、**新しい値は失われました**。"
+              echo "- **Dify 側は壊れていません**（この実行の結果は上の欄のとおりです）。次回の実行が認証エラー（exit 3）になるだけです。"
+              echo
+              echo "**PM がすること（3 分。1 回だけ）**"
+              echo
+              echo "1. \`dify/DEPLOY.md\` §10-4「取り直し」の手順でリフレッシュトークンを取り直す"
+              echo "2. Environment \`dify-cloud-master\` の \`DIFY_CONSOLE_REFRESH\` を **Update** で貼り直す"
+              echo "3. \`op: token_refresh\` を 1 回だけ回して、書き戻しが直っているかを確かめる（**Dify には何も書き込みません**）"
+              echo
+              echo "**原因の切り分け（上のログの \`[WB]\` 行を見る）**"
+              echo
+              echo "| \`[WB]\` の行 | 原因 | 直し方 |"
+              echo "|---|---|---|"
+              echo "| \`PAT 未設定\` | Environment secret \`GH_SECRETS_PAT\` が無い／空 | \`dify/DEPLOY.md\` §10-2 |"
+              echo "| \`gh secret set 失敗\` かつ HTTP 403 | PAT の権限不足、または期限切れ | §10-2 の権限表を確認。期限切れなら作り直す |"
+              echo "| \`gh secret set 失敗\` かつ HTTP 404 | PAT のリポジトリ選択違い／Environment 名の綴り違い | §10-2 の手順 7・10 |"
+              echo "| \`形式検査に失敗\` | 実装の不具合（secret には**書き込んでいません**） | Issue を立てる。取り直しでは直らない |"
+              echo "| \`反映が確認できない\` | GitHub 側の一時障害の可能性 | もう一度 \`op: token_refresh\` を試す |"
+            } >> "$GITHUB_STEP_SUMMARY"
+            rm -f "$SINK"
+            exit 1
+          }
+
+          if [ -z "${GH_TOKEN:-}" ]; then
+            fail_writeback "[WB] PAT 未設定（Environment secret GH_SECRETS_PAT が空）"
+          fi
+
+          # 形式検査（設計書 §4-7 手順 3）：想定の文字種・長さ・行数 1・末尾改行なし。
+          line_count="$(awk 'END{print NR}' "$SINK")"
+          trailing_nl="$(tail -c 1 "$SINK" | wc -l | tr -d ' ')"
+          format_ok=0
+          if LC_ALL=C grep -qE '^[A-Za-z0-9._~+/=-]{20,4096}$' "$SINK" && [ "$line_count" = "1" ] && [ "$trailing_nl" = "0" ]; then
+            format_ok=1
+          fi
+          if [ "$format_ok" -ne 1 ]; then
+            fail_writeback "[WB] 形式検査に失敗（実装の不具合。secret には書き込んでいません）"
+          fi
+
+          ok=0
+          for i in 1 2 3; do
+            if gh secret set "$TARGET_SECRET" --env "$TARGET_ENV" < "$SINK"; then
+              ok=1
+              break
+            fi
+            echo "gh secret set が失敗しました（${i} 回目）。再試行します…"
+            sleep $((i * 5))
+          done
+
+          if [ "$ok" -ne 1 ]; then
+            fail_writeback "[WB] gh secret set 失敗（3 回リトライ後）"
+          fi
+
+          rm -f "$SINK"
+
+          # 反映確認（設計書 §4-7 手順 7）：updatedAt がこのジョブの開始時刻より後であること。
+          updated_ok=0
+          updated_at=""
+          if gh secret list --env "$TARGET_ENV" --json name,updatedAt > "$RUNNER_TEMP/writeback-list.json" 2>/dev/null; then
+            updated_at="$(python3 -c 'import json,os; data=json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "writeback-list.json"), encoding="utf-8")); rows=[r.get("updatedAt") for r in data if r.get("name")==os.environ["TARGET_SECRET"]]; print(rows[0] if rows else "")')"
+            if [ -n "$updated_at" ]; then
+              updated_epoch="$(date -u -d "$updated_at" +%s 2>/dev/null || echo 0)"
+              if [ "$updated_epoch" -gt "${JOB_START_EPOCH:-0}" ]; then
+                updated_ok=1
+              fi
+            fi
+          else
+            echo "V-D: --json 未対応の gh バージョンのため名前だけのフォールバック表示を使います（値は出ません）"
+            if gh secret list --env "$TARGET_ENV" | grep -q "$TARGET_SECRET"; then
+              updated_ok=1   # 時刻での厳密な確認はできないため、secret の存在確認のみで成功扱いとする
+            fi
+          fi
+
+          if [ "$updated_ok" -ne 1 ]; then
+            fail_writeback "[WB] 反映が確認できない（gh は成功を返したが updatedAt が更新されていない）"
+          fi
+
+          echo "[WB] 書き戻し成功（updated_at: ${updated_at:-不明}）"
+          {
+            echo "🔑 リフレッシュトークンを更新しました（updated_at: ${updated_at:-不明}）。次回もそのまま実行できます。"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail the job if site_probe failed
+        if: always()
+        run: |
+          set -euo pipefail
+          rc="${OVERALL_RC:-0}"
+          if [ "$rc" != "0" ]; then
+            echo "::error::site_probe が失敗しました（詳細は上のログと Job Summary を参照）。"
+            exit 1
+          fi

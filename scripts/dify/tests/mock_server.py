@@ -59,6 +59,10 @@ Dify サーバー（標準ライブラリのみ。開発・検証用。CI には
   GET  /__test__/stats                                          → {"DELETE": n, "PATCH": n, "update_by_text": n}
       test_kb_upload.py が「意図しない削除・更新を呼んでいないか」を差分で確認するためのカウンタ
   POST /__test__/expire-access-token                            → 上記参照（test_console_api.py 専用）
+  POST /__test__/set-app-fields  body: {"app_id": "...", "fields": {...}} → 指定した app_id の
+      GET /console/api/apps 応答に任意のトップレベルフィールドをマージして返すようにする
+      （Issue #124。console_session.py の site_probe が「site らしきフィールドがある応答／無い応答」の
+      両方を機械的に再現するためのフック。実機のフィールド形はまだ未確認）
 
 このスクリプトは検証専用。生成物（dify/results/** や dify/CHANGELOG.md の検証行）はコミットに含めない。
 """
@@ -115,6 +119,11 @@ STATE = {
     # Issue #121 W4-4: refresh-token 経由で発行した access_token -> その時点の refresh_token。
     # logout() が「対になる refresh_token」も一緒に無効化する（revoke_token_pair の再現。B3）ために使う。
     "access_to_refresh": {},
+    # Issue #124: /__test__/set-app-fields で app_id ごとに登録した追加のトップレベルフィールド。
+    # GET /console/api/apps の各要素へ {"id":..., "name":...} に加えてマージして返す
+    # （console_session.py site_probe のテスト専用。実機のフィールド形はまだ未確認なので、
+    # テスト側が任意の形を注入できるようにしておく）。
+    "app_extra_fields": {},
 }
 LOCK = threading.Lock()
 EXPIRED_TOKEN = "expired-token"  # DIFY_CONSOLE_TOKEN にこの値を入れると 401 を再現できる（レガシー経路）
@@ -268,6 +277,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path == "/__test__/expire-access-token":
             with LOCK:
                 STATE["expired_access_tokens"].add(payload.get("access_token", ""))
+            return self._json(200, {"ok": True})
+
+        # テスト専用（Issue #124）: GET /console/api/apps の応答に任意のトップレベルフィールドを
+        # 注入する。実機のフィールド形がまだ未確認（console_api.py 冒頭の注意）なので、
+        # site_probe のテストが「site らしきフィールドがある応答」「無い応答」の両方を
+        # 作れるようにするためのフック。body: {"app_id": "...", "fields": {...}}
+        if path == "/__test__/set-app-fields":
+            with LOCK:
+                STATE["app_extra_fields"][payload.get("app_id", "")] = payload.get("fields") or {}
             return self._json(200, {"ok": True})
 
         if path == "/console/api/login":
@@ -448,7 +466,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         if path == "/console/api/apps":
             with LOCK:
-                data = [{"id": k, "name": v} for k, v in STATE["apps"].items()]
+                # Issue #124: /__test__/set-app-fields で登録された追加フィールドがあればマージする
+                # （実機のフィールド形は未確認。テストが任意の形を注入できるようにするためのフック）。
+                data = [
+                    {"id": k, "name": v, **STATE["app_extra_fields"].get(k, {})}
+                    for k, v in STATE["apps"].items()
+                ]
             return self._json(200, {"data": data, "has_more": False})
 
         m = re.match(r"^/console/api/apps/([^/]+)/workflows/draft$", path)
