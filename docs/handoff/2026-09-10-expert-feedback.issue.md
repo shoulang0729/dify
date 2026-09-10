@@ -1,7 +1,7 @@
 # Issue 本文 — 社内有識者フィードバックの設計反映
 
 > `gh` が使えない環境のため、Issue 本文をここに書き出す（`CLAUDE.md` §4 architect）。
-> GitHub 上に起票したら、この見出しの下に Issue 番号を追記すること。
+> **起票済み： #244** — https://github.com/shoulang0729/dify/issues/244
 
 ---
 

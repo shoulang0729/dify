@@ -2,6 +2,7 @@
 
 - 日付：2026-09-10
 - レーン：**M/L**
+- Issue：**#244**（`docs/handoff/2026-09-10-expert-feedback.issue.md` に本文の控え）
 - 実行場所：**`run:cloud`**（設計・文書・モックのデータ層。実機投入を含まない）
 - 対象：`mock/js/data/catalog.js`・`mock/js/data/scenarios/mfg/{gn,kn}.js`・`docs/demo/**`・`dify/tests/*.json`・`scripts/dify/run_tests.py`・`tools/verify.mjs`
 - 前提となる load-bearing：`CLAUDE.md` §2-1（3 言語同時）・§2-3（共通レイヤー／`script` は ja/zh）・§2-5（言語切替の契約）・§2-7（成熟度 1/2/3）・§2-9（データ層だけ・id 改名禁止）・§2-11（管理番号）・§2-13（架空データの正本）
