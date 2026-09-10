@@ -73,7 +73,10 @@
  *      候補の接頭辞はハードコードせず products.csv の part_no・equipment.csv の equip_id の
  *      先頭セグメントから組み立てる（Issue #153 PR-1 §5-3）。管理番号形式（^[A-Z]{2}-\d{2}$）と
  *      衝突するコード
- *   W8 KPI：kpi.csv の指標名が出ているのに値が基準値・目標・前月のどれとも一致しない
+ *   W8 KPI：kpi.csv の全指標（name_ja/name_zh。ハードコードしない）が出ているのに値が
+ *      基準値・目標・前月のどれとも一致しない。表記ゆれ（稼働率/稼動率/稼动率 等。
+ *      KPI_LABEL_CONFUSABLES）と隣接の崩し（括弧・コロン・助詞を挟む。KPI_ADJACENCY_RE）
+ *      を両方吸収したうえで判定する（tools/check-world.mjs の W8 ヘルパーのコメント参照）
  *   W9 カバレッジ：people.csv にあるがどこにも出てこない人物
  */
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
@@ -236,6 +239,64 @@ function parseCalendarPatterns(md, warn, categoryCodes) {
   }
   if (!patterns.length) warn('calendar.md の「文書番号の体系」表から書式を1件も抽出できなかった');
   return patterns;
+}
+
+/* ---------- W8: KPI 語のラベル・数値マッチング用ヘルパー ---------- */
+/*
+ * kpi.csv の指標名（name_ja/name_zh）を数語だけハードコードせず全件対象にする
+ * （2 件の見落とし事故の再発防止。PR #223（差し戻し済み）・PR #222（マージ済み）参照）。
+ * ラベルと数値の間には次の 2 種類の崩れが起こりうるため、両方を吸収してから
+ * 基準値（target/current/prev）と突き合わせる：
+ *   ① 表記ゆれ：同じ語の中で文字が簡体字・繁体字・異体字に入れ替わる
+ *      （「稼働率」の「働」が「動」「动」になる等）。KPI_LABEL_CONFUSABLES に
+ *      確認済みのグループを列挙し、ラベルの正規表現化（kpiLabelToRegexFrag）で
+ *      その文字位置だけを文字クラスに展開する（他の文字は通常どおりリテラル）。
+ *      name_ja と name_zh が同じ語の表記違いに過ぎない場合（稼働率/稼动率）は
+ *      このグループ 1 つで両方を拾えるので、ラベル自体は name_ja／name_zh を
+ *      別々に検索する（名前がそもそも異なる語のとき。例: 生産数／产量）
+ *   ② 隣接の崩し：ラベルと数値の間にコロン・空白・括弧・助詞が挟まる
+ *      （「稼働率（89.1%）」「稼働率は89.1%」「稼働率: 89.1%」等）。
+ *      KPI_ADJACENCY_RE で吸収するが、無関係な数値まで拾わないよう長さの
+ *      上限を設ける（{0,6}）
+ * 単位（kpi.csv の unit 列。「個/件」のように複数ありうる）が数値の直後に
+ * 続くことも要求し、的外れな数字（日付・番号など）を拾わないようにする
+ * （誤検知を増やしすぎない、という制約への対応。実際に走らせて、単位を
+ * 要求しない場合に増える warn が的外れかどうかを確認したうえでこの形にした）。
+ */
+const KPI_LABEL_CONFUSABLES = [
+  ['働', '動', '动'], // 稼働率(ja) ⇔ 稼動率(異体) ⇔ 稼动率(zh 簡体)。PR #223 で実際に混同された
+];
+const KPI_CONFUSABLE_GROUP_OF = new Map();
+for (const g of KPI_LABEL_CONFUSABLES) for (const ch of g) KPI_CONFUSABLE_GROUP_OF.set(ch, g);
+
+function kpiLabelToRegexFrag(label) {
+  let out = '';
+  for (const ch of label) {
+    const g = KPI_CONFUSABLE_GROUP_OF.get(ch);
+    out += g ? `[${g.join('')}]` : escLit(ch);
+  }
+  return out;
+}
+
+// ラベルと数値の間に入りうる「隣接の崩し」。全角コロン・半角コロン・読点・カンマ・
+// 開き括弧（全角/半角）・強調のアスタリスク・助詞（は/の/が）・全角空白を許し、
+// 上限 6 文字までとする（際限なく離れた無関係の数値を拾わないため）。
+// 「を」は入れない：「稟議処理日数を 1 日程度短縮」のように、その指標を目的語に
+// とって差分・改善量を述べる言い回しでほぼ使われ、実際の値の記述では使われて
+// いなかった（誤検知になることを実測で確認したため除外。fin/rs.js 相当の記述）
+const KPI_ADJACENCY_RE = '[\\s\\u3000：:、，,（(*はのが]{0,6}';
+
+function kpiUnitToRegexFrag(unit) {
+  const alts = (unit || '').split('/').map(u => u.trim()).filter(Boolean).map(escLit);
+  return alts.length ? `(?:${alts.join('|')})` : '';
+}
+
+// ラベル・単位から W8 の候補抽出用正規表現を組み立てる。数値は 3 桁区切りカンマ・
+// 小数を許容し、直後（空白・アスタリスクのみ挟んでよい）に単位が続くことを要求する
+function buildKpiValueRegex(label, unit) {
+  const labelFrag = kpiLabelToRegexFrag(label);
+  const unitFrag = kpiUnitToRegexFrag(unit);
+  return new RegExp(`${labelFrag}${KPI_ADJACENCY_RE}\\**([0-9][0-9,]*(?:\\.[0-9]+)?)\\**\\s?${unitFrag}`, 'g');
 }
 
 // W6 の候補抽出（mfg/fin/both で共用）。候補抽出：末尾セグメントが 1 文字のものも拾う
@@ -596,23 +657,35 @@ function runIndustryChecks(ind) {
   /* ---------------------------------------------------------- */
   section(`[${ind}] W8. KPI：kpi.csv の値と一致しない指標`);
   {
-    const kpiChecks = ind === 'mfg'
-      ? [
-          { id: 'defect_rate', label: '不良率' },
-          { id: 'uptime', label: '稼働率' },
-        ]
-      : [
-          { id: 'delinquency_rate', label: '延滞率' },
-        ];
+    // kpi.csv の全行を対象にする（従来は不良率・稼働率／延滞率のみのハードコードで、
+    // それ以外の指標語・表記ゆれ・隣接の崩しは素通りしていた）
+    let anyLabel = false;
     let anyMismatch = false;
-    for (const { id, label } of kpiChecks) {
-      const row = kpi.find(k => k.kpi_id === id);
-      const known = row ? new Set([row.target, row.current, row.prev].filter(Boolean)) : new Set();
-      const found = new Set((allText.match(new RegExp(`${label}[：:\\s]*\\**([0-9]+\\.[0-9]+)%`, 'g')) || []).map(s => s.match(/([0-9]+\.[0-9]+)/)[1]));
+    for (const row of kpi) {
+      const labels = [...new Set([row.name_ja, row.name_zh].filter(Boolean))];
+      if (!labels.length) continue;
+      anyLabel = true;
+      const known = new Set(
+        [row.target, row.current, row.prev]
+          .map(v => (v || '').trim())
+          .filter(v => /^[0-9]+(?:\.[0-9]+)?$/.test(v.replace(/,/g, '')))
+          .map(v => v.replace(/,/g, ''))
+      );
+      const found = new Set();
+      for (const label of labels) {
+        for (const m of allText.matchAll(buildKpiValueRegex(label, row.unit))) {
+          found.add(m[1].replace(/,/g, ''));
+        }
+      }
       const mismatch = [...found].filter(v => !known.has(v));
-      if (mismatch.length) { anyMismatch = true; report(`${label}: kpi.csv の基準値（${[...known].join('/')}）と一致しない値 ${mismatch.join('、')}%`); }
+      if (mismatch.length) {
+        anyMismatch = true;
+        const unitSuffix = row.unit ? row.unit.split('/')[0] : '';
+        report(`${row.name_ja || row.name_zh}: kpi.csv の基準値（${[...known].join('/') || '未設定'}）と一致しない値 ${mismatch.join('、')}${unitSuffix}`);
+      }
     }
-    if (!anyMismatch) ok(`${ind === 'mfg' ? '不良率・稼働率' : '延滞率'}は kpi.csv の基準値と一致（該当なしを含む）`);
+    if (!anyLabel) ok('kpi.csv に検査対象の指標が無い');
+    else if (!anyMismatch) ok('KPI の値は kpi.csv の基準値と一致（該当なしを含む）');
   }
 
   /* ---------------------------------------------------------- */
@@ -706,7 +779,7 @@ function runBothChecks() {
   }
 
   section('[both] W8. KPI：業種横断は基準値の比較対象を一意に決められないため skip');
-  skip('KPI は mfg（不良率・稼働率）と fin（延滞率）で指標体系そのものが異なり、和集合にすると意味が薄れる');
+  skip('KPI は mfg（不良率・稼働率・生産数など）と fin（延滞率・貸出残高など）で指標体系そのものが異なり、和集合にすると意味が薄れる');
 
   section('[both] W9. カバレッジ：業種横断は「どちらの people.csv と比較するか」を一意に決められないため skip');
   skip('people.csv は mfg/fin で別々の人物台帳であり、both バケットの狭いテキスト量に和集合の人物リストを当てると大半が「未出現」と誤検出される。各業種本来のカバレッジは mfg/fin 側の W9 で検査済み');
