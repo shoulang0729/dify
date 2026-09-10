@@ -1,6 +1,6 @@
 # CLAUDE.md — このリポジトリでの作業ルール
 
-`shoulang0729/dify` は次の **4 区分**を置くリポジトリ：**①デモ**＝`mock/`（AIエージェントカタログの UI モック、GitHub Pages で公開）／**②実装ソース**＝`dify/`（マスタ DSL・環境レイヤー・KB・テスト）・`scripts/`・`tools/`／**③ユースケース・シナリオ**＝`docs/`（設計書・実装リファレンス）・`mock/js/data/scenarios/`（デモ台本）／**④ダミーデータ**＝`data/world/`（架空世界マスタ）・`dify/kb/`・`dify/tests/`。地図はトップ `README.md`、管理番号からの索引は `docs/service-map.md`（生成物）。
+`shoulang0729/dify` は次の **4 区分**を置くリポジトリ：**①デモ**＝`mock/`（AIエージェントカタログの UI モック、GitHub Pages で公開）／**②実装ソース**＝`dify/`（マスタ DSL・環境レイヤー・KB・テスト）・`scripts/`・`tools/`／**③ユースケース・シナリオ**＝`docs/`（設計書・実装リファレンス・`docs/demo/` のデモ進行台本と顧客提示資料）・`mock/js/data/scenarios/`（モックのデモ台本）／**④ダミーデータ**＝`data/world/`（架空世界マスタ）・`dify/kb/`・`dify/tests/`・`dify/samples/`（デモ投入用の入力サンプル）。地図はトップ `README.md`、管理番号からの索引は `docs/service-map.md`（生成物）。
 Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環境へ `dify/env/<env>/env.yml` の差し替えでリリースする（§2-12）。
 （SwingTrainer アプリ本体は別リポ `shoulang0729/Dify.SwingTrainer`。）
 
@@ -105,7 +105,7 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 - 設計書：`docs/handoff/2026-09-07-repo-layout-v2.md` §3・§4
 
 ### 2-13. 架空データの正本は `data/world/`
-- **何を**：会社（青嶺精工／青岭精工／Seirei Seiko Co., Ltd.）・拠点（蘇州工場・Japan HQ）・人・部署・品番・設備・取引先記号・KPI・文書番号体系・規程と社内 ID の台帳（`documents.csv`）・カレンダー。台本（`mock/js/data/scenarios/**`）・KB 用文書（`dify/kb/**`）・テスト（`dify/tests/**`）・ユースケース文書はここにある値だけを使う。**新しい名前・数字はまずマスタに足す**
+- **何を**：会社（青嶺精工／青岭精工／Seirei Seiko Co., Ltd.）・拠点（蘇州工場・Japan HQ）・人・部署・品番・設備・取引先記号・KPI・文書番号体系・規程と社内 ID の台帳（`documents.csv`）・カレンダー。台本（`mock/js/data/scenarios/**`）・KB 用文書（`dify/kb/**`）・テスト（`dify/tests/**`）・入力サンプル（`dify/samples/**`）・ユースケース文書はここにある値だけを使う。**新しい名前・数字はまずマスタに足す**
 - **なぜ**：4 か所に同じ架空世界が散らばり、既に食い違っている（社名の英名が無かった・`K社`/`K 社`・役職ゆれ）。顧客環境では実データに差し替える境目でもある
 - **どこで検出**：`node tools/check-world.mjs`（`npm run world`。**warn のみ・CI には入れない**）。食い違いを潰す PR では `--strict`。未統一の一覧は `data/world/README.md`。残す warn は `data/world/README.md` の「未統一」に理由付きで 1 行ずつ載せる（現状 10 件）
 

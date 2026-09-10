@@ -13,8 +13,8 @@ GitHub Pages で公開しています。
 |---|---|---|---|---|
 | ① | **デモ** | [`mock/`](./mock/) | [`mock/index.html`](./mock/index.html) | 顧客に見せる UI モック（GitHub Pages で公開）。カタログ・詳細・チャット・デモ 5 テンプレート |
 | ② | **実装ソース** | [`dify/apps`](./dify/apps/) [`dify/env`](./dify/env/) [`scripts/dify`](./scripts/dify/) [`tools`](./tools/) | [`dify/README.md`](./dify/README.md) | Dify に入れるマスタ DSL、環境ごとの差分、投入・テスト・リリースのスクリプト、モックの検証ハーネス |
-| ③ | **ユースケース・シナリオ** | [`docs/dify/usecases`](./docs/dify/usecases/) [`docs/handoff`](./docs/handoff/) [`mock/js/data/scenarios`](./mock/js/data/scenarios/) | [`docs/dify/usecases/README.md`](./docs/dify/usecases/README.md) | 67 サービスの詳細ユースケース、設計書、デモ台本（台本はコードなので `mock/` の下） |
-| ④ | **ダミーデータ** | [`data/world`](./data/world/) [`dify/kb`](./dify/kb/) [`dify/tests`](./dify/tests/) | [`data/world/README.md`](./data/world/README.md) | 架空世界のマスタ（会社・人・品番・設備・KPI）、KB 用のダミー文書、テスト入力 |
+| ③ | **ユースケース・シナリオ** | [`docs/dify/usecases`](./docs/dify/usecases/) [`docs/handoff`](./docs/handoff/) [`docs/demo`](./docs/demo/) [`mock/js/data/scenarios`](./mock/js/data/scenarios/) | [`docs/dify/usecases/README.md`](./docs/dify/usecases/README.md) | 67 サービスの詳細ユースケース、設計書、デモ進行台本と顧客提示資料（`docs/demo/`）、モックのデモ台本（コードなので `mock/` の下） |
+| ④ | **ダミーデータ** | [`data/world`](./data/world/) [`dify/kb`](./dify/kb/) [`dify/tests`](./dify/tests/) [`dify/samples`](./dify/samples/) | [`data/world/README.md`](./data/world/README.md) | 架空世界のマスタ（会社・人・品番・設備・KPI）、KB 用のダミー文書、テスト入力、デモ投入用の入力サンプル |
 
 **管理番号（`KN-02` など）から ①②③④ を横断する索引** → [`docs/service-map.md`](./docs/service-map.md)（生成物。`npm run index` で更新）
 **マスタ → 社内・顧客環境へのリリース** → [`dify/env/README.md`](./dify/env/README.md) と [`dify/DEPLOY.md`](./dify/DEPLOY.md)

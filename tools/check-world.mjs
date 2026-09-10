@@ -22,15 +22,16 @@
  *      mfg 側・fin 側それぞれのディレクトリに別々の実例として置かれる（1 つのサービスに mfg 用と
  *      fin 用の 2 つの台本がある）ので、台本は常にどちらか一方に正しく属し、both バケットには
  *      台本が存在しない
- *   - dify/kb/**・dify/tests/**・docs/dify/usecases/**（台本と違い業種ディレクトリに分かれておらず、
- *     1 管理番号につき 1 ファイルしか無い）: ファイルパスから管理番号（`[A-Z]{2}-\d+`）を抜き、
+ *   - dify/kb/**・dify/tests/**・docs/dify/usecases/**・dify/samples/**（Issue #205 で追加。
+ *     台本と違い業種ディレクトリに分かれておらず、1 管理番号につき 1 ディレクトリ／1 ファイルしか無い）:
+ *     ファイルパスから管理番号（`[A-Z]{2}-\d+`）を抜き、
  *     CLAUDE.md §2-11 の逆変換（大文字接頭辞 → 内部 id の小文字化＋ゼロ埋め解除。例 `KN-06` → `kn6`）
  *     で SVCS の該当エントリを引き、その `industries`（正本）で mfg 専用／fin 専用／両業種の
  *     3 バケットに振り分ける（分類コードのハードコード集合は使わない）。
  *     SVCS に無い管理番号（欠番・README.md・_TEMPLATE.md のような番号を含まないファイル等）は
  *     従来どおり既定で mfg 扱いにする（走査対象から漏らさないため。§7-2 の「不明なものは mfg」と同じ既定）
  *
- * both バケット（業種横断サービスの kb/tests/usecases）の扱い（Issue #182 のやり直し。
+ * both バケット（業種横断サービスの kb/tests/usecases/samples）の扱い（Issue #182 のやり直し。
  * PM 指摘：「両方の pass に入れる」＝両方の world master に登録されていることを要求する形は
  * 誤りだった。両業種サービスの実例は普通どちらか一方の世界の語彙で書かれる。正しくは
  * 「mfg と fin の world master の和集合のどちらかに載っていればよい」）:
@@ -38,7 +39,7 @@
  *     both バケットには台本が無い（上記のとおり常にどちらかの業種ディレクトリに属する）ため、
  *     対象データが無く skip する（黙って飛ばさず理由を出力する）
  *   - W4（社名の出現回数）・W5（取引先記号）は台本本体（mock/js/data 配下）のテキストが入力で、
- *     both バケット（kb/tests/usecases）にはその入力が無いため skip する
+ *     both バケット（kb/tests/usecases/samples）にはその入力が無いため skip する
  *   - W8（KPI）は「基準値と一致するか」を見る検査で、mfg と fin は指標体系そのものが違う
  *     （不良率・稼働率 vs 延滞率）ため和集合にする意味が無く skip する
  *   - W6（文書番号）・W7（品番・設備）は「登録済みの集合に含まれるか」を見る検査なので、
@@ -46,7 +47,7 @@
  *     判定する（すでに mfg/fin バケットの実行で解析済みの正規表現・集合を再利用する。calendar.md の
  *     パース警告を two重に出さないため、W6 の再パースはしない）
  *
- * 入力: data/world/<業種>/ 配下の csv/md ＋ 上記の走査対象 3 系統
+ * 入力: data/world/<業種>/ 配下の csv/md ＋ 上記の走査対象 4 系統
  *
  * 検査（すべて warn。FAIL にしない）:
  *   W1 人名：走査対象に出る人名が people.csv にあるか
@@ -302,7 +303,12 @@ const usecaseFiles = walkFiles(resolve(ROOT, 'docs/dify/usecases'), ['.md'])
   .map(p => ({ src: p.replace(ROOT + '/', ''), text: readFileSync(p, 'utf8') }));
 const testFiles = walkFiles(resolve(ROOT, 'dify/tests'), ['.json'])
   .map(p => ({ src: p.replace(ROOT + '/', ''), text: readFileSync(p, 'utf8') }));
-const allKbTestUsecaseFiles = [...kbFiles, ...usecaseFiles, ...testFiles];
+// dify/samples/**（Issue #205。デモ投入用の入力サンプル）。dify/kb/**・dify/tests/**・
+// docs/dify/usecases/** と同じ扱い（1 管理番号 1 ディレクトリ。build/ は生成物なので除外）
+const sampleFiles = walkFiles(resolve(ROOT, 'dify/samples'), ['.md'])
+  .filter(p => !p.replace(ROOT + '/', '').startsWith('dify/samples/build/'))
+  .map(p => ({ src: p.replace(ROOT + '/', ''), text: readFileSync(p, 'utf8') }));
+const allKbTestUsecaseFiles = [...kbFiles, ...usecaseFiles, ...testFiles, ...sampleFiles];
 
 function filesForBucket(bucket) {
   return allKbTestUsecaseFiles.filter(f => bucketOf(extractCode(f.src)) === bucket);
