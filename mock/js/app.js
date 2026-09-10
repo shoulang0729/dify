@@ -171,6 +171,8 @@ const demoDelay = (text) => Math.min(DEMO_REPLY_MS.max,
 let demoPending = false;
 let demoPendingFreeform = false;
 const scnOf = (id) => (SCENARIOS[state.industry] || {})[id] || null;
+/** サービス id → LIVE のエントリ（あれば返す・無ければ null。設計書 2026-09-08-live-links.md §5-5） */
+const liveOf = (id) => LIVE[id] || null;
 /** 台本は ja / zh のみ。UI が en のときは ja の台本を使う（§2-5：エージェント本体は日中） */
 const scriptLang = (l) => (l === 'zh' ? 'zh' : 'ja');
 /** 次に消費する台本ターン（尽きていれば null） */

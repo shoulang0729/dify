@@ -260,6 +260,18 @@
     border: 1px solid var(--border-card); border-radius: var(--radius-sm);
     padding: 2px var(--space-2); background: var(--surface-canvas);
   }
+
+  /* ===== 本番リンク（設計書 2026-09-08-live-links.md §5-4）=====
+     成熟度バッジ（塗りつぶし・アイコンなし）とは「枠線＋外部リンク矢印」という形で区別する（色だけに頼らない）。
+     --action-primary ではなく --text-link を使う理由：dark で --action-primary は据え置きのため
+     カード地に対するコントラストが 4.5:1 を割る。--text-link は dark で切り替わり light/dark とも AA を満たす（§5-4）。 */
+  .live-mark {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: var(--text-overline); color: var(--text-link);
+    border: 1px solid var(--text-link); border-radius: var(--radius-xs);
+    padding: 2px var(--space-2);
+  }
+  .ic-live { width: 12px; height: 12px; flex-shrink: 0; }
   .empty { padding: 64px 0; text-align: center; color: var(--text-muted); font-size: 13.5px; line-height: 2; }
 
   /* ===== お気に入り一覧の空状態（noResults とは別物。設計書 §3-6） ===== */
@@ -323,6 +335,18 @@
   .btn-ghost.on { color: var(--action-primary); border-color: var(--action-primary); }
   .btn-ghost .ic-star { width: 18px; height: 18px; }
   .cta-note { font-size: 11.5px; color: var(--text-muted); }
+
+  /* ===== 本番を開く（.btn-ghost を土台にした <a>。設計書 §5-4） ===== */
+  .btn-live {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-link);
+    font-size: 15px; font-weight: var(--weight-bold); padding: 13px 22px; border-radius: var(--radius-xs);
+    text-decoration: none;
+    transition: border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+  }
+  .btn-live:hover { border-color: var(--text-link-hover); color: var(--text-link-hover); }
+  .btn-live .ic-live { width: 16px; height: 16px; }
+  .cta-note-live { font-size: 11.5px; color: var(--text-secondary); }
 
   /* ===== チャット ===== */
   .chat-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
