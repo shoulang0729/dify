@@ -168,12 +168,21 @@ npm run world             # data/world/ と台本・文書の食い違いを報�
 | ラベル | 実行場所 | 回せるもの |
 |---|---|---|
 | `run:cloud` | クラウド（Claude Code on the web） | 設計・実装・レビュー・デモ・文書。ネットワークを使わない検証すべて |
-| `run:runner` | GitHub ホストランナー（`workflow_dispatch` → `dify-ops.yml`） | KB 投入（`kb_upload.py`）・テスト実行（`run_tests.py`）。Environment `dify-cloud-master` の承認が要る |
-| `run:mac` | PM の Mac（ブラウザのログイン済みセッションが要る） | DSL の投入・上書き・公開・KB 紐づけ・API キー発行・DSL エクスポート・モデル設定の確認 |
+| `run:runner` | GitHub ホストランナー（`workflow_dispatch` → `dify-ops.yml`） | KB 投入（`kb_upload.py`）・テスト実行（`run_tests.py`）・疎通確認（`probe`）・下書きの読み取り（`inspect`）・DSL の上書きインポートと公開（`deploy`。KB を持たないアプリに限る。2026-09-10、run #16 で確認）・リフレッシュトークンの自己診断／更新／失効（`token_selftest`／`token_refresh`／`token_revoke`）。Environment `dify-cloud-master` を宣言するが、Required reviewers は外してあるため承認は発生しない（PR #199） |
+| `run:mac` | PM の Mac（ブラウザのログイン済みセッションが要る） | KB 付きアプリの KB 紐づけと公開（`dataset_ids` の CI 側解決＝#209 が未実装のため `op: deploy` の歯止めで止まる）・DSL の新規作成（未実証。run #16 の 8 本もすべて既存アプリへの上書きだった）・API キー発行・DSL エクスポート・モデル設定の確認。**DSL の上書きインポートと、KB を持たないアプリの公開は `run:runner` に移った**（2026-09-10、run #16、成功 8／失敗 0） |
 
 - 判定基準は `docs/handoff/2026-09-08-execution-split-and-runner.md` §1-1 の操作表（O1〜O10）
 - **`run:*` は 1 つだけ。2 つ付くのは Issue を分割する合図**
 - **設計値と実機の事実をファイルで分ける**：設計＝`dify/apps/`・`dify/kb/`・`dify/tests/`・`dify/env/<env>/env.yml`（人が書く。クラウド可）／実機の事実＝`dify/state/<env>.yml`・`dify/results/**`（機械だけが書く。手で編集しない）
 - **実機側の自動 PR は `dify/results/**` と `dify/state/**` 以外を書かない**（ワークフローが機械で検査する）。`docs/service-map.md` の再生成はクラウド側だけが行う
-- **秘密**：GitHub に置いてよいのは `cloud-master` の Service / Datasets API キーだけ（Environment secret `dify-cloud-master`）。**Dify のログイン情報・セッション Cookie は Mac から出さない**（§2-10）
+- **秘密**：GitHub の Environment secret `dify-cloud-master` に置いてよいのは次の 3 種だけ。
+  ① `cloud-master` の Service / Datasets API キー（`DIFY_APP_KEY_*`・`DIFY_DATASET_KEY`）
+  ② Dify Console のリフレッシュトークン `DIFY_CONSOLE_REFRESH`（#121 W4-3。1 回使うと rotate される。
+     取り方・失効は `dify/DEPLOY.md` §8）
+  ③ 書き戻し用の fine-grained PAT `GH_SECRETS_PAT`（このリポジトリのみ・`Secrets: Read and write` のみ・
+     期限 1 年。用途は ② の自動更新だけ。`dify/DEPLOY.md` §10・設計書
+     `docs/handoff/2026-09-09-refresh-token-writeback.md` §6）
+  **Dify のログイン情報（メール・パスワード）と、② 以外のセッション情報は Mac から出さない**（§2-10）。
+  ③ は**このリポジトリのすべての secret を書き換えられる**強い資格情報である（値は読めない）。
+  **4 つ目を足すのは PM 判断**で、足したらこの一覧を同時に更新する。
 - **公開リポジトリなのでセルフホストランナーは `workflow_dispatch` 限定・`--ephemeral`・専用ユーザーで動かす**（`docs/handoff/2026-09-08-execution-split-and-runner.md` §4-2 の S1〜S7）
