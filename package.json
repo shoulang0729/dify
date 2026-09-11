@@ -14,6 +14,7 @@
     "index:check": "node tools/gen-index.mjs --check",
     "world": "node tools/check-world.mjs",
     "test": "node tools/verify.mjs && node tools/regress.mjs",
+    "portal:test": "npm --prefix portal test",
     "ci": "npm test && python3 dify/check.py && python3 scripts/dify/render.py --env cloud-master --all --check && python3 scripts/dify/tests/test_sync_back.py && python3 scripts/dify/tests/test_run_tests.py && python3 scripts/dify/tests/test_lang_check.py && python3 scripts/dify/run_tests.py --dry-run --out \"$(mktemp -d)\" $(awk '/^apps:/{f=1;next} f && /^[A-Za-z]/{f=0} f' dify/env/cloud-master/env.yml | grep -oE '[A-Z]{2}-[0-9]{2}')"
   }
 }

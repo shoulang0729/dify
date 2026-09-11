@@ -1,0 +1,18 @@
+{
+  "_comment": "tools/check-nodata.mjs --update で生成。手で編集しない。count は件数、hash は重複排除・ソート済み一覧の sha256（同じ件数でも中身がすり替わったら hash が変わり FAIL になる）",
+  "generatedAt": "2026-09-11T22:37:12.230Z",
+  "checks": {
+    "N1": {
+      "count": 3,
+      "hash": "a8a25ac81f5e55e42b22eeba81363c4f2e211ad0570b0cf3942e97c397c3c7d9"
+    },
+    "N2": {
+      "count": 0,
+      "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "N3": {
+      "count": 14,
+      "hash": "3f815f0be0a0e4129dabc2eaadecb3059cf88039f09436469d579255af68785d"
+    }
+  }
+}

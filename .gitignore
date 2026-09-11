@@ -23,3 +23,6 @@ dify/build/
 # ---- Python ----
 __pycache__/
 *.pyc
+
+# ---- portal/（⑤ポータル。独立 npm プロジェクト。CLAUDE.md §2-14・S-2） ----
+portal/node_modules/

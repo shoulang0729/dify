@@ -1,0 +1,17 @@
+{
+  "_comment": "portal/scripts/gen-seed.mjs で生成。手で編集しない。正本は shoulang0729/dify の dify/env/cloud-master/env.yml の apps:。値は常に null（実 id は portal/ に持ち込まない。管理番号の一覧だけが目的）",
+  "cloud-master": {
+    "KN-01": null,
+    "KN-02": null,
+    "KN-03": null,
+    "DC-01": null,
+    "DC-02": null,
+    "DC-04": null,
+    "GN-01": null,
+    "GN-02": null,
+    "GN-05": null,
+    "LG-01": null,
+    "LG-04": null,
+    "NM-03": null
+  }
+}
