@@ -25,6 +25,8 @@ const CAT_STYLE = {
   fa: { icon: '<circle cx="12" cy="12" r="8.2"/><path d="M12 7.3v9.4"/><path d="M15 9.3c0-1.1-1.3-2-3-2s-3 .9-3 2 1.3 1.7 3 2 3 .9 3 2-1.3 2-3 2-3-.9-3-2"/>' },
   po: { icon: '<circle cx="7" cy="7" r="2.6"/><circle cx="17" cy="7" r="2.6"/><circle cx="12" cy="17" r="2.6"/><path d="M8.9 8.9 15.1 15.1"/><path d="M15.1 8.9 8.9 15.1"/>' },
   eg: { icon: '<path d="M14.5 3.5 9.5 20.5"/><path d="M7 8 3 12l4 4"/><path d="M17 8l4 4-4 4"/>' },
+  /* ---- IT カタログ新設 1 分類。設計書 2026-09-11-it-industry.md §4-8 ---- */
+  sl: { icon: '<path d="M3.5 20h17"/><path d="M4.5 16.5 9.5 11l3.5 3.5 6.5-8"/><path d="M15.5 6.5h4v4"/>' },
   _fallback: { icon: '<rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="12" cy="12" r="2.5"/>' }
 };
 

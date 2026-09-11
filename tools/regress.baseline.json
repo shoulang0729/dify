@@ -32,6 +32,12 @@
           "industries": [
             "fin"
           ]
+        },
+        {
+          "id": "ops",
+          "industries": [
+            "it"
+          ]
         }
       ]
     },
@@ -284,6 +290,12 @@
             "fin",
             "it"
           ]
+        },
+        {
+          "id": "staff",
+          "industries": [
+            "it"
+          ]
         }
       ]
     },
@@ -300,6 +312,26 @@
           "industries": [
             "mfg",
             "fin",
+            "it"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sl",
+      "industries": [
+        "it"
+      ],
+      "subs": [
+        {
+          "id": "pipe",
+          "industries": [
+            "it"
+          ]
+        },
+        {
+          "id": "prop",
+          "industries": [
             "it"
           ]
         }
@@ -775,6 +807,19 @@
       ]
     },
     {
+      "id": "gn8",
+      "cat": "gn",
+      "sub": "daily",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "ocr",
+        "translate"
+      ]
+    },
+    {
       "id": "pt1",
       "cat": "pt",
       "sub": "data",
@@ -918,6 +963,32 @@
       ]
     },
     {
+      "id": "kn9",
+      "cat": "kn",
+      "sub": "ops",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "taxonomy",
+        "search"
+      ]
+    },
+    {
+      "id": "kn10",
+      "cat": "kn",
+      "sub": "ops",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "governance",
+        "regulation"
+      ]
+    },
+    {
       "id": "dc9",
       "cat": "dc",
       "sub": "report",
@@ -928,6 +999,19 @@
       "tags": [
         "report",
         "approval"
+      ]
+    },
+    {
+      "id": "dc10",
+      "cat": "dc",
+      "sub": "report",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "kpi",
+        "report"
       ]
     },
     {
@@ -1173,6 +1257,45 @@
       ]
     },
     {
+      "id": "po5",
+      "cat": "po",
+      "sub": "staff",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "leave",
+        "hr"
+      ]
+    },
+    {
+      "id": "po6",
+      "cat": "po",
+      "sub": "staff",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "workload",
+        "hr"
+      ]
+    },
+    {
+      "id": "po7",
+      "cat": "po",
+      "sub": "collect",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "effect",
+        "dashboard"
+      ]
+    },
+    {
       "id": "eg1",
       "cat": "eg",
       "sub": "sysspec",
@@ -1185,6 +1308,45 @@
       "tags": [
         "spec",
         "faq"
+      ]
+    },
+    {
+      "id": "sl1",
+      "cat": "sl",
+      "sub": "pipe",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "pipeline",
+        "analysis"
+      ]
+    },
+    {
+      "id": "sl2",
+      "cat": "sl",
+      "sub": "pipe",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "winloss",
+        "pipeline"
+      ]
+    },
+    {
+      "id": "sl3",
+      "cat": "sl",
+      "sub": "prop",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "proposal",
+        "search"
       ]
     }
   ],
@@ -1208,19 +1370,23 @@
     "disclosure",
     "drawing",
     "education",
+    "effect",
     "equipment",
     "faq",
     "finance",
     "glossary",
+    "governance",
     "hr",
     "idea",
     "inventory",
     "kpi",
+    "leave",
     "mail",
     "market",
     "meeting",
     "modeling",
     "news",
+    "ocr",
     "order",
     "partner_archive",
     "partner_infovendor",
@@ -1228,6 +1394,7 @@
     "partner_recruit",
     "partner_salarydb",
     "partner_training",
+    "pipeline",
     "procedure",
     "proposal",
     "purchase",
@@ -1241,10 +1408,12 @@
     "spec",
     "summary",
     "survey",
+    "taxonomy",
     "trade",
     "translate",
     "travel",
     "valuation",
+    "winloss",
     "workload"
   ],
   "patterns": [
@@ -1355,10 +1524,10 @@
     "usesUnit"
   ],
   "counts": {
-    "cats": 13,
-    "subs": 29,
-    "svcs": 67,
-    "tags": 57,
+    "cats": 14,
+    "subs": 33,
+    "svcs": 77,
+    "tags": 64,
     "ui": 91,
     "byIndustry": {
       "mfg": {
@@ -1370,8 +1539,8 @@
         "cats": 8
       },
       "it": {
-        "svcs": 11,
-        "cats": 5
+        "svcs": 21,
+        "cats": 6
       }
     },
     "svcsMulti": 11
