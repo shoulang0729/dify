@@ -1,0 +1,10 @@
+system_id,name_ja,name_zh,name_en,owner_kind,client_code,site,project_id,owner_person_id,owner_dept_id,criticality,service_hours,batch_window,users_note,note
+SYS-01,生産管理（MES）,生产管理（MES）,Production Management (MES),customer,青嶺精工,蘇州工場,P-2411,shinozaki-yuma,,高,平日 07:00-22:00; 土 07:00-13:00,日次 01:00-04:00,生産管理・製造ライン担当者 約40名（蘇州工場）,
+SYS-02,品質管理（QMS）,质量管理（QMS）,Quality Management (QMS),customer,青嶺精工,蘇州工場,P-2411,cai-wenbo,,中,平日 08:00-20:00,日次 02:00-03:00,品質保証担当者 約15名（蘇州工場）,
+SYS-03,勘定系 照会 API,核心系统 查询 API,Core Banking Inquiry API,customer,碧洋銀行,上海本部,P-2425,huang-sihan,,高,平日 08:30-19:00,日次 23:00-02:00,窓口・与信審査部門 約30名（上海本部）,
+SYS-04,与信ワークフロー,授信工作流,Credit Workflow,customer,碧洋銀行,上海本部,P-2418,huang-sihan,,高,平日 09:00-18:00,日次 22:00-23:30,審査担当者 約20名（上海本部）,
+SYS-05,受発注 EDI,订单 EDI,Order EDI,customer,碧洋銀行,上海本部,P-2398,huang-sihan,,中,24 時間,日次 00:30-01:30,受発注担当者 約10名（上海本部）,
+SYS-06,AI エージェント基盤,AI 智能体平台,AI Agent Platform,customer,青嶺精工,蘇州工場,P-2402,cai-wenbo,,中,平日 08:00-20:00,,カタログ利用者全員（蘇州工場）,
+SYS-07,部門ポータル,部门门户,Department Portal,internal,,上海拠点,,kishimoto-natsu,,中,24 時間,日次 03:00-03:30,ソリューション本部 全員（上海拠点）,
+SYS-08,勤怠システム,考勤系统,Attendance System,internal,,上海拠点,,,kanri,中,24 時間,日次 02:00-02:30,ソリューション本部 全員（上海拠点）,
+SYS-09,会計システム,会计系统,Accounting System,internal,,上海拠点,,,kanri,高,平日 09:00-18:00,月次 月初3営業日 20:00-24:00,管理部 経理担当 約5名（上海拠点）,

@@ -77,7 +77,8 @@ IT（在中日系 SIer）の第 3 世界は `docs/handoff/2026-09-11-it-industry
 | `vendors.csv` | 協力会社 3（オフショア開発 γ 社・技術者派遣 δ 社・クラウド/ライセンス再販 ε 社）。**記号はギリシャ文字**（`mfg` のラテン大文字・`fin` の十干のどちらとも別体系。設計書 §3-4-2） |
 | `kpi.csv` | 要員稼働率・受注率・引合金額・案件粗利率・平均残業時間・年休取得率・納品後不具合密度・AI削減時間（基準値／目標／前月） |
 | `calendar.md` | 会計年度（4/1〜3/31）・月次クローズ・案件マイルストン・世界の「今日」（2026-09-11）・文書番号体系 |
-| `documents.csv` | 案件・提案書・変更要求・SOW のレコード ID 台帳 4 ＋ 社内規程 3（`kind`＝`record_id`/`rule`） |
+| `documents.csv` | 案件・提案書・変更要求・SOW のレコード ID 台帳 4 ＋ 社内規程 3 ＋ 障害番号 1（`kind`＝`record_id`/`rule`）。障害番号は `docs/handoff/2026-09-11-sysops-usecase.md` PR-2 で追加 |
+| `systems.csv` | システム台帳 9（受託保守中の顧客システム 6・自社の社内システム 3）。`docs/handoff/2026-09-11-sysops-usecase.md` §8-1（PR-2）で新設。新しい固有名詞は 0 件（顧客・案件・担当はすべて既存マスタと `PDEALS` の値） |
 
 IT には `equipment.csv`・`products.csv`（部品・設備が主役でない業種のため）と `hotels/vehicles/airports/
 routes/contacts.csv`（GN-07 用。GN-07 の IT 台本を書く PR-4 の範囲外）を置かない（設計書 §3-4）。

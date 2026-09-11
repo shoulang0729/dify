@@ -6,3 +6,4 @@ SOW-2026-009,record_id,作業範囲合意書番号,工作范围说明书编号,S
 ITR-08,rule,情報セキュリティ規程,信息安全规章,Information Security Policy,tech,,
 ITR-12,rule,就業・勤怠管理規程,考勤与工时管理规章,Working Hours & Attendance Rules,kanri,,
 ITR-21,rule,年次有給休暇取得推進要領,年假使用推进办法,Annual Leave Take-up Guidelines,kanri,,
+INC-2026-014,record_id,障害番号,故障编号,Incident number,deli1,,運用監視ツールから取り込んだ障害 1 件に 1 つ。書式 INC-YYYY-NNN
