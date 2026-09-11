@@ -22,6 +22,7 @@ architect（設計）成果物。**アプリコード（`mock/**` `tools/**`）�
 | [`decisions-pending.md`](./decisions-pending.md) | **PM 判断待ちの集約**（39 項目）：各 `usecases/*.md` §10・`outline-wiki-usecases.md` §4 O-1〜9・`platform-components.md`・`feasibility-33-services.md` F-1〜8 の判断事項をテーマ別（越境・モデル／業務システム・外部 API／Outline／成熟度／PIPL・告知／共通部品の方式／責任範囲・運用）に統合。関係する管理番号・PC、architect 推奨、決める人（PM／顧客法務／顧客 IT） | PM |
 | [`usecases/README.md`](./usecases/README.md) | **サービスの一覧**（管理番号・成熟度・実現性・依存 PC・Outline 使用）と、追加時のルール。最新の件数は `docs/service-map.md` を参照 | 全員 |
 | `usecases/<管理番号>.md` | 1 サービス 1 ファイルの実装リファレンス（業務シナリオ・想定インプット・観点・Dify 構成・プロンプト・検証観点・テストシナリオ・別出し・Outline・未確定）。雛形は [`usecases/_TEMPLATE.md`](./usecases/_TEMPLATE.md) | implementer・reviewer |
+| [`build-or-buy.md`](./build-or-buy.md) | BP（ビジネスパートナー）の実装済み AI 製品と、対応する管理番号・実現手段の候補台帳（製品名は書かず記号 `ζ 社` で呼ぶ） | PM・implementer |
 
 `usecases/` は**③ユースケース**（設計書 `docs/handoff/2026-09-07-repo-layout-v2.md` §1 の 4 区分）、実際に Dify へ入れる資材（DSL・環境定義・スクリプト）は `dify/`（②）、ダミーデータは `data/world`・`dify/kb`（④）に置く。
 管理番号（`KN-02` など）から ①②③④ を横断する索引は [`docs/service-map.md`](../service-map.md)（生成物。`npm run index` で更新）。

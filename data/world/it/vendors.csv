@@ -2,3 +2,4 @@ code,kind,role_ja,role_zh,role_en,country,note
 γ 社,partner,オフショア開発の協力会社（上海。常駐と持ち帰りの両方）,离岸开发合作公司（上海。驻场与返厂并行）,Offshore development partner (Shanghai; on-site and off-site),CN,IT 世界の取引先記号はギリシャ文字（設計書 2026-09-11-it-industry.md §3-4-2）。clients.csv（顧客専用）とは別体系
 δ 社,partner,技術者派遣会社（短期の要員補充）,技术人员派遣公司（短期人员补充）,Engineer staffing agency (short-term augmentation),CN,同上
 ε 社,service,クラウド・ライセンスの再販業者,云服务与软件许可经销商,Cloud and software-licence reseller,CN,同上
+ζ 社,service,AI 製品ベンダ（翻訳・BI・契約レビュー・知識ベース・採点・ポータル・採用スクリーニングの完成品を提供する協力会社）,AI 产品供应商（提供翻译、BI、合同审阅、知识库、阅卷、门户、招聘筛选等成品的合作公司）,"AI product vendor (packaged products for translation, BI, contract review, knowledge base, grading, portal and recruiting screening)",CN,IT 世界の取引先記号はギリシャ文字（設計書 2026-09-11-it-industry.md §3-4-2）。実在ベンダの製品名・価格・担当者はリポジトリに置かない。出典はリポジトリ外（設計書 2026-09-11-bp-usecases.md §1-1）
