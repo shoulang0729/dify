@@ -59,7 +59,7 @@
 | KN-10 | 規程と現場運用の食い違い検出 | KN/ops | IT | 構想 | — | — | [it/kn.js](../mock/js/data/scenarios/it/kn.js) diff | — | — | — | — |
 | DC-09 | 議案・報告書・提案書のドラフト作成（テンプレート選択） | DC/report | 金融 | 試行版 | — | [fin/dc.js](../mock/js/data/scenarios/fin/dc.js) form | — | — | [DC-09.md](./dify/usecases/DC-09.md) | — | — |
 | DC-10 | 予実差の理由の書き起こし | DC/report | IT | 構想 | — | — | [it/dc.js](../mock/js/data/scenarios/it/dc.js) form | — | — | — | — |
-| DC-11 | 契約書レビュー（逸脱条項の検出と修正案） | DC/apply | 製造・金融・IT | 構想 | — | — | — | — | — | — | — |
+| DC-11 | 契約書レビュー（逸脱条項の検出と修正案） | DC/apply | 製造・金融・IT | 構想 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) upload | [fin/dc.js](../mock/js/data/scenarios/fin/dc.js) upload | [it/dc.js](../mock/js/data/scenarios/it/dc.js) upload | — | [DC-11.md](./dify/usecases/DC-11.md) | — | — |
 | RS-01 | 企業・業界ニュースの自動収集と配信 | RS/news | 金融 | 試行版 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) form | — | — | [RS-01.md](./dify/usecases/RS-01.md) | — | — |
 | RS-02 | セクター・発行体のモニタリング | RS/news | 金融 | 構想 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) form | — | — | [RS-02.md](./dify/usecases/RS-02.md) | — | — |
 | RS-03 | 顧客IR・決算の収集と日本語要約・比較 | RS/disc | 金融 | 試行版 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) upload | — | — | [RS-03.md](./dify/usecases/RS-03.md) | — | — |
@@ -89,4 +89,4 @@
 | SO-02 | 稼働状況の自然言語照会 | SO/avail | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) lookup | — | — | — | — |
 | SO-03 | 障害・稼働の定期報告（稼働率・障害件数・MTTR） | SO/avail | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) form | — | — | — | — |
 | SO-04 | 障害報告・再発防止策のドラフト | SO/incident | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) form | — | — | — | — |
-| 集計 | — | — | — | — | ①製造 49 | ①金融 29 | ①IT 14 | ②12 | ③67 | ④KB 4 | ④テスト 12 |
+| 集計 | — | — | — | — | ①製造 50 | ①金融 30 | ①IT 15 | ②12 | ③68 | ④KB 4 | ④テスト 12 |
