@@ -33,28 +33,9 @@ jobs:
       - name: Install Python dependencies
         run: pip install pyyaml
 
-      - name: Run verify
-        run: npm run verify
-
-      - name: Run regress
-        run: npm run regress
-
-      - name: Run dify/check.py
-        run: python3 dify/check.py
-
-      - name: Run render.py --check
-        run: python3 scripts/dify/render.py --env cloud-master --all --check
-
-      - name: Run test_sync_back.py
-        run: python3 scripts/dify/tests/test_sync_back.py
-
-      - name: Run test_run_tests.py
-        run: python3 scripts/dify/tests/test_run_tests.py
-
-      - name: Run test_lang_check.py
-        run: python3 scripts/dify/tests/test_lang_check.py
-
-      - name: Run run_tests.py --dry-run (応答言語のスキーマ検査。ネットワーク不要)
-        run: |
-          python3 scripts/dify/run_tests.py --dry-run --out "$(mktemp -d)" \
-            KN-01 KN-02 KN-03 DC-01 DC-02 DC-04 GN-01 GN-02 GN-05 LG-01 LG-04 NM-03
+      # verify + regress + dify/check.py + render.py --check + test_sync_back.py +
+      # test_run_tests.py + test_lang_check.py + run_tests.py --dry-run（応答言語のスキーマ検査。
+      # ネットワーク不要。管理番号は dify/env/cloud-master/env.yml の apps: から導く＝ここにベタ書きしない）
+      # を npm run ci（package.json）にまとめている。設計書 docs/handoff/2026-09-11-repo-layout-v3.md §5-1・§8-1 R-P2
+      - name: Run ci
+        run: npm run ci

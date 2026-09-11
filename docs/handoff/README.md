@@ -18,6 +18,8 @@ docs/handoff/<slug>.issue.md               gh が使えないときの Issue 本
 7. UI 変更ならレイアウト図（ASCII 可）・状態遷移
 8. PR 分割案 / 並列可否（ファイル集合が重なるか）
 9. PM 判断待ちの点（あれば。決めずに列挙）
+10. `tools/verify.mjs` に新しい節を足すなら**節番号を予約しない**。設計書には「新しい節（番号は実装時に決める）」と書き、implementer が着手時点の実装済み最大番号 ＋ 1 を採番する。**§13 は永久欠番**（Issue #121 W2 用に予約されたまま使われなかった）。番号がずれたら PR 本文に 1 行書く（`docs/handoff/2026-09-11-repo-layout-v3.md` §8-4・R-P3）
+11. カタログ（`CATS` / `SVCS`）の分類数・件数を変える設計書は、件数を書く代表ファイル（`CLAUDE.md` §6／`mock/index.html`／`docs/demo/briefing-catalog.md`／`docs/demo/briefing-coverage.md`）の更新を受け入れ条件に含める（`docs/handoff/2026-09-11-repo-layout-v3.md` §8-3）
 
 管理番号（`KN-02` など）から ①デモ台本 ②DSL ③ユースケース ④KB ④テスト を横断する索引は [`docs/service-map.md`](../service-map.md)（生成物。`npm run index` で更新）。架空世界の正本は [`data/world/`](../../data/world/README.md)。
 

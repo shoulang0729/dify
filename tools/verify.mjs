@@ -83,6 +83,23 @@
  *        17-l（PR-3）js/portal/demo.js に pstate.ind の参照が無い（§14-4 規則 3）。
  *        pscreenAiIds/pcrossAiIds の本体に industries の参照が無い（§14-2 規則 1）
  *        （設計書 docs/handoff/2026-09-11-portal-mock-pages.md §9-2・§14-9）
+ *   18.  （新規）portal/（NocoBase。リポジトリ直下の新設ディレクトリ ⑤ポータル）を取り込んだときに壊れうる
+ *        4 点だけを見る。portal/ が無ければ節ごと skip（§16・§17 と同じ作法）：
+ *        18-a .github/workflows/portal-verify.yml が実在し paths: に portal/** を含む／
+ *        18-b ルート package.json に dependencies が無く、scripts.test が
+ *        "node tools/verify.mjs && node tools/regress.mjs" のまま／
+ *        18-c portal/package.json が実在し、ルートの package.json を参照していない（S-2）／
+ *        18-d pages.yml の path: が mock のまま（既存の §8 と同じ検査）＋ mock/** の中に
+ *        先頭が "portal/" の相対リンクが無いこと（Pages に出ない範囲＝リポジトリ直下の portal/ を
+ *        参照しない。mock/portal.html・js/portal/**・js/data/portal/**・css/portal.css は
+ *        別物＝①デモの一部なので誤検知しない書き方にする）
+ *        （設計書 docs/handoff/2026-09-11-repo-layout-v3.md §5-3・§9 PR-R4）
+ *
+ * 節番号の採番規則（設計書 docs/handoff/2026-09-11-repo-layout-v3.md §8-4・R-P3。
+ * docs/handoff/README.md にも明記）：設計書は節番号を予約しない。実装時に「実装済みの最大 ＋ 1」を
+ * 採番する。§13 は永久欠番（Issue #121 W2 用に予約されたまま使われなかった）。個々の節が §12-f／14／15／16
+ * のヘッダで「設計書は §X としているが…」と書いている経緯（#124・#121 W4-1 との衝突）は、この採番規則の
+ * 具体例であり、各節の記述はそのまま残す（既存 §1〜§17 は無改変）。
  *
  * データの取り出しは tools/lib/load.mjs（node:vm で js/data/** を実行順に評価）を使う。
  * grab()（正規表現抽出）は廃止。
@@ -1498,6 +1515,70 @@ section('17. 部門ポータル（mock/portal.html）契約');
 
     if (portal.vmErrors.length) { for (const e of portal.vmErrors) { fail(`portal js/data/**: ${e}`); bad17++; } }
     else ok('portal の js/data/** が vm で読める（vmErrors 0 件）');
+  }
+}
+
+/* ---------- 18. portal/（NocoBase。⑤ポータル）取り込みの前提契約 ---------- */
+section('18. portal/（NocoBase）取り込みの前提契約');
+{
+  const PORTAL_ROOT = resolve(ROOT, 'portal');
+  if (!existsSync(PORTAL_ROOT)) {
+    ok('portal/ が無いため §18 は skip');
+  } else {
+    // 18-a: .github/workflows/portal-verify.yml が実在し、paths: に portal/** を含む
+    const portalWf = resolve(ROOT, '.github/workflows/portal-verify.yml');
+    if (!existsSync(portalWf)) {
+      fail('portal/ があるのに .github/workflows/portal-verify.yml が無い（S-1〜S-3）');
+    } else {
+      const portalWfRaw = readFileSync(portalWf, 'utf8');
+      if (!/paths:[\s\S]*?portal\/\*\*/.test(portalWfRaw)) {
+        fail('.github/workflows/portal-verify.yml の paths: に portal/** が無い');
+      } else ok('.github/workflows/portal-verify.yml が実在し paths: に portal/** を含む');
+    }
+
+    // 18-b: ルート package.json に dependencies が無く、scripts.test が既定のまま（§2-14 の土台）
+    const rootPkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8'));
+    if (rootPkg.dependencies && Object.keys(rootPkg.dependencies).length) {
+      fail('ルート package.json に dependencies がある（portal/ の依存をルートに足さない＝§2-14）');
+    } else if (rootPkg.scripts?.test !== 'node tools/verify.mjs && node tools/regress.mjs') {
+      fail(`ルート package.json の scripts.test が既定と異なる（実際: "${rootPkg.scripts?.test}"）`);
+    } else ok('ルート package.json: dependencies が空・scripts.test が既定のまま');
+
+    // 18-c: portal/package.json が実在し、ルートの package.json を参照していない（S-2）
+    const portalPkgPath = resolve(PORTAL_ROOT, 'package.json');
+    if (!existsSync(portalPkgPath)) {
+      fail('portal/package.json が無い（S-2：独立 npm プロジェクトであること）');
+    } else {
+      const portalPkgRaw = readFileSync(portalPkgPath, 'utf8');
+      if (/\.\.\/package\.json/.test(portalPkgRaw)) {
+        fail('portal/package.json がルートの ../package.json を参照している（S-2 違反）');
+      } else ok('portal/package.json が実在し、ルートの package.json を参照していない');
+    }
+
+    // 18-d: pages.yml の path: が mock のまま（§8 と同じ検査）＋ mock/** に先頭が portal/ の相対リンクが無い
+    const pagesWf = resolve(ROOT, '.github/workflows/pages.yml');
+    if (!existsSync(pagesWf) || !/path:\s*mock\b/.test(readFileSync(pagesWf, 'utf8'))) {
+      fail('pages.yml の path: が mock ではない（§2-8）');
+    } else ok('pages.yml: path: mock のまま（portal/ は Pages に出ない）');
+
+    // mock/**（*.html/*.js/*.css）のテキストの中に、先頭が "portal/" の相対リンクが無いこと。
+    // "portal" という語だけを拾うと mock/portal.html・js/portal/**・js/data/portal/**・css/portal.css で
+    // 必ず誤検知するため、直前の文字が「引用符／丸括弧／=／行頭・空白」で始まる "portal/" だけを対象にする
+    // （js/data/portal/ui.js のように "/portal/" の手前が "/" のものは対象外）
+    const mockTextFiles = [];
+    const walkMockText = (dir, rel) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const childRel = rel ? `${rel}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) { walkMockText(resolve(dir, entry.name), childRel); continue; }
+        if (/\.(html|js|css)$/.test(entry.name)) mockTextFiles.push({ abs: resolve(dir, entry.name), rel: `mock/${childRel}` });
+      }
+    };
+    walkMockText(MOCK, '');
+    const PORTAL_LINK_RE = /(^|[\s"'(=])portal\//m;
+    const offenders18d = mockTextFiles.filter(f => PORTAL_LINK_RE.test(readFileSync(f.abs, 'utf8'))).map(f => f.rel);
+    if (offenders18d.length) {
+      fail(`mock/** の中に先頭が "portal/" の相対リンクがある（Pages に出ない ⑤ポータルを参照している）: ${offenders18d.join(', ')}`);
+    } else ok('mock/** に先頭が "portal/" の相対リンクが無い（mock/portal.html 等の誤検知なし）');
   }
 }
 
