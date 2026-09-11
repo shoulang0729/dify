@@ -349,7 +349,8 @@
       ],
       "tags": [
         "search"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "kn2",
@@ -362,7 +363,8 @@
       "tags": [
         "equipment",
         "search"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "kn3",
@@ -375,7 +377,8 @@
       "tags": [
         "regulation",
         "hr"
-      ]
+      ],
+      "place": "know"
     },
     {
       "id": "kn4",
@@ -390,7 +393,8 @@
       "tags": [
         "faq",
         "hr"
-      ]
+      ],
+      "place": "know"
     },
     {
       "id": "kn5",
@@ -405,7 +409,8 @@
       "tags": [
         "authority",
         "regulation"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "qa1",
@@ -419,7 +424,8 @@
         "defect",
         "rootcause",
         "report8d"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "qa2",
@@ -431,7 +437,8 @@
       ],
       "tags": [
         "change4m"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "qa3",
@@ -443,7 +450,8 @@
       ],
       "tags": [
         "claim"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "qa4",
@@ -456,7 +464,8 @@
       "tags": [
         "audit",
         "report"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "dc1",
@@ -468,7 +477,8 @@
       ],
       "tags": [
         "report"
-      ]
+      ],
+      "place": "proj"
     },
     {
       "id": "dc2",
@@ -483,7 +493,8 @@
       "tags": [
         "meeting",
         "summary"
-      ]
+      ],
+      "place": "meet"
     },
     {
       "id": "dc3",
@@ -496,7 +507,8 @@
       "tags": [
         "education",
         "procedure"
-      ]
+      ],
+      "place": "trn"
     },
     {
       "id": "dc4",
@@ -509,7 +521,8 @@
       "tags": [
         "safety",
         "translate"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "dc5",
@@ -521,7 +534,8 @@
       ],
       "tags": [
         "approval"
-      ]
+      ],
+      "place": "req"
     },
     {
       "id": "dc6",
@@ -533,7 +547,8 @@
       ],
       "tags": [
         "trade"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "dc7",
@@ -546,7 +561,8 @@
       "tags": [
         "contract",
         "purchase"
-      ]
+      ],
+      "place": "req"
     },
     {
       "id": "dc8",
@@ -561,7 +577,8 @@
       "tags": [
         "report",
         "kpi"
-      ]
+      ],
+      "place": "proj"
     },
     {
       "id": "lg1",
@@ -574,7 +591,8 @@
       "tags": [
         "translate",
         "glossary"
-      ]
+      ],
+      "place": "*"
     },
     {
       "id": "lg2",
@@ -586,7 +604,8 @@
       ],
       "tags": [
         "glossary"
-      ]
+      ],
+      "place": "know"
     },
     {
       "id": "lg3",
@@ -599,7 +618,8 @@
       "tags": [
         "procedure",
         "translate"
-      ]
+      ],
+      "place": "know"
     },
     {
       "id": "lg4",
@@ -611,7 +631,8 @@
       ],
       "tags": [
         "mail"
-      ]
+      ],
+      "place": "act"
     },
     {
       "id": "nm1",
@@ -623,7 +644,8 @@
       ],
       "tags": [
         "costing"
-      ]
+      ],
+      "place": "proj"
     },
     {
       "id": "nm2",
@@ -636,7 +658,8 @@
       "tags": [
         "purchase",
         "costing"
-      ]
+      ],
+      "place": "vend"
     },
     {
       "id": "nm3",
@@ -649,7 +672,8 @@
       "tags": [
         "kpi",
         "summary"
-      ]
+      ],
+      "place": "kpi"
     },
     {
       "id": "nm4",
@@ -662,7 +686,8 @@
       "tags": [
         "inventory",
         "faq"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "nm5",
@@ -675,7 +700,8 @@
       "tags": [
         "analysis",
         "kpi"
-      ]
+      ],
+      "place": "kpi"
     },
     {
       "id": "en1",
@@ -688,7 +714,8 @@
       "tags": [
         "spec",
         "glossary"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "en2",
@@ -700,7 +727,8 @@
       ],
       "tags": [
         "bom"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "en3",
@@ -713,7 +741,8 @@
       "tags": [
         "drawing",
         "search"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "gn1",
@@ -725,7 +754,8 @@
       ],
       "tags": [
         "finance"
-      ]
+      ],
+      "place": "exp"
     },
     {
       "id": "gn2",
@@ -737,7 +767,8 @@
       ],
       "tags": [
         "finance"
-      ]
+      ],
+      "place": "exp"
     },
     {
       "id": "gn3",
@@ -749,7 +780,8 @@
       ],
       "tags": [
         "order"
-      ]
+      ],
+      "place": "vend"
     },
     {
       "id": "gn4",
@@ -762,7 +794,8 @@
       "tags": [
         "calendar",
         "meeting"
-      ]
+      ],
+      "place": "meet"
     },
     {
       "id": "gn5",
@@ -774,7 +807,8 @@
       ],
       "tags": [
         "summary"
-      ]
+      ],
+      "place": "*"
     },
     {
       "id": "gn6",
@@ -789,7 +823,8 @@
       "tags": [
         "calendar",
         "kpi"
-      ]
+      ],
+      "place": "act"
     },
     {
       "id": "gn7",
@@ -804,7 +839,8 @@
       "tags": [
         "calendar",
         "travel"
-      ]
+      ],
+      "place": "meet"
     },
     {
       "id": "gn8",
@@ -830,7 +866,8 @@
       "tags": [
         "partner_infovendor",
         "credit"
-      ]
+      ],
+      "place": "vend"
     },
     {
       "id": "pt2",
@@ -843,7 +880,8 @@
       "tags": [
         "partner_infovendor",
         "market"
-      ]
+      ],
+      "place": "watch"
     },
     {
       "id": "pt3",
@@ -856,7 +894,8 @@
       "tags": [
         "partner_archive",
         "search"
-      ]
+      ],
+      "place": "watch"
     },
     {
       "id": "pt4",
@@ -869,7 +908,8 @@
       "tags": [
         "partner_salarydb",
         "hr"
-      ]
+      ],
+      "place": "ppl"
     },
     {
       "id": "pt5",
@@ -882,7 +922,8 @@
       "tags": [
         "partner_recruit",
         "hr"
-      ]
+      ],
+      "place": "ppl"
     },
     {
       "id": "pt6",
@@ -895,7 +936,8 @@
       "tags": [
         "partner_procure",
         "purchase"
-      ]
+      ],
+      "place": "vend"
     },
     {
       "id": "pt7",
@@ -908,7 +950,8 @@
       "tags": [
         "partner_procure",
         "order"
-      ]
+      ],
+      "place": "vend"
     },
     {
       "id": "pt8",
@@ -921,7 +964,8 @@
       "tags": [
         "partner_training",
         "education"
-      ]
+      ],
+      "place": "trn"
     },
     {
       "id": "kn6",
@@ -934,7 +978,8 @@
       "tags": [
         "procedure",
         "faq"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "kn7",
@@ -947,7 +992,8 @@
       "tags": [
         "search",
         "client"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "kn8",
@@ -960,7 +1006,8 @@
       "tags": [
         "authority",
         "search"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "kn9",
@@ -999,7 +1046,8 @@
       "tags": [
         "report",
         "approval"
-      ]
+      ],
+      "place": "proj"
     },
     {
       "id": "dc10",
@@ -1025,7 +1073,8 @@
       "tags": [
         "news",
         "market"
-      ]
+      ],
+      "place": "watch"
     },
     {
       "id": "rs2",
@@ -1038,7 +1087,8 @@
       "tags": [
         "news",
         "credit"
-      ]
+      ],
+      "place": "watch"
     },
     {
       "id": "rs3",
@@ -1051,7 +1101,8 @@
       "tags": [
         "disclosure",
         "summary"
-      ]
+      ],
+      "place": "watch"
     },
     {
       "id": "rs4",
@@ -1064,7 +1115,8 @@
       "tags": [
         "datasource",
         "market"
-      ]
+      ],
+      "place": "watch"
     },
     {
       "id": "rs5",
@@ -1077,7 +1129,8 @@
       "tags": [
         "dashboard",
         "analysis"
-      ]
+      ],
+      "place": "kpi"
     },
     {
       "id": "cv1",
@@ -1090,7 +1143,8 @@
       "tags": [
         "proposal",
         "client"
-      ]
+      ],
+      "place": "proj"
     },
     {
       "id": "cv2",
@@ -1103,7 +1157,8 @@
       "tags": [
         "client",
         "meeting"
-      ]
+      ],
+      "place": "cust"
     },
     {
       "id": "cv3",
@@ -1116,7 +1171,8 @@
       "tags": [
         "credit",
         "report"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "cv4",
@@ -1129,7 +1185,8 @@
       "tags": [
         "screening",
         "audit"
-      ]
+      ],
+      "place": "out"
     },
     {
       "id": "fa1",
@@ -1142,7 +1199,8 @@
       "tags": [
         "closing",
         "finance"
-      ]
+      ],
+      "place": "exp"
     },
     {
       "id": "fa2",
@@ -1155,7 +1213,8 @@
       "tags": [
         "closing",
         "report"
-      ]
+      ],
+      "place": "exp"
     },
     {
       "id": "fa3",
@@ -1168,7 +1227,8 @@
       "tags": [
         "audit",
         "finance"
-      ]
+      ],
+      "place": "exp"
     },
     {
       "id": "fa4",
@@ -1181,7 +1241,8 @@
       "tags": [
         "modeling",
         "disclosure"
-      ]
+      ],
+      "place": "exp"
     },
     {
       "id": "fa5",
@@ -1194,7 +1255,8 @@
       "tags": [
         "valuation",
         "modeling"
-      ]
+      ],
+      "place": "exp"
     },
     {
       "id": "po1",
@@ -1209,7 +1271,8 @@
       "tags": [
         "survey",
         "faq"
-      ]
+      ],
+      "place": "trn"
     },
     {
       "id": "po2",
@@ -1224,7 +1287,8 @@
       "tags": [
         "idea",
         "survey"
-      ]
+      ],
+      "place": "trn"
     },
     {
       "id": "po3",
@@ -1239,7 +1303,8 @@
       "tags": [
         "education",
         "kpi"
-      ]
+      ],
+      "place": "trn"
     },
     {
       "id": "po4",
@@ -1254,7 +1319,8 @@
       "tags": [
         "workload",
         "kpi"
-      ]
+      ],
+      "place": "ppl"
     },
     {
       "id": "po5",
@@ -1308,7 +1374,8 @@
       "tags": [
         "spec",
         "faq"
-      ]
+      ],
+      "place": "proj"
     },
     {
       "id": "sl1",

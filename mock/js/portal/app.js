@@ -11,7 +11,7 @@
   if (typeof INDUSTRIES === 'undefined') missing.push('js/data/ui.js (INDUSTRIES)');
   if (typeof CATS === 'undefined' || typeof SVCS === 'undefined') missing.push('js/data/catalog.js (CATS/SVCS)');
   if (typeof PT === 'undefined' || typeof PSCREENS === 'undefined') missing.push('js/data/portal/ui.js (PT/PSCREENS)');
-  if (typeof PSVC === 'undefined' || typeof PLACE === 'undefined') missing.push('js/data/portal/svc.js (PSVC/PLACE)');
+  if (typeof PSVC === 'undefined' || typeof POUT === 'undefined') missing.push('js/data/portal/svc.js (PSVC/POUT)');
   if (typeof PORG === 'undefined') missing.push('js/data/portal/org.js (PORG)');
   if (typeof PDEALS === 'undefined') missing.push('js/data/portal/front.js (PDEALS)');
   if (typeof PACT === 'undefined') missing.push('js/data/portal/common.js (PACT)');
@@ -65,11 +65,14 @@ const psvcCode = (id) => {
 };
 
 /** why の汎用文（PSVC に個別の why が無いサービス用）。ポータル画面の解説文は v1 は日本語のみ（§7-1）だが、
-    置き場所を表す画面名だけは PT から引く（SCRNAME を削除した設計に合わせる。設計書 §4-2） */
-function pWhyGeneric(id) {
-  const pl = PLACE[id] || ['out', ''];
-  if (pl[0] === 'out') return 'ポータルには置きません。' + pl[1];
-  const label = pl[0] === '*' ? pt('allScreens') : pt(pl[0]);
+    置き場所を表す画面名だけは PT から引く（SCRNAME を削除した設計に合わせる。設計書 §4-2）。
+    置き場所は SVCS[].place が正本（PR-2。設計書 §4-3）。'out' の理由は POUT、未配置（キー無し）は
+    「置き場所を決めていません」を返す（verify §17-c の warn と同じ状態）。 */
+function pWhyGeneric(svc) {
+  const place = svc && svc.place;
+  if (!place) return '置き場所を決めていません。';
+  if (place === 'out') return 'ポータルには置きません。' + (POUT[svc.id] || '');
+  const label = place === '*' ? pt('allScreens') : pt(place);
   return '「' + (label || pt('allScreens')) + '」に置きます。';
 }
 
@@ -95,9 +98,30 @@ function psvcOf(id) {
     short, name, cat: svc.cat, st: svc.st, how: o.how || 'btn',
     ctx: o.ctx || pt('ctxGeneric'),
     out: o.out || pt('outGeneric'),
-    why: o.why || pWhyGeneric(id),
+    why: o.why || pWhyGeneric(svc),
     generic: !o.how
   };
+}
+
+/** 「この画面の AI」ブロックを SVCS[].place から作る（手書きリストを持たない。設計書 §4-4）。
+    並び順: st 昇順（提供中 → 試行版 → 構想） → 管理番号昇順。
+    末尾に、その画面の PSCREENS[].newai（PNEW の未採番候補）があれば付け足す。 */
+function pscreenAiIds(screenId) {
+  const placed = (typeof SVCS !== 'undefined' ? SVCS : [])
+    .filter(s => s.place === screenId)
+    .sort((a, b) => a.st - b.st || psvcCode(a.id).localeCompare(psvcCode(b.id)))
+    .map(s => s.id);
+  const scr = (typeof PSCREENS !== 'undefined' ? PSCREENS : []).find(x => x.id === screenId);
+  const newai = (scr && scr.newai) || [];
+  return placed.concat(newai);
+}
+
+/** ホームの「横断で使う AI」（place === '*'）。並び順は pscreenAiIds と同じ規則。 */
+function pcrossAiIds() {
+  return (typeof SVCS !== 'undefined' ? SVCS : [])
+    .filter(s => s.place === '*')
+    .sort((a, b) => a.st - b.st || psvcCode(a.id).localeCompare(psvcCode(b.id)))
+    .map(s => s.id);
 }
 
 /* ---- 架空データの導出値（計算するもの。データ層には置かない。設計書 §4-2） ---- */
