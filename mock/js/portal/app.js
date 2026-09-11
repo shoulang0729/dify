@@ -190,6 +190,7 @@ function pctxRow(scr, id) {
   if (!id) return null;
   if (scr === 'proj') return (typeof PDEALS !== 'undefined' ? PDEALS.find(d => d.id === id) : null) || null;
   if (scr === 'cust') return { cu: id };
+  if (scr === 'sys') return pSysCtxRow(id);
   return null;
 }
 
@@ -242,6 +243,7 @@ function pbackRowId(scr, row) {
   if (!row) return null;
   if (scr === 'proj') return row.id;
   if (scr === 'cust') return row.cu;
+  if (scr === 'sys') return row.sys;
   return null;
 }
 /** scn.result[lang].title と items[0].k（表なら rows[0][0]）から 1 行要約を作る。新しい文言は作らない（§5-9） */
@@ -422,17 +424,59 @@ function pSysEventText(ev) {
   return tag + (PSYSEVLABEL[ev.kind] || ev.kind) + '：' + ev.summary;
 }
 
-/** システム 9 件を、いまのプリセット（pstate.now）で状態つきに展開する。 */
+/** システム 9 件を、いまのプリセット（pstate.now）で状態つきに展開する。
+    lastEventKind は「直近の出来事」列の中の行内 AI（SO-04）の出し分けに使う（設計書 §15-2 決定 D）。 */
 function pSysRows() {
   const now = (typeof PSYSNOW !== 'undefined' ? PSYSNOW : []).find(p => p.id === pstate.now) || PSYSNOW[0];
   const nowMs = pSysDT(now.date), dow = pSysDow(nowMs), hm = pSysHM(nowMs);
   return PSYS.map(s => {
     const state = pSysState(s, nowMs, dow, hm);
+    const ev = pSysLatestEvent(s.id, nowMs);
     return Object.assign({}, s, {
       state, since: pSysSince(s, state, nowMs, hm),
-      lastEvent: pSysEventText(pSysLatestEvent(s.id, nowMs))
+      lastEvent: pSysEventText(ev),
+      lastEventKind: ev ? ev.kind : null
     });
   });
+}
+
+/* ============================================================
+   行内 AI（システム稼働状況。sysops-usecase PR-5。設計書 §15-2 決定 D）。
+   「直近の出来事」列の中に置く（列は増やさない）。incident/degraded の行 → SO-01（初動案）、
+   直近のイベントが recover の行 → SO-04（障害報告）。どちらにも該当しなければ空配列
+   （その行には AI ボタンを出さない）。
+   ============================================================ */
+function pSysRowAiIds(row) {
+  const list = [];
+  if (row.state === 'incident' || row.state === 'degraded') list.push('so1');
+  if (row.lastEventKind === 'recover') list.push('so4');
+  return list;
+}
+
+/** PSYS.client（例 '青嶺精工 蘇州'）から PWORLD のキー（例 '青嶺精工'）を引く。社内システム
+    （'自社（上海）'）はどの PWORLD キーにも一致せず ''（pworldOf が既定の 'it' に落ちる。§14-4・§14-5）。 */
+function pSysClientCode(client) {
+  return (typeof PWORLD !== 'undefined' ? Object.keys(PWORLD) : []).find(k => (client || '').indexOf(k) === 0) || '';
+}
+/** 行内 AI の文脈カードに渡す行（PCTXDEF.sys。設計書 §15-2 決定 D。値は data/world/it/ にある語だけ）。
+    cu は PCTXDEF.sys には含めない（カードには出さない）が、pworldOf（js/portal/app.js）が
+    「行の世界」を決めるのに使う（既存の pscn() の規則にそのまま乗せる。§15-2 決定 D）。
+    青嶺精工／碧洋銀行の顧客システムは世界が mfg／fin になり、so1・so4 の台本は SCENARIOS.it に
+    しかないため代用表示が出る（既存規則どおり。決定 D で明示的に許容）。
+    inc は、いまの時刻までに検知した直近の INC- 番号つきアラートの id（障害番号）。復旧後も同じ
+    障害番号を持ち回る（SO-04 の障害報告がどの障害に対するものか分かるように。§8-2）。
+    見つからなければ空文字（その行に紐づく障害番号が無い＝縮退等の軽微なアラートのみ）。 */
+function pSysCtxRow(id) {
+  const row = pSysRows().find(r => r.id === id);
+  if (!row) return null;
+  const nowP = (typeof PSYSNOW !== 'undefined' ? PSYSNOW : []).find(p => p.id === pstate.now) || PSYSNOW[0];
+  const nowMs = pSysDT(nowP.date);
+  const inc = PSYSEV.filter(e => e.sys === id && e.kind === 'alert' && /^INC-/.test(e.id) && pSysDT(e.at) <= nowMs)
+    .sort((a, b) => pSysDT(b.at) - pSysDT(a.at))[0];
+  return {
+    sys: row.id, name: row.name, client: row.client, criticality: row.criticality, inc: inc ? inc.id : '',
+    cu: pSysClientCode(row.client)
+  };
 }
 /** スコープで絞る（設計書 §15-2 決定 A。§6-5 からの訂正）。'mine'＝内製の社内システム（自社スタッフが使う。
     ② 担当案件〔PDEALS で ow が自分〕のシステムは現ペルソナ〔kishimoto-natsu〕では 0 件のため実装しない）／
