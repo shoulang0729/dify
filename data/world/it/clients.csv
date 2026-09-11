@@ -1,0 +1,5 @@
+code,kind,ref_world,role_ja,role_zh,role_en,country,note
+青嶺精工,customer,mfg,製造業の主要顧客（蘇州工場の生産管理・品質システムの受託開発と保守）,制造业主要客户（苏州工厂生产管理与质量系统的受托开发与运维）,Main manufacturing client (MES/QMS development and maintenance for the Suzhou plant),CN/JP,社名の正本は data/world/mfg/company.md。ここでは参照のみで、社名の 3 言語表記を二重に持たない
+碧洋銀行,customer,fin,金融の主要顧客（上海本部の事務システム・帳票基盤の受託開発）,金融主要客户（上海总部事务系统与报表平台的受托开发）,Main financial client (back-office and reporting systems for the Shanghai head office),CN/JP,社名の正本は data/world/fin/company.md。ここでは参照のみで、社名の 3 言語表記を二重に持たない
+α 社,customer,,現地民営企業（EC・物流。仮置き）,本地民营企业（电商与物流。占位）,Local private enterprise (e-commerce & logistics; placeholder),CN,IT 世界の取引先記号はギリシャ文字（設計書 2026-09-11-it-industry.md §3-4-2）。空白は半角スペース
+β 社,customer,,日系商社（基幹系の保守。仮置き）,日资商社（核心系统运维。占位）,Japanese-affiliated trading company (core-system maintenance; placeholder),CN/JP,IT 世界の取引先記号はギリシャ文字（設計書 §3-4-2）。空白は半角スペース

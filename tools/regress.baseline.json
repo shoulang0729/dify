@@ -1,7 +1,8 @@
 {
   "industries": [
     "mfg",
-    "fin"
+    "fin",
+    "it"
   ],
   "cats": [
     {
@@ -1345,6 +1346,10 @@
       "fin": {
         "svcs": 29,
         "cats": 8
+      },
+      "it": {
+        "svcs": 0,
+        "cats": 0
       }
     },
     "svcsMulti": 11

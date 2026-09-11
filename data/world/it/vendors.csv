@@ -1,0 +1,4 @@
+code,kind,role_ja,role_zh,role_en,country,note
+γ 社,partner,オフショア開発の協力会社（上海。常駐と持ち帰りの両方）,离岸开发合作公司（上海。驻场与返厂并行）,Offshore development partner (Shanghai; on-site and off-site),CN,IT 世界の取引先記号はギリシャ文字（設計書 2026-09-11-it-industry.md §3-4-2）。clients.csv（顧客専用）とは別体系
+δ 社,partner,技術者派遣会社（短期の要員補充）,技术人员派遣公司（短期人员补充）,Engineer staffing agency (short-term augmentation),CN,同上
+ε 社,service,クラウド・ライセンスの再販業者,云服务与软件许可经销商,Cloud and software-licence reseller,CN,同上

@@ -38,5 +38,8 @@ const IND_LOGO = {
   /* 青嶺精工＝「青い稜線」。精密加工の角度を思わせる稜線を二重に重ねた幾何マーク */
   mfg: { icon: '<path d="M2 19 8.5 8 13 14.5 19.5 4 30 19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 22 9 14 13.5 18 20 10 30 22" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>' },
   /* 碧洋銀行＝「碧い海」。水平線（水平線）と左右対称の波の弧 2 本 */
-  fin: { icon: '<path d="M3 19h26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 13c2-4 6-4 8 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19 13c2-4 6-4 8 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' }
+  fin: { icon: '<path d="M3 19h26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 13c2-4 6-4 8 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19 13c2-4 6-4 8 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' },
+  /* 翠雲システムズ（IT）＝「N」字のストロークと、右に伸びる通信線 3 本。
+     設計書 docs/handoff/2026-09-11-it-industry.md §4-8 */
+  it: { icon: '<path d="M5 19V5l11 13V5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 8.5h8M21 12h8M21 15.5h5" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" opacity="0.5"/>' }
 };
