@@ -1,6 +1,6 @@
 person_id,name_ja,name_zh,name_en,dept_id,title_ja,title_zh,title_en,alt_title_ja,alt_title_zh,alt_title_en,site_id,native,note
-fujii-ryo,藤井 亮,藤井亮,Ryo Fujii,deli1,プロジェクトマネージャ,项目经理,Project Manager,,,,shanghai,ja,ポータルモック由来（原案「高橋 亮」は mfg/people.csv の高橋亮と姓名完全一致のため改名。設計書 2026-09-11-it-industry.md §3-4-1・§10 ⑤）
-li-wen,李 雯,李雯,Li Wen,deli2,プロジェクトマネージャ,项目经理,Project Manager,,,,shanghai,zh,ポータルモック由来（原案「李 婷」は名「婷」が mfg/fin に既に 2 人いるため改名。設計書 §3-4-1・§10 ⑤）
-zhou-jianwei,周 建偉,周建伟,Zhou Jianwei,deli1,デリバリリーダー,交付负责人,Delivery Lead,,,,shanghai,zh,ポータルモック由来（原案「周 建国」は名「建国」が mfg/fin に既に 2 人いるため改名。設計書 §3-4-1・§10 ⑤）
-murai-takuya,村井 拓也,村井拓也,Takuya Murai,sales,営業課長,营业科长,Sales Manager,,,,shanghai,ja,ポータルモック由来（姓・名とも未使用のためそのまま。設計書 §3-4-1・§10 ⑤）
-shimada-maki,島田 真希,岛田真希,Maki Shimada,pmo,PMO室 主任,PMO室 主管,PMO Office Lead,,,,shanghai,ja,ポータルモック由来（原案「石田 真希」は姓「石田」が fin/people.csv の石田由美と重なるため改名。設計書 §3-4-1・§10 ⑤）
+shinozaki-yuma,篠崎 悠真,篠崎悠真,Yuma Shinozaki,deli1,プロジェクトマネージャ,项目经理,Project Manager,,,,shanghai,ja,PM 確定値（PM・製造チーム。ブリーフ原文）。ポータルモック原案「高橋 亮」は mfg/people.csv の高橋亮と姓名完全一致のため、PM 判断で「篠崎 悠真」に確定した（design rev3 #256 §14-8'b。it-industry.md §3-4-1 の仮案は PM 判断前の architect 案のため不採用）
+huang-sihan,黄 思涵,黄思涵,Huang Sihan,deli2,プロジェクトマネージャ,项目经理,Project Manager,,,,shanghai,zh,PM 確定値（PM・金融チーム。ブリーフ原文）。design rev3 #256 §14-8'b で確定。it-industry.md §3-4-1 の仮案は PM 判断前の architect 案のため不採用
+cai-wenbo,蔡 文博,蔡文博,Cai Wenbo,deli1,デリバリリーダー,交付负责人,Delivery Lead,,,,shanghai,zh,PM 確定値（デリバリ。ブリーフ原文）。design rev3 #256 §14-8'b で確定。it-industry.md §3-4-1 の仮案は PM 判断前の architect 案のため不採用
+murai-takuya,村井 拓也,村井拓也,Takuya Murai,sales,営業課長,营业科长,Sales Manager,,,,shanghai,ja,PM 確定値（営業。ブリーフ原文）。姓・名とも既存 37 名（mfg 20・fin 17）と重複なし
+kishimoto-natsu,岸本 奈津,岸本奈津,Natsu Kishimoto,pmo,PMO室 主任,PMO室 主管,PMO Office Lead,,,,shanghai,ja,PM 確定値（PMO。ブリーフ原文）。design rev3 #256 §14-8'b で確定。it-industry.md §3-4-1 の仮案は PM 判断前の architect 案のため不採用
