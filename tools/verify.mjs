@@ -680,7 +680,7 @@ section('10. ホームデータ整合（HOME / FEED）');
 }
 
 /* ---------- 11. 索引の鮮度（docs/service-map.md）＋ README の 4 区分地図のリンク実在 ---------- */
-section('11. 索引の鮮度・README の 4 区分地図');
+section('11. 索引の鮮度・README の 5 区分地図');
 {
   // 11-a: docs/service-map.md が gen-index の出力と一致するか（設計書 §1-3・§10 Q7＝FAIL）
   const genIndex = resolve(ROOT, 'tools/gen-index.mjs');
@@ -704,9 +704,9 @@ section('11. 索引の鮮度・README の 4 区分地図');
     fail('README.md（トップ）が無い');
   } else {
     const readme = readFileSync(readmePath, 'utf8');
-    const mapSection = readme.match(/## このリポジトリの歩き方（4 区分）[\s\S]*?(?=\n## |\n---|\s*$)/);
+    const mapSection = readme.match(/## このリポジトリの歩き方（5 区分）[\s\S]*?(?=\n## |\n---|\s*$)/);
     if (!mapSection) {
-      fail('README.md に「## このリポジトリの歩き方（4 区分）」節が無い');
+      fail('README.md に「## このリポジトリの歩き方（5 区分）」節が無い');
     } else {
       const tableLines = mapSection[0].split('\n').filter(l => l.trim().startsWith('|'));
       const links = [...tableLines.join('\n').matchAll(/\]\(\.\/([^)]+)\)/g)].map(m => m[1]);
