@@ -123,6 +123,14 @@ const CATS = [
     subs: [
       { id: 'pipe', industries: ['it'], name: { ja: '引合・受注確度', zh: '商机与赢单概率', en: 'Pipeline & Win Rate' } },
       { id: 'prop', industries: ['it'], name: { ja: '提案資産の再利用', zh: '提案资产复用', en: 'Proposal Reuse' } }
+    ]},
+  { id: 'so',
+    industries: ['it'],
+    name: { ja: 'システム運用・障害対応', zh: '系统运维与故障处置', en: 'IT Operations & Incidents' },
+    abbr: { ja: '運用', zh: '运维', en: 'Ops' },
+    subs: [
+      { id: 'incident', industries: ['it'], name: { ja: '障害対応', zh: '故障处置', en: 'Incident Response' } },
+      { id: 'avail', industries: ['it'], name: { ja: '稼働状況・運用報告', zh: '运行状况与运维报告', en: 'Availability & Reporting' } }
     ]}
 ];
 
@@ -623,5 +631,26 @@ const SVCS = [
     name: { ja: '過去提案の横断検索と再利用', zh: '历史提案的跨项目检索与复用', en: 'Past-Proposal Search & Reuse' },
     desc: { ja: '案件の条件（業種・システム領域・規模・体制・期間）を入れると、過去の提案書・見積・体制図から似た案件を探し、流用できる章と、そのまま使ってはいけない箇所（顧客固有の前提・失注した提案・古い価格）を分けて返します。顧客名を伏せた形での流用を既定とし、伏せ忘れを検出します。',
             zh: '输入项目条件（行业、系统领域、规模、团队、周期）后，从历史提案书、报价与团队结构图中查找相似项目，区分可复用的章节与不可直接沿用的部分（客户特有前提、已失单的提案、过时的价格）。默认以隐去客户名称的形式复用，并检测遗漏的未隐去之处。',
-            en: 'Given the parameters of a deal (industry, system area, size, team, duration), finds similar past proposals, estimates and org charts, and separates the sections you can reuse from the parts you must not — client-specific assumptions, proposals that lost, outdated pricing. Reuse defaults to a client-anonymized form, and anything left un-anonymized is flagged.' } }
+            en: 'Given the parameters of a deal (industry, system area, size, team, duration), finds similar past proposals, estimates and org charts, and separates the sections you can reuse from the parts you must not — client-specific assumptions, proposals that lost, outdated pricing. Reuse defaults to a client-anonymized form, and anything left un-anonymized is flagged.' } },
+  /* ---- so: システム運用・障害対応（IT）。設計書 docs/handoff/2026-09-11-sysops-usecase.md §5 ---- */
+  { id: 'so1', cat: 'so', sub: 'incident', st: 3, industries: ['it'], tags: ['monitor', 'incident'],
+    name: { ja: '障害アラートの要約と初動案', zh: '故障告警的摘要与初期处置方案', en: 'Incident Alert Summary & First-Response Plan' },
+    desc: { ja: '運用監視ツールが上げたアラートを読み、対象システム・影響する業務と拠点・連絡すべき関係者・初動の手順を 1 枚にまとめます。過去の同じシステム・同じ種類の障害と、そのときの復旧手順・所要時間を並べて示します。判断に足りない情報（どのログを見るか・誰に確認するか）は質問の形で返します。復旧の可否と顧客への連絡はシステム担当が決めます。',
+            zh: '读取运维监控工具发出的告警，将受影响的系统、涉及的业务与站点、需要联络的相关方、初期处置步骤汇总为一页。并列出同一系统、同类故障的历史案例及当时的恢复步骤与耗时。对判断所缺的信息（应查看哪些日志、应向谁确认）以提问的形式返回。是否恢复以及对客户的联络由系统负责人决定。',
+            en: 'Reads an alert raised by the operations monitoring tool and produces a one-page brief: the system affected, the business and sites impacted, who has to be contacted, and the first-response steps. Lists past incidents on the same system or of the same kind, with the recovery steps and the time they took. Returns what is still missing for a decision — which logs to check, who to confirm with — as questions. Whether to recover, and what to tell the customer, stays with the system owner.' } },
+  { id: 'so2', cat: 'so', sub: 'avail', st: 3, industries: ['it'], tags: ['monitor', 'search'],
+    name: { ja: '稼働状況の自然言語照会', zh: '运行状况的自然语言查询', en: 'System Status Natural-Language Lookup' },
+    desc: { ja: '「いま止まっているシステムは」「今夜バッチが走るのはどれか」「蘇州工場の生産管理は何時まで使えるか」といった質問に、システム台帳（サービス時間・バッチ窓・重要度・担当）と現在の状態から答えます。答えには対象システムの一覧と、その状態がいつから続いているかを付けます。サービス時間外・夜間バッチ処理中はカレンダーから導いた状態であることを明示し、障害と区別します。',
+            zh: '对「现在有哪些系统停止了」「今晚哪些系统跑批处理」「苏州工厂的生产管理系统能用到几点」这类问题，依据系统台账（服务时间、批处理时段、重要度、负责人）与当前状态作答。答案附带相关系统清单及该状态从何时起持续。对于服务时间外与夜间批处理中，会注明这是依据日历推导出的状态，与故障区分开来。',
+            en: 'Answers questions such as which systems are down right now, which batch jobs run tonight, or until what time production management at the Suzhou plant can be used, from the system register (service hours, batch windows, criticality, owner) and the current state. Each answer lists the systems concerned and how long the state has held. States derived from the calendar — outside service hours, night batch running — are labelled as such so that they are not read as failures.' } },
+  { id: 'so3', cat: 'so', sub: 'avail', st: 3, industries: ['it'], tags: ['monitor', 'kpi', 'report'],
+    name: { ja: '障害・稼働の定期報告（稼働率・障害件数・MTTR）', zh: '故障与运行状况的定期报告（可用率・故障件数・MTTR）', en: 'Periodic Availability & Incident Report' },
+    desc: { ja: '対象の期間とシステムを指定すると、稼働率・障害件数・重大障害・一次回答までの時間・平均復旧時間（MTTR）・再発した障害を集計し、定期報告のドラフトを作ります。数字が前月から動いた理由を、その期間の障害イベントと案件の出来事から書き起こします。顧客に出す版と社内版を作り分け、顧客版には相手の環境で起きた事象だけを載せます。確定と提出は担当者が行います。',
+            zh: '指定期间与对象系统后，汇总可用率、故障件数、重大故障、首次响应时间、平均恢复时间（MTTR）与重复发生的故障，生成定期报告初稿。并依据该期间的故障事件与项目进展，写明各项数字相较上月变动的原因。分别生成面向客户的版本与内部版本，客户版本只收录对方环境中发生的事项。定稿与提交由负责人完成。',
+            en: 'For a chosen period and set of systems, aggregates uptime, incident counts, major incidents, time to first response, mean time to recovery and repeat incidents, then drafts the periodic report. Explains the month-on-month movement of each figure from the incident events and the project events of that period. Produces a customer-facing version and an internal version, the customer version limited to events in the environment of that customer. Sign-off and submission stay with the owner.' } },
+  { id: 'so4', cat: 'so', sub: 'incident', st: 3, industries: ['it'], tags: ['incident', 'rootcause', 'report'],
+    name: { ja: '障害報告・再発防止策のドラフト', zh: '故障报告与再发防止措施初稿', en: 'Incident Report & Preventive-Action Draft' },
+    desc: { ja: '復旧後に、アラート・対応記録・連絡履歴から時系列（検知・一次回答・原因の特定・復旧・顧客連絡）を組み立て、原因・暫定処置・恒久対策・再発防止策の案を書き起こします。同じ原因で過去に起きた障害と、そのとき決めた対策が実施されているかを突き合わせます。下書きは提出前レビューに渡し、確定版は部門ナレッジの障害分類に登録します。原因の断定と顧客への説明はシステム担当が行います。',
+            zh: '恢复后，依据告警、处置记录与联络履历梳理时间线（检测、首次响应、原因定位、恢复、客户联络），并起草原因、临时处置、永久对策与再发防止措施。同时比对因同一原因发生过的故障，核查当时确定的对策是否已落实。初稿交由提交前审查处理，定稿登记到部门知识库的故障分类。原因的最终判定与向客户的说明由系统负责人负责。',
+            en: 'After recovery, builds the timeline — detection, first response, cause identified, recovery, customer notification — from the alert, the response log and the contact history, and drafts the cause, the interim fix, the permanent fix and the preventive actions. Cross-checks incidents that had the same cause in the past and whether the actions agreed then were actually carried out. The draft goes to pre-submission review, and the final version is filed under the incident category of the department knowledge base. Stating the cause and explaining it to the customer stay with the system owner.' } }
 ];

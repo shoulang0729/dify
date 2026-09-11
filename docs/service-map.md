@@ -84,4 +84,8 @@
 | SL-01 | 引合の受注確度推定 | SL/pipe | IT | 構想 | — | — | [it/sl.js](../mock/js/data/scenarios/it/sl.js) form | — | — | — | — |
 | SL-02 | 失注理由の蓄積と傾向分析 | SL/pipe | IT | 構想 | — | — | [it/sl.js](../mock/js/data/scenarios/it/sl.js) lookup | — | — | — | — |
 | SL-03 | 過去提案の横断検索と再利用 | SL/prop | IT | 構想 | — | — | [it/sl.js](../mock/js/data/scenarios/it/sl.js) lookup | — | — | — | — |
+| SO-01 | 障害アラートの要約と初動案 | SO/incident | IT | 構想 | — | — | — | — | — | — | — |
+| SO-02 | 稼働状況の自然言語照会 | SO/avail | IT | 構想 | — | — | — | — | — | — | — |
+| SO-03 | 障害・稼働の定期報告（稼働率・障害件数・MTTR） | SO/avail | IT | 構想 | — | — | — | — | — | — | — |
+| SO-04 | 障害報告・再発防止策のドラフト | SO/incident | IT | 構想 | — | — | — | — | — | — | — |
 | 集計 | — | — | — | — | ①製造 49 | ①金融 29 | ①IT 10 | ②12 | ③67 | ④KB 4 | ④テスト 12 |
