@@ -168,5 +168,10 @@ const PCTXDEF = {
   trn:  ['id', 'kind', 'ttl', 'due'],
   know: ['grp', 'ttl', 'owner', 'updated'],
   kpi:  ['topic', 'metric', 'value'],
+  /* sys: システム稼働状況（sysops-usecase PR-5。設計書 §15-2 決定 D）。
+     incident/degraded の行 → SO-01、直近のイベントが recover の行 → SO-04 に渡す文脈。
+     値は js/portal/app.js の pSysCtxRow() が PSYS／PSYSEV（data/world/it/systems.csv・
+     documents.csv の写し）から組み立てる。 */
+  sys:  ['sys', 'name', 'client', 'criticality', 'inc'],
   home: []
 };

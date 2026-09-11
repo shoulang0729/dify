@@ -362,7 +362,11 @@ V.sys = () => {
   const scopeBtn = (val, label) => '<button class="chip" type="button" data-act="sysscope" data-val="' + val +
     '" aria-pressed="' + (pstate.sysScope === val) + '">' + label + '</button>';
 
-  const rowsHTML = filtered.length ? filtered.map(r => '<tr' + (pSysIsMajor(r) ? ' class="sev"' : '') + '>' +
+  const rowsHTML = filtered.length ? filtered.map(r => {
+    /* 行内 AI（設計書 §15-2 決定 D）。列は増やさず「直近の出来事」列の中に置く。 */
+    const rowAiIds = pSysRowAiIds(r);
+    const rowAiHTML = (rowAiIds.length ? prowAi(rowAiIds, { scr: 'sys', id: r.id }) : '') + pbackContainer('sys', r.id);
+    return '<tr' + (pSysIsMajor(r) ? ' class="sev"' : '') + '>' +
     '<td>' + pSysChip(r.state) + '</td>' +
     '<td class="nw"><b>' + pesc(r.name) + '</b><span class="m">' + r.id + '</span></td>' +
     '<td class="nw">' + pesc(r.client) + '</td>' +
@@ -371,7 +375,8 @@ V.sys = () => {
     '<td class="nw">' + r.criticality + '</td>' +
     '<td class="nw">' + pesc(r.hours) + '</td>' +
     '<td class="num">' + r.since + '</td>' +
-    '<td>' + pesc(r.lastEvent) + '</td></tr>').join('')
+    '<td>' + pesc(r.lastEvent) + rowAiHTML + '</td></tr>';
+  }).join('')
     : '<tr><td colspan="9" class="m">該当するシステムはありません</td></tr>';
 
   return `
