@@ -434,15 +434,20 @@ function pSysRows() {
     });
   });
 }
-/** スコープで絞る（設計書 §6-5）。'mine'＝内製の社内システム（自社スタッフが使う）／
-    'own'＝担当システム（owner_person_id が自分）／'all'＝全社（重大障害だけの一覧。CIO・CEO 向け）。
+/** スコープで絞る（設計書 §15-2 決定 A。§6-5 からの訂正）。'mine'＝内製の社内システム（自社スタッフが使う。
+    ② 担当案件〔PDEALS で ow が自分〕のシステムは現ペルソナ〔kishimoto-natsu〕では 0 件のため実装しない）／
+    'own'＝担当システム（owner_person_id が自分）／'all'＝全社（台帳 9 行すべて。重大障害は絞り込まず、
+    一覧の先頭固定と赤の強調・本番のロール既定フィルタの条件として使う。§15-2 決定 A-1・A-2）。
     デモの固定ペルソナは topbar のアバターと同じ 岸本 奈津（kishimoto-natsu・PMO）。 */
 const PSYS_VIEWER = 'kishimoto-natsu';
 function pSysInScope(row, scope) {
   if (scope === 'own') return row.ownerId === PSYS_VIEWER;
   if (scope === 'mine') return row.kind === 'internal';
-  return row.criticality === '高' && row.state === 'incident'; // 'all'
+  return true; // 'all'：台帳 9 行すべて（§15-2 決定 A-1）
 }
+/** 重大障害（criticality === '高' && state === 'incident'）かどうか。一覧の先頭固定・赤強調・
+    「本番との違いを表示」の注記・状態フィルタでの絞り込みに共通で使う条件（§15-2 決定 A-1・A-2）。 */
+function pSysIsMajor(row) { return row.criticality === '高' && row.state === 'incident'; }
 
 /* ============================================================
    設定の永続化（言語 / テーマ）。§2-6：mock.lang / mock.theme だけを読み書きする。

@@ -344,7 +344,11 @@ function pSysChip(state) {
 V.sys = () => {
   const nowP = (typeof PSYSNOW !== 'undefined' ? PSYSNOW : []).find(p => p.id === pstate.now) || PSYSNOW[0];
   const rows = pSysRows();
-  const scoped = rows.filter(r => pSysInScope(r, pstate.sysScope));
+  /* スコープで絞ったあと、「重大障害 → それ以外」の 2 段に安定ソートする（§15-2 決定 A-1 の 2。
+     Array#sort は仕様上 stable なので、段の中は PSYS の宣言順＝rows の元の順が保たれる。
+     並べ替え UI は足さない） */
+  const scoped = rows.filter(r => pSysInScope(r, pstate.sysScope))
+    .sort((a, b) => (pSysIsMajor(a) ? 0 : 1) - (pSysIsMajor(b) ? 0 : 1));
   const clients = [...new Set(rows.map(r => r.client))];
   const filtered = scoped.filter(r => (!pstate.sysCu || r.client === pstate.sysCu) && (!pstate.sysSt || r.state === pstate.sysSt));
   const cnt = { incident: 0, warn: 0, planned: 0 };
@@ -358,7 +362,7 @@ V.sys = () => {
   const scopeBtn = (val, label) => '<button class="chip" type="button" data-act="sysscope" data-val="' + val +
     '" aria-pressed="' + (pstate.sysScope === val) + '">' + label + '</button>';
 
-  const rowsHTML = filtered.length ? filtered.map(r => '<tr>' +
+  const rowsHTML = filtered.length ? filtered.map(r => '<tr' + (pSysIsMajor(r) ? ' class="sev"' : '') + '>' +
     '<td>' + pSysChip(r.state) + '</td>' +
     '<td class="nw"><b>' + pesc(r.name) + '</b><span class="m">' + r.id + '</span></td>' +
     '<td class="nw">' + pesc(r.client) + '</td>' +
@@ -368,7 +372,7 @@ V.sys = () => {
     '<td class="nw">' + pesc(r.hours) + '</td>' +
     '<td class="num">' + r.since + '</td>' +
     '<td>' + pesc(r.lastEvent) + '</td></tr>').join('')
-    : '<tr><td colspan="9" class="m">' + (pstate.sysScope === 'all' ? '重大障害はありません' : '該当するシステムはありません') + '</td></tr>';
+    : '<tr><td colspan="9" class="m">該当するシステムはありません</td></tr>';
 
   return `
 <div class="grid">
@@ -379,7 +383,7 @@ V.sys = () => {
     <span class="chips" id="sysScopeSw" aria-label="スコープ">
      ${scopeBtn('mine', '自分が使う')}${scopeBtn('own', '担当')}${scopeBtn('all', '全社')}
     </span>
-    <span class="pn">このセグメントは本番では出ません（ロールで決まります）</span>
+    <span class="pn">このセグメントは本番では出ません（ロールで決まります）。CIO・CEO には「障害発生中」の絞り込みが既定で当たります。</span>
     <select class="selctl" data-act="sysf" data-key="cu">
      <option value="">顧客（すべて）</option>
      ${clients.map(c => '<option value="' + pesc(c) + '"' + (pstate.sysCu === c ? ' selected' : '') + '>' + pesc(c) + '</option>').join('')}

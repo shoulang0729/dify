@@ -239,6 +239,8 @@ body.hideusr .body-doc:not(:has(.note.dev)) { display: none !important; }
 .rag.n { background: var(--badge-concept-bg); color: var(--badge-concept-fg); }
 .sysbar { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
 .systbl table th:first-child, .systbl table td:first-child { width: 132px; }
+/* 重大障害の行の強調（設計書 §15-2 決定 A-1 の 3。.tile.alarm と同じ書き方。新トークン 0・色の直値 0） */
+.systbl table tr.sev { box-shadow: inset 3px 0 0 var(--rag-r); }
 
 /* ---------- 並べ替え・絞り込みつきテーブル ---------- */
 th .sortbtn { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 0;
