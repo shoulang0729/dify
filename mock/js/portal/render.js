@@ -1,5 +1,5 @@
 'use strict';
-/* mock/js/portal/render.js — renderRail / renderScreen / V.*（15 画面）/ drawer / フィルタ
+/* mock/js/portal/render.js — renderRail / renderScreen / V.*（画面数は PSCREENS が正本）/ drawer / フィルタ
    出所: scratchpad/portal-mock/portal.html（PM が作り込んだ単一 HTML のコンセプトモック）。
    設計書 docs/handoff/2026-09-11-portal-mock-pages.md §3-1・§5-3。動きと見た目は変えていない
    （移設のみ。§12-1 AC-7・AC-8）。画面本文（見出し・表ヘッダ・解説）は v1 は日本語のまま（§7-1）。

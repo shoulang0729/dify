@@ -12,7 +12,7 @@ Dify Cloud（`cloud-master`）で動く実機 12 本を、担当者が読み上�
 |---|---|---|
 | 何 | **画面に表示される会話データ**（コード） | **人が読み上げる司会進行の手順書**（文書） |
 | 誰が読む | ブラウザ（`renderDemo`） | デモの司会者 |
-| 対象 | 77 サービス（LLM 未接続のダミー応答） | 実機 12 本（Dify Cloud の本物の応答） |
+| 対象 | カタログ全件（件数の正は `docs/service-map.md`。LLM 未接続のダミー応答） | 実機 12 本（Dify Cloud の本物の応答） |
 | 言語 | `script` は ja/zh（`steps` は ja/zh/en） | 読み上げ文を ja/zh 併記 |
 | 置き場 | ③（`mock/` 配下＝コード） | ③（`docs/demo/`） |
 | 依存 | `TEMPLATES`・`state` | `dify/samples/`・`LIVE`（`mock/js/data/live.js`）・`dify/KNOWN_ISSUES.md` |

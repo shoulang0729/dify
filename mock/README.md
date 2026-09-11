@@ -11,8 +11,8 @@ AIエージェントカタログの画面案（モック）一式です。`index
 
 | | 画面 | 内容 |
 |---|------|------|
-| **A** | `catalog.html` — AIエージェントカタログ | 表示パターン3案（① 階層ナビ／② ダッシュボード／③ 業務フィード。3案とも実装済み）を切替。同じカタログ・同じ詳細/デモ画面に、3通りの入口から入れる。業種3（製造・金融・IT）×大分類14×中分類33×77サービス（在中日系製造業 49 件／在中日系銀行 29 件／日系 SIer 21 件。うち 11 件は業種横断。パートナー連携8件を含む）。業種の切替は上部グレー帯（`.mockbar`）。一覧 → 詳細（担当者ペルソナ・利用シナリオ）→ **業務デモ**（QA／アップロード→結果／フォーム→ドラフト／差分比較／照会の5テンプレート。日本語・中国語どちらで入力しても入力言語で応答）。 |
-| **B** | `portal.html` — 部門ポータル | 自部門（翠雲システムズ）の社内ポータルの概念モック（15 画面）。`catalog.html` と同じ `CATS`/`SVCS`（`mock/js/data/catalog.js`）・`SCENARIOS`/`TEMPLATES` を読み、業務の画面（案件・顧客・To Do・会議・ナレッジ・KPI・目標・経費・申請・研修・ニュース・仕入先ほか）からサービスを呼ぶ側の見せ方を確認する。カタログ 77 件のうちポータルに置くのは 49 件（`mock/js/data/catalog.js` の `SVCS[].place`）。台本の再生（右ドロワー）・行への戻りは後続 PR（詳細は設計書 `docs/handoff/2026-09-11-portal-mock-pages.md`）。 |
+| **A** | `catalog.html` — AIエージェントカタログ | 表示パターン3案（① 階層ナビ／② ダッシュボード／③ 業務フィード。3案とも実装済み）を切替。同じカタログ・同じ詳細/デモ画面に、3通りの入口から入れる。業種・大分類・中分類・サービスの構成は [`docs/service-map.md`](../docs/service-map.md)（生成物）を参照。業種の切替は上部グレー帯（`.mockbar`）。一覧 → 詳細（担当者ペルソナ・利用シナリオ）→ **業務デモ**（QA／アップロード→結果／フォーム→ドラフト／差分比較／照会の5テンプレート。日本語・中国語どちらで入力しても入力言語で応答）。 |
+| **B** | `portal.html` — 部門ポータル | 自部門（翠雲システムズ）の社内ポータルの概念モック。画面は `mock/js/data/portal/ui.js` の `PSCREENS` が正本、カタログからポータルに置くサービスの置き場所は `SVCS[].place` が正本。`catalog.html` と同じ `CATS`/`SVCS`（`mock/js/data/catalog.js`）・`SCENARIOS`/`TEMPLATES` を読み、業務の画面（案件・顧客・To Do・会議・ナレッジ・KPI・目標・経費・申請・研修・ニュース・仕入先ほか）からサービスを呼ぶ側の見せ方を確認する。台本の再生（右ドロワー）・行への戻りは後続 PR（詳細は設計書 `docs/handoff/2026-09-11-portal-mock-pages.md`）。 |
 
 `catalog.html` / `portal.html` はいずれもメニュー表示を日本語／中文／English で切替でき、ライト／ダークテーマに対応（エージェント本体の入出力は日中）。`mock.lang` / `mock.theme` は両ページで共有される。純粋な静的 HTML/CSS/JS（ビルド不要）。
 
@@ -53,7 +53,7 @@ mock/
 │   ├── events.js         カタログ：click ハンドラ / 言語・テーマの listener / 起動
 │   └── portal/           ポータルのアプリ層（3 ファイル。§2-3 の「読み込み順はその HTML の <script src> の並びが唯一の正」はここにも効く）
 │       ├── app.js         pstate / ヘルパー（PL/pt/psvcOf など）/ 設定の永続化
-│       ├── render.js      renderRail / renderScreen / V.*（15 画面）/ drawer / フィルタ
+│       ├── render.js      renderRail / renderScreen / V.*（画面数は PSCREENS が正本）/ drawer / フィルタ
 │       └── events.js      click ハンドラ / 言語・テーマの listener / 起動
 ├── .nojekyll             GitHub Pages の Jekyll 処理を無効化
 └── README.md             このファイル
