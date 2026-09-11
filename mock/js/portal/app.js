@@ -140,13 +140,64 @@ function ptbl(head, rows) {
     '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
-/* ---- AI 入口の描画 ---- */
+/* ============================================================
+   台本の実行ドロワー（PR-3）が使うヘルパー。設計書 §14-4〜§14-7。
+   ============================================================ */
+/** 行の世界：行の顧客がどの架空世界の会社かを PWORLD から引く。行が無い／IT 世界の内側なら 'it'（§14-4・§14-5） */
+const pworldOf = (ctx) => (ctx && PWORLD[ctx.cu]) || 'it';
+
+/** サービス id と呼び出しの文脈（行。無ければ null）から、どの業種の台本を引くかを決める。
+    候補の順番：① 行の世界 → ② そのサービスが属する業種（宣言順） → ③ INDUSTRIES の宣言順。
+    pstate.ind（業種チップ）は一切見ない（規則 3。verify §17-l が機械的に担保）。 */
+function pscn(svcId, ctx) {
+  const svc = (typeof SVCS !== 'undefined' ? SVCS : []).find(s => s.id === svcId);
+  if (!svc) return null;
+  const want = pworldOf(ctx);
+  const order = [...new Set([want, ...(svc.industries || []), ...INDUSTRIES.map(i => i.id)])];
+  for (const k of order) {
+    const s = (window.SCENARIOS[k] || {})[svcId];
+    if (s) return { scn: s, from: k, want };
+  }
+  return null; // 台本なし（§5-6 の分岐へ）
+}
+
+/** 台本は ja / zh のみ。UI が en のときは ja の台本を使う（catalog の js/app.js の scriptLang と同じ規則。§2-5・§5-8） */
+const pscriptLang = (l) => (l === 'zh' ? 'zh' : 'ja');
+
+/** 入力テキストの言語を判定（catalog の js/app.js の detectLang と同じ規則。§2-5・§8）。
+    エージェント本体は UI 言語と無関係に日本語・中国語どちらの入力も受け付ける */
+function pDetectLang(s) {
+  if (/[぀-ヿ]/.test(s)) return 'ja';
+  if (/[一-鿿]/.test(s)) return 'zh';
+  return pstate.lang;
+}
+
+/** 画面 id と行 id から、文脈カードに渡す「行」を引く（設計書 §5-4）。
+    proj は PDEALS を id で引く（id/nm/cu/ow/sg/due/rag をそのまま持つ）。
+    cust は顧客 id を渡すだけの軽い行（cu のみ。担当者テーブルの行から呼ぶときに使う）。
+    対応していない画面／行が見つからなければ null（ブロックから呼んだときと同じ「行なし」扱いに落ちる）。 */
+function pctxRow(scr, id) {
+  if (!id) return null;
+  if (scr === 'proj') return (typeof PDEALS !== 'undefined' ? PDEALS.find(d => d.id === id) : null) || null;
+  if (scr === 'cust') return { cu: id };
+  return null;
+}
+
+/** RAG（案件の状態）の表示名。架空の業務データなので登録された言語のまま（§2-5 と同じ考え方） */
+const PRAGNAME = { r: 'Red', y: 'Yellow', g: 'Green' };
+
+/* ---- AI 入口の描画 ----
+   rowCtx（{scr, id}）を渡すと、押したボタンに data-ctx-scr / data-ctx-id が付き、
+   実行ドロワー（js/portal/demo.js）が押された行の実値を「この画面から渡す文脈」として拾える
+   （設計書 §5-4。行の無いブロック呼び出しはこれまでどおり ctx なし＝PT.ctxNoRow の案内に落ちる）。 */
 function psvcBtn(id, opt) {
   const s = psvcOf(id); if (!s) return '';
   const stv = PST[s.st] || PST[3];
   const code = s.isnew ? pt('unnumbered') : psvcCode(id);
   const label = (opt && opt.label) ? opt.label : s.name;
-  return '<button class="aibtn" type="button" data-svc="' + id + '" style="--cat-accent:var(--cat-' + s.cat + ')">' +
+  const ctxAttr = (opt && opt.ctxScr && opt.ctxId != null)
+    ? ' data-ctx-scr="' + pesc(opt.ctxScr) + '" data-ctx-id="' + pesc(String(opt.ctxId)) + '"' : '';
+  return '<button class="aibtn" type="button" data-svc="' + id + '"' + ctxAttr + ' style="--cat-accent:var(--cat-' + s.cat + ')">' +
     '<span class="no">' + pesc(code) + '</span>' +
     '<span class="nm">' + pesc(label) + '</span>' +
     (opt && opt.plain ? '' : '<span class="st ' + stv[0] + '">' + pesc(stv[1]) + '</span>') +
@@ -154,9 +205,14 @@ function psvcBtn(id, opt) {
     '</button>';
 }
 function paiRow(list, opt) { return '<div class="ai">' + list.map(n => psvcBtn(n, opt)).join('') + '</div>'; }
-function prowAi(list) {
+/** rowCtx: 呼び出し元の行の文脈。{ scr: 'proj'|'cust', id: 行の id } を渡すと行から渡す文脈が有効になる。
+    省略すると（画面の他の場所と同じく）ブロックから呼んだ扱いになる。 */
+function prowAi(list, rowCtx) {
   return '<span class="rowai">' + list.map(n => {
-    const v = psvcOf(n); return v ? psvcBtn(n, { bare: true, label: v.short }) : '';
+    const v = psvcOf(n); if (!v) return '';
+    const opt = { bare: true, label: v.short };
+    if (rowCtx) { opt.ctxScr = rowCtx.scr; opt.ctxId = rowCtx.id; }
+    return psvcBtn(n, opt);
   }).join('') + '</span>';
 }
 

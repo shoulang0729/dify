@@ -295,9 +295,13 @@ tr[hidden] { display: none; }
   background: transparent; }
 .cand .tag { font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--text-muted); }
 
-/* ---------- drawer ---------- */
+/* ---------- drawer ----------
+   台本の実行ドロワー（js/portal/demo.js。設計書 §5-3）と、台本の無いサービス／解説用の
+   情報ドロワー（openDrawer / openKnowDrawer / openHistDrawer。js/portal/render.js）が共用する。
+   幅 min(560px, 96vw)：呼び出した行と数字が後ろに見えたまま、縦 1 列（文脈 → 入力 → 結果 → 往復 → 解説）
+   で読める大きさ（設計書 D9・§5-3）。 */
 .scrim { position: fixed; inset: 0; background: rgba(7,15,38,.42); border: 0; padding: 0; }
-.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 92vw); background: var(--surface-card);
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 96vw); background: var(--surface-card);
   border-left: 1px solid var(--border-card); overflow-y: auto; padding: 0 0 28px; }
 .drawer header { position: sticky; top: 0; background: var(--surface-card); border-bottom: 1px solid var(--border-subtle);
   padding: 13px 16px; display: flex; gap: 9px; align-items: flex-start; }
@@ -310,6 +314,56 @@ tr[hidden] { display: none; }
 .ctx { font-family: var(--font-mono); font-size: 11px; background: var(--surface-sunken);
   border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 8px 10px;
   white-space: pre-wrap; word-break: break-word; color: var(--text-body); }
+
+/* ---- 実行ドロワー（台本あり）専用パーツ。ドロワー全体は AI 層の色（--ai-*）。§5-3 の違い #6 ---- */
+.drawer.exec { background: var(--ai-bg); }
+.drawer.exec header,
+.drawer.exec .sec { background: transparent; border-color: var(--ai-bd); }
+.drawer.exec .sec.body-sec { background: var(--surface-card); }
+
+/* ① 文脈カード・② 入力の「自動で入る欄」（設計書 §5-4） */
+.fld { margin-bottom: 8px; }
+.fld:last-child { margin-bottom: 0; }
+.fld label { display: block; font-size: 10.5px; color: var(--text-muted); margin-bottom: 2px; }
+.fld .val { font-size: 12.5px; color: var(--text-body); background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 6px 9px; }
+.fld.auto .val { display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+.autotag { flex: 0 0 auto; font-size: 10px; font-weight: 700; color: var(--ai-fg);
+  border: 1px solid var(--ai-bd); border-radius: var(--radius-pill); padding: 1px 7px; white-space: nowrap; }
+
+/* ② 入力：form / upload / diff / lookup */
+.run-row { display: flex; justify-content: flex-end; margin-top: 10px; }
+.run-row .btn-primary { border: 0; background: var(--action-primary); color: var(--text-on-brand);
+  border-radius: var(--radius-sm); padding: 8px 18px; font-family: inherit; font-size: 12.5px;
+  font-weight: 700; cursor: pointer; }
+.run-row .btn-primary:hover { background: var(--action-primary-hover); }
+.run-row .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+.dfile { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm); padding: 4px 10px; font-size: 12px; margin: 0 6px 6px 0; background: var(--surface-card); }
+.diffrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ③ 結果パネル（catalog の resultHTML と同じ形の kv / 表） */
+.kv { padding: 6px 0; border-top: 1px solid var(--border-subtle); }
+.kv:first-child { border-top: none; }
+.kv .k { font-size: 12px; font-weight: 700; color: var(--text-heading); }
+.kv .v { font-size: 12.5px; color: var(--text-body); white-space: pre-line; margin-top: 4px; }
+
+/* ④ 続けて聞く：会話 */
+.dmsgs { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto;
+  padding: 4px 2px; }
+.dmsg { display: flex; }
+.dmsg.user { justify-content: flex-end; }
+.dbubble { max-width: 88%; padding: 8px 11px; border-radius: var(--radius-md); font-size: 12.5px;
+  line-height: 1.55; background: var(--surface-sunken); color: var(--text-body); white-space: pre-wrap; }
+.dmsg.user .dbubble { background: var(--action-primary); color: var(--text-on-brand); }
+.dchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.dinrow { display: flex; gap: 8px; margin-top: 10px; }
+.dinput { flex: 1 1 auto; border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+  padding: 7px 10px; font-family: inherit; font-size: 12.5px; background: var(--surface-card); color: var(--text-body); }
+.dinput:focus { border-color: var(--action-primary); }
+.dsend { flex: 0 0 auto; border: 0; background: var(--action-primary); color: var(--text-on-brand);
+  border-radius: var(--radius-sm); padding: 0 16px; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.dsend:hover { background: var(--action-primary-hover); }
 
 @media (max-width: 760px) {
   .shell { display: block; }

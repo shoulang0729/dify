@@ -34,12 +34,12 @@ V.home = () => `
        '<td><b>' + d.nm + '</b><span class="m">' + d.id + ' ／ ' + d.ow + '</span></td>' +
        '<td class="nw">' + d.cu + '</td><td class="nw">' + pstageName(d.sg) + '</td><td>' + pragChip(d.rag) + '</td>' +
        '<td>' + d.nx + '</td>' +
-       '<td>' + prowAi(PSTAGE_AI[d.sg]) + '</td></tr>').join(''))}
+       '<td>' + prowAi(PSTAGE_AI[d.sg], { scr: 'proj', id: d.id }) + '</td></tr>').join(''))}
    </div>
   </section>
 
-  <section class="block">
-   <header><h2>横断で使う AI</h2><span class="sub">どの画面からでも開く</span></header>
+  <section class="block blk-ai">
+   <header><h2>${pesc(pt('crossAi'))}</h2><span class="sub">どの画面からでも開く</span></header>
    <div class="body">
     ${paiRow(pcrossAiIds())}
     <div class="pn blk">本番：呼び先が Dify Enterprise（社内）に替わる。ポータル側で変わるのは接続先とキーだけ（<code>${'${DIFY_BASE_URL}'}</code>）</div>
@@ -138,7 +138,7 @@ V.cust = () => {
       '<span class="m">担当者を見る</span></td><td class="nw">' + c.site + '</td>' +
       '<td class="nw">' + post.length + ' 件</td><td class="nw">' + pre.length + ' 件</td>' +
       '<td class="num">' + psum(post, d => d.amt).toFixed(1) + '</td>' +
-      '<td>' + prowAi(['rs3', 'rs1']) + '</td></tr>';
+      '<td>' + prowAi(['rs3', 'rs1'], { scr: 'cust', id: c.id }) + '</td></tr>';
   }).join(''))}
   </div>
  </section>
@@ -163,7 +163,7 @@ V.cust = () => {
         '<td class="nw">' + c[7] + '</td>' +
         '<td><button class="aibtn" type="button" data-hist="' + c[0] + '" style="--cat-accent:var(--action-primary)">' +
           '<span class="nm">接触履歴</span><span class="how">' + PHIST.filter(h => h[0] === c[0]).length + ' 件</span></button> ' +
-          prowAi(['cv2', 'lg4']) + '</td></tr>';
+          prowAi(['gn8', 'cv2', 'lg4'], { scr: 'cust', id: c[4] }) + '</td></tr>';
     }).join(''))}
   </div>
   <div class="body" style="border-top:1px solid var(--border-subtle)">
@@ -200,8 +200,8 @@ V.cust = () => {
   </div>
  </section>
 
- <section class="block">
-  <header><h2>この画面の AI</h2></header>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
   <div class="body">
    ${paiRow(pscreenAiIds('cust'))}
    <div class="note" style="margin-top:10px"><b>「名刺の読み取りと項目抽出（日中英）」はカタログに無いので新規です。</b>名刺管理そのものは NocoBase に持ち、AI が受け持つのは読み取りと項目抽出だけ、という切り分けです。製造業カタログにも金融カタログにもありません。分類と管理番号は実装時に採番します（CLAUDE.md §2-11 は分類コード＋2 桁通番）。</div>
@@ -226,7 +226,7 @@ V.proj = () => {
         (pinPre(d) ? '<span class="prob">確度 ' + d.p + '%</span>' : (d.rag ? pragChip(d.rag) : '')) +
         '</div>' +
         '<div class="mt">' + d.id + '<span>' + d.ow + '</span><span>' + d.due + '</span></div>' +
-        '<div class="rowai">' + prowAi(PSTAGE_AI[d.sg]) + '</div>' +
+        '<div class="rowai">' + prowAi(PSTAGE_AI[d.sg], { scr: 'proj', id: d.id }) + '</div>' +
         '</article>').join('') +
       '</div>';
   }).join('');
@@ -270,8 +270,8 @@ V.proj = () => {
   </div>
  </section>
 
- <section class="block">
-  <header><h2>この画面の AI</h2></header>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
   <div class="body">
    ${paiRow(pscreenAiIds('proj'))}
    <div class="note" style="margin-top:10px"><b>行の文脈を渡すのがポイントです。</b>「報告レビュー」を Dify の画面で単体で開くと、案件名も期間も自分で打ち込むことになります。案件カードのボタンから呼べば、案件 id・顧客・ステージ・前回報告が自動で載ります。<b>これが「メニューの背後に置く」ことの中身です。</b></div>
@@ -303,8 +303,8 @@ V.act = () => `
  </section>
 
  <div class="grid">
-  <section class="block">
-   <header><h2>この画面の AI</h2></header>
+  <section class="block blk-ai">
+   <header><h2>${pesc(pt('screenAi'))}</h2></header>
    <div class="body">
     ${paiRow(pscreenAiIds('act'))}
     <div class="note" style="margin-top:10px"><b>GN-06 はこの画面の相棒です。</b>メール・チャット・議事録から「頼まれたまま放置されている仕事」を拾い、To Do 候補として起票します。裏で回して結果をテーブルに書く型（Workflow の HTTP request）。</div>
@@ -403,8 +403,8 @@ V.ppl = () => {
   </div>
  </section>
 
- <section class="block">
-  <header><h2>この画面の AI</h2></header>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
   <div class="body">
    ${paiRow(pscreenAiIds('ppl'))}
    <div style="margin-top:14px">
@@ -469,8 +469,8 @@ V.trn = () => {
    </div></div>
   </section>
 
-  <section class="block">
-   <header><h2>この画面の AI</h2></header>
+  <section class="block blk-ai">
+   <header><h2>${pesc(pt('screenAi'))}</h2></header>
    <div class="body">
     ${paiRow(pscreenAiIds('trn'))}
     <div class="note" style="margin-top:10px"><b>どれも構想段階です。</b>実機はまだありません。押すと「何を渡して何が返るか」だけが出ます。</div>
@@ -529,8 +529,8 @@ V.meet = () => `
       '<td>' + prowAi(m[1].includes('来訪') ? ['gn7', 'gn4'] : ['dc2', 'gn4']) + '</td></tr>').join(''))}
   </div>
  </section>
- <section class="block">
-  <header><h2>この画面の AI</h2></header>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
   <div class="body">
    ${paiRow(pscreenAiIds('meet'))}
    <div class="note" style="margin-top:10px"><b>DC-02 は稼働中です。</b>議事録から返ってくる「次回論点」と「To Do 候補」を、そのまま To Do テーブルに落とします。<b>会議 → To Do → 案件が 1 本につながる</b>のがポータルに置く意味です。</div>
@@ -609,8 +609,8 @@ V.know = () => {
   </div>
  </section>
 
- <section class="block">
-  <header><h2>この画面の AI</h2></header>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
   <div class="body">
    ${paiRow(pscreenAiIds('know'))}
    <div class="note" style="margin-top:10px"><b>KN-03 は稼働中</b>で、全社ナレッジの C3 制度・規程を読みます。日本語でも中国語でも、聞いた言語で返ります。KN-04 は部門ナレッジ側で、答えられなかった質問が FAQ の候補として溜まります——<b>溜まった FAQ が、次に足すべき中分類を教えてくれます</b>。</div>
@@ -792,8 +792,8 @@ V.kpi = () => {
   </div>
  </section>
 
- <section class="block">
-  <header><h2>この画面の AI</h2></header>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
   <div class="body">
    ${paiRow(pscreenAiIds('kpi'))}
    <div class="note" style="margin-top:10px">NM-03 は<b>稼働中</b>。毎朝バッチで回して集計をテーブルに書き、この画面はその結果を描くだけにします（画面を開くたびに AI を呼ばない）。PO-01 は K7 のアンケートを回すところに効きますが構想段階です。</div>
@@ -948,8 +948,8 @@ V.exp = () => `
   </div>
  </section>
 
- <section class="block">
-  <header><h2>この画面の AI</h2></header>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
   <div class="body">
    ${paiRow(pscreenAiIds('exp'))}
    <div class="note">全員が毎月触る画面なので、<b>ポータルを開く習慣がここでつきます</b>。稼働中の AI が 2 本あるのはこの画面だけです（GN-01・GN-02）。</div>
@@ -976,8 +976,8 @@ V.req = () => `
    <div class="pn blk">本番：決裁のワークフローは NocoBase の Workflow（承認ノードは Professional+ なので、無料版では状態遷移で組む）</div>
   </div>
  </section>
- <section class="block">
-  <header><h2>この画面の AI</h2></header>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
   <div class="body">
    ${paiRow(pscreenAiIds('req'))}
    <div class="note" style="margin-top:10px">DC-05 は<b>記載漏れの検出</b>が本体です。R-0909 の「記載不備」は DC-05 が出した指摘、という想定。出す前に気づけば差戻しの往復が消えます。</div>
@@ -1004,8 +1004,8 @@ V.watch = () => `
    <div class="pn blk">本番：外部の情報源に接続。取ってくる範囲と保存期間を先に決める（全部溜めない）</div>
   </div>
  </section>
- <section class="block">
-  <header><h2>この画面の AI</h2><span class="sub">6 本。カタログでいちばん大きい塊</span></header>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2><span class="sub">6 本。カタログでいちばん大きい塊</span></header>
   <div class="body">
    ${paiRow(pscreenAiIds('watch'))}
    <div class="note" style="margin-top:10px">RS-03（顧客 IR・決算の要約）は顧客画面からも呼べます。同じサービスを 2 か所に出すのは構いません——<b>出す画面をテーブルの列で持つので、1 行に複数書けば済みます</b>。</div>
@@ -1033,8 +1033,8 @@ V.vend = () => `
    <div class="pn blk">本番：与信の情報源は外部サービス。契約・発注の確定は購買システム側</div>
   </div>
  </section>
- <section class="block">
-  <header><h2>この画面の AI</h2></header>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
   <div class="body">
    ${paiRow(pscreenAiIds('vend'))}
    <div class="note" style="margin-top:10px">購買まわり（見積比較・戦略購買・RFQ 起草・発注書の読み取り）はここにまとめました。**別メニューにするほどの量ではない**と判断しています。増えたら分けます。</div>
@@ -1152,7 +1152,7 @@ function renderDealList() {
     '<td class="nw">' + (pinPre(d) ? d.p + '%' : '<span class="m">—</span>') + '</td>' +
     '<td>' + (d.rag ? pragChip(d.rag) : '<span class="m">—</span>') + '</td>' +
     '<td class="nw">' + d.due + '</td><td class="num">' + d.amt.toFixed(1) + '</td>' +
-    '<td>' + prowAi(PSTAGE_AI[d.sg]) + '</td></tr>').join('');
+    '<td>' + prowAi(PSTAGE_AI[d.sg], { scr: 'proj', id: d.id }) + '</td></tr>').join('');
   host.innerHTML = '<table><thead><tr>' + th + '</tr></thead><tbody>' + body + '</tbody></table>';
   const lbl = document.getElementById('dealCount');
   if (lbl) lbl.textContent = list.length + ' 件' + (list.length === PDEALS.length ? '　同じデータを表で見る' : '（絞り込み中）');
@@ -1232,6 +1232,9 @@ function openBareDrawer() {
   pDrawer.className = 'drawer'; pDrawer.setAttribute('role', 'dialog'); pDrawer.setAttribute('aria-modal', 'true');
   return pDrawer;
 }
+/** 台本なしの情報ドロワー（渡すもの・返るものだけの 4 セクション）。
+    設計書 §5-6：PR-3 以降は js/portal/demo.js の openSvcDrawer() が pscn() で台本を探し、
+    見つからなかったとき（＝台本なし）だけこの関数に落ちる。PT.noScript を先頭に出す。 */
 function openDrawer(id) {
   const s = psvcOf(id); if (!s) return;
   const drawer = openBareDrawer();
@@ -1241,6 +1244,7 @@ function openDrawer(id) {
     '<header><div><div class="no" style="color:var(--cat-' + s.cat + ')">' + pesc(code) + '</div>' +
     '<h2>' + pesc(s.name) + '</h2></div><span class="st ' + st[0] + '">' + pesc(st[1]) + '</span>' +
     '<button class="x" type="button" aria-label="' + pesc(pt('close')) + '">&times;</button></header>' +
+    '<div class="sec"><div class="note">' + pesc(pt('noScript')) + '</div></div>' +
     (s.st === 1 ? '' : '<div class="sec"><div class="note"><b>' + pesc(st[1]) + 'です。</b>実機はまだありません。ここに出しているのは「何を渡して何が返る想定か」だけで、動くものとしては見せません。</div></div>') +
     '<div class="sec"><h3>この画面から渡す文脈</h3><div class="ctx">' + pesc(s.ctx) + '</div></div>' +
     '<div class="sec"><h3>返ってくるもの</h3><p>' + pesc(s.out) + '</p></div>' +
