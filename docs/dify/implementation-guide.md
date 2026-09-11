@@ -1,6 +1,6 @@
 # Dify 実装ガイド（全体方針）
 
-対象：カタログ 13 分類 67 サービス（`docs/handoff/service-index.md`）を **Dify 1.15.x（DSL 0.6.0）／セルフホスト**で実装するときの、全サービス共通の方針。
+対象：カタログ全サービス（管理番号は `docs/handoff/service-index.md`。最新の分類・サービス件数は `docs/service-map.md` を参照）を **Dify 1.15.x（DSL 0.6.0）／セルフホスト**で実装するときの、全サービス共通の方針。本書 §3 の実装順（Wave）は、この設計を立てた時点のカタログ 67 サービスを対象にしている（後から加わったサービスの Wave 割り当ては別途行う）。
 個別サービスの仕様は `usecases/<管理番号>.md`、別出しで作る共通部品は `platform-components.md`（PC-01〜18）、Outline Wiki 前提の案は `outline-wiki-usecases.md`。
 architect 成果物。**モック（`mock/**`）・`tools/**`・承認済み設計書（`docs/handoff/**`）には触れていない。**
 
