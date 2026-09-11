@@ -853,7 +853,8 @@
       "tags": [
         "ocr",
         "translate"
-      ]
+      ],
+      "place": "cust"
     },
     {
       "id": "pt1",
@@ -1020,7 +1021,8 @@
       "tags": [
         "taxonomy",
         "search"
-      ]
+      ],
+      "place": "know"
     },
     {
       "id": "kn10",
@@ -1033,7 +1035,8 @@
       "tags": [
         "governance",
         "regulation"
-      ]
+      ],
+      "place": "know"
     },
     {
       "id": "dc9",
@@ -1060,7 +1063,8 @@
       "tags": [
         "kpi",
         "report"
-      ]
+      ],
+      "place": "kpi"
     },
     {
       "id": "rs1",
@@ -1333,7 +1337,8 @@
       "tags": [
         "leave",
         "hr"
-      ]
+      ],
+      "place": "ppl"
     },
     {
       "id": "po6",
@@ -1346,7 +1351,8 @@
       "tags": [
         "workload",
         "hr"
-      ]
+      ],
+      "place": "ppl"
     },
     {
       "id": "po7",
@@ -1359,7 +1365,8 @@
       "tags": [
         "effect",
         "dashboard"
-      ]
+      ],
+      "place": "kpi"
     },
     {
       "id": "eg1",
@@ -1388,7 +1395,8 @@
       "tags": [
         "pipeline",
         "analysis"
-      ]
+      ],
+      "place": "proj"
     },
     {
       "id": "sl2",
@@ -1401,7 +1409,8 @@
       "tags": [
         "winloss",
         "pipeline"
-      ]
+      ],
+      "place": "proj"
     },
     {
       "id": "sl3",
@@ -1414,7 +1423,8 @@
       "tags": [
         "proposal",
         "search"
-      ]
+      ],
+      "place": "proj"
     }
   ],
   "tags": [
