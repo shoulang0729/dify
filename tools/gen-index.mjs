@@ -34,6 +34,10 @@ const check = process.argv.includes('--check');
 const { data } = loadMock(ROOT);
 const SVCS = data.SVCS || [];
 const SCENARIOS = data.SCENARIOS || {};
+// 業種の一覧と表示順は mock/js/data/ui.js の INDUSTRIES が正本。tools/** に業種を
+// ハードコードしない（設計書 docs/handoff/2026-09-11-repo-layout-v3.md §8-2 R-I1）
+const INDUSTRIES = data.INDUSTRIES || [];
+const industryIds = INDUSTRIES.map(i => i.id);
 
 /** 内部 id（例 kn2）→ 管理番号（例 KN-02）。tools/verify.mjs §6 と同じ変換規則 */
 function mgmtCode(id) {
@@ -41,9 +45,9 @@ function mgmtCode(id) {
 }
 
 const statusText = { 1: '提供中', 2: '試行版', 3: '構想' };
-/** 業種 id → 表示ラベル（設計書 2026-09-08-finance-catalog.md §4-8） */
-const industryLabel = { mfg: '製造', fin: '金融' };
-/** SVCS[].industries（['mfg']/['fin']/['mfg','fin']）→ 「製造」/「金融」/「製造・金融」 */
+/** 業種 id → 表示ラベル（INDUSTRIES[].name.ja が正本。設計書 2026-09-08-finance-catalog.md §4-8） */
+const industryLabel = Object.fromEntries(INDUSTRIES.map(i => [i.id, (i.name && i.name.ja) || i.id]));
+/** SVCS[].industries（['mfg']/['fin']/…）→ 「製造」/「金融」/「製造・金融」 */
 function industryText(industries) {
   return (industries || []).map(i => industryLabel[i] || i).join('・');
 }
@@ -64,7 +68,8 @@ function countFilesRecursive(dir) {
   return n;
 }
 
-let cDemoMfg = 0, cDemoFin = 0, cDsl = 0, cUsecase = 0, cKb = 0, cTest = 0;
+const cDemoByIndustry = Object.fromEntries(industryIds.map(id => [id, 0]));
+let cDsl = 0, cUsecase = 0, cKb = 0, cTest = 0;
 
 const rows = SVCS.map(s => {
   const code = mgmtCode(s.id);
@@ -74,16 +79,17 @@ const rows = SVCS.map(s => {
   const industry = industryText(s.industries);
   const prefix = (s.id.match(/^[a-z]+/) || [''])[0];
 
-  // ①デモ台本（業種ごとに列を分ける。§4-8）
+  // ①デモ台本（業種ごとに列を分ける。§4-8。列は INDUSTRIES の数だけ動的に作る）
   const demoCellFor = (indId) => {
     const scn = (SCENARIOS[indId] || {})[s.id];
     if (!scn) return '—';
     return `[${indId}/${prefix}.js](../mock/js/data/scenarios/${indId}/${prefix}.js) ${scn.template}`;
   };
-  const demoMfgCell = demoCellFor('mfg');
-  const demoFinCell = demoCellFor('fin');
-  if (demoMfgCell !== '—') cDemoMfg++;
-  if (demoFinCell !== '—') cDemoFin++;
+  const demoCells = industryIds.map(indId => {
+    const cell = demoCellFor(indId);
+    if (cell !== '—') cDemoByIndustry[indId]++;
+    return cell;
+  });
 
   // ②DSL
   const dslFile = appsFiles.find(f => f.startsWith(`${code}-`));
@@ -124,25 +130,28 @@ const rows = SVCS.map(s => {
     }
   }
 
-  return `| ${code} | ${s.name && s.name.ja} | ${cat}/${sub} | ${industry} | ${st} | ${demoMfgCell} | ${demoFinCell} | ${dslCell} | ${usecaseCell} | ${kbCell} | ${testCell} |`;
+  return `| ${code} | ${s.name && s.name.ja} | ${cat}/${sub} | ${industry} | ${st} | ${demoCells.join(' | ')} | ${dslCell} | ${usecaseCell} | ${kbCell} | ${testCell} |`;
 });
+
+const demoHeaderLabels = industryIds.map(id => `①台本(${industryLabel[id]})`);
 
 const header = [
   '<!-- 生成物。手で編集しない。生成コマンド: npm run index （= node tools/gen-index.mjs） -->',
   '',
   '# 管理番号索引',
   '',
-  '管理番号（`KN-02` など）から 業種 ①デモ台本（製造・金融） ②DSL ③ユースケース ④KB ④テスト を横断する索引。',
+  `管理番号（\`KN-02\` など）から 業種 ①デモ台本（${industryIds.map(id => industryLabel[id]).join('・')}） ②DSL ③ユースケース ④KB ④テスト を横断する索引。`,
   '`—` は未着手・未投入（欠落が見える設計。設計書 `docs/handoff/2026-09-07-repo-layout-v2.md` §1-3）。',
   '',
 ];
 
 const tableHeader = [
-  '| 管理番号 | サービス | 分類 | 業種 | 成熟度 | ①台本(製造) | ①台本(金融) | ②DSL | ③ユースケース | ④KB | ④テスト |',
-  '|---|---|---|---|---|---|---|---|---|---|---|',
+  `| 管理番号 | サービス | 分類 | 業種 | 成熟度 | ${demoHeaderLabels.join(' | ')} | ②DSL | ③ユースケース | ④KB | ④テスト |`,
+  `|---|---|---|---|---|${industryIds.map(() => '---').join('|')}|---|---|---|---|`,
 ];
 
-const summaryRow = `| 集計 | — | — | — | — | ①製造 ${cDemoMfg} | ①金融 ${cDemoFin} | ②${cDsl} | ③${cUsecase} | ④KB ${cKb} | ④テスト ${cTest} |`;
+const summaryDemoCells = industryIds.map(id => `①${industryLabel[id]} ${cDemoByIndustry[id]}`);
+const summaryRow = `| 集計 | — | — | — | — | ${summaryDemoCells.join(' | ')} | ②${cDsl} | ③${cUsecase} | ④KB ${cKb} | ④テスト ${cTest} |`;
 
 const content = [...header, ...tableHeader, ...rows, summaryRow, ''].join('\n');
 
@@ -157,5 +166,6 @@ if (check) {
   }
 } else {
   writeFileSync(OUT, content);
-  console.log(`🆕 docs/service-map.md を生成: ${SVCS.length} サービス（①製造${cDemoMfg} ①金融${cDemoFin} ②${cDsl} ③${cUsecase} ④KB${cKb} ④テスト${cTest}）`);
+  const demoSummary = industryIds.map(id => `①${industryLabel[id]}${cDemoByIndustry[id]}`).join(' ');
+  console.log(`🆕 docs/service-map.md を生成: ${SVCS.length} サービス（${demoSummary} ②${cDsl} ③${cUsecase} ④KB${cKb} ④テスト${cTest}）`);
 }

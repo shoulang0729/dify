@@ -1337,10 +1337,16 @@
     "svcs": 67,
     "tags": 57,
     "ui": 91,
-    "svcsMfg": 49,
-    "svcsFin": 29,
-    "svcsBoth": 11,
-    "catsMfg": 10,
-    "catsFin": 8
+    "byIndustry": {
+      "mfg": {
+        "svcs": 49,
+        "cats": 10
+      },
+      "fin": {
+        "svcs": 29,
+        "cats": 8
+      }
+    },
+    "svcsMulti": 11
   }
 }

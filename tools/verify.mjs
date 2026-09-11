@@ -88,13 +88,18 @@ if (!existsSync(HTML)) { fail(`not found: ${HTML}`); process.exit(1); }
 const mock = loadMock(ROOT);
 const { html, indexHtml, cssLinks, scriptSrcs, tokenCss, componentCss, jsSources, dataSources, appSources, data, vmErrors } = mock;
 const { T, PATTERNS, TAGS, TEMPLATES, INDUSTRIES, CATS, SVCS, CAT_STYLE, HOME, FEED, LIVE, SCENARIOS } = data;
-const INDUSTRY_ORDER = ['mfg', 'fin'];
-const industryIds = new Set((INDUSTRIES || []).map(i => i.id));
-/* 分類の表示順（業種ごと。§4-3。台本ディレクトリの期待順序にも使う） */
-const CAT_ORDER_BY_INDUSTRY = {
-  mfg: ['kn', 'qa', 'dc', 'lg', 'nm', 'en', 'gn', 'pt', 'po', 'eg'],
-  fin: ['kn', 'rs', 'cv', 'fa', 'dc', 'gn', 'po', 'eg']
-};
+// 業種の一覧と表示順は mock/js/data/ui.js の INDUSTRIES が正本（設計書
+// docs/handoff/2026-09-11-repo-layout-v3.md §8-2 R-I1）。tools/** に業種を
+// ハードコードしない＝業種を足すときに tools/** を触らずに済む状態がゴール
+const INDUSTRY_ORDER = (INDUSTRIES || []).map(i => i.id);
+const industryIds = new Set(INDUSTRY_ORDER);
+/* 分類の表示順（業種ごと。§4-3。台本ディレクトリの期待順序にも使う）。
+   CATS の宣言順のうち、その業種を industries に含むものだけを残して導出する */
+const CAT_ORDER_BY_INDUSTRY = Object.fromEntries(
+  INDUSTRY_ORDER.map(ind => [ind, (CATS || [])
+    .filter(c => Array.isArray(c.industries) && c.industries.includes(ind))
+    .map(c => c.id)])
+);
 
 // 全 JS（データ層 + アプリ層）の連結テキスト。§3/4（未定義・未使用キー参照）と §1-A（二重宣言）で使う
 const allJsInOrder = [...dataSources, ...appSources];
@@ -354,13 +359,13 @@ if (CATS && SVCS && TAGS) {
   const svcIds = new Set();
   let bad = 0;
 
-  // 業種（industries）：CATS / subs / SVCS すべてで必須。値は ['mfg']/['fin']/['mfg','fin']（順序固定）のみ
-  // （設計書 2026-09-08-finance-catalog.md §1-2）
+  // 業種（industries）：CATS / subs / SVCS すべてで必須。値は INDUSTRY_ORDER（mock/js/data/ui.js の
+  // INDUSTRIES が正本）の部分列（順序固定）のみ（設計書 2026-09-08-finance-catalog.md §1-2）
   const checkIndustries = (arr, label) => {
     if (!Array.isArray(arr) || !arr.length) { fail(`${label}: industries が無い/空`); bad++; return; }
     for (const v of arr) if (!industryIds.has(v)) { fail(`${label}: industries に未知の業種 "${v}"`); bad++; }
     if (JSON.stringify(arr) !== JSON.stringify(INDUSTRY_ORDER.filter(v => arr.includes(v)))) {
-      fail(`${label}: industries の順序が ['mfg','fin'] 固定でない: [${arr}]`); bad++;
+      fail(`${label}: industries の順序が [${INDUSTRY_ORDER}] 固定でない: [${arr}]`); bad++;
     }
   };
   for (const c of CATS) {
@@ -1135,7 +1140,7 @@ section('16. デモ資材（dify/samples/**）の契約');
         if (fm.app !== dir) { fail(`${rel}: app が ディレクトリ名 "${dir}" と一致しない（実際: "${fm.app}"）`); bad16++; }
         if (!['normal', 'volume', 'edge'].includes(fm.type)) { fail(`${rel}: type "${fm.type}" は normal/volume/edge のいずれでもない`); bad16++; }
         if (!['ja', 'zh'].includes(fm.lang)) { fail(`${rel}: lang "${fm.lang}" は ja/zh のいずれでもない`); bad16++; }
-        if (!['mfg', 'fin'].includes(fm.industry)) { fail(`${rel}: industry "${fm.industry}" は mfg/fin のいずれでもない`); bad16++; }
+        if (!industryIds.has(fm.industry)) { fail(`${rel}: industry "${fm.industry}" は [${INDUSTRY_ORDER}] のいずれでもない`); bad16++; }
         if (!['chat', 'workflow'].includes(fm.mode)) { fail(`${rel}: mode "${fm.mode}" は chat/workflow のいずれでもない`); bad16++; }
         if (!Array.isArray(fm.points) || fm.points.length < 1) { fail(`${rel}: points が 1 件以上の配列でない`); bad16++; }
         if (!Array.isArray(fm.world) || fm.world.length < 1) { fail(`${rel}: world が 1 件以上の配列でない`); bad16++; }
