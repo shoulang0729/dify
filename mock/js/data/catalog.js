@@ -58,7 +58,7 @@ const CATS = [
     subs: [
       { id: 'report', industries: ['mfg', 'fin', 'it'], name: { ja: '報告・会議', zh: '汇报与会议', en: 'Reporting & Meetings' } },
       { id: 'site', industries: ['mfg'], name: { ja: '教育・現場掲示', zh: '培训与现场看板', en: 'Training & Shop Floor' } },
-      { id: 'apply', industries: ['mfg'], name: { ja: '申請・契約・貿易', zh: '申请・合同・贸易', en: 'Applications, Contracts & Trade' } }
+      { id: 'apply', industries: ['mfg', 'fin', 'it'], name: { ja: '申請・契約・貿易', zh: '申请・合同・贸易', en: 'Applications, Contracts & Trade' } }
     ]},
   { id: 'lg',
     industries: ['mfg'],
@@ -476,6 +476,13 @@ const SVCS = [
     desc: { ja: '稼働率・粗利率・引合金額などの計画と実績の差について、案件の出来事（受注の遅れ・要員の抜け・変更要求・検収の前倒し）を時系列で拾い、差の理由を文章として書き起こします。数字は集計元の案件へ辿れる形で残し、推測で書いた箇所は推測と明記します。月次・四半期の報告資料にそのまま貼れる長さで返します。',
             zh: '针对稼动率、毛利率、商机金额等计划与实绩的差异，按时间顺序梳理项目事件（签约延迟、人员抽调、变更请求、验收提前），将差异原因写成文字说明。数字保留可追溯至源项目的形式，基于推测的部分明确标注为推测。输出长度可直接粘贴进月度、季度汇报资料。',
             en: 'For gaps between plan and actuals — utilization, gross margin, pipeline value — it pulls the project events behind them in order (a late signing, a person pulled off, a change request, an early acceptance) and writes the explanation out in prose. Figures stay traceable back to the source projects, and anything inferred is labelled as inferred. Output is sized to paste straight into a monthly or quarterly report.' } },
+
+  { id: 'dc11', cat: 'dc', sub: 'apply', st: 3, industries: ['mfg', 'fin', 'it'], tags: ['contract', 'legal'],
+    place: 'proj',
+    name: { ja: '契約書レビュー（逸脱条項の検出と修正案）', zh: '合同审阅（偏离条款检测与修改建议）', en: 'Contract Review (Deviation Detection & Redlines)' },
+    desc: { ja: '相手方から届いた契約書（PDF・Word・スキャン）を読み、自社の標準条項と過去の締結済み契約に突き合わせて、逸脱している条項と欠落している条項を条文単位で示します。リスクの重さは自社で決めた区分（要交渉・要確認・許容）に振り分け、それぞれに修正文案と、過去に同じ条項でどう決着したかを併記します。最終判断は法務レビューを前提とし、締結の可否そのものは判定しません。',
+            zh: '读取对方发来的合同（PDF、Word、扫描件），与本公司标准条款及历史已签合同比对，按条款指出偏离项与缺失项。风险程度按公司自定的分级（需谈判・需确认・可接受）归类，并对每一项附上修改文案，以及同类条款过去的处理结果。最终以法务审核为准，不判定是否签署。',
+            en: 'Reads a contract sent by the counterparty (PDF, Word or scan), compares it against your standard clauses and past signed agreements, and points out deviating and missing clauses one by one. Each item is sorted into risk bands you define (negotiate, confirm, acceptable) and comes with suggested wording plus how the same clause was settled before. Final sign-off stays with Legal; it does not decide whether to execute the contract.' } },
 
   { id: 'rs1', cat: 'rs', sub: 'news', st: 2, industries: ['fin'], tags: ['news', 'market'],
     place: 'watch',

@@ -59,6 +59,7 @@
 | KN-10 | 規程と現場運用の食い違い検出 | KN/ops | IT | 構想 | — | — | [it/kn.js](../mock/js/data/scenarios/it/kn.js) diff | — | — | — | — |
 | DC-09 | 議案・報告書・提案書のドラフト作成（テンプレート選択） | DC/report | 金融 | 試行版 | — | [fin/dc.js](../mock/js/data/scenarios/fin/dc.js) form | — | — | [DC-09.md](./dify/usecases/DC-09.md) | — | — |
 | DC-10 | 予実差の理由の書き起こし | DC/report | IT | 構想 | — | — | [it/dc.js](../mock/js/data/scenarios/it/dc.js) form | — | — | — | — |
+| DC-11 | 契約書レビュー（逸脱条項の検出と修正案） | DC/apply | 製造・金融・IT | 構想 | — | — | — | — | — | — | — |
 | RS-01 | 企業・業界ニュースの自動収集と配信 | RS/news | 金融 | 試行版 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) form | — | — | [RS-01.md](./dify/usecases/RS-01.md) | — | — |
 | RS-02 | セクター・発行体のモニタリング | RS/news | 金融 | 構想 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) form | — | — | [RS-02.md](./dify/usecases/RS-02.md) | — | — |
 | RS-03 | 顧客IR・決算の収集と日本語要約・比較 | RS/disc | 金融 | 試行版 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) upload | — | — | [RS-03.md](./dify/usecases/RS-03.md) | — | — |
