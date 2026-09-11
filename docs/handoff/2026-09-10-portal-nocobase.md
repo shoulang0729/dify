@@ -6,7 +6,7 @@
 - **初版 2026-09-10（rev1）／ 改訂 2026-09-11 午前（rev2）／ 再改訂 2026-09-11 夕（rev3・本版）。** 改訂の要約は **§R**（**rev3 は §R-0 が最優先**）。改訂で無効になった判断は消さずに **§15 附録 A** と本文の「~~取り消し線~~ ＋ 改訂印」に残してある
 - **rev3 で PM 判断が 2 件ひっくり返った。** ① **NocoBase Professional は買わない（Community で作る）** ② **名刺・顧客データの正本はポータル（HubSpot は使わない）**。**rev2 の推奨は採用されなかった。経緯は消していない**（§4-11-5・§5-11b）
 - 前提設計書: `docs/dify/platform-components.md`（PC-01 / PC-02 / PC-04 / PC-09 / PC-10 / PC-16 / PC-17）・`docs/handoff/2026-09-07-repo-layout-v2.md` §3・§4（4 区分・env レイヤー）・`docs/handoff/2026-09-08-execution-split-and-runner.md` §1-1（実行場所）・`docs/handoff/2026-09-08-live-links.md`（`LIVE`）・`docs/handoff/2026-09-10-expert-feedback.md`（見せ方の方針）
-- **並行している設計書（本書は読むだけ。書き換えない）**: `docs/handoff/2026-09-11-portal-mock-pages.md`（**ポータルの概念モック `mock/portal.html`**。**見せるものの正本。役割分担は §16**）／`docs/handoff/2026-09-11-it-industry.md`（**カタログに IT 業を足す**。**ポータル発のユースケース 10 件はそちらに吸収された。§17**）／`docs/handoff/2026-09-11-repo-layout-v3.md`（**NocoBase 実装を dify の `portal/` に取り込む案。PM 判断待ち**。§1-5）
+- **並行している設計書（本書は読むだけ。書き換えない）**: `docs/handoff/2026-09-11-portal-mock-pages.md`（**ポータルの概念モック `mock/portal.html`**。**見せるものの正本。役割分担は §16**）／`docs/handoff/2026-09-11-it-industry.md`（**カタログに IT 業を足す**。**ポータル発のユースケース 10 件はそちらに吸収された。§17**）／`docs/handoff/2026-09-11-repo-layout-v3.md`（**NocoBase 実装を dify の `portal/` に取り込む案。PM 判断待ち**。§1-5）。**⚠️ 3 冊とも 2026-09-11 時点で main 未マージ**（それぞれ `docs/portal-pages`・`docs/it-industry`・**`docs/repo-layout-v3`** ブランチ）。**本書から参照するときは、リンクが main で解決しないことがある**
 - **調査の記録（本書の事実の根拠）**: **`docs/handoff/2026-09-11-nocobase-research.md`**（2026-09-11・対象 v2.2.10・出典 URL つき）。**あちらは事実、本書は判断。** 本書が「判明」と書いているものは必ずあちらに出典がある
 - PM 確定事項（2026-09-10、**初版時**。時系列順）:
   1. **用途は「顧客提示デモ」と「実運用の社内システム」の両方**／**設計は実データを見ながら行う**／**リポジトリは分離**
@@ -371,6 +371,7 @@ PM の設計では **リポジトリに実データが 1 バイトも入らな�
 > **2026-09-11 追記。§1-1〜§1-4 は消さない。** 「なぜ分けたか」の記録として、取り込む結論になっても要る（**取り込むなら R1 をディレクトリと CI で引き直す必要があり、そのとき §1-1 が要件表になる**）。
 
 **`docs/handoff/2026-09-11-repo-layout-v3.md` が、NocoBase 実装を `shoulang0729/dify` の `portal/` に取り込む案を推奨している。PM 判断待ち。**
+**⚠️ あちらは 2026-09-11 時点で main 未マージ**（ブランチ **`docs/repo-layout-v3`**）。**本書が先にマージされても、§1-5 の参照先がしばらく main に無い状態になる**——**その間は §1（分ける）が本書の記述として有効であり、v3 がマージされた時点で本節の「結論は v3 に従う」が効き始める**。
 
 | | 内容 |
 |---|---|
@@ -3261,7 +3262,7 @@ PM 構成案の例文に **実在の金融機関名を含む「◯◯案件」**
 | (1) | `platform-components.md` **PC-01** の「読み手・書き手」 | 「**ポータル（PC-16 (b)）では `actions` テーブルがこの器の役割を担う**（`kind`／`status`／`source`／`source_ref` の意味を引き継ぐ）。設計は `docs/handoff/2026-09-10-portal-nocobase.md` §5-4」を 1 行。**テーブル定義・API・`kind`・`status` は 1 文字も変えない** | **差し替え**（初版は「`source` に `hr` を足す」だった） |
 | (2) | 同 **PC-04** の「依存する外部システム」 | 「**部門の業務 DB（PostgreSQL。読み取り／書き込み）**」を足す | **差し替え**（初版は「人事マスタ・勤怠・研修（LMS）」だった） |
 | (3) | 同 **PC-04** の「実現案」 | 「(6) **ポータル（PC-16）が Dify を経由せず直接読む経路も認める**」を足す | **維持** |
-| (4) | 同 **PC-16** の「実現案（3 案）」の (b) | 「**実装手段として NocoBase（Professional）を採用。デモ＝Dify Cloud／本番＝Dify Enterprise。設計書 `docs/handoff/2026-09-10-portal-nocobase.md`**」を 1 行 | **更新** |
+| (4) | 同 **PC-16** の「実現案（3 案）」の (b) | 【rev3 で文面差し替え】~~実装手段として NocoBase（Professional）を採用~~ → 「**実装手段として NocoBase（Community 版・無料）を採用。方式は (a)（メイン DB 内で取り込む）。デモ＝Dify Cloud／本番＝Dify Enterprise。定義の移送は自前の定義バンドル（NocoBase の公式手段を使わない）。置き場は `shoulang0729/portal` か `dify/portal/`（構成 v3 の結論に従う）。設計書 `docs/handoff/2026-09-10-portal-nocobase.md`**」を 1 行 | **更新**（**rev2 の案は取り消し線で残す**。§4-11・§4-12・§1-5） |
 | (5) | 同 末尾の先行順テーブル | **7 番と 18 番の間に「7.5」** —「PC-16 (b) の試作（P0）。案件と Action の 4 画面・画面の中の AI・定義移送の確認」 | **更新** |
 | ~~(6)~~ | ~~**PC-19 お知らせ・全社掲示ストア**（新設）~~ | **後ろ倒し**（§5-5）。`announcements` を実際に作る P2 の PR で採番する。**使わない番号を先に切らない** | **取り下げ（保留）** |
 | (7)（新規） | 同 **PC-09**（トレース）・**PC-10**（個人情報） | 「**ポータルから Dify を呼ぶとき、`user` には社員 ID ではなく仮名を渡す**」（§10-2）。**PM 判断 11-3 が (b) に決まったら** | 新規 |
@@ -3282,9 +3283,22 @@ PM 構成案の例文に **実在の金融機関名を含む「◯◯案件」**
 | `tools/**`・`tools/regress.baseline.json` | **変更なし。** `mock/js/data` を触らないので `regress` は不変。**`--update` は不要** |
 | `README.md` の 4 区分の表 | **変えない。**「関連プロジェクト」節に 1 行足すだけ（§9-5） |
 
-### 9-5. `README.md` — PR-3 で 1 行（PM 承認後。**文言を更新**）
+### 9-5. `README.md` — PR-3 で 1 行（PM 承認後。**rev3 で文言を差し替え**）
 
-> 社内向けポータル（NocoBase Professional）は別リポジトリ **`shoulang0729/portal`（Public）**。**定義と架空のデモデータだけ**を置き、実データ・秘密・社内システムの URL は入れない（`${VAR}` で外から）。**いま作っているのはデモ版**で、本番（AD / GitLab Self-Managed / Outline / Dify Enterprise）は到達点。設計は [`docs/handoff/2026-09-10-portal-nocobase.md`](./docs/handoff/2026-09-10-portal-nocobase.md)、NocoBase の公式調査は [`docs/handoff/2026-09-11-nocobase-research.md`](./docs/handoff/2026-09-11-nocobase-research.md)。
+> ~~社内向けポータル（NocoBase **Professional**）は**別リポジトリ** `shoulang0729/portal`（Public）。……~~（**rev2 の案。取り下げ**。エディションが Community になり〔§4-11〕、リポジトリの置き場が構成 v3 の判断待ちになった〔§1-5〕ため）
+
+**【rev3 の案】**
+
+> 社内向けポータル（**NocoBase Community 版**）は**定義と架空のデモデータだけ**を置き、実データ・秘密・社内システムの URL は入れない（`${VAR}` で外から）。**いま作っているのはデモ版**で、本番（AD / GitLab Self-Managed / Outline / Dify Enterprise）は到達点。設計は [`docs/handoff/2026-09-10-portal-nocobase.md`](./docs/handoff/2026-09-10-portal-nocobase.md)、NocoBase の公式調査は [`docs/handoff/2026-09-11-nocobase-research.md`](./docs/handoff/2026-09-11-nocobase-research.md)。
+
+**⚠️ 置き場の表現は構成 v3 の結論が出てから確定する**（§1-5。**`docs/handoff/2026-09-11-repo-layout-v3.md` は main 未マージ**〔ブランチ `docs/repo-layout-v3`〕）：
+
+| v3 の結論 | `README.md` に書く 1 語 |
+|---|---|
+| **分けたまま**（rev2 の判断を維持） | 「**別リポジトリ `shoulang0729/portal`（Public）**」 |
+| **取り込む**（v3 の推奨） | 「**このリポジトリの `portal/`**」 |
+
+**どちらに転んでも、上の引用文のうち変わるのはこの 1 語だけ**（「定義と架空データだけ」「`${VAR}`」「デモ版が先」はリポジトリ境界に依存しない）。**だから PR-3 は v3 を待たずに着手してよく、この 1 語だけを最後に埋める。**
 
 ---
 
@@ -3344,7 +3358,7 @@ PC-02 が既に決めていること（**繰り返さない**）：SSO で社員
 | **11-2** | **⏸ 保留（後ろ倒し）** | `PC-19 お知らせ・全社掲示ストア` の採番 | **了承済みだが、実施を P2 へ。** `announcements` を実際に作る PR で採番する。**使わない PC 番号を先に切らない**（§5-5・§9-2 (6)） |
 | **11-3** | **⏳ 回答待ち** | Dify の `user` に社員 ID を素通しするか、仮名にするか（§10-2） | **(b) 仮名 ＋ ポータル側で逆引き。** 本番の Dify が Enterprise（社内）になっても、① PC-09 の Langfuse トレースに乗る ② PIPL ③ **AD の識別子は GitLab・Outline と共通なので 1 つ漏れると横に繋がる**。**デモでは自動的に満たされるが、実装の形は最初から仮名にする** |
 | **11-4** | ✅ 了承済み | NocoBase の AI 機能を使わない | **維持。** 調査で AI employees が無料と分かったが判断は変わらない（Knowledge base は Professional+、**Dify を LLM サービスとして直接登録する記載も無い**） |
-| **11-5** | ✅ 了承済み（**⚠️ v3 で再検討中**） | 新リポの名前と可視性 | `shoulang0729/portal`・**public**（rev2 の判断は維持）。**ただし `docs/handoff/2026-09-11-repo-layout-v3.md` が「dify の `portal/` に取り込む」案を推奨しており、結論は v3 に従う**（§1-5）。**`portal` リポの PR #1 の扱いも v3 に委ねる** |
+| **11-5** | ✅ 了承済み（**⚠️ v3 で再検討中**） | 新リポの名前と可視性 | `shoulang0729/portal`・**public**（rev2 の判断は維持）。**ただし `docs/handoff/2026-09-11-repo-layout-v3.md`（2026-09-11 時点で main 未マージ。ブランチ `docs/repo-layout-v3`）が「dify の `portal/` に取り込む」案を推奨しており、結論は v3 に従う**（§1-5）。**`portal` リポの PR #1 の扱いも v3 に委ねる**。**⚠️ v3 がマージされるまでは本書の §1 が有効**（判断の空白を作らない） |
 | **11-6** | ✅ 了承済み（**内容が変わった**） | §9-1・§9-2 の追記を PR-3 で適用してよいか | **適用。ただし追記内容を差し替えた**（§9-2）。**(6) PC-19 の新設だけ取り下げ（保留）** |
 | **11-7** | **🔄 更新** | `data/world/` に足すもの | **内容が変わった。** ~~勤怠・年休・研修・お知らせの 4 CSV × 2 業種~~ → **`data/world/it/`（部門の世界）**（§14-8'）。**旧 PR-2 は取り下げ**。**rev3 後半でファイルが 12 本に増えた**（`news.csv`・`vendors.csv`・`requests.csv`・`expenses.csv`・`goals.csv` が加わった） |
 | **11-8** | ✅ 了承済み（**理由が変わった**） | P0 をどこで動かすか | **PM のローカル docker。ただし 2 台。** ~~Migration Manager の移送元と移送先~~ → **§4-12 M1（自前の定義バンドル）の移送元と移送先**（AC-1'）。**台数が要る理由は変わっていない** |
