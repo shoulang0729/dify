@@ -82,7 +82,7 @@ function psvcOf(id) {
   if (isNew) {
     if (!ov) return null;
     return {
-      short: PL(ov.short), name: ov.title, cat: 'cv', st: 0, how: ov.how,
+      short: PL(ov.short), name: PL(ov.title), cat: 'cv', st: 0, how: ov.how,
       ctx: ov.ctx, out: ov.out, why: ov.why, isnew: true, generic: false
     };
   }
