@@ -32,7 +32,7 @@
    pattern を切り替えても選択位置は保持され、直接比較できる
    ============================================================ */
 const state = {
-  industry: 'mfg',        // 'mfg' | 'fin'。localStorage には保存しない（§4-5：pattern と同じ足場の一時状態）
+  industry: 'mfg',        // 'mfg' | 'fin' | 'it'。localStorage には保存しない（§4-5：pattern と同じ足場の一時状態）
   pattern: 'nav',
   lang: 'ja',
   theme: 'light',
@@ -43,7 +43,7 @@ const state = {
   selSvc: null,
   view: 'list',          // 'list' | 'detail' | 'chat' | 'demo'
   query: '',
-  fav: { mfg: [], fin: [] },   // 業種ごとのお気に入り（SVCS[].id の配列。localStorage 'mock.fav' に保存。設計書 2026-09-08-favorites.md §2-2）
+  fav: { mfg: [], fin: [], it: [] },   // 業種ごとのお気に入り（SVCS[].id の配列。localStorage 'mock.fav' に保存。設計書 2026-09-08-favorites.md §2-2）
   favOnly: false,              // list ビューで「お気に入りだけ」を表示中か（保存しない＝リロードでホームに戻る）
   log: []                // デモで消費した台本ターン [{ lang: 'ja'|'zh', q: string, a: string }]
 };

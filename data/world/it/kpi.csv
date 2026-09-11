@@ -1,0 +1,9 @@
+kpi_id,name_ja,name_zh,name_en,unit,target,current,prev,as_of,source,note
+utilization,要員稼働率,人员稼动率,Resource utilization,%,85,82.4,83.1,2026-08（月次）,台本未実装（PR-4 で参照予定）,架空値
+win_rate,受注率,中标率,Win rate,%,40,35.8,37.2,2026-08（月次）,台本未実装（PR-4 で参照予定）,架空値
+pipeline_amount,引合金額,商机金额,Pipeline value,万元,12000,10850,11200,2026-08（月次）,台本未実装（PR-4 で参照予定）,架空値
+gross_margin,案件粗利率,项目毛利率,Project gross margin,%,28,25.6,26.4,2026-08（月次）,台本未実装（PR-4 で参照予定）,架空値
+overtime_hours,平均残業時間,人均加班工时,Average overtime,時間/月,20,26.3,24.8,2026-08（月次）,台本未実装（PR-4 で参照予定）,架空値
+leave_taken,年休取得率,年假使用率,Annual leave taken,%,70,52.0,58.4,2026-08（月次）,台本未実装（PR-4 で参照予定）,架空値
+defect_density,納品後不具合密度,交付后缺陷密度,Post-delivery defect density,件/KLOC,0.30,0.41,0.38,2026-08（月次）,台本未実装（PR-4 で参照予定）,架空値。mfg の defect_rate（不良率）とは別指標
+ai_hours_saved,AI削減時間,AI 节省工时,Hours saved by AI,時間/月,400,268,231,2026-08（月次）,台本未実装（PR-4 で参照予定）,架空値

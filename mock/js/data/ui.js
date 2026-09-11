@@ -158,7 +158,18 @@ const INDUSTRIES = [
        （data/world/fin/company.md 参照。当初案「瑞央銀行」は実在の邦銀「瑞穂」と頭文字が
        紛らわしいため差し替え。§9 #4）。世界マスタの正本と一致させる */
     wordmark: { ja: '碧洋銀行', zh: '碧洋银行', en: 'HEKIYO BANK' },
-    dept:     { ja: '事務統括部', zh: '事务统筹部', en: 'Operations Planning Dept.' } }
+    dept:     { ja: '事務統括部', zh: '事务统筹部', en: 'Operations Planning Dept.' } },
+  { id: 'it',
+    name:     { ja: 'IT', zh: 'IT', en: 'IT Services' },
+    desc:     { ja: '日系 SIer の中国拠点（上海）',
+                zh: '日资系统集成商中国分公司（上海）',
+                en: 'Japanese-affiliated systems integrator in China (Shanghai)' },
+    /* 会社名は 2026-09-11 に PM 判断で「翠雲システムズ / 翠云系统 / Suiun Systems, Ltd.」へ確定
+       （data/world/it/company.md 参照。設計書 docs/handoff/2026-09-11-it-industry.md §3-4-3・§10 ⑤）。
+       「N 社」は mfg の取引先記号（K 社・S 社など）と同形で誤読されるため不採用。
+       世界マスタの正本と一致させる */
+    wordmark: { ja: '翠雲システムズ', zh: '翠云系统', en: 'SUIUN SYSTEMS' },
+    dept:     { ja: 'ソリューション本部', zh: '解决方案本部', en: 'Solutions Division' } }
 ];
 
 /* パターン定義（表示レイヤーの選択肢） */
