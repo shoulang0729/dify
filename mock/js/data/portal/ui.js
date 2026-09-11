@@ -135,7 +135,7 @@ const PSCREENS = [
   { grp: 'gCommon', id: 'sys', icon: 'M3 4.5h14v9H3zM8.5 16h3M10 13.5V16M6.5 9h1.8l1.2-2.6 1.6 4.8 1.2-2.2h2', ct: '9' },
   { grp: 'gCommon', id: 'meet', icon: 'M4 4h12v12H4zM4 8h12M8 2v3M12 2v3', ct: '4' },
   { grp: 'gCommon', id: 'know', icon: 'M4 3h9a2 2 0 012 2v12H6a2 2 0 01-2-2z M6 3v14', ct: '12' },
-  { grp: 'gCommon', id: 'ai', icon: 'M10 3l2 4 4 2-4 2-2 4-2-4-4-2 4-2z', ct: '67' },
+  { grp: 'gCommon', id: 'ai', icon: 'M10 3l2 4 4 2-4 2-2 4-2-4-4-2 4-2z' },
   { grp: 'gMgmt', id: 'kpi', icon: 'M3 17V8M8 17V4M13 17v-6M18 17v-9', ct: '9' },
   { grp: 'gMgmt', id: 'goal', icon: 'M10 2v16M2 10h16M10 5a5 5 0 100 10 5 5 0 000-10z', ct: '4' },
   { grp: 'gMgmt', id: 'ppl', icon: 'M10 10a3 3 0 100-6 3 3 0 000 6zM3 17a7 7 0 0114 0', ct: '5' },
