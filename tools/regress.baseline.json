@@ -336,6 +336,26 @@
           ]
         }
       ]
+    },
+    {
+      "id": "so",
+      "industries": [
+        "it"
+      ],
+      "subs": [
+        {
+          "id": "incident",
+          "industries": [
+            "it"
+          ]
+        },
+        {
+          "id": "avail",
+          "industries": [
+            "it"
+          ]
+        }
+      ]
     }
   ],
   "svcs": [
@@ -1425,6 +1445,60 @@
         "search"
       ],
       "place": "proj"
+    },
+    {
+      "id": "so1",
+      "cat": "so",
+      "sub": "incident",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "monitor",
+        "incident"
+      ]
+    },
+    {
+      "id": "so2",
+      "cat": "so",
+      "sub": "avail",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "monitor",
+        "search"
+      ]
+    },
+    {
+      "id": "so3",
+      "cat": "so",
+      "sub": "avail",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "monitor",
+        "kpi",
+        "report"
+      ]
+    },
+    {
+      "id": "so4",
+      "cat": "so",
+      "sub": "incident",
+      "st": 3,
+      "industries": [
+        "it"
+      ],
+      "tags": [
+        "incident",
+        "rootcause",
+        "report"
+      ]
     }
   ],
   "tags": [
@@ -1455,6 +1529,7 @@
     "governance",
     "hr",
     "idea",
+    "incident",
     "inventory",
     "kpi",
     "leave",
@@ -1462,6 +1537,7 @@
     "market",
     "meeting",
     "modeling",
+    "monitor",
     "news",
     "ocr",
     "order",
@@ -1601,10 +1677,10 @@
     "usesUnit"
   ],
   "counts": {
-    "cats": 14,
-    "subs": 33,
-    "svcs": 77,
-    "tags": 64,
+    "cats": 15,
+    "subs": 35,
+    "svcs": 81,
+    "tags": 66,
     "ui": 91,
     "byIndustry": {
       "mfg": {
@@ -1616,8 +1692,8 @@
         "cats": 8
       },
       "it": {
-        "svcs": 21,
-        "cats": 6
+        "svcs": 25,
+        "cats": 7
       }
     },
     "svcsMulti": 11

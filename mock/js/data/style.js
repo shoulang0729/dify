@@ -26,6 +26,7 @@ const CAT_STYLE = {
   po: { icon: '<circle cx="7" cy="7" r="2.6"/><circle cx="17" cy="7" r="2.6"/><circle cx="12" cy="17" r="2.6"/><path d="M8.9 8.9 15.1 15.1"/><path d="M15.1 8.9 8.9 15.1"/>' },
   eg: { icon: '<path d="M14.5 3.5 9.5 20.5"/><path d="M7 8 3 12l4 4"/><path d="M17 8l4 4-4 4"/>' },
   /* ---- IT カタログ新設 1 分類。設計書 2026-09-11-it-industry.md §4-8 ---- */
+  so: { icon: '<rect x="3" y="4.5" width="18" height="12" rx="1.5"/><path d="M8.5 20h7"/><path d="M12 16.5V20"/><path d="M6.5 10.5h2.2l1.6-3.2 2.2 6 1.5-2.8h2.5"/>' },
   sl: { icon: '<path d="M3.5 20h17"/><path d="M4.5 16.5 9.5 11l3.5 3.5 6.5-8"/><path d="M15.5 6.5h4v4"/>' },
   _fallback: { icon: '<rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="12" cy="12" r="2.5"/>' }
 };

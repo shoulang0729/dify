@@ -262,7 +262,11 @@ const TAGS = {
   leave:       { ja: '休暇・年休',     zh: '休假与年假',   en: 'Leave' },
   taxonomy:    { ja: '分類・振り分け', zh: '分类与归集',   en: 'Taxonomy' },
   governance:  { ja: '規程整合',       zh: '规章一致性',   en: 'Policy alignment' },
-  effect:      { ja: '効果測定',       zh: '效果测算',     en: 'Impact measurement' }
+  effect:      { ja: '効果測定',       zh: '效果测算',     en: 'Impact measurement' },
+
+  /* ---- システム運用の新設タグ 2 個（設計書 2026-09-11-sysops-usecase.md §5-3） ---- */
+  monitor:     { ja: '運用監視',       zh: '运维监控',     en: 'Monitoring' },
+  incident:    { ja: '障害対応',       zh: '故障处置',     en: 'Incident response' }
 };
 
 /* ============================================================
