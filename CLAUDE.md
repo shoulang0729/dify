@@ -1,6 +1,6 @@
 # CLAUDE.md — このリポジトリでの作業ルール
 
-`shoulang0729/dify` は次の **4 区分**を置くリポジトリ：**①デモ**＝`mock/`（AIエージェントカタログの UI モック、GitHub Pages で公開）／**②実装ソース**＝`dify/`（マスタ DSL・環境レイヤー・KB・テスト）・`scripts/`・`tools/`／**③ユースケース・シナリオ**＝`docs/`（設計書・実装リファレンス・`docs/demo/` のデモ進行台本と顧客提示資料）・`mock/js/data/scenarios/`（モックのデモ台本）／**④ダミーデータ**＝`data/world/`（架空世界マスタ）・`dify/kb/`・`dify/tests/`・`dify/samples/`（デモ投入用の入力サンプル）。地図はトップ `README.md`、管理番号からの索引は `docs/service-map.md`（生成物）。
+`shoulang0729/dify` は次の **5 区分**を置くリポジトリ：**①デモ**＝`mock/`（AIエージェントカタログの UI モック、GitHub Pages で公開）／**②実装ソース**＝`dify/`（マスタ DSL・環境レイヤー・KB・テスト）・`scripts/`・`tools/`／**③ユースケース・シナリオ**＝`docs/`（設計書・実装リファレンス・`docs/demo/` のデモ進行台本と顧客提示資料）・`mock/js/data/scenarios/`（モックのデモ台本）／**④ダミーデータ**＝`data/world/`（架空世界マスタ）・`dify/kb/`・`dify/tests/`・`dify/samples/`（デモ投入用の入力サンプル）／**⑤ポータル**＝`portal/`（社内向けポータル（NocoBase Community）の定義・DDL・架空のデモデータ。**実データは 1 バイトも入らない**。ルート `npm test` の対象外で、検証は `npm run portal:test`。設計は `docs/handoff/2026-09-10-portal-nocobase.md` と `docs/handoff/2026-09-11-repo-layout-v3.md`）。地図はトップ `README.md`、管理番号からの索引は `docs/service-map.md`（生成物）。
 Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環境へ `dify/env/<env>/env.yml` の差し替えでリリースする（§2-12）。
 （SwingTrainer アプリ本体は別リポ `shoulang0729/Dify.SwingTrainer`。）
 
@@ -41,7 +41,7 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 ### 2-3. 共通レイヤーの契約（パターンを増やすときの土台）
 - **置き場**：`mock/js/data/ui.js`（`T`/`PATTERNS`/`TAGS`/`TEMPLATES`）・`catalog.js`（`CATS`/`SVCS`）・`home.js`（`HOME`/`FEED`）・`style.js`（`CAT_STYLE`）・`scenarios/<分類>.js`（`SCENARIOS`。大分類ごと 8 ファイル、`window.SCENARIOS` に `Object.assign` で登録）。**`js/data/**` は純粋なリテラル宣言のみ**（`document`・`localStorage`・関数呼び出しを書かない。verify が vm で実行して読むため）。`state` とヘルパーは `mock/js/app.js`、描画は `mock/js/render.js`、click ハンドラと起動は `mock/js/events.js`。**読み込み順は `catalog.html` の `<script src>` の並びが唯一の正**（`data/ui → data/catalog → data/home → data/style → data/scenarios/* → app → render → events`）。古典的スクリプトのまま（`type="module"` にしない＝`file://` 対応）
 - **データ**：`CATS`（大分類→中分類）/ `SVCS`（サービス、`cat`/`sub`/`st`/`tags`/`name`/`desc`、任意 `added`〔追加日 `YYYY-MM-DD`。`NEW_DAYS` 以内なら ①バッジ／②新着帯／③お知らせを**その場で計算**して出す。`state`・`HOME`・`FEED` には持たせない。regress の対象外〕）/ `TAGS` / `TEMPLATES`（デモ画面テンプレート 5 種 `qa`/`upload`/`form`/`diff`/`lookup` の名称・説明、3 言語）/ `SCENARIOS`（サービス id → `{ template, persona{name,role,site,native}, steps{ja,zh,en}, input?, result?, script{ja,zh} }`。**台本 `script` と `input`/`result` は ja/zh のみ**＝§2-5 の実装。`SVCS` に埋め込まず別定数）/ `HOME`（② ダッシュボード用：`frequent`〔よく使う 6 件・サンプル利用件数〕・`recommended`〔おすすめ 3 件・理由 3 言語〕。**`SVCS` に埋め込まず別定数**。参照 id は `SVCS`/`CATS` に存在すること）/ `FEED`（③ 業務フィード用：`persona`・`mine`〔担当分類 3〕・`recent`〔最近使った 4〕・`items`〔疑似イベント 7 件、`kind` は `due`/`routine`/`notify`、絶対日付は持たない〕。**`SVCS` に埋め込まず別定数**。管理番号はフィード項目に出さない）/ `CAT_STYLE`（分類 id → インライン SVG アイコン。色は CSS の `--cat-*` トークン側）
-- **状態**：`state = { pattern, lang, theme, industry, openCats, selCat, selSub, lastCat, selSvc, view, query, log, fav, favOnly }`。`industry` は業種（`mfg`/`fin`）。`fav` は業種ごとのお気に入り id、`favOnly` は一覧をお気に入りに絞っているか（`fav` だけ `localStorage` に持つ。§2-6）。`view` は `list` / `detail` / `chat` / `demo`。`log` はデモで消費した台本ターン `[{lang,q,a}]`（`log.length` が次に消費する index。言語切替後の再描画で会話を復元）
+- **状態**：`state = { pattern, lang, theme, industry, openCats, selCat, selSub, lastCat, selSvc, view, query, log, fav, favOnly }`。`industry` は業種（`mfg`/`fin`/`it`。値の正本は `mock/js/data/ui.js` の `INDUSTRIES`。tools/** に業種をハードコードしない＝#251）。`fav` は業種ごとのお気に入り id、`favOnly` は一覧をお気に入りに絞っているか（`fav` だけ `localStorage` に持つ。§2-6）。`view` は `list` / `detail` / `chat` / `demo`。`log` はデモで消費した台本ターン `[{lang,q,a}]`（`log.length` が次に消費する index。言語切替後の再描画で会話を復元）
 - **遷移**：`document` の `click` ハンドラの `data-act`（`pattern`/`industry`/`all`/`cat`/`sub`/`svc`/`back`/`backdetail`/`start`/`send`/`run`/`chip`/`restart`/`gocat`/`fav`/`favlist`）。`industry` は業種切替（`.mockbar` に置く。レビュー用の足場）。`fav` は星の付け外し、`favlist` は一覧をお気に入りに絞る。**`fav` は全体を描き直さない**（一覧のスクロール位置が飛ぶため、押した箇所だけを差し替えてフォーカスを戻す）。`gocat` は分類タイルから直接その分類の一覧へ（`cat` と違いトグルしない）。`start` は `SCENARIOS` にあれば `demo`、なければ従来の `chat` へ（フォールバックを残す）
 - **ホーム**：`view === 'list'` かつ `selCat`/`selSub`/`query` が全部空の状態。ここだけ `pattern` で描き分ける（① グリッド / ② `renderDash` / ③ `renderFeed`）。`detail`/`chat`/`demo` は 3 パターン完全共通
 - ルール：**表示レイヤー（`renderSidebar` / `renderMain` 内のパターン分岐）は `state` を読んで描くだけ**。パターン固有の都合で `state` の形・データ形・遷移を変えない
@@ -105,9 +105,15 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 - 設計書：`docs/handoff/2026-09-07-repo-layout-v2.md` §3・§4
 
 ### 2-13. 架空データの正本は `data/world/`
-- **何を**：会社（青嶺精工／青岭精工／Seirei Seiko Co., Ltd.）・拠点（蘇州工場・Japan HQ）・人・部署・品番・設備・取引先記号・KPI・文書番号体系・規程と社内 ID の台帳（`documents.csv`）・カレンダー。台本（`mock/js/data/scenarios/**`）・KB 用文書（`dify/kb/**`）・テスト（`dify/tests/**`）・入力サンプル（`dify/samples/**`）・ユースケース文書はここにある値だけを使う。**新しい名前・数字はまずマスタに足す**
-- **なぜ**：4 か所に同じ架空世界が散らばり、既に食い違っている（社名の英名が無かった・`K社`/`K 社`・役職ゆれ）。顧客環境では実データに差し替える境目でもある
-- **どこで検出**：`node tools/check-world.mjs`（`npm run world`。**warn のみ・CI には入れない**）。食い違いを潰す PR では `--strict`。未統一の一覧は `data/world/README.md`。残す warn は `data/world/README.md` の「未統一」に理由付きで 1 行ずつ載せる（現状 10 件）
+- **何を**：**業種ごとに 1 つの世界**（`data/world/mfg` 青嶺精工／`data/world/fin` 碧洋銀行／`data/world/it` 翠雲システムズ）。会社（社名は ja/zh/en の 3 言語）・拠点・人・部署・品番・設備・取引先記号・KPI・文書番号体系・規程と社内 ID の台帳（`documents.csv`）・カレンダー。台本（`mock/js/data/scenarios/**`）・KB 用文書（`dify/kb/**`）・テスト（`dify/tests/**`）・入力サンプル（`dify/samples/**`）・ユースケース文書はここにある値だけを使う。**新しい名前・数字はまずマスタに足す**
+- **なぜ**：4 か所に同じ架空世界が散らばり、既に食い違っている（社名の英名が無かった・`K社`/`K 社`・役職ゆれ）。顧客環境では実データに差し替える境目でもある。**世界の語彙は混ぜない。ただし IT 世界だけ、`clients.csv` の `ref_world` 列で参照を明示したうえで、青嶺精工・碧洋銀行の社名と拠点名（蘇州工場・上海本部）に限って参照してよい**（人・部署・品番・設備・KPI・文書番号は跨がない。逆方向は禁止）。**例外の範囲は `data/world/README.md` と `data/world/it/company.md` が正本。**
+- **どこで検出**：`node tools/check-world.mjs`（`npm run world`。**warn のみ・CI には入れない**）。食い違いを潰す PR では `--strict`。未統一の一覧は `data/world/README.md`。残す warn は `data/world/README.md` の「未統一」に理由付きで 1 行ずつ載せる（**現状 12 件**：製造 10／金融 1／IT 1）
+
+### 2-14. `portal/` はルートの検証から分離する
+- **何を**：① **ルート `package.json` の `dependencies` はゼロ・`scripts.test` は `verify + regress` のまま**（`portal/` の依存をルートに足さない）② **`portal/**` はルート `npm test` の対象外、`npm run portal:test`（= `npm --prefix portal test`）の対象**。両方の対象になるファイルは無い ③ **`portal/**` に実データ・秘密・実 URL を置かない**（検査は `portal/tools/check-nodata.mjs`。CI は `portal-verify.yml`）④ **`portal/**` は単独で切り出せる状態を保つ**（外への相対参照は `gen-seed.mjs`・`check-seed-fresh.mjs` の 2 本だけ。設計書 `2026-09-11-repo-layout-v3.md` §4-2 S-1〜S-7）
+- **なぜ**：`mock/` が「ビルド不要・`file://` で開ける」（§2-3・§2-8）のは `dependencies` ゼロが土台。ポータルは常駐サーバと DB を持つので、同じ箱に入れると土台が消える。**切り出し可能性は GitLab 移行の保険**
+- **用語の衝突に注意**：**`mock/portal.html`・`mock/js/portal/**`・`mock/css/portal.css` は①デモ（Pages に出る部門ポータルの概念モック）** であり、本項の**⑤ポータル（リポジトリ直下の `portal/`）とは別物**。本項が縛るのは後者だけ
+- **検出**：`tools/verify.mjs` **§18**（18-a〜18-d）／`portal/tools/check-nodata.mjs`／reviewer の diff 監査
 
 ---
 
@@ -117,9 +123,10 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 node tools/verify.mjs     # 構文 / i18n 一致 / 未定義・未使用キー / CSS トークン / データ整合 / 共通レイヤー / Pages 設定 / シナリオ整合
 node tools/regress.mjs    # データ層スナップショット比較（件数・id）。FAIL = 意図しない増減
 node tools/regress.mjs --update   # 設計書に書かれた意図的なデータ変更のときだけ基準を更新
-npm test                  # 上 2 つをまとめて実行（CI の verify ワークフローと同じ）。PR では GitHub Actions の `verify` が自動で走る
+npm test                  # 上 2 つをまとめて実行。CI の verify ワークフローが実際に呼ぶのは `npm run ci`（`npm test` に Python 側の検査も加えたもの。詳細は `.github/workflows/verify.yml`）。PR では GitHub Actions の `verify` が自動で走る
 npm run index             # docs/service-map.md（管理番号の索引）を再生成。verify §11 が鮮度を検査するので、サービスを足したら必ず
 npm run world             # data/world/ と台本・文書の食い違いを報告（warn のみ。CI には入れない）
+npm run portal:test       # portal/ の検証（= npm --prefix portal test）。portal/** に触った PR でだけ回す。ルート npm test はこれを呼ばない
 ```
 
 **1つでも FAIL、または §2 の逸脱があればマージしない。**
@@ -143,6 +150,7 @@ npm run world             # data/world/ と台本・文書の食い違いを報�
 - `main` 直 commit 禁止。`feat/<issue>-<slug>` 等で作業 → PR → **squash マージ** → ブランチ削除
 - コミットメッセージは意味のあるものに。PR 本文に設計書パス・変更要約・検証結果・触っていない範囲
 - 並列は**ファイル集合が重ならないときだけ**。**同じファイル**を触るお題は直列。分割後は `css/components.css`（デザイン）／`js/data/scenarios/<分類>.js`（台本）／`js/data/*.js`（データ）／`js/render.js`（描画）が別ファイルなので、**別ファイルなら並列可**
+- **`portal/**` とそれ以外はファイル集合が重ならないので並列可**（ただし `CLAUDE.md`・`README.md`・`tools/verify.mjs` を触る PR は常に直列）
 - **リリースは `release/<env>/<YYYYMMDD>` タグ**（同日 2 回目は `-2`）。環境ごとの記録は `dify/CHANGELOG.md`。**顧客ごとにブランチを切らない**（差分は `dify/env/` で吸収）
 - 設計書は機能ごとに `docs/handoff/YYYY-MM-DD-<slug>.md`
 
@@ -154,10 +162,10 @@ npm run world             # data/world/ と台本・文書の食い違いを報�
 - **リポジトリ構成 v2（#84）**：4 区分・`data/world`・`dify/env`・リリースモデル。設計書 `docs/handoff/2026-09-07-repo-layout-v2.md`。PR-1（地図・索引・world）済み、PR-2（env＋render）・PR-3（release＋CHANGELOG）進行中
 - **Dify Cloud 実装（#82）**：第 1 弾 KN-01・DC-01 を `dify/apps/` に置き、Mac の Claude Code（`/dify-deploy`）で投入・テスト。結果は `dify/results/`
 - **モック ②ダッシュボード / ③業務フィード**：§2-3 の共通レイヤー上に実装。**直列**（`T` 末尾・`renderMain` ホーム分岐・`PATTERNS`・verify §10・`regress.baseline.json` が重なる）。設計書 `docs/handoff/2026-09-06-patterns-dash-feed.md`。①②③ すべて実装済み（#42：PR-1 #47・デザインパス #51・PR-2 #52）。見え方の改善は Claude Design に引き渡す予定（トークン名は変えず値だけ触る／レイアウトは 2 つ目の `<style>` と `render*`）
-- **顧客版カタログ（製造業・日中2拠点）**：シナリオ粒度で **7 分類 33 サービス**に再編し、A-1（#30）でデータ層を差し替え済み（§2-9）。A-2 パートナー連携 8 件・B-1 デモ遷移テンプレート・B-2 台本は投入済み。2026-09-07 に **DC-08 報告レビュー（提出前チェック／受領後の論点整理）** と **GN-06 頼まれ事・放置業務の追跡** を追加し 8 分類 17 中分類 43 サービス（提供中 12／試行版 23／構想 8）。金融版カタログ（#120、架空の碧洋銀行、業種切替は `.mockbar`）で RS・CV・FA・PO・EG の 5 分類と金融向けサービスが加わり、**GN-07 幹部来訪・出張アテンド段取り**（#132）も追加された結果、現在は **13 分類 29 中分類 67 サービス**（製造 49／金融 29／両業種 11、提供中 12／試行版 29／構想 26）。設計書は `docs/handoff/2026-09-06-*.md`、実現性は `docs/dify/`
+- **顧客版カタログ（製造業・日中2拠点）**：シナリオ粒度で **7 分類 33 サービス**に再編し、A-1（#30）でデータ層を差し替え済み（§2-9）。A-2 パートナー連携 8 件・B-1 デモ遷移テンプレート・B-2 台本は投入済み。2026-09-07 に **DC-08 報告レビュー（提出前チェック／受領後の論点整理）** と **GN-06 頼まれ事・放置業務の追跡** を追加し 8 分類 17 中分類 43 サービス（提供中 12／試行版 23／構想 8）。金融版カタログ（#120、架空の碧洋銀行、業種切替は `.mockbar`）で RS・CV・FA・PO・EG の 5 分類と金融向けサービスが加わり、**GN-07 幹部来訪・出張アテンド段取り**（#132）も追加された結果、現在は **15 分類 35 中分類 82 サービス**（製造 50／金融 30／IT 26、複数業種 12、提供中 12／試行版 29／構想 41。**最新は `docs/service-map.md`（生成物）と `node tools/regress.mjs` の出力が正**）。設計書は `docs/handoff/2026-09-06-*.md`、実現性は `docs/dify/`
 - **ユースケース化の段取り**：`/usecase`（`.claude/commands/usecase.md`）。Notion DB「ユースケース候補」の状態 `候補` → `確認中` → `設計中` → `実装中` → `公開済み`。統廃合は 5 軸（分類・タグ・ペルソナ・入出力・出口）の一致数で判定。Notion 原文はコミットしない（§2-10）
-- **リファクタリング P2（#77）**で `catalog.html` を層ごとに分割済み（`css/tokens.css`・`components.css`・`js/data/**`・`js/app.js`・`render.js`・`events.js`）。P3 候補：`?v=` キャッシュスタンプの機械検証、`tools/bundle.mjs`（単一ファイル生成）、`scenarios/` の 1 サービス 1 ファイル化。構成 v2（#84）は `docs/handoff/2026-09-07-repo-layout-v2.md`
-- **`top.html` の扱い**：バンドル済みで手編集不可。②③ が `catalog.html` に入ったので **削除（PR-3）**。トップ `index.html` はデモガイド（#45）
+- **リファクタリング P2（#77）**で `catalog.html` を層ごとに分割済み（`css/tokens.css`・`components.css`・`js/data/**`・`js/app.js`・`render.js`・`events.js`）。P3 候補は棚卸し済み（設計書 `docs/handoff/2026-09-11-repo-layout-v3.md` §8-1 L-1・L-2）：**`?v=` キャッシュスタンプは 1 つも存在しないので機械検証の対象が無い**／**`tools/bundle.mjs`（単一ファイル生成）は `top.html` 廃止で目的が消えた**／**`scenarios/` の 1 サービス 1 ファイル化は当面やらない**（閾値：1 ファイル 600 行を超えたら再検討。現状の最大は `mfg/dc.js` 373 行）。構成 v2（#84）は `docs/handoff/2026-09-07-repo-layout-v2.md`
+- **`top.html` の扱い**：バンドル済みで手編集不可。②③ が `catalog.html` に入ったので **削除済み**（`mock/` に存在しない）。トップ `index.html` はデモガイド（#45）
 
 ---
 
@@ -169,7 +177,7 @@ npm run world             # data/world/ と台本・文書の食い違いを報�
 |---|---|---|
 | `run:cloud` | クラウド（Claude Code on the web） | 設計・実装・レビュー・デモ・文書。ネットワークを使わない検証すべて |
 | `run:runner` | GitHub ホストランナー（`workflow_dispatch` → `dify-ops.yml`） | KB 投入（`kb_upload.py`）・テスト実行（`run_tests.py`）・疎通確認（`probe`）・下書きの読み取り（`inspect`）・DSL の上書きインポートと公開（`deploy`。KB を持たないアプリに限る。2026-09-10、run #16 で確認）・リフレッシュトークンの自己診断／更新／失効（`token_selftest`／`token_refresh`／`token_revoke`）。Environment `dify-cloud-master` を宣言するが、Required reviewers は外してあるため承認は発生しない（PR #199） |
-| `run:mac` | PM の Mac（ブラウザのログイン済みセッションが要る） | KB 付きアプリの KB 紐づけと公開（`dataset_ids` の CI 側解決＝#209 が未実装のため `op: deploy` の歯止めで止まる）・DSL の新規作成（未実証。run #16 の 8 本もすべて既存アプリへの上書きだった）・API キー発行・DSL エクスポート・モデル設定の確認。**DSL の上書きインポートと、KB を持たないアプリの公開は `run:runner` に移った**（2026-09-10、run #16、成功 8／失敗 0） |
+| `run:mac` | PM の Mac（**PM の手元でしか動かせないもの**：ブラウザのログイン済みセッション／ローカル docker） | KB 付きアプリの KB 紐づけと公開（`dataset_ids` の CI 側解決＝#209 が未実装のため `op: deploy` の歯止めで止まる）・DSL の新規作成（未実証。run #16 の 8 本もすべて既存アプリへの上書きだった）・API キー発行・DSL エクスポート・モデル設定の確認。**DSL の上書きインポートと、KB を持たないアプリの公開は `run:runner` に移った**（2026-09-10、run #16、成功 8／失敗 0） |
 
 - 判定基準は `docs/handoff/2026-09-08-execution-split-and-runner.md` §1-1 の操作表（O1〜O10）
 - **`run:*` は 1 つだけ。2 つ付くのは Issue を分割する合図**
