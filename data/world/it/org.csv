@@ -1,6 +1,6 @@
 dept_id,dept_ja,dept_zh,dept_en,site_id,parent_dept_id,note
 solution,ソリューション本部,解决方案本部,Solutions Division,shanghai,,上海拠点の統括部門。第一・第二デリバリ部、営業部、PMO室、技術推進部、管理部を束ねる
-deli1,第一デリバリ部,第一交付部,Delivery Department I,shanghai,solution,篠崎悠真（PM・製造チーム）・蔡文博（デリバリ）が所属
+deli1,第一デリバリ部,第一交付部,Delivery Department I,shanghai,solution,筱崎悠真（PM・製造チーム）・蔡文博（デリバリ）が所属
 deli2,第二デリバリ部,第二交付部,Delivery Department II,shanghai,solution,黄思涵（PM・金融チーム）が所属
 sales,営業部,营业部,Sales Department,shanghai,solution,村井拓也が所属
 pmo,PMO室,PMO室,PMO Office,shanghai,solution,岸本奈津が所属
