@@ -587,6 +587,17 @@ function runIndustryChecks(ind) {
     for (const m of companyMd.matchAll(/^\|\s*(\w+)\s*\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|/gm)) {
       knownSites.add(m[2].trim()); knownSites.add(m[3].trim()); knownSites.add(m[4].trim());
     }
+    // it バケットだけ、顧客（青嶺精工・碧洋銀行）の拠点名を跨いで参照してよい（設計書
+    // docs/handoff/2026-09-11-it-industry.md §3-4「跨ぎの規則」：社名と拠点名に限る。
+    // 人・部署・品番・設備・KPI・文書番号は跨がないので、他の W はここでは和集合にしない）
+    if (ind === 'it') {
+      for (const otherInd of INDUSTRY_ORDER) {
+        if (otherInd === 'it') continue;
+        for (const m of readMd(otherInd, 'company.md').matchAll(/^\|\s*(\w+)\s*\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|/gm)) {
+          knownSites.add(m[2].trim()); knownSites.add(m[3].trim()); knownSites.add(m[4].trim());
+        }
+      }
+    }
     const seen = new Set();
     for (const id in scenarios) {
       const s = scenarios[id].persona && scenarios[id].persona.site;
@@ -639,18 +650,39 @@ function runIndustryChecks(ind) {
       }
       if (!noSpace.size) ok('空白ゆれなし');
     } else {
-      // fin: 甲社〜戊社（空白なしが正。data/world/fin/clients.csv 参照）
-      const found = new Map();
-      for (const m of mockOnlyText.matchAll(/([甲乙丙丁戊])\s?社/g)) {
-        found.set(m[1], (found.get(m[1]) || 0) + 1);
+      // 取引先記号の文字体系はハードコードしない。clients.csv の code 列（"甲社"／"α 社"）
+      // から記号 1 文字と空白の有無を読み取り、業種ごとの候補パターンを動的に組み立てる
+      // （fin: 甲乙丙丁戊・空白なし、it: α/β/γ/δ/ε・空白あり。設計書
+      // docs/handoff/2026-09-11-it-industry.md §3-4-2）。従来は fin 由来の固定正規表現
+      // /[甲乙丙丁戊]/ を「partners.csv を持たない業種」全般（fin・it）に流用しており、
+      // it バケットの走査対象に含まれる共有ファイル（home.js の FEED.fin 等。業種を問わず
+      // 全業種の検査対象になる。scanTextsFor 参照）から fin の「甲社」を拾って誤検知していた
+      // （data/world/README.md 未統一 IT ⑬。PR-4 で解消）
+      const symbolChars = new Set();
+      for (const code of knownCodes) {
+        const m = code.match(/^(\S)\s?社$/);
+        if (m) symbolChars.add(m[1]);
       }
-      let unknown = 0;
-      for (const letter of found.keys()) {
-        const code = `${letter}社`;
-        if (!knownCodes.has(code)) { unknown++; report(`clients.csv に無い取引先記号: ${code}`); }
+      if (!symbolChars.size) {
+        ok('clients.csv に「◯社」形の取引先記号が無いため対象外');
+      } else {
+        const alt = [...symbolChars].map(escLit).join('|');
+        const found = new Map(); // letter → 実際にマッチした表記（空白の有無を含む）の集合
+        for (const m of mockOnlyText.matchAll(new RegExp(`(${alt})(\\s?)社`, 'g'))) {
+          const letter = m[1];
+          const form = `${letter}${m[2]}社`;
+          if (!found.has(letter)) found.set(letter, new Set());
+          found.get(letter).add(form);
+        }
+        let unknown = 0;
+        for (const forms of found.values()) {
+          for (const form of forms) {
+            if (!knownCodes.has(form)) { unknown++; report(`clients.csv に無い取引先記号の表記: "${form}"`); }
+          }
+        }
+        if (!found.size) ok('clients.csv 記号はまだ台本に出現しない（台本未投入のため想定どおり）');
+        else if (!unknown) ok('取引先記号はすべて clients.csv に登録済み');
       }
-      if (!found.size) ok('clients.csv 記号はまだ台本に出現しない（台本未投入のため想定どおり）');
-      else if (!unknown) ok('取引先記号はすべて clients.csv に登録済み');
     }
   }
 
