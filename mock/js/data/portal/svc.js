@@ -125,9 +125,36 @@ const POUT = {
 const PNEW = [];
 
 /* ============================================================
-   PSTAGE_AI — 案件ステージ → この段階で使う AI（SVCS の内部 id）
+   PSTAGE_AI — 案件ステージ → この段階で使う AI（SVCS の内部 id）。
+   SL-01（引合の受注確度推定。sl1）は IT 業のマージ（#255〜#259）で place: 'proj' が付いた 10 件の 1 つ
+   （設計書 §14-8）。受注前（lead/prop/quote）のどの段階でも「この案件は決まりそうか」を聞く場面がある
+   ため、受注前の 3 段階すべてに置く（PR-3。行から呼ぶ動作の配線）。
    ============================================================ */
 const PSTAGE_AI = {
-  lead: ['rs1', 'gn5'], prop: ['dc9', 'dc8'], quote: ['nm1', 'dc8'],
+  lead: ['rs1', 'gn5', 'sl1'], prop: ['dc9', 'dc8', 'sl1'], quote: ['nm1', 'dc8', 'sl1'],
   won: ['dc1', 'gn5'], deliv: ['dc8', 'dc1'], acc: ['dc8', 'lg4']
+};
+
+/* ============================================================
+   PCTXDEF — 画面ごとに「行から何を渡すか」を宣言する（設計書 §5-4）。
+   行から AI を呼んだとき、この画面の行の実値のうちどのフィールドを
+   「この画面から渡す文脈」に差し込むかのフィールド名リスト。
+   値そのものはここには置かない（js/portal/app.js の pctxRow() が該当画面の
+   データ（PDEALS など）から引く）。ブロックから呼んだ場合（行が無い場合）は
+   使わない（PT.ctxNoRow の案内だけを出す）。
+   ============================================================ */
+const PCTXDEF = {
+  proj: ['id', 'nm', 'cu', 'ow', 'sg', 'due', 'rag'],
+  cust: ['cu', 'own', 'stage'],
+  act:  ['id', 'tgt', 'ttl', 'ow', 'due'],
+  vend: ['nm', 'kind', 'credit', 'until'],
+  watch:['date', 'src', 'ttl', 'deal'],
+  meet: ['id', 'ttl', 'date', 'att'],
+  exp:  ['id', 'kind', 'amt', 'state'],
+  req:  ['id', 'kind', 'applicant', 'state'],
+  ppl:  ['nm', 'role', 'deals', 'util'],
+  trn:  ['id', 'kind', 'ttl', 'due'],
+  know: ['grp', 'ttl', 'owner', 'updated'],
+  kpi:  ['topic', 'metric', 'value'],
+  home: []
 };

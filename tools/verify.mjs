@@ -77,8 +77,12 @@
  *        POUT のキーが SVCS[].place === 'out' の管理番号と過不足なく一致する／
  *        17-h portal.html に class="mockbar"・id="langSel"・id="themeBtn" がある／
  *        17-i PSVC が st / name / cat を持たない／
- *        17-j portal.html・portal.css・js/portal/**・js/data/portal/** に生 URL（http(s)://）が無い
- *        （設計書 docs/handoff/2026-09-11-portal-mock-pages.md §9-2）
+ *        17-j portal.html・portal.css・js/portal/**・js/data/portal/** に生 URL（http(s)://）が無い／
+ *        17-k（PR-3）PWORLD のキーが PDEALS[].cu と過不足なく一致し、値が INDUSTRIES の id のいずれか。
+ *        data/world/it/clients.csv の ref_world と矛盾しない／
+ *        17-l（PR-3）js/portal/demo.js に pstate.ind の参照が無い（§14-4 規則 3）。
+ *        pscreenAiIds/pcrossAiIds の本体に industries の参照が無い（§14-2 規則 1）
+ *        （設計書 docs/handoff/2026-09-11-portal-mock-pages.md §9-2・§14-9）
  *
  * データの取り出しは tools/lib/load.mjs（node:vm で js/data/** を実行順に評価）を使う。
  * grab()（正規表現抽出）は廃止。
@@ -1429,6 +1433,68 @@ section('17. 部門ポータル（mock/portal.html）契約');
     }
     if (urlBad.length) { fail(`生 URL（http(s)://）が含まれている（CLAUDE.md §2-10）: ${urlBad.join(', ')}`); bad17++; }
     else ok('portal.html / portal.css / js/portal/** / js/data/portal/** に生 URL なし');
+
+    /* 17-k（PR-3・§14-9）: PWORLD のキーが PDEALS[].cu と過不足なく一致し、値が INDUSTRIES の id のいずれか。
+       かつ data/world/it/clients.csv の code 列に全キーが存在し、ref_world が空でないものは PWORLD の値と一致する */
+    {
+      const pworld = portal.data.PWORLD || {};
+      const dealsCu = new Set((portal.data.PDEALS || []).map(d => d.cu));
+      const pworldKeys = new Set(Object.keys(pworld));
+      const missingInPworld = [...dealsCu].filter(cu => !pworldKeys.has(cu));
+      const extraInPworld = [...pworldKeys].filter(cu => !dealsCu.has(cu));
+      let bad17k = 0;
+      if (missingInPworld.length) { fail(`PWORLD にキーが無い（PDEALS[].cu に存在）: ${missingInPworld.join(', ')}`); bad17k++; }
+      if (extraInPworld.length) { fail(`PWORLD に PDEALS[].cu に無いキーがある: ${extraInPworld.join(', ')}`); bad17k++; }
+      for (const [cu, ind] of Object.entries(pworld)) {
+        if (!industryIds.has(ind)) { fail(`PWORLD.${cu}: 値 "${ind}" が INDUSTRIES の id ではない`); bad17k++; }
+      }
+      const clientsCsvPath = resolve(ROOT, 'data/world/it/clients.csv');
+      if (existsSync(clientsCsvPath)) {
+        const rows = readFileSync(clientsCsvPath, 'utf8').trim().split('\n').slice(1)
+          .map(line => line.split(','));
+        for (const cols of rows) {
+          const code = cols[0], refWorld = cols[2];
+          if (!(code in pworld)) { fail(`data/world/it/clients.csv の code "${code}" が PWORLD に無い`); bad17k++; continue; }
+          if (refWorld && refWorld !== pworld[code]) {
+            fail(`PWORLD.${code} = "${pworld[code]}" が clients.csv の ref_world "${refWorld}" と矛盾する`); bad17k++;
+          }
+        }
+      } else warn('data/world/it/clients.csv が無いため PWORLD との突き合わせを skip');
+      if (!bad17k) ok(`PWORLD（${pworldKeys.size} 件）が PDEALS[].cu と過不足なく一致し、data/world/it/clients.csv の ref_world と矛盾しない`);
+      bad17 += bad17k;
+    }
+
+    /* 17-l（PR-3・§14-9）: js/portal/demo.js に pstate.ind の参照が無い（規則 3）／
+       pscreenAiIds・pcrossAiIds の関数本体に industries の参照が無い（規則 1） */
+    {
+      const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+      let bad17l = 0;
+      const demoFile = portal.appSources.find(f => f.path === 'js/portal/demo.js');
+      if (demoFile) {
+        const demoStripped = stripComments(demoFile.src);
+        if (/pstate\s*\.\s*ind\b|pstate\s*\[\s*['"]ind['"]\s*\]/.test(demoStripped)) {
+          fail('js/portal/demo.js が pstate.ind を参照している（設計書 §14-4 規則 3 違反）'); bad17l++;
+        }
+      } else warn('js/portal/demo.js が無いため 17-l の pstate.ind 検査を skip');
+      const extractFnBody = (src, name) => {
+        const m = new RegExp(`function\\s+${name}\\s*\\(`).exec(src);
+        if (!m) return null;
+        let i = m.index + m[0].length, depthParen = 1;
+        while (depthParen > 0 && i < src.length) { if (src[i] === '(') depthParen++; else if (src[i] === ')') depthParen--; i++; }
+        while (i < src.length && src[i] !== '{') i++;
+        const start = i; let depth = 0;
+        do { if (src[i] === '{') depth++; else if (src[i] === '}') depth--; i++; } while (depth > 0 && i < src.length);
+        return src.slice(start, i);
+      };
+      const appAllStripped = stripComments(portal.appSources.map(f => f.src).join('\n'));
+      for (const fn of ['pscreenAiIds', 'pcrossAiIds']) {
+        const body = extractFnBody(appAllStripped, fn);
+        if (body === null) { fail(`${fn}() が js/portal/** に見つからない`); bad17l++; continue; }
+        if (/industries/.test(body)) { fail(`${fn}() の本体が industries を参照している（設計書 §14-2 規則 1 違反）`); bad17l++; }
+      }
+      if (!bad17l) ok('js/portal/demo.js に pstate.ind の参照が無く、pscreenAiIds/pcrossAiIds に industries の参照が無い（§14 規則 1・3）');
+      bad17 += bad17l;
+    }
 
     if (portal.vmErrors.length) { for (const e of portal.vmErrors) { fail(`portal js/data/**: ${e}`); bad17++; } }
     else ok('portal の js/data/** が vm で読める（vmErrors 0 件）');

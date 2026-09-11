@@ -61,7 +61,21 @@ document.addEventListener('click', (e) => {
   if (cu && (cu.classList.contains('chip') || cu.classList.contains('culink'))) { filterContacts(cu.dataset.cu); return; }
 
   const svcBtnEl = e.target.closest('[data-svc]');
-  if (svcBtnEl) { openDrawer(svcBtnEl.dataset.svc); return; }
+  if (svcBtnEl) {
+    const scr = svcBtnEl.dataset.ctxScr || null;
+    const rowId = svcBtnEl.dataset.ctxId || null;
+    const row = (scr && rowId) ? pctxRow(scr, rowId) : null;
+    openSvcDrawer(svcBtnEl.dataset.svc, scr, row);
+    return;
+  }
+
+  /* ---------- 実行ドロワー（台本の再生。js/portal/demo.js。PR-3） ---------- */
+  const drun = e.target.closest('[data-drun]');
+  if (drun) { dRun(); return; }
+  const dchip = e.target.closest('[data-dchip]');
+  if (dchip) { dChip(dchip.dataset.dchip); return; }
+  const dsend = e.target.closest('[data-dsend]');
+  if (dsend) { dSend(); return; }
 });
 
 document.addEventListener('change', (e) => {

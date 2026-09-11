@@ -64,7 +64,52 @@ const PT = {
   close: { ja: '閉じる', zh: '关闭', en: 'Close' },
   /* ---- AI ドロワーの汎用ラベル ---- */
   unnumbered: { ja: '未採番', zh: '未编号', en: 'Unassigned' },
-  allScreens: { ja: '全画面', zh: '全部画面', en: 'All screens' }
+  allScreens: { ja: '全画面', zh: '全部画面', en: 'All screens' },
+
+  /* ---- 実行ドロワー（台本の再生。PR-3。設計書 §5・付録 B。rev2 §14-7 で borrowed → scriptWorldRow/Plain） ---- */
+  ctxHead:      { ja: 'この画面から渡す文脈', zh: '本画面传递的上下文', en: 'Context passed from this screen' },
+  ctxNote:      { ja: '画面の行から自動で入ります。打ち直しは要りません', zh: '自动取自画面中的行，无需重新输入', en: 'Filled in automatically from the row — no retyping' },
+  ctxNoRow:     { ja: '行から呼ぶと、案件 id と顧客名も一緒に渡ります', zh: '从行调用时，项目编号与客户名称也会一并传递', en: 'Call it from a row and the project id and customer name are passed too' },
+  autoFilled:   { ja: 'この画面から', zh: '来自本画面', en: 'From this screen' },
+  inputHead:    { ja: '入力', zh: '输入', en: 'Input' },
+  runLive:      { ja: 'この内容で実行', zh: '按此内容执行', en: 'Run with this' },
+  runMock:      { ja: '想定の動きを見る', zh: '查看预期的动作', en: 'See the intended behaviour' },
+  runDone:      { ja: '実行しました', zh: '已执行', en: 'Done' },
+  resultHead:   { ja: '結果', zh: '结果', en: 'Result' },
+  keepResult:   { ja: 'この結果を画面に残す', zh: '将此结果留在画面上', en: 'Keep this result on the screen' },
+  kept:         { ja: '画面に残しました', zh: '已留在画面上', en: 'Kept on the screen' },
+  rowBack:      { ja: 'AI の戻り', zh: 'AI 的返回', en: 'AI result' },
+  rowBackOpen:  { ja: '開く', zh: '打开', en: 'Open' },
+  askHead:      { ja: '続けて聞く', zh: '继续提问', en: 'Ask more' },
+  chipsLabel:   { ja: '質問例', zh: '提问示例', en: 'Examples' },
+  chipJa:       { ja: '日本語', zh: '日语', en: 'Japanese' },
+  chipZh:       { ja: '中文', zh: '中文', en: 'Chinese' },
+  send:         { ja: '送信', zh: '发送', en: 'Send' },
+  chatPh:       { ja: '日本語でも中国語でも入力できます', zh: '日文中文均可输入', en: 'Type in Japanese or Chinese' },
+  demoDone:     { ja: '台本はここまでです', zh: '脚本到此结束', en: 'End of the script' },
+  scriptLangNote:{ ja: '台本は日本語と中国語だけです。エージェント本体は入力した言語で返します', zh: '脚本仅有日文与中文。智能体会按输入的语言回复', en: 'Scripts exist in Japanese and Chinese only; the agent replies in the language you type' },
+  scriptWorldRow:{ ja: 'この台本は{from}の世界のものです。この行の顧客（{cu}）は{want}なので、会話と結果に出る会社名・拠点・品番は台本の世界のものになります',
+                   zh: '此脚本取自{from}的虚构世界。本行客户（{cu}）属于{want}，因此对话与结果中出现的公司名称、厂区与品号均来自脚本所在的世界',
+                   en: "This script comes from the {from} world. The customer on this row ({cu}) is {want}, so the company names, sites and part numbers in the conversation and result belong to the script's world" },
+  scriptWorldPlain:{ ja: 'この台本は{from}の世界のものです。会話と結果に出る会社名・拠点・品番は台本の世界のものです',
+                   zh: '此脚本取自{from}的虚构世界。对话与结果中出现的公司名称、厂区与品号均来自该世界',
+                   en: "This script comes from the {from} world. The company names, sites and part numbers in the conversation and result belong to that world" },
+  noScript:     { ja: 'このサービスには台本を用意していません。渡すもの・返るものだけを出します', zh: '此服务尚未准备脚本，仅展示输入与输出的设想', en: 'No script for this service — only the intended input and output are shown' },
+  noPlace:      { ja: '置き場所を決めていない', zh: '尚未确定放置位置', en: 'No screen assigned yet' },
+  uploadNote:   { ja: '本番では、この行に付いている添付をそのまま渡します', zh: '正式环境下将直接传递此行的附件', en: 'In production the attachment on this row is passed as-is' },
+  openCatalog:  { ja: 'カタログを開く', zh: '打开服务目录', en: 'Open the catalog' },
+  screenAi:     { ja: 'この画面の AI', zh: '本画面的 AI', en: 'AI on this screen' },
+  crossAi:      { ja: '横断で使う AI', zh: '跨画面使用的 AI', en: 'AI used across screens' },
+
+  /* ---- 文脈カードの行ラベル（PCTXDEF の proj/cust に対応。付録 B の 29 キーには無いが、
+     §5-4「ラベルは PT の 3 言語」の要求を満たすために必要な最小限を追加。§7-2 の「半端な 3 言語を
+     作らない」ルールに従い ja/zh/en を同時に埋める） ---- */
+  ctxProject:   { ja: '案件', zh: '项目', en: 'Project' },
+  ctxCustomer:  { ja: '顧客', zh: '客户', en: 'Customer' },
+  ctxOwner:     { ja: '担当', zh: '负责人', en: 'Owner' },
+  ctxStage:     { ja: 'ステージ', zh: '阶段', en: 'Stage' },
+  ctxDue:       { ja: '期限', zh: '截止日期', en: 'Due date' },
+  ctxState:     { ja: '状態', zh: '状态', en: 'Status' }
 };
 
 /* ============================================================
