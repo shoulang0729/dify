@@ -136,17 +136,27 @@ PR-2（書式 17 種の追加＋規程・社内 ID 台帳 `documents.csv` の新
 （15 本）に 6 名全員をペルソナとして登場させたことで解消した（`node tools/check-world.mjs` の `[fin] W9`
 が warn 0 に）。
 
-### IT（it）— 2 件
+### IT（it）— 1 件
 
-`data/world/it/` を新設した PR-1 の時点で、`tools/check-world.mjs`（Issue #251 で INDUSTRIES 駆動に
-一般化済み）が自動で `it` バケットを走査するようになった。台本（`mock/js/data/scenarios/it/**`）はまだ
-無い（PR-4）ため、W1〜W3・W6〜W8 はいずれも「対象データが無く該当なし」で warn 0 件。次の 2 件だけが
-出る：
+`data/world/it/` を新設した PR-1 の時点では、台本（`mock/js/data/scenarios/it/**`）がまだ無く、
+W1〜W3・W5〜W8 はいずれも「対象データが無く該当なし」で warn 0 件。**PR-4 で台本 10 本
+（`SL-01`〜`SL-03`・`KN-09`・`KN-10`・`PO-05`〜`PO-07`・`GN-08`・`DC-10`）を投入し、
+`tools/check-world.mjs` の W5（取引先記号）を業種ごとに動的化して ⑬ を解消した**（設計書
+`docs/handoff/2026-09-11-it-industry.md` §3-4「`check-world.mjs` はこれで壊れるか」）。人名・役職・
+拠点・文書番号・KPI はすべて `data/world/it/` の正本の値だけを使い、社名と拠点名（青嶺精工・
+碧洋銀行・蘇州工場・上海本部）だけを `mfg`/`fin` から跨いで参照した結果、W1〜W3・W5〜W9 は
+すべて warn 0 件。残るのは次の 1 件（mfg ①・fin ⑪ と同種、英語台本を書く別 PR まで恒久的に残る想定）：
 
 | # | 食い違い | マスタ側の扱い | 出典 |
 |---|---|---|---|
-| ⑫ | 社名の表記回数：`翠雲システムズ`(ja) 3 回・`翠云系统`(zh) 2 回・英名 `Suiun Systems` 1 回のみ | `company.md`・`mock/js/data/ui.js`（`INDUSTRIES.it`）で ja/zh/en の 3 言語を定義済み。台本投入（PR-4）で出現回数が増える見込み。mfg ①・fin ⑪ と同種の食い違い | `mock/js/data/ui.js` |
-| ⑬ | 取引先記号：`clients.csv` に無い `甲社` が検出される | **`it` バケット固有の誤検知**。`tools/check-world.mjs` の W5 は「取引先の正本ファイル（`partners.csv`/`clients.csv`）を持たない業種」の判定に金融固有のギリシャ文字ではなく `[甲乙丙丁戊]` の正規表現を流用しており、`it` にも同じ枝が使われる。実際に台本中に出るのは `mock/js/data/home.js` の `FEED.fin` ペルソナ文（金融の顧客記号）で、IT の台本や KB には現れない。**IT 固有のギリシャ文字記号（`α`/`β`/`γ`/`δ`/`ε`）を検出する枝への一般化は PR-4**（設計書 `docs/handoff/2026-09-11-it-industry.md` §3-4「`check-world.mjs` はこれで壊れるか」）で対応する | `mock/js/data/home.js`（`FEED.fin`） |
+| ⑫ | 社名の表記回数：`翠雲システムズ`(ja) 3 回・`翠云系统`(zh) 2 回・英名 `Suiun Systems` 1 回のみ | `company.md`・`mock/js/data/ui.js`（`INDUSTRIES.it`）で ja/zh/en の 3 言語を定義済み。英語台本を書く別 PR で解消。mfg ①・fin ⑪ と同種の食い違い | `mock/js/data/ui.js` |
+
+**解消済み（PR-4）**：⑬ 取引先記号の誤検知（`clients.csv` に無い `甲社` が検出される）は、
+`tools/check-world.mjs` の W5 を「`clients.csv`/`vendors.csv` の `code` 列から記号 1 文字と
+空白の有無を動的に読み取る」形に一般化したことで解消した（`[甲乙丙丁戊]` のハードコードを撤廃。
+`it` は `α`/`β`/`γ`/`δ`/`ε` を正しく認識する）。カバレッジ（`people.csv` にいるがどこにも
+出てこない 4 名：篠崎悠真・黄思涵・蔡文博・村井拓也）も、台本 10 本に 5 名全員をペルソナとして
+登場させたことで解消した（`[it] W9` が warn 0 に）。
 
 ## `tools/check-world.mjs` の読み方
 
@@ -158,8 +168,9 @@ npm run world                          # = node tools/check-world.mjs
 ```
 
 出力は業種（`mfg`／`fin`／`it`）ごとに W1〜W9 の検査を行い、件数と代表例を出す（詳細は `tools/check-world.mjs`
-の冒頭コメント）。**CI には入れない**（`npm test` に足さない）。現時点（IT 業の足場を追加した本 PR 後）で
-製造業側は上の「未統一」表に対応する warn（10 件）、金融側は 1 件、IT 側は 2 件が必ず出る（合計 13 件）。
+の冒頭コメント）。**CI には入れない**（`npm test` に足さない）。現時点（IT 業の台本 10 本を投入した
+本 PR 後）で製造業側は上の「未統一」表に対応する warn（10 件）、金融側は 1 件、IT 側は 1 件が必ず出る
+（合計 12 件）。
 W8（KPI）は表記ゆれ（簡体字・繁体字・異体字。例：稼働率／稼動率／稼动率）と、ラベルと
 数値の間にコロン・括弧・助詞が挟まる「隣接の崩し」を両方吸収したうえで `data/world/*/kpi.csv` の
 全指標（ハードコードしない）を対象にする。⑧〜⑩ は、この強化で新たに見えるようになった「月次基準値と

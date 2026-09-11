@@ -43,7 +43,7 @@
 | GN-05 | 文書要約 | GN/daily | 製造 | 提供中 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) upload | — | — | [GN-05-document-summary.yml](../dify/apps/GN-05-document-summary.yml) | [GN-05.md](./dify/usecases/GN-05.md) | — | [4 件](../dify/tests/GN-05.json) |
 | GN-06 | 頼まれ事・放置業務の追跡 | GN/daily | 製造・金融・IT | 試行版 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) form | [fin/gn.js](../mock/js/data/scenarios/fin/gn.js) form | — | — | [GN-06.md](./dify/usecases/GN-06.md) | — | — |
 | GN-07 | 幹部来訪・出張のアテンド段取り | GN/daily | 製造・金融・IT | 構想 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) form | [fin/gn.js](../mock/js/data/scenarios/fin/gn.js) form | — | — | [GN-07.md](./dify/usecases/GN-07.md) | — | — |
-| GN-08 | 名刺の読み取りと項目抽出 | GN/daily | IT | 構想 | — | — | — | — | — | — | — |
+| GN-08 | 名刺の読み取りと項目抽出 | GN/daily | IT | 構想 | — | — | [it/gn.js](../mock/js/data/scenarios/it/gn.js) upload | — | — | — | — |
 | PT-01 | 取引先・サプライヤーの与信・リスク監視 | PT/data | 製造 | 試行版 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) lookup | — | — | — | [PT-01.md](./dify/usecases/PT-01.md) | — | — |
 | PT-02 | 業界・材料相場リサーチ（本社報告の外部根拠） | PT/data | 製造 | 試行版 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) form | — | — | — | [PT-02.md](./dify/usecases/PT-02.md) | — | — |
 | PT-03 | 業界誌・技術記事アーカイブの横断検索 | PT/data | 製造 | 試行版 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) qa | — | — | — | [PT-03.md](./dify/usecases/PT-03.md) | — | — |
@@ -55,10 +55,10 @@
 | KN-06 | 事務手続の照会 | KN/rule | 金融 | 試行版 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | — | [KN-06.md](./dify/usecases/KN-06.md) | — | — |
 | KN-07 | 行内営業情報の検索（日誌・接触履歴） | KN/bizlog | 金融 | 構想 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | — | [KN-07.md](./dify/usecases/KN-07.md) | — | — |
 | KN-08 | 当局通達・ガイドラインDB（照会・過去比較） | KN/rule | 金融 | 試行版 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) diff | — | — | [KN-08.md](./dify/usecases/KN-08.md) | — | — |
-| KN-09 | 取込文書の分類自動振り分け | KN/ops | IT | 構想 | — | — | — | — | — | — | — |
-| KN-10 | 規程と現場運用の食い違い検出 | KN/ops | IT | 構想 | — | — | — | — | — | — | — |
+| KN-09 | 取込文書の分類自動振り分け | KN/ops | IT | 構想 | — | — | [it/kn.js](../mock/js/data/scenarios/it/kn.js) qa | — | — | — | — |
+| KN-10 | 規程と現場運用の食い違い検出 | KN/ops | IT | 構想 | — | — | [it/kn.js](../mock/js/data/scenarios/it/kn.js) diff | — | — | — | — |
 | DC-09 | 議案・報告書・提案書のドラフト作成（テンプレート選択） | DC/report | 金融 | 試行版 | — | [fin/dc.js](../mock/js/data/scenarios/fin/dc.js) form | — | — | [DC-09.md](./dify/usecases/DC-09.md) | — | — |
-| DC-10 | 予実差の理由の書き起こし | DC/report | IT | 構想 | — | — | — | — | — | — | — |
+| DC-10 | 予実差の理由の書き起こし | DC/report | IT | 構想 | — | — | [it/dc.js](../mock/js/data/scenarios/it/dc.js) form | — | — | — | — |
 | RS-01 | 企業・業界ニュースの自動収集と配信 | RS/news | 金融 | 試行版 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) form | — | — | [RS-01.md](./dify/usecases/RS-01.md) | — | — |
 | RS-02 | セクター・発行体のモニタリング | RS/news | 金融 | 構想 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) form | — | — | [RS-02.md](./dify/usecases/RS-02.md) | — | — |
 | RS-03 | 顧客IR・決算の収集と日本語要約・比較 | RS/disc | 金融 | 試行版 | — | [fin/rs.js](../mock/js/data/scenarios/fin/rs.js) upload | — | — | [RS-03.md](./dify/usecases/RS-03.md) | — | — |
@@ -77,11 +77,11 @@
 | PO-02 | アイデアの募集・蓄積・投票集計 | PO/collect | 製造・金融・IT | 構想 | [mfg/po.js](../mock/js/data/scenarios/mfg/po.js) form | [fin/po.js](../mock/js/data/scenarios/fin/po.js) form | — | — | [PO-02.md](./dify/usecases/PO-02.md) | — | — |
 | PO-03 | 小テスト・コンプライアンスチェックの実施と集計 | PO/collect | 製造・金融・IT | 構想 | [mfg/po.js](../mock/js/data/scenarios/mfg/po.js) form | [fin/po.js](../mock/js/data/scenarios/fin/po.js) form | — | — | [PO-03.md](./dify/usecases/PO-03.md) | — | — |
 | PO-04 | 稼働の集計とコスト配分の提案 | PO/mgmt | 製造・金融・IT | 構想 | [mfg/po.js](../mock/js/data/scenarios/mfg/po.js) upload | [fin/po.js](../mock/js/data/scenarios/fin/po.js) upload | — | — | [PO-04.md](./dify/usecases/PO-04.md) | — | — |
-| PO-05 | 年休の取り残し検知と取得計画 | PO/staff | IT | 構想 | — | — | — | — | — | — | — |
-| PO-06 | 残業の偏りからの要員リスク検知 | PO/staff | IT | 構想 | — | — | — | — | — | — | — |
-| PO-07 | AI利用実績からの削減時間の見積 | PO/collect | IT | 構想 | — | — | — | — | — | — | — |
+| PO-05 | 年休の取り残し検知と取得計画 | PO/staff | IT | 構想 | — | — | [it/po.js](../mock/js/data/scenarios/it/po.js) lookup | — | — | — | — |
+| PO-06 | 残業の偏りからの要員リスク検知 | PO/staff | IT | 構想 | — | — | [it/po.js](../mock/js/data/scenarios/it/po.js) form | — | — | — | — |
+| PO-07 | AI利用実績からの削減時間の見積 | PO/collect | IT | 構想 | — | — | [it/po.js](../mock/js/data/scenarios/it/po.js) form | — | — | — | — |
 | EG-01 | 上流工程の仕様支援（読解・質問回答・エラー対処） | EG/sysspec | 製造・金融・IT | 構想 | [mfg/eg.js](../mock/js/data/scenarios/mfg/eg.js) qa | [fin/eg.js](../mock/js/data/scenarios/fin/eg.js) qa | — | — | [EG-01.md](./dify/usecases/EG-01.md) | — | — |
-| SL-01 | 引合の受注確度推定 | SL/pipe | IT | 構想 | — | — | — | — | — | — | — |
-| SL-02 | 失注理由の蓄積と傾向分析 | SL/pipe | IT | 構想 | — | — | — | — | — | — | — |
-| SL-03 | 過去提案の横断検索と再利用 | SL/prop | IT | 構想 | — | — | — | — | — | — | — |
-| 集計 | — | — | — | — | ①製造 49 | ①金融 29 | ①IT 0 | ②12 | ③67 | ④KB 4 | ④テスト 12 |
+| SL-01 | 引合の受注確度推定 | SL/pipe | IT | 構想 | — | — | [it/sl.js](../mock/js/data/scenarios/it/sl.js) form | — | — | — | — |
+| SL-02 | 失注理由の蓄積と傾向分析 | SL/pipe | IT | 構想 | — | — | [it/sl.js](../mock/js/data/scenarios/it/sl.js) lookup | — | — | — | — |
+| SL-03 | 過去提案の横断検索と再利用 | SL/prop | IT | 構想 | — | — | [it/sl.js](../mock/js/data/scenarios/it/sl.js) lookup | — | — | — | — |
+| 集計 | — | — | — | — | ①製造 49 | ①金融 29 | ①IT 10 | ②12 | ③67 | ④KB 4 | ④テスト 12 |
