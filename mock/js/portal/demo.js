@@ -157,12 +157,19 @@ function dQaRunHTML() {
     '<button class="btn-primary" type="button" data-drun>' + pesc(label) + '</button></div></div>';
 }
 
-/** ③ 結果パネル。qa（scn.result を持たない）は会話だけで完結するので出さない（設計書 §5-5） */
+/** ③ 結果パネル。qa（scn.result を持たない）は会話だけで完結するので出さない（設計書 §5-5）。
+    行から呼んだとき（scr・行 id が分かるとき）だけ「この結果を画面に残す」を出す（設計書 §5-9。
+    行が無い＝ブロックからの呼び出しではボタンを出さない）。 */
 function dResultSectionHTML() {
   const scn = dCtx.pr.scn;
   if (!scn.result || dCtx.log.length === 0) return '';
   const lang0 = dCtx.log[0].lang;
-  return '<div class="sec"><h3>' + pesc(pt('resultHead')) + '</h3>' + dResultHTML(scn.result[lang0]) + '</div>';
+  const canKeep = !!(dCtx.scr && pbackRowId(dCtx.scr, dCtx.row));
+  const keepBtn = canKeep
+    ? '<div class="run-row"><button class="btn-primary" type="button" data-dkeep' + (dCtx.kept ? ' disabled' : '') + '>' +
+      pesc(dCtx.kept ? pt('kept') : pt('keepResult')) + '</button></div>'
+    : '';
+  return '<div class="sec"><h3>' + pesc(pt('resultHead')) + '</h3>' + dResultHTML(scn.result[lang0]) + keepBtn + '</div>';
 }
 
 /** ④ 続けて聞く。会話ログ全体（qa は台本 1 ターン目も含む）＋質問チップ（ja/zh 常時両方）＋自由入力
@@ -246,14 +253,37 @@ function dSend() {
   if (again) again.focus();
 }
 
+/** ［この結果を画面に残す］。設計書 §5-9。行の下に 1 行の戻りを残す（pstate.back。メモリのみ）。
+    採用と同じ考え方で、業務データ（PDEALS など）は書き換えない。 */
+function dKeepResult() {
+  if (!dCtx || !dCtx.pr || dCtx.kept) return;
+  const scr = dCtx.scr, id = pbackRowId(scr, dCtx.row);
+  if (!scr || !id) return;
+  const scn = dCtx.pr.scn;
+  if (!scn.result || dCtx.log.length === 0) return;
+  const lang0 = dCtx.log[0].lang;
+  const line = pbackLine(scn.result[lang0]);
+  if (!line) return;
+  pbackKeep(scr, id, dCtx.svcId, line);
+  dCtx.kept = true;
+  dRenderBody();
+  pbackRefresh(scr, id);
+}
+
 /** サービス id と呼び出し元の文脈（scr・row）から、実行ドロワーまたは台本なしの情報ドロワーを開く。
-    js/portal/events.js の唯一の入口（設計書 §5・§14-4）。 */
-function openSvcDrawer(svcId, scr, row) {
+    js/portal/events.js の唯一の入口（設計書 §5・§14-4）。
+    opts.showResult を渡すと（行の戻りの［開く］。設計書 §5-9）、結果が出た状態で開き直す
+    （台本の 1 ターン目を消費してから描く。既に「残した」状態として扱う）。 */
+function openSvcDrawer(svcId, scr, row, opts) {
   const s = psvcOf(svcId); if (!s) return;
   const pr = pscn(svcId, row || null);
   if (!pr) { openDrawer(svcId); return; }   // 台本なし（§5-6）。render.js の情報ドロワーに委ねる
   dCtx = { svcId, s, pr, scr: scr || null, row: row || null,
     code: s.isnew ? pt('unnumbered') : psvcCode(svcId), log: [] };
+  if (opts && opts.showResult && pr.scn.result) {
+    dConsume(pscriptLang(pstate.lang));
+    dCtx.kept = true;
+  }
   openBareDrawer();
   pDrawer.classList.add('exec');
   dRenderBody();

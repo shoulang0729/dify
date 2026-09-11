@@ -4,9 +4,9 @@
    設計書 docs/handoff/2026-09-11-portal-mock-pages.md §3-1・§5-3。動きと見た目は変えていない
    （移設のみ。§12-1 AC-7・AC-8）。画面本文（見出し・表ヘッダ・解説）は v1 は日本語のまま（§7-1）。
 
-   §2-10 対応：AI サービス画面の外部リンクは、移植元の絶対 URL（target="_blank"）を
-   catalog.html への相対リンクに変更している（verify §17-j：生 URL 禁止。iframe プレースホルダの
-   全面的な作り直しは PR-4 の範囲。ここでは必要最小限の置き換えのみ）。 */
+   §2-10 対応・§5-10（PR-4）：AI サービス画面の外部リンクは、移植元の絶対 URL（target="_blank"）と
+   iframe の破線枠プレースホルダを外し、catalog.html への同じタブの相対リンク（.ai-catalog-card）に
+   作り直している（verify §17-j：生 URL 禁止）。 */
 
 const V = {};
 
@@ -34,7 +34,7 @@ V.home = () => `
        '<td><b>' + d.nm + '</b><span class="m">' + d.id + ' ／ ' + d.ow + '</span></td>' +
        '<td class="nw">' + d.cu + '</td><td class="nw">' + pstageName(d.sg) + '</td><td>' + pragChip(d.rag) + '</td>' +
        '<td>' + d.nx + '</td>' +
-       '<td>' + prowAi(PSTAGE_AI[d.sg], { scr: 'proj', id: d.id }) + '</td></tr>').join(''))}
+       '<td>' + prowAi(PSTAGE_AI[d.sg], { scr: 'proj', id: d.id }) + pbackContainer('proj', d.id) + '</td></tr>').join(''))}
    </div>
   </section>
 
@@ -138,7 +138,7 @@ V.cust = () => {
       '<span class="m">担当者を見る</span></td><td class="nw">' + c.site + '</td>' +
       '<td class="nw">' + post.length + ' 件</td><td class="nw">' + pre.length + ' 件</td>' +
       '<td class="num">' + psum(post, d => d.amt).toFixed(1) + '</td>' +
-      '<td>' + prowAi(['rs3', 'rs1'], { scr: 'cust', id: c.id }) + '</td></tr>';
+      '<td>' + prowAi(['rs3', 'rs1'], { scr: 'cust', id: c.id }) + pbackContainer('cust', c.id) + '</td></tr>';
   }).join(''))}
   </div>
  </section>
@@ -163,7 +163,7 @@ V.cust = () => {
         '<td class="nw">' + c[7] + '</td>' +
         '<td><button class="aibtn" type="button" data-hist="' + c[0] + '" style="--cat-accent:var(--action-primary)">' +
           '<span class="nm">接触履歴</span><span class="how">' + PHIST.filter(h => h[0] === c[0]).length + ' 件</span></button> ' +
-          prowAi(['gn8', 'cv2', 'lg4'], { scr: 'cust', id: c[4] }) + '</td></tr>';
+          prowAi(['gn8', 'cv2', 'lg4'], { scr: 'cust', id: c[4] }) + pbackContainer('cust', c[4]) + '</td></tr>';
     }).join(''))}
   </div>
   <div class="body" style="border-top:1px solid var(--border-subtle)">
@@ -227,6 +227,7 @@ V.proj = () => {
         '</div>' +
         '<div class="mt">' + d.id + '<span>' + d.ow + '</span><span>' + d.due + '</span></div>' +
         '<div class="rowai">' + prowAi(PSTAGE_AI[d.sg], { scr: 'proj', id: d.id }) + '</div>' +
+        pbackContainer('proj', d.id) +
         '</article>').join('') +
       '</div>';
   }).join('');
@@ -661,14 +662,12 @@ V.ai = () => {
     <div class="tile${unplaced.length ? ' alarm' : ''}"><div class="lbl">置き場所を決めていない</div><div class="num">${unplaced.length}<small>件</small></div><div class="delta">${unplaced.length ? unplaced.map(s => psvcCode(s.id)).join(' ') : 'いまは無し'}</div></div>
     <div class="tile"><div class="lbl">実機が稼働中</div><div class="num">${live}<small>件</small></div><div class="delta">残りは試行版・構想</div></div>
    </div>
-   <div style="border:2px dashed var(--border-default);border-radius:var(--radius-md);padding:22px 18px;text-align:center;background:var(--surface-sunken)">
-    <div style="font-size:12px;color:var(--text-muted);letter-spacing:.08em">AI エージェントカタログ</div>
-    <div style="margin-top:8px;font-size:15px;font-weight:700;color:var(--text-heading)">AI エージェントカタログ</div>
-    <div style="margin-top:3px;font-size:11.5px;color:var(--text-secondary)">13 分類 ／ 29 中分類 ／ 67 サービス ／ 3 つの表示パターン</div>
-    <div style="margin-top:12px"><a href="catalog.html" style="display:inline-block;border:1px solid var(--action-primary);color:var(--action-primary);border-radius:var(--radius-sm);padding:5px 14px;font-size:12px;text-decoration:none">カタログを開く</a></div>
+   <div class="ai-catalog-card">
+    <div class="eyebrow">AI エージェントカタログ</div>
+    <div class="title">AI エージェントカタログ</div>
+    <div class="meta">${CATS.length} 分類 ／ ${CATS.reduce((a, c) => a + (c.subs ? c.subs.length : 0), 0)} 中分類 ／ ${SVCS.length} サービス ／ ${(typeof PATTERNS !== 'undefined' ? PATTERNS.length : 3)} つの表示パターン</div>
+    <a class="cta" href="catalog.html">${pesc(pt('openCatalog'))}</a>
    </div>
-
-
 
    <div class="note" style="margin-top:12px">分類・検索・お気に入り・デモ台本はカタログ側に揃っているので、<b>ここに別の一覧は作りません</b>。この画面がカタログに足すのは「ポータルから辿れるかどうか」だけです。</div>
    ${pstate.ind === 'it' ? `<div class="note"><b>カタログに「IT 業」がまだありません。</b>いまポータルが使っている ${inn.length} 件は、製造業（${mfgN} 件）と金融業（${finN} 件）向けに作ったサービスを流用しています。自部門は IT 業なので、<b>本来は IT 業として持つべき</b>です。追加候補に挙げた 10 件（名刺 OCR・引合の確度推定・失注理由の分析ほか）は、そのまま IT 業の最初のサービスになります。</div>` : `<div class="note"><b>${IND[pstate.ind]}のサービスは、その顧客（${pstate.ind === 'mfg' ? '青嶺精工' : '碧洋銀行'}）の業務向けです。</b>自部門のポータルに置く筋合いのものは少なく、顧客画面からカタログへ辿れれば足ります。</div>`}
@@ -1152,7 +1151,7 @@ function renderDealList() {
     '<td class="nw">' + (pinPre(d) ? d.p + '%' : '<span class="m">—</span>') + '</td>' +
     '<td>' + (d.rag ? pragChip(d.rag) : '<span class="m">—</span>') + '</td>' +
     '<td class="nw">' + d.due + '</td><td class="num">' + d.amt.toFixed(1) + '</td>' +
-    '<td>' + prowAi(PSTAGE_AI[d.sg], { scr: 'proj', id: d.id }) + '</td></tr>').join('');
+    '<td>' + prowAi(PSTAGE_AI[d.sg], { scr: 'proj', id: d.id }) + pbackContainer('proj', d.id) + '</td></tr>').join('');
   host.innerHTML = '<table><thead><tr>' + th + '</tr></thead><tbody>' + body + '</tbody></table>';
   const lbl = document.getElementById('dealCount');
   if (lbl) lbl.textContent = list.length + ' 件' + (list.length === PDEALS.length ? '　同じデータを表で見る' : '（絞り込み中）');
