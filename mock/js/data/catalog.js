@@ -14,7 +14,8 @@ const CATS = [
     subs: [
       { id: 'tech', industries: ['mfg'], name: { ja: '技術・設備ナレッジ', zh: '技术与设备知识', en: 'Technical & Equipment' } },
       { id: 'rule', industries: ['mfg', 'fin', 'it'], name: { ja: '規程・労務・当局', zh: '规章・劳务・监管', en: 'Policies, HR & Regulators' } },
-      { id: 'bizlog', industries: ['fin'], name: { ja: '営業情報・履歴', zh: '营业信息与记录', en: 'Sales Records & History' } }
+      { id: 'bizlog', industries: ['fin'], name: { ja: '営業情報・履歴', zh: '营业信息与记录', en: 'Sales Records & History' } },
+      { id: 'ops', industries: ['it'], name: { ja: 'ナレッジ整備・運用', zh: '知识库整理与运维', en: 'Knowledge Curation' } }
     ]},
   { id: 'rs',
     industries: ['fin'],
@@ -105,7 +106,8 @@ const CATS = [
     abbr: { ja: '組織', zh: '组织', en: 'PMO' },
     subs: [
       { id: 'collect', industries: ['mfg', 'fin', 'it'], name: { ja: '収集・集計', zh: '收集与统计', en: 'Collection & Tallying' } },
-      { id: 'mgmt', industries: ['mfg', 'fin', 'it'], name: { ja: '進捗・工数', zh: '进度与工时', en: 'Progress & Workload' } }
+      { id: 'mgmt', industries: ['mfg', 'fin', 'it'], name: { ja: '進捗・工数', zh: '进度与工时', en: 'Progress & Workload' } },
+      { id: 'staff', industries: ['it'], name: { ja: '要員・労務', zh: '人员与劳务', en: 'Staffing & HR Ops' } }
     ]},
   { id: 'eg',
     industries: ['mfg', 'fin', 'it'],
@@ -113,6 +115,14 @@ const CATS = [
     abbr: { ja: '開発', zh: '开发', en: 'Eng.' },
     subs: [
       { id: 'sysspec', industries: ['mfg', 'fin', 'it'], name: { ja: '仕様・設計', zh: '规格与设计', en: 'Specs & Design' } }
+    ]},
+  { id: 'sl',
+    industries: ['it'],
+    name: { ja: '営業・案件管理', zh: '销售与商机管理', en: 'Sales & Pipeline' },
+    abbr: { ja: '営業', zh: '销售', en: 'Sales' },
+    subs: [
+      { id: 'pipe', industries: ['it'], name: { ja: '引合・受注確度', zh: '商机与赢单概率', en: 'Pipeline & Win Rate' } },
+      { id: 'prop', industries: ['it'], name: { ja: '提案資産の再利用', zh: '提案资产复用', en: 'Proposal Reuse' } }
     ]}
 ];
 
@@ -315,6 +325,13 @@ const SVCS = [
             zh: '将高管的来访与出差作为一个案件来管理，把到达航班、接机、公务车或包车安排、宴请、住宿、紧急联络人等事实按敲定的顺序不断追加。每次追加都会重新编制日程表，随时可输出最新版的对内版（日文・中文）与对外版（摘录）。公司协议酒店的名称、地址、联系方式以日文・英文・中文三种语言保存；宴请方面则整理出仕向（由我方招待还是受对方招待）以及双方的部门、职务、姓名，形成可作为审批附件的格式，并安排高管履历的事前交换。还可输出能批量导入 Outlook 的文件。',
             en: 'Manages an executive visit or business trip as a single case, appending facts as they are settled: arrival flights, airport pickup, company cars or chartered vehicles, dinners, hotels and emergency contacts. Every addition rebuilds the itinerary, so the latest version can be issued at any time for internal use (Japanese and Chinese) and for outside parties (extract). Contracted hotel names, addresses and phone numbers are held in Japanese, English and Chinese. For dinners it records which side is hosting, formats both sides\' departments, titles and names for the expense approval, and arranges the exchange of executive biographies beforehand. It also outputs a file that can be bulk-imported into Outlook.' } },
 
+  /* ---- gn/daily: 日常業務（IT）。設計書 docs/handoff/2026-09-11-it-industry.md §4-5（PR-3） ---- */
+  { id: 'gn8', cat: 'gn', sub: 'daily', st: 3, industries: ['it'], tags: ['ocr', 'translate'],
+    name: { ja: '名刺の読み取りと項目抽出', zh: '名片识别与信息提取', en: 'Business Card Reading & Field Extraction' },
+    desc: { ja: '名刺の画像から氏名・会社名・部門・役職・電話・メール・住所を抽出します。名刺の言語（日本語・中国語・英語）を判定し、役職は原文の表記と社内の対応表記の両方を返します（中国語名刺の「主管」→ 社内表記「主任」など）。読み取り結果は確認・修正できる形で返し、名刺そのものの管理は社内ポータル側が行います。本サービスは読み取りと抽出だけを担当します。',
+            zh: '从名片图像中提取姓名、公司名、部门、职务、电话、邮箱与地址。自动判定名片语言（日文、中文、英文），职务同时返回原文表述与公司内部对应表述（例如中文名片的"主管"对应内部表述"主任"）。识别结果以可确认、可修改的形式返回，名片本身的管理由公司内部门户负责，本服务只负责识别与提取。',
+            en: 'Extracts name, company, department, job title, phone, email and address from a business-card image. Detects the card\'s language (Japanese, Chinese or English) and returns the job title both as printed and in your company\'s equivalent wording — 主管 on a Chinese card maps to 主任 internally. Results come back in a reviewable, editable form; the card records themselves are kept by the internal portal, and this service only reads and extracts.' } },
+
   /* ---- pt: パートナー連携（構想中のパートナー 6 者。役割名で扱う） ---- */
   { id: 'pt1', cat: 'pt', sub: 'data', st: 2, industries: ['mfg'], tags: ['partner_infovendor', 'credit'],
     name: { ja: '取引先・サプライヤーの与信・リスク監視', zh: '客户与供应商信用及风险监控', en: 'Customer & Supplier Credit and Risk Monitoring' },
@@ -374,11 +391,32 @@ const SVCS = [
     desc: { ja: '当局通達と、その後の当局とのやり取り・照会回答を 1 か所に登録し、条文単位で照会できるようにします。改訂版と旧版を並べて変更箇所を示し、過去に同じ論点でどう回答したかも合わせて返します。',
             zh: '将监管通知及其后与监管方的往来、答复统一登记，可按条款查询。并排比较修订版与旧版以显示变更点，同时返回过去针对同一议题的答复口径。',
             en: 'Registers regulatory notices together with the follow-up correspondence and answers, and makes them searchable clause by clause. Shows what changed between the revised and previous versions and how the same point was answered before.' } },
+
+  /* ---- kn/ops: ナレッジ整備・運用（IT）。設計書 docs/handoff/2026-09-11-it-industry.md §4-5（PR-3） ---- */
+  { id: 'kn9', cat: 'kn', sub: 'ops', st: 3, industries: ['it'], tags: ['taxonomy', 'search'],
+    name: { ja: '取込文書の分類自動振り分け', zh: '导入文档的自动归类', en: 'Automatic Document Classification' },
+    desc: { ja: 'ナレッジに取り込まれた文書（提案書・設計書・議事録・障害報告・規程）を読み、分類・中分類の候補と、判断の根拠になった記述を返します。既存の分類に収まらないものは「未分類」として理由つきで残し、分類そのものの見直し候補として集計します。確定は管理者が行い、自動では移動しません。',
+            zh: '读取导入知识库的文档（提案书、设计书、会议纪要、故障报告、规章），返回分类与中分类的候选及其判断依据。无法归入既有分类的，标记为"未分类"并附理由保留，同时汇总为分类体系本身的调整候选。最终确定由管理员执行，系统不会自动移动文档。',
+            en: 'Reads documents taken into the knowledge base — proposals, design documents, minutes, incident reports, policies — and returns candidate categories and sub-categories along with the wording each judgment rests on. Anything that does not fit is kept as "unclassified" with a reason and tallied as a candidate for revising the taxonomy itself. An administrator confirms; nothing is moved automatically.' } },
+  { id: 'kn10', cat: 'kn', sub: 'ops', st: 3, industries: ['it'], tags: ['governance', 'regulation'],
+    name: { ja: '規程と現場運用の食い違い検出', zh: '规章与现场运营的差异检测', en: 'Policy vs. Practice Gap Detection' },
+    desc: { ja: '本社が定める全社規程と、拠点・部門で書かれた運用メモ・手順書・チェックリストを突き合わせ、食い違っている箇所を条文単位で示します。「規程より厳しい」「規程より緩い」「規程が想定していない」の 3 つに分け、緩い側を要対応として上位に出します。日本語の規程と中国語の運用メモをまたいで比較できます。',
+            zh: '将总部制定的全公司规章与各分支、部门编写的运营备忘、作业手册、检查表进行比对，按条款指出不一致之处。分为"严于规章""宽于规章""规章未涵盖"三类，其中宽于规章的作为须处理项优先呈现。支持日文规章与中文运营备忘的跨语言比对。',
+            en: 'Compares the company-wide rules issued by headquarters against the operating notes, procedures and checklists written at each site and department, and points out mismatches clause by clause. Sorts them into stricter than the rule, looser than the rule, and not covered by the rule, putting the looser ones at the top as items needing action. Works across a Japanese rulebook and Chinese operating notes.' } },
+
   { id: 'dc9', cat: 'dc', sub: 'report', st: 2, industries: ['fin'], tags: ['report', 'approval'],
     name: { ja: '議案・報告書・提案書のドラフト作成（テンプレート選択）', zh: '议案・报告・提案书草案生成（模板选择）', en: 'Proposal, Report & Pitch Draft Builder (Template-based)' },
     desc: { ja: '文書の種類（議案・本部報告・顧客向け提案書）を選び、案件名・金額・期間など最低限の情報を入れると、過去の同種文書の構成と言い回しに沿ったドラフトを返します。記載が必要なのに空欄の項目は「要記入」として明示します。',
             zh: '选择文书类型（议案・本部报告・客户提案书），输入案件名称、金额、期间等最少信息，即可生成沿用历史同类文书结构与措辞的草案。必填但为空的项目会明确标注为「待填写」。',
             en: 'Pick the document type (internal proposal, head-office report, client pitch), enter the minimum facts such as deal name, amount and term, and get a draft that follows the structure and wording of past documents of the same kind. Required but empty fields are flagged as to be completed.' } },
+
+  /* ---- dc/report: 報告・会議（IT）。設計書 docs/handoff/2026-09-11-it-industry.md §4-5（PR-3） ---- */
+  { id: 'dc10', cat: 'dc', sub: 'report', st: 3, industries: ['it'], tags: ['kpi', 'report'],
+    name: { ja: '予実差の理由の書き起こし', zh: '计划实绩差异的原因说明', en: 'Plan-vs-Actual Variance Narrative' },
+    desc: { ja: '稼働率・粗利率・引合金額などの計画と実績の差について、案件の出来事（受注の遅れ・要員の抜け・変更要求・検収の前倒し）を時系列で拾い、差の理由を文章として書き起こします。数字は集計元の案件へ辿れる形で残し、推測で書いた箇所は推測と明記します。月次・四半期の報告資料にそのまま貼れる長さで返します。',
+            zh: '针对稼动率、毛利率、商机金额等计划与实绩的差异，按时间顺序梳理项目事件（签约延迟、人员抽调、变更请求、验收提前），将差异原因写成文字说明。数字保留可追溯至源项目的形式，基于推测的部分明确标注为推测。输出长度可直接粘贴进月度、季度汇报资料。',
+            en: 'For gaps between plan and actuals — utilization, gross margin, pipeline value — it pulls the project events behind them in order (a late signing, a person pulled off, a change request, an early acceptance) and writes the explanation out in prose. Figures stay traceable back to the source projects, and anything inferred is labelled as inferred. Output is sized to paste straight into a monthly or quarterly report.' } },
+
   { id: 'rs1', cat: 'rs', sub: 'news', st: 2, industries: ['fin'], tags: ['news', 'market'],
     name: { ja: '企業・業界ニュースの自動収集と配信', zh: '企业与行业新闻的自动采集与推送', en: 'Automated Company & Industry News Collection and Delivery' },
     desc: { ja: '対象先・業界・キーワードと収集モード（一般／ネガティブ情報のみ）を設定しておくと、公開情報を定期的に集めて日本語の要約付きで配信します。取引先ごとにまとめたファイルを出力し、社内チャットへの通知にも回せます。',
@@ -469,9 +507,44 @@ const SVCS = [
     desc: { ja: '各担当の稼働実績を集め、案件・組織単位に集計して月末のコスト配分案を提示します。前月からの偏りや、報告と実績が合っていない箇所も合わせて示します。',
             zh: '汇集各成员的工时实绩，按案件与组织统计，提出月末的成本分摊方案。同时提示与上月相比的偏差，以及汇报与实绩不一致之处。',
             en: 'Collects each member\'s recorded effort, aggregates it by project and organization, and proposes the month-end cost allocation. Also shows shifts from the previous month and places where reports and actuals disagree.' } },
+
+  /* ---- po/staff: 要員・労務（IT）。設計書 docs/handoff/2026-09-11-it-industry.md §4-5（PR-3） ---- */
+  { id: 'po5', cat: 'po', sub: 'staff', st: 3, industries: ['it'], tags: ['leave', 'hr'],
+    name: { ja: '年休の取り残し検知と取得計画', zh: '年假余额检测与休假计划', en: 'Unused-Leave Detection & Planning' },
+    desc: { ja: '年次有給休暇の付与日数と取得実績を突き合わせ、取得率が低い人・期限までに消化しきれない人を検出します。案件のマイルストンと要員配置を見て、取得しやすい時期の候補を本人と上長に提示します。取得の指示や承認はしません。制度の条件は社内規程を参照し、拠点ごとの違い（日本・中国）を併記します。',
+            zh: '将年假的授予天数与实际使用情况进行比对，识别使用率偏低、到期前无法消化的人员。结合项目里程碑与人员安排，向本人与上级提示便于休假的时间候选。不下达休假指示，也不进行审批。制度条件依据公司规章，并同时标注各地（日本、中国）的差异。',
+            en: 'Compares granted annual leave against leave actually taken and flags people with low take-up or a balance they cannot use before it expires. Looking at project milestones and staffing, it suggests to the person and their manager when leave would be easiest to take. It does not instruct or approve leave. Conditions come from the company rules, with the differences between the Japan and China sites shown side by side.' } },
+  { id: 'po6', cat: 'po', sub: 'staff', st: 3, industries: ['it'], tags: ['workload', 'hr'],
+    name: { ja: '残業の偏りからの要員リスク検知', zh: '加班失衡与人员风险预警', en: 'Overtime Imbalance & Staffing Risk' },
+    desc: { ja: '残業時間・稼働の記録を案件の状態（フェーズ・遅れ・変更要求の件数）と突き合わせ、特定の人に負荷が寄っている状態を早い段階で示します。「この案件のこの役割が 3 か月続けて突出している」「代われる人が 1 人もいない」といった形で、要員リスクとして上長・PMO に返します。評価や勤怠の是正には使いません。',
+            zh: '将加班工时与稼动记录同项目状态（阶段、延期、变更请求数量）进行比对，及早呈现负荷集中于特定人员的情况。以"该项目该角色连续三个月明显偏高""无人可替换"等形式，作为人员风险反馈给上级与 PMO。不用于绩效评价或考勤纠正。',
+            en: 'Cross-checks overtime and utilization records against project status (phase, slippage, number of change requests) to show early where load is concentrating on one person. Reports it to managers and the PMO as a staffing risk — this role on this project has been an outlier for three months running, nobody can take over — and is not used for performance reviews or attendance enforcement.' } },
+  { id: 'po7', cat: 'po', sub: 'collect', st: 3, industries: ['it'], tags: ['effect', 'dashboard'],
+    name: { ja: 'AI利用実績からの削減時間の見積', zh: 'AI 使用实绩的节省工时估算', en: 'Time-Saved Estimate from AI Usage' },
+    desc: { ja: 'カタログの各サービスがどれだけ使われたか（件数・利用者・分類）を集計し、サービスごとに定めた「人がやったときの所要時間」を掛けて削減時間の目安を出します。実測ではなく見積であること、前提に置いた所要時間を必ず併記し、前提を変えたときの結果も併せて返します。使われていないサービスと、使われ方が想定と違うサービスも挙げます。',
+            zh: '汇总目录中各服务的使用情况（次数、使用者、分类），乘以为每个服务设定的"人工所需时间"，给出节省工时的参考值。必须同时标注这是估算而非实测，以及所采用的前提工时，并给出变更前提后的结果。同时列出未被使用的服务，以及使用方式与预期不符的服务。',
+            en: 'Tallies how much each catalog service is used (volume, users, category) and multiplies it by the "how long a person would take" figure defined for that service to produce an indicative time saving. It always states that this is an estimate rather than a measurement, shows the assumed durations, and gives the result under alternative assumptions. Services nobody uses, and services used differently than expected, are listed too.' } },
+
   { id: 'eg1', cat: 'eg', sub: 'sysspec', st: 3, industries: ['mfg', 'fin', 'it'], tags: ['spec', 'faq'], added: '2026-09-08',
     name: { ja: '上流工程の仕様支援（読解・質問回答・エラー対処）', zh: '上游工序的规格支持（解读・答疑・错误处置）', en: 'Upstream Specification Support (Reading, Q&A, Error Handling)' },
     desc: { ja: '仕様書を読み込み、理解のために確認すべき点を質問の形で提示し、仕様に関する問い合わせにも根拠箇所を引用して答えます。エラーコードを入れれば対処の候補を返し、仕様間の矛盾も指摘します。',
             zh: '读取规格书，以提问形式提示为理解所需确认的要点，并引用依据回答关于规格的咨询。输入错误码可返回处置候选，同时指出规格之间的矛盾。',
-            en: 'Reads a specification, raises the points that need clarification as questions, and answers spec queries with the relevant passage quoted. Enter an error code and it returns candidate remedies, and it flags contradictions between specifications.' } }
+            en: 'Reads a specification, raises the points that need clarification as questions, and answers spec queries with the relevant passage quoted. Enter an error code and it returns candidate remedies, and it flags contradictions between specifications.' } },
+
+  /* ---- sl: 営業・案件管理（IT）。設計書 docs/handoff/2026-09-11-it-industry.md §4-5（PR-3） ---- */
+  { id: 'sl1', cat: 'sl', sub: 'pipe', st: 3, industries: ['it'], tags: ['pipeline', 'analysis'],
+    name: { ja: '引合の受注確度推定', zh: '商机赢单概率推定', en: 'Opportunity Win-Probability Estimate' },
+    desc: { ja: '引合・提案段階の案件について、過去の類似案件（顧客・業種・規模・提案内容・競合の有無・期間）を突き合わせ、受注確度の目安と、その根拠になった過去案件を返します。確度を下げている要因（要件が固まっていない・決裁者に会えていない・見積根拠が薄い）を挙げ、次に何を確かめるべきかを提案します。確度の確定と社内報告は営業が行います。',
+            zh: '针对处于商机、提案阶段的项目，比对历史类似项目（客户、行业、规模、提案内容、有无竞争、周期），给出赢单概率的参考值以及作为依据的历史项目。同时列出拉低概率的因素（需求未固化、未见到决策者、报价依据薄弱），并建议下一步应确认的事项。概率的最终判定与内部汇报由营业负责。',
+            en: 'For an opportunity at the inquiry or proposal stage, matches it against similar past deals (client, industry, size, scope, competition, duration) and returns an indicative win probability together with the past deals behind it. Lists what is pulling the probability down — requirements not frozen, no access to the decision maker, a thin basis for the estimate — and suggests what to confirm next. The final call and the internal report stay with the salesperson.' } },
+  { id: 'sl2', cat: 'sl', sub: 'pipe', st: 3, industries: ['it'], tags: ['winloss', 'pipeline'],
+    name: { ja: '失注理由の蓄積と傾向分析', zh: '失单原因沉淀与趋势分析', en: 'Loss-Reason Capture & Trend Analysis' },
+    desc: { ja: '失注のたびに、理由（価格・体制・実績・納期・競合・社内都合）と案件の条件を聞き取って記録に残し、四半期ごとに傾向を返します。「この業種・この規模では価格で負けている」「要件定義の提案が弱い」といった繰り返し現れる型を、該当案件の一覧つきで示します。担当者の主観的な記述はそのまま残し、分類の口径だけを揃えます。',
+            zh: '每次失单时，记录失单原因（价格、团队、业绩、交期、竞争、内部因素）与项目条件，并按季度给出趋势。以"在该行业、该规模上因价格失单""需求定义阶段的提案偏弱"等反复出现的模式呈现，并附相关项目清单。保留负责人的主观描述，只统一分类口径。',
+            en: 'Each time a deal is lost, captures the reason (price, team, track record, schedule, competitor, internal) along with the deal\'s parameters, and reports the trend each quarter. Surfaces recurring patterns — losing on price in a given industry and deal size, weak proposals at the requirements stage — with the list of deals behind each. Keeps the owner\'s own wording and standardizes only the categories.' } },
+  { id: 'sl3', cat: 'sl', sub: 'prop', st: 3, industries: ['it'], tags: ['proposal', 'search'],
+    name: { ja: '過去提案の横断検索と再利用', zh: '历史提案的跨项目检索与复用', en: 'Past-Proposal Search & Reuse' },
+    desc: { ja: '案件の条件（業種・システム領域・規模・体制・期間）を入れると、過去の提案書・見積・体制図から似た案件を探し、流用できる章と、そのまま使ってはいけない箇所（顧客固有の前提・失注した提案・古い価格）を分けて返します。顧客名を伏せた形での流用を既定とし、伏せ忘れを検出します。',
+            zh: '输入项目条件（行业、系统领域、规模、团队、周期）后，从历史提案书、报价与团队结构图中查找相似项目，区分可复用的章节与不可直接沿用的部分（客户特有前提、已失单的提案、过时的价格）。默认以隐去客户名称的形式复用，并检测遗漏的未隐去之处。',
+            en: 'Given the parameters of a deal (industry, system area, size, team, duration), finds similar past proposals, estimates and org charts, and separates the sections you can reuse from the parts you must not — client-specific assumptions, proposals that lost, outdated pricing. Reuse defaults to a client-anonymized form, and anything left un-anonymized is flagged.' } }
 ];

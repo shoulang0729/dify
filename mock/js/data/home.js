@@ -80,10 +80,10 @@ const HOME = {
         why: { ja: '日中が混ざる案件レビューの議事録を、その場で両言語に起こせます。すでに提供中で、今日から使えます。',
                zh: '中日混合的项目评审纪要可当场生成双语版本。已在提供中，今天即可使用。',
                en: 'Turns a mixed Japanese/Chinese project review into minutes in both languages on the spot. Already in service — usable today.' } },
-      { id: 'po4',
-        why: { ja: '案件ごとの稼働とコスト配分は、毎月手で集計している部分です。集計の型を一度決めれば繰り返し使えます。',
-               zh: '各项目的稼动与成本分摊目前每月都在手工汇总，口径定好一次即可反复使用。',
-               en: 'Utilization and cost allocation per project are tallied by hand every month. Define the format once and reuse it.' } }
+      { id: 'po6',
+        why: { ja: '負荷が 1 人に寄っていることは、遅れになって初めて分かることが多い業務です。案件の状態と突き合わせて早く出します。',
+               zh: '负荷集中于一人往往要等到出现延期才被发现。本服务结合项目状态提前呈现。',
+               en: 'Load concentrating on one person usually only becomes visible once something slips. This surfaces it early by reading it against project status.' } }
     ]
   }
 };
@@ -217,21 +217,21 @@ const FEED = {
         note: { ja: '週次の案件レビューの議事録を作り、未決事項を次回の論点として整理します。',
                 zh: '整理每周项目评审的纪要，并把未决事项列为下次的议题。',
                 en: 'Write up the weekly project review and carry the open items over as next week\'s agenda.' } },
-      { id: 'po3', kind: 'routine',
+      { id: 'po5', kind: 'routine',
         when: { ja: '毎月 1 日', zh: '每月 1 日', en: 'The 1st of each month' },
-        note: { ja: '情報セキュリティの小テストを配信し、未受験者を集計します。',
-                zh: '发送信息安全小测验并统计未参加人员。',
-                en: 'Send out the information-security quiz and tally who has not taken it.' } },
+        note: { ja: '年休の残日数を確認し、期限までに消化できない人に取得時期の候補を出します。',
+                zh: '确认年假余额，并为到期前无法消化的人员提出休假时间候选。',
+                en: 'Check remaining annual leave and suggest when to take it for anyone who cannot use it before it expires.' } },
       { id: 'kn5', kind: 'notify',
         when: { ja: '新着', zh: '最新', en: 'New' },
         note: { ja: '個人情報の取り扱いに関する通達が更新されました。受託案件の手順書への影響を確認してください。',
                 zh: '个人信息处理相关通知已更新，请确认对受托项目作业手册的影响。',
                 en: 'A notice on handling personal data was updated. Check the impact on the procedures for client projects.' } },
-      { id: 'po1', kind: 'notify',
+      { id: 'sl2', kind: 'notify',
         when: { ja: '新着', zh: '最新', en: 'New' },
-        note: { ja: '要員アンケートの回答期限が近づいています。未回答が 3 割残っています。',
-                zh: '人员问卷的回答期限临近，仍有三成未回答。',
-                en: 'The staffing survey closes soon; 30% have not answered.' } }
+        note: { ja: '先月の失注 3 件の理由が登録されました。四半期の傾向に反映されています。',
+                zh: '上月 3 件失单的原因已登记，已反映到季度趋势中。',
+                en: 'Reasons for last month\'s three lost deals were recorded and are reflected in the quarterly trend.' } }
     ]
   }
 };

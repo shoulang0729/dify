@@ -253,7 +253,16 @@ const TAGS = {
   datasource:  { ja: '外部データ源',     zh: '外部数据源',   en: 'External data sources' },
 
   /* ---- 業種横断タグ（設計書 2026-09-08-exec-visit-attend.md §2-3） ---- */
-  travel:      { ja: '出張・来訪',       zh: '出差与来访',   en: 'Travel & visits' }
+  travel:      { ja: '出張・来訪',       zh: '出差与来访',   en: 'Travel & visits' },
+
+  /* ---- IT カタログ新設タグ 7 個（設計書 2026-09-11-it-industry.md §4-3） ---- */
+  ocr:         { ja: '読み取り・OCR', zh: '识别与OCR',     en: 'OCR & extraction' },
+  pipeline:    { ja: '引合・案件',     zh: '商机与项目',   en: 'Pipeline' },
+  winloss:     { ja: '受失注分析',     zh: '赢单失单分析', en: 'Win–loss analysis' },
+  leave:       { ja: '休暇・年休',     zh: '休假与年假',   en: 'Leave' },
+  taxonomy:    { ja: '分類・振り分け', zh: '分类与归集',   en: 'Taxonomy' },
+  governance:  { ja: '規程整合',       zh: '规章一致性',   en: 'Policy alignment' },
+  effect:      { ja: '効果測定',       zh: '效果测算',     en: 'Impact measurement' }
 };
 
 /* ============================================================
