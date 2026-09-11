@@ -62,6 +62,20 @@
  *        16-i dify/apps/ にある管理番号に dify/samples/<番号>/ が無い、または 3 件未満（warn）
  *        （設計書 docs/handoff/2026-09-09-demo-assets.md §D5。Issue #205 PR-1。
  *        §13 は #121 W2 用に予約済み・§14 は Issue #124・§15 は Issue #121 W4-1 が先に使っているため §16 を使う）
+ *   17.  （新規）部門ポータル（mock/portal.html）の契約。mock/portal.html が無ければ節ごと skip（§16 と同じ作法）。
+ *        17-a <script src> の順・本数が実ディレクトリから計算した期待値と一致（data/ui・data/catalog・data/style
+ *        ＋ scenarios の実ファイル数 ＋ js/data/portal/** ＋ js/portal/**）・すべて実在・すべて相対パス／
+ *        17-b インライン <script> 0 個・<style> 0 個、<link> は css/tokens.css → css/portal.css の 2 本、
+ *        トークン定義（--ntt-* の定義行）のコピーが無い／
+ *        17-d mock/css/portal.css に色の直値（#RGB/#RRGGBB）が無く、var(--x) がすべて tokens.css で定義済み／
+ *        17-e PT が ja/zh/en を全部持ち空でなく en にかな残りなし。js/data/portal/** に現れる
+ *        `{ja:…}` 形のオブジェクトはすべて同じ検査（PSVC[].short を含む）／
+ *        17-f js/portal/*.js に現れる mock.* のリテラルが mock.lang / mock.theme の部分集合／
+ *        17-h portal.html に class="mockbar"・id="langSel"・id="themeBtn" がある／
+ *        17-i PSVC が st / name / cat を持たない／
+ *        17-j portal.html・portal.css・js/portal/**・js/data/portal/** に生 URL（http(s)://）が無い
+ *        （設計書 docs/handoff/2026-09-11-portal-mock-pages.md §9-2。この PR は PR-1 の範囲＝17-c,g は含まない
+ *        （PR-2 で追加。SVCS[].place がまだ無いため）
  *
  * データの取り出しは tools/lib/load.mjs（node:vm で js/data/** を実行順に評価）を使う。
  * grab()（正規表現抽出）は廃止。
@@ -70,7 +84,7 @@ import { readFileSync, existsSync, writeFileSync, unlinkSync, readdirSync } from
 import { execFileSync } from 'node:child_process';
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadMock } from './lib/load.mjs';
+import { loadMock, loadPortal } from './lib/load.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const MOCK = resolve(ROOT, 'mock');
@@ -1216,6 +1230,149 @@ section('16. デモ資材（dify/samples/**）の契約');
     if (under3.length) warn(`dify/apps/ にある管理番号のうち dify/samples/ が無い/3 件未満: ${under3.join(', ')}`);
 
     if (!bad16) ok(`dify/samples/ 配下 ${dirEntries.length} ディレクトリすべてが §16-a〜16-h を満たす`);
+  }
+}
+
+/* ---------- 17. 部門ポータル（mock/portal.html）の契約 ---------- */
+section('17. 部門ポータル（mock/portal.html）契約');
+{
+  const portal = loadPortal(ROOT);
+  if (!portal) {
+    ok('mock/portal.html が無いため §17 は skip');
+  } else {
+    const PORTAL_HTML = resolve(MOCK, 'portal.html');
+    let bad17 = 0;
+
+    /* 17-a: <script src> の順・本数（実ディレクトリから期待値を計算） */
+    const scenDirP = resolve(MOCK, 'js/data/scenarios');
+    const scenDirsP = existsSync(scenDirP)
+      ? readdirSync(scenDirP, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name).sort()
+      : [];
+    const presentIndP = INDUSTRY_ORDER.filter(i => scenDirsP.includes(i));
+    const scenarioTagsP = presentIndP.flatMap(indId => {
+      const dirFiles = new Set(readdirSync(resolve(scenDirP, indId)).filter(f => f.endsWith('.js')));
+      const ordered = (CAT_ORDER_BY_INDUSTRY[indId] || []).filter(code => dirFiles.has(`${code}.js`));
+      const extra = [...dirFiles].filter(f => !ordered.includes(basename(f, '.js'))).sort();
+      return [...ordered, ...extra.map(f => basename(f, '.js'))].map(code => `js/data/scenarios/${indId}/${code}.js`);
+    });
+    const portalDataDir = resolve(MOCK, 'js/data/portal');
+    const portalDataFiles = existsSync(portalDataDir) ? new Set(readdirSync(portalDataDir).filter(f => f.endsWith('.js'))) : new Set();
+    const PORTAL_DATA_ORDER = ['ui.js', 'svc.js', 'org.js', 'front.js', 'common.js', 'mgmt.js', 'back.js'];
+    const portalDataOrdered = PORTAL_DATA_ORDER.filter(f => portalDataFiles.has(f));
+    const portalDataExtra = [...portalDataFiles].filter(f => !PORTAL_DATA_ORDER.includes(f)).sort();
+    const portalDataTags = [...portalDataOrdered, ...portalDataExtra].map(f => `js/data/portal/${f}`);
+    const portalAppDir = resolve(MOCK, 'js/portal');
+    const portalAppFiles = existsSync(portalAppDir) ? new Set(readdirSync(portalAppDir).filter(f => f.endsWith('.js'))) : new Set();
+    const PORTAL_APP_ORDER = ['app.js', 'render.js', 'demo.js', 'events.js'];
+    const portalAppOrdered = PORTAL_APP_ORDER.filter(f => portalAppFiles.has(f));
+    const portalAppExtra = [...portalAppFiles].filter(f => !PORTAL_APP_ORDER.includes(f)).sort();
+    const portalAppTags = [...portalAppOrdered, ...portalAppExtra].map(f => `js/portal/${f}`);
+    const expectedOrderP = ['js/data/ui.js', 'js/data/catalog.js', 'js/data/style.js', ...scenarioTagsP, ...portalDataTags, ...portalAppTags];
+
+    if (JSON.stringify(portal.scriptSrcs) !== JSON.stringify(expectedOrderP)) {
+      fail(`portal.html の <script src> の順序が期待と異なる:\n   期待: ${expectedOrderP.join(' → ')}\n   実際: ${portal.scriptSrcs.join(' → ')}`);
+      bad17++;
+    } else ok(`portal.html の <script src> ${expectedOrderP.length} 本が期待どおりの順序`);
+    for (const src of portal.scriptSrcs) {
+      if (!existsSync(resolve(MOCK, src))) { fail(`portal.html <script src="${src}">: 実ファイルが無い`); bad17++; }
+      if (src.startsWith('/') || src.includes('../')) { fail(`portal.html <script src="${src}">: 相対パスでない`); bad17++; }
+    }
+
+    /* 17-b: インライン <script>/<style> 0 個、<link> は tokens→portal の 2 本、トークン定義のコピーなし */
+    if (portal.inlineScriptCount !== 0) { fail(`portal.html にインライン <script> が ${portal.inlineScriptCount} 個ある`); bad17++; }
+    if (portal.styleCount !== 0) { fail(`portal.html に <style> ブロックが ${portal.styleCount} 個ある`); bad17++; }
+    const expectedLinksP = ['css/tokens.css', 'css/portal.css'];
+    if (JSON.stringify(portal.cssLinks) !== JSON.stringify(expectedLinksP)) {
+      fail(`portal.html の <link rel="stylesheet"> が想定と異なる: [${portal.cssLinks.join(', ')}]（期待: [${expectedLinksP.join(', ')}]）`);
+      bad17++;
+    } else {
+      for (const href of portal.cssLinks) {
+        if (href.startsWith('/') || href.includes('../')) { fail(`portal.html <link href="${href}">: 相対パスでない`); bad17++; }
+        if (!existsSync(resolve(MOCK, href))) { fail(`portal.html <link href="${href}">: 実ファイルが無い`); bad17++; }
+      }
+    }
+    if (/--ntt-[a-z0-9-]+\s*:/i.test(portal.html)) { fail('portal.html にトークン定義のコピー（--ntt-* の定義行）が残っている'); bad17++; }
+    if (!bad17) ok('portal.html: インライン <script>/<style> 0 個・<link> 2 本（tokens → portal）・トークンのコピーなし');
+
+    /* 17-d: portal.css に色の直値が無く、var(--x) がすべて tokens.css で定義済み */
+    const portalCssStripped = portal.portalCss.replace(/\/\*[\s\S]*?\*\//g, '');
+    const hexP = [...portalCssStripped.matchAll(/#[0-9a-f]{3,8}\b/gi)].map(m => m[0]);
+    if (hexP.length) { fail(`portal.css に色の直値: ${[...new Set(hexP)].join(', ')}`); bad17++; }
+    else ok('portal.css に色の直値なし');
+    const definedTokensP = new Set([...tokenCss.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map(m => m[1]));
+    const usedTokensP = new Set([...portal.portalCss.matchAll(/var\((--[a-z0-9-]+)/gi)].map(m => m[1]));
+    const undefTokensP = [...usedTokensP].filter(v => !definedTokensP.has(v));
+    if (undefTokensP.length) { fail(`portal.css の未定義 CSS 変数: ${undefTokensP.join(', ')}`); bad17++; }
+    else ok(`portal.css の var() 参照 ${usedTokensP.size} 件すべて tokens.css で定義済み`);
+
+    /* 17-e: PT と js/data/portal/** に現れる {ja:…} 形のオブジェクトがすべて 3 言語 */
+    const PORTAL_ONLY_KEYS = [
+      'PT', 'PGRP', 'PSCREENS', 'PHOW', 'PHOWLONG', 'PST',
+      'PSVC', 'PLACE', 'PNEW', 'PSTAGE_AI', 'PORG',
+      'PSTAGE', 'PDEALS', 'PCUST', 'PCONTACT', 'PHIST', 'PNEWS', 'PVENDOR',
+      'PACT', 'PCAND', 'PMEET', 'PKNOW', 'PKNOWACT',
+      'PPEOPLE', 'PATT', 'PKPI', 'PKPITOPIC', 'PSRC', 'PGOAL', 'PQTR', 'PCUR_Q',
+      'PEXP', 'PREQ', 'PTRAIN', 'PMYTRAIN', 'PMYITEM', 'PTODO_STATE', 'PSURVEY', 'PMYSURVEY'
+    ];
+    let ml17 = 0;
+    const foundML = [];
+    (function collect(v, path) {
+      if (!v || typeof v !== 'object') return;
+      if (!Array.isArray(v) && typeof v.ja === 'string') { foundML.push({ path, obj: v }); return; }
+      if (Array.isArray(v)) { v.forEach((x, i) => collect(x, `${path}[${i}]`)); return; }
+      for (const k of Object.keys(v)) collect(v[k], `${path}.${k}`);
+    })(Object.fromEntries(PORTAL_ONLY_KEYS.map(k => [k, portal.data[k]])), '');
+    for (const { path, obj } of foundML) {
+      for (const l of LANGS) {
+        if (typeof obj[l] !== 'string' || !obj[l].trim()) { fail(`${path}: ${l} が欠落/空`); ml17++; }
+      }
+      if (obj.en && kana.test(obj.en)) { fail(`${path}: en にかなが残っている → "${obj.en}"`); ml17++; }
+    }
+    if (!ml17 && portal.data.PT) ok(`PT（${Object.keys(portal.data.PT).length} キー）と js/data/portal/** の {ja:…} 形のオブジェクト（${foundML.length} 件）がすべて 3 言語一致`);
+    bad17 += ml17;
+
+    /* 17-f: js/portal/*.js に現れる mock.* が mock.lang / mock.theme の部分集合 */
+    const appTextP = portal.appSources.map(f => f.src).join('\n');
+    const mockKeysP = new Set([...appTextP.matchAll(/mock\.([A-Za-z0-9_]+)/g)].map(m => `mock.${m[1]}`));
+    const allowedP = new Set(['mock.lang', 'mock.theme']);
+    const disallowedP = [...mockKeysP].filter(k => !allowedP.has(k));
+    if (disallowedP.length) { fail(`js/portal/**: 許可されていない localStorage キー: ${disallowedP.join(', ')}`); bad17++; }
+    else ok(`js/portal/** の localStorage キーは許可集合の部分集合（${[...mockKeysP].join(', ') || 'なし'}）`);
+
+    /* 17-h: 足場（mockbar）とプロダクト機能（言語・テーマ切替）の存在 */
+    if (!/class="mockbar"/.test(portal.html)) { fail('portal.html に class="mockbar" が無い'); bad17++; }
+    if (!/id="langSel"/.test(portal.html)) { fail('portal.html に id="langSel" が無い'); bad17++; }
+    if (!/id="themeBtn"/.test(portal.html)) { fail('portal.html に id="themeBtn" が無い'); bad17++; }
+    if (/class="mockbar"/.test(portal.html) && /id="langSel"/.test(portal.html) && /id="themeBtn"/.test(portal.html)) {
+      ok('portal.html に mockbar（足場）と langSel/themeBtn（プロダクト機能）がある');
+    }
+
+    /* 17-i: PSVC は st / name / cat を持たない（SVCS からの二重持ちの再発を止める） */
+    if (portal.data.PSVC) {
+      let dupBad = 0;
+      for (const id of Object.keys(portal.data.PSVC)) {
+        const forbidden = ['st', 'name', 'cat'].filter(k => Object.prototype.hasOwnProperty.call(portal.data.PSVC[id], k));
+        if (forbidden.length) { fail(`PSVC.${id}: SVCS と二重持ちのキーがある: ${forbidden.join(', ')}`); dupBad++; }
+      }
+      if (!dupBad) ok('PSVC は st / name / cat を持たない（SVCS からの二重持ちなし）');
+      bad17 += dupBad;
+    }
+
+    /* 17-j: 生 URL（http(s)://）が無い（catalog.html への相対リンクは可） */
+    const urlRe17 = /https?:\/\//;
+    const urlBad = [];
+    if (urlRe17.test(portal.html)) urlBad.push('portal.html');
+    if (urlRe17.test(portal.portalCss)) urlBad.push('mock/css/portal.css');
+    for (const f of [...portal.appSources, ...portal.dataSources]) {
+      if (f.path.startsWith('js/portal/') || f.path.startsWith('js/data/portal/')) {
+        if (urlRe17.test(f.src)) urlBad.push(f.path);
+      }
+    }
+    if (urlBad.length) { fail(`生 URL（http(s)://）が含まれている（CLAUDE.md §2-10）: ${urlBad.join(', ')}`); bad17++; }
+    else ok('portal.html / portal.css / js/portal/** / js/data/portal/** に生 URL なし');
+
+    if (portal.vmErrors.length) { for (const e of portal.vmErrors) { fail(`portal js/data/**: ${e}`); bad17++; } }
+    else ok('portal の js/data/** が vm で読める（vmErrors 0 件）');
   }
 }
 

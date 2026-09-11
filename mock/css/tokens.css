@@ -158,6 +158,35 @@
 
   /* Focus ring */
   --focus-ring:           var(--ntt-future-blue-50);
+
+  /* --- 部門ポータル（mock/portal.html）専用の 22 トークン ---
+     設計書 docs/handoff/2026-09-11-portal-mock-pages.md §6。値はポータルの現物をそのまま移植。
+     --ntt-* は触らない。light/dark を同時に足す（このブロックが light 側） */
+  --rag-r:                #B32100;
+  --rag-r-bg:              rgba(228, 38, 0, 0.12);
+  --rag-y:                #8A5300;
+  --rag-y-bg:              rgba(255, 196, 0, 0.20);
+  --rag-g:                #00733A;
+  --rag-g-bg:              rgba(0, 203, 93, 0.14);
+  --prod-fg:              #6B3389;
+  --prod-bg:              rgba(107, 51, 137, 0.10);
+  --prod-bd:              rgba(107, 51, 137, 0.34);
+  --doc-fg:               #7A5B00;
+  --doc-bg:               rgba(255, 196, 0, 0.07);
+  --doc-bd:               rgba(122, 91, 0, 0.28);
+  --usr-fg:               #005B96;
+  --usr-bg:               rgba(0, 113, 188, 0.06);
+  --usr-bd:               rgba(0, 113, 188, 0.28);
+  --ai-fg:                #00707C;
+  --ai-bg:                rgba(0, 223, 237, 0.06);
+  --ai-bd:                rgba(0, 112, 124, 0.32);
+  --text-on-rail:         #C3CDD6;
+  --text-on-rail-strong:  var(--ntt-white);
+  --surface-rail-hover:   rgba(255, 255, 255, 0.06);
+  --surface-rail-selected:rgba(46, 144, 255, 0.16);
+  /* パイプラインのステージ帯色（.col の border-top）。--cat-accent と同じ、
+     インライン style で上書きする前提のフォールバック既定値（§2-9 と同じ考え方） */
+  --stage:                var(--border-default);
 }
 
 /* ============================================================
@@ -234,6 +263,34 @@
      この2行だけ dark で上書きする（§5-6）。--shadow-focus は変えない --- */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.55);
+
+  /* --- 部門ポータル（mock/portal.html）専用の 22 トークン（dark）---
+     設計書 §6。--ntt-* は触らない。dark ブロックはこの 1 つのみ（§2-2） */
+  --rag-r:                #FF8A66;
+  --rag-r-bg:              rgba(228, 38, 0, 0.20);
+  --rag-y:                #FFD34D;
+  --rag-y-bg:              rgba(255, 196, 0, 0.18);
+  --rag-g:                #5BE79B;
+  --rag-g-bg:              rgba(43, 224, 126, 0.16);
+  --prod-fg:              #C9A6E4;
+  --prod-bg:              rgba(107, 51, 137, 0.24);
+  --prod-bd:              rgba(201, 166, 228, 0.40);
+  --doc-fg:               #D9BC5B;
+  --doc-bg:               rgba(255, 196, 0, 0.07);
+  --doc-bd:               rgba(217, 188, 91, 0.30);
+  --usr-fg:               #7FC0FF;
+  --usr-bg:               rgba(46, 144, 255, 0.08);
+  --usr-bd:               rgba(127, 192, 255, 0.30);
+  --ai-fg:                #5FD3DE;
+  --ai-bg:                rgba(0, 223, 237, 0.07);
+  --ai-bd:                rgba(95, 211, 222, 0.30);
+  --text-on-rail:         #C3CDD6;
+  --text-on-rail-strong:  var(--ntt-white);
+  --surface-rail-hover:   rgba(255, 255, 255, 0.06);
+  --surface-rail-selected:rgba(46, 144, 255, 0.16);
+  /* パイプラインのステージ帯色（.col の border-top）。--cat-accent と同じ、
+     インライン style で上書きする前提のフォールバック既定値（§2-9 と同じ考え方） */
+  --stage:                var(--border-default);
 }
 
 /* tokens/typography.css */

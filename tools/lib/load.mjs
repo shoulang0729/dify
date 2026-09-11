@@ -82,3 +82,73 @@ export function loadMock(ROOT) {
     vmErrors
   };
 }
+
+/**
+ * loadPortal(ROOT) — mock/portal.html を同じ作法で読む。loadMock() は 1 バイトも変えていない
+ * （設計書 docs/handoff/2026-09-11-portal-mock-pages.md §9-1）。
+ *
+ * portal.html が無い（この PR がマージされる前の main など）ときは null を返す。呼び出し側
+ * （verify.mjs §17）はこれで節ごと skip する（§16 と同じ作法）。
+ */
+const PORTAL_DATA_KEYS = [
+  // 共有データ層（catalog と同じ。js/data/ui.js・catalog.js・style.js）
+  'T', 'PATTERNS', 'TAGS', 'TEMPLATES', 'INDUSTRIES', 'CATS', 'SVCS', 'CAT_STYLE',
+  // ポータル固有データ層（js/data/portal/**）
+  'PT', 'PGRP', 'PSCREENS', 'PHOW', 'PHOWLONG', 'PST',
+  'PSVC', 'PLACE', 'PNEW', 'PSTAGE_AI',
+  'PORG',
+  'PSTAGE', 'PDEALS', 'PCUST', 'PCONTACT', 'PHIST', 'PNEWS', 'PVENDOR',
+  'PACT', 'PCAND', 'PMEET', 'PKNOW', 'PKNOWACT',
+  'PPEOPLE', 'PATT', 'PKPI', 'PKPITOPIC', 'PSRC', 'PGOAL', 'PQTR', 'PCUR_Q',
+  'PEXP', 'PREQ', 'PTRAIN', 'PMYTRAIN', 'PMYITEM', 'PTODO_STATE', 'PSURVEY', 'PMYSURVEY'
+];
+
+export function loadPortal(ROOT) {
+  const MOCK = resolve(ROOT, 'mock');
+  const HTML_PATH = resolve(MOCK, 'portal.html');
+  if (!existsSync(HTML_PATH)) return null;
+
+  const html = readFileSync(HTML_PATH, 'utf8');
+  const cssLinks = [...html.matchAll(/<link\s+rel="stylesheet"\s+href="([^"]+)">/g)].map(m => m[1]);
+  const scriptSrcs = [...html.matchAll(/<script\s+src="([^"]+)"\s*><\/script>/g)].map(m => m[1]);
+  const inlineScriptCount = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>/g)].length;
+  const styleCount = [...html.matchAll(/<style[\s>]/g)].length;
+  const portalCssPath = resolve(MOCK, 'css/portal.css');
+  const portalCss = existsSync(portalCssPath) ? readFileSync(portalCssPath, 'utf8') : '';
+
+  const jsSources = scriptSrcs.map(src => {
+    const path = resolve(MOCK, src);
+    return { path: src, src: existsSync(path) ? readFileSync(path, 'utf8') : '' };
+  });
+  const dataSources = jsSources.filter(f => f.path.startsWith('js/data/'));
+  const appSources = jsSources.filter(f => f.path.startsWith('js/portal/'));
+
+  const ctx = vm.createContext({});
+  vm.runInContext('var window = globalThis;', ctx);
+  const vmErrors = [];
+  for (const f of dataSources) {
+    try {
+      new vm.Script(f.src, { filename: f.path }).runInContext(ctx);
+    } catch (e) {
+      vmErrors.push(`${f.path}: ${e.message}`);
+    }
+  }
+  const readVar = (name) => {
+    try {
+      return vm.runInContext(`typeof ${name} !== 'undefined' ? ${name} : undefined`, ctx);
+    } catch {
+      return undefined;
+    }
+  };
+  const data = {};
+  for (const k of PORTAL_DATA_KEYS) data[k] = readVar(k);
+  data.SCENARIOS = vm.runInContext(`(typeof window !== 'undefined' && window.SCENARIOS) || undefined`, ctx);
+
+  return {
+    html, cssLinks, scriptSrcs, inlineScriptCount, styleCount,
+    portalCss,
+    jsSources, dataSources, appSources,
+    data,
+    vmErrors
+  };
+}

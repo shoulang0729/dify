@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light" data-lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>部門ポータル ／ 部门门户 ／ Department Portal</title>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/portal.css">
+</head>
+<body>
+<div class="mockbar">
+  <span class="mb-t" id="mockLabel">概念確認用モック</span>
+  <span class="mb-d" id="mockDesc">NocoBase の実装ではありません。会社・人・数字はすべて架空。この帯はレビュー用の足場で、実画面には出ません。</span>
+  <span class="chips" id="indSw" aria-label="業種">
+   <button class="chip" type="button" data-ind="mfg">製造業</button>
+   <button class="chip" type="button" data-ind="fin">金融業</button>
+   <button class="chip" type="button" data-ind="it" aria-pressed="true">IT 業</button>
+  </span>
+  <span class="mb-sp"></span>
+  <span class="grp">
+  <button class="tgl" id="permTgl" type="button" aria-pressed="true"><span class="dot"></span><span id="permLbl">編集権限あり</span></button>
+  <button class="tgl" id="devTgl" type="button" aria-pressed="true"><span class="dot"></span><span id="devLbl">開発メモ</span></button>
+  <button class="tgl" id="usrTgl" type="button" aria-pressed="true"><span class="dot"></span><span id="usrLbl">使い方</span></button>
+  <button class="tgl" id="prodTgl" type="button" aria-pressed="false"><span class="dot"></span><span id="prodLbl">本番との違いを表示</span></button>
+  </span>
+</div>
+
+<div class="shell">
+  <aside class="rail">
+    <div class="org">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">N</span>
+        <span><b id="brandName">部門ポータル</b><i id="brandOrg">翠雲システムズ ソリューション本部</i></span>
+      </div>
+      <span class="sub2" id="brandSite">上海 ／ FY2026 上期</span>
+    </div>
+    <nav id="nav" aria-label="メインメニュー"></nav>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <div class="crumb" id="crumb">ホーム</div>
+        <h1 id="ttl">ホーム</h1>
+      </div>
+      <span class="sp"></span>
+      <select class="selctl" id="langSel" aria-label="言語">
+        <option value="ja">日本語</option>
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+       </select>
+       <button class="icobtn" id="themeBtn" type="button" aria-label="テーマ">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" id="themeIcon">
+         <path d="M16 11.5A6.5 6.5 0 018.5 4a6.5 6.5 0 107.5 7.5z"/>
+        </svg>
+       </button>
+      <span class="st st2" id="envchip">デモ環境・架空データ</span>
+      <div class="who">
+        <span class="av" id="avatar">KN</span>
+        <span><span id="whoName">岸本 奈津</span><br><span style="color:var(--text-muted)" id="whoRole">PMO ／ 全案件 閲覧</span></span>
+      </div>
+      <span class="pn">本番：AD が Identity の正本（Auth: LDAP）。ロールとデータスコープの定義はデモと同じ</span>
+    </header>
+    <div class="canvas" id="canvas"></div>
+  </div>
+</div>
+
+<!-- データ層（純粋なリテラルのみ。実行時副作用なし）。catalog.html と同じ CATS/SVCS/SCENARIOS を読む -->
+<script src="js/data/ui.js"></script>
+<script src="js/data/catalog.js"></script>
+<script src="js/data/style.js"></script>
+<script src="js/data/scenarios/mfg/kn.js"></script>
+<script src="js/data/scenarios/mfg/qa.js"></script>
+<script src="js/data/scenarios/mfg/dc.js"></script>
+<script src="js/data/scenarios/mfg/lg.js"></script>
+<script src="js/data/scenarios/mfg/nm.js"></script>
+<script src="js/data/scenarios/mfg/en.js"></script>
+<script src="js/data/scenarios/mfg/gn.js"></script>
+<script src="js/data/scenarios/mfg/pt.js"></script>
+<script src="js/data/scenarios/mfg/po.js"></script>
+<script src="js/data/scenarios/mfg/eg.js"></script>
+<script src="js/data/scenarios/fin/kn.js"></script>
+<script src="js/data/scenarios/fin/rs.js"></script>
+<script src="js/data/scenarios/fin/cv.js"></script>
+<script src="js/data/scenarios/fin/fa.js"></script>
+<script src="js/data/scenarios/fin/dc.js"></script>
+<script src="js/data/scenarios/fin/gn.js"></script>
+<script src="js/data/scenarios/fin/po.js"></script>
+<script src="js/data/scenarios/fin/eg.js"></script>
+<script src="js/data/portal/ui.js"></script>
+<script src="js/data/portal/svc.js"></script>
+<script src="js/data/portal/org.js"></script>
+<script src="js/data/portal/front.js"></script>
+<script src="js/data/portal/common.js"></script>
+<script src="js/data/portal/mgmt.js"></script>
+<script src="js/data/portal/back.js"></script>
+<!-- アプリ層 -->
+<script src="js/portal/app.js"></script>
+<script src="js/portal/render.js"></script>
+<script src="js/portal/events.js"></script>
+</body>
+</html>
