@@ -158,7 +158,9 @@
         {
           "id": "apply",
           "industries": [
-            "mfg"
+            "mfg",
+            "fin",
+            "it"
           ]
         }
       ]
@@ -1087,6 +1089,22 @@
       "place": "kpi"
     },
     {
+      "id": "dc11",
+      "cat": "dc",
+      "sub": "apply",
+      "st": 3,
+      "industries": [
+        "mfg",
+        "fin",
+        "it"
+      ],
+      "tags": [
+        "contract",
+        "legal"
+      ],
+      "place": "proj"
+    },
+    {
       "id": "rs1",
       "cat": "rs",
       "sub": "news",
@@ -1537,6 +1555,7 @@
     "inventory",
     "kpi",
     "leave",
+    "legal",
     "mail",
     "market",
     "meeting",
@@ -1683,23 +1702,23 @@
   "counts": {
     "cats": 15,
     "subs": 35,
-    "svcs": 81,
-    "tags": 66,
+    "svcs": 82,
+    "tags": 67,
     "ui": 91,
     "byIndustry": {
       "mfg": {
-        "svcs": 49,
+        "svcs": 50,
         "cats": 10
       },
       "fin": {
-        "svcs": 29,
+        "svcs": 30,
         "cats": 8
       },
       "it": {
-        "svcs": 25,
+        "svcs": 26,
         "cats": 7
       }
     },
-    "svcsMulti": 11
+    "svcsMulti": 12
   }
 }

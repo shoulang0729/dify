@@ -212,6 +212,7 @@ const TAGS = {
   approval:   { ja: '稟議・申請', zh: '审批申请', en: 'Approvals' },
   trade:      { ja: '輸出入・通関', zh: '进出口・报关', en: 'Trade & customs' },
   contract:   { ja: '契約', zh: '合同', en: 'Contracts' },
+  legal:      { ja: '法務・リスク', zh: '法务与风险', en: 'Legal & risk' },
   translate:  { ja: '翻訳', zh: '翻译', en: 'Translation' },
   glossary:   { ja: '用語集', zh: '术语表', en: 'Glossary' },
   procedure:  { ja: '手順書', zh: '作业指导', en: 'Procedures' },
