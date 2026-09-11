@@ -25,11 +25,14 @@ const CATS = data.CATS || [], SVCS = data.SVCS || [], TAGS = data.TAGS || {}, PA
 const INDUSTRIES = data.INDUSTRIES || [];
 
 const hasInd = (x, id) => Array.isArray(x.industries) && x.industries.includes(id);
-const svcsMfg = SVCS.filter(s => hasInd(s, 'mfg')).length;
-const svcsFin = SVCS.filter(s => hasInd(s, 'fin')).length;
-const svcsBoth = SVCS.filter(s => hasInd(s, 'mfg') && hasInd(s, 'fin')).length;
-const catsMfg = CATS.filter(c => hasInd(c, 'mfg')).length;
-const catsFin = CATS.filter(c => hasInd(c, 'fin')).length;
+// 業種の一覧は mock/js/data/ui.js の INDUSTRIES が正本（tools/** に業種をハードコードしない。
+// 設計書 docs/handoff/2026-09-11-repo-layout-v3.md §8-2 R-I1・R-I2）
+const industryIds = INDUSTRIES.map(i => i.id);
+const byIndustry = Object.fromEntries(industryIds.map(id => [id, {
+  svcs: SVCS.filter(s => hasInd(s, id)).length,
+  cats: CATS.filter(c => hasInd(c, id)).length
+}]));
+const svcsMulti = SVCS.filter(s => Array.isArray(s.industries) && s.industries.length > 1).length;
 
 /** 比較対象のスナップショット（順序も含める：メニューの並びは意味がある） */
 const snapshot = {
@@ -43,17 +46,20 @@ const snapshot = {
   counts: {
     cats: CATS.length, subs: CATS.reduce((n, c) => n + c.subs.length, 0), svcs: SVCS.length,
     tags: Object.keys(TAGS).length, ui: Object.keys(T).length,
-    svcsMfg, svcsFin, svcsBoth, catsMfg, catsFin
+    byIndustry, svcsMulti
   }
 };
 
-// 検算：業種別件数の合計とグローバル実件数の関係（設計書 §4-7）。
-// 一致しなければ業種の付け間違い（重複計上ミスなど）が疑われるため FAIL とする
+// 検算：全サービスが少なくとも 1 つの既知業種に属すること（設計書 §4-7・
+// docs/handoff/2026-09-11-repo-layout-v3.md §8-2 R-I1 item 5）。
+// 3 業種以上では包除原理（svcsMfg + svcsFin − svcsBoth）が破綻するため、
+// 「業種に属さないサービスが無い」ことの直接検査に置き換える
 {
-  const checkSum = snapshot.counts.svcsMfg + snapshot.counts.svcsFin - snapshot.counts.svcsBoth;
-  console.log(`   svcsMfg(${snapshot.counts.svcsMfg}) + svcsFin(${snapshot.counts.svcsFin}) − svcsBoth(${snapshot.counts.svcsBoth}) = ${checkSum}（svcs=${snapshot.counts.svcs}）`);
-  if (checkSum !== snapshot.counts.svcs) {
-    console.log('❌ 業種別件数の検算が一致しません（industries の付け間違いの疑い）');
+  const line = industryIds.map(id => `${id}=${byIndustry[id].svcs}`).join(' ');
+  console.log(`   業種別 svcs: ${line} ／ svcsMulti(2 業種以上)=${svcsMulti}（svcs=${snapshot.counts.svcs}）`);
+  const orphans = SVCS.filter(s => !(Array.isArray(s.industries) && s.industries.some(i => industryIds.includes(i)))).map(s => s.id);
+  if (orphans.length) {
+    console.log(`❌ 業種に属さない SVCS があります（industries の付け間違いの疑い）: ${orphans.join(', ')}`);
     process.exit(1);
   }
 }
@@ -70,8 +76,18 @@ const base = JSON.parse(readFileSync(BASE, 'utf8'));
 const diffs = [];
 const idsOf = (arr) => new Set(arr.map(x => x.id));
 
-/* 件数 */
+/* 件数（byIndustry は業種 id をキーにした map なのでキー集合ごと個別に比較する） */
 for (const k of Object.keys(snapshot.counts)) {
+  if (k === 'byIndustry') {
+    const bBy = base.counts.byIndustry || {};
+    const nBy = snapshot.counts.byIndustry;
+    for (const id of new Set([...Object.keys(bBy), ...Object.keys(nBy)])) {
+      if (JSON.stringify(bBy[id]) !== JSON.stringify(nBy[id])) {
+        diffs.push(`counts.byIndustry.${id}: ${JSON.stringify(bBy[id])} → ${JSON.stringify(nBy[id])}`);
+      }
+    }
+    continue;
+  }
   if (base.counts[k] !== snapshot.counts[k]) diffs.push(`counts.${k}: ${base.counts[k]} → ${snapshot.counts[k]}`);
 }
 /* 分類 */
