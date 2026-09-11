@@ -81,8 +81,7 @@ const PGRP = ['gFront', 'gCommon', 'gMgmt', 'gBack'];
    ============================================================ */
 const PSCREENS = [
   { grp: '', id: 'home', icon: 'M3 9l7-6 7 6v8a1 1 0 01-1 1h-4v-5H8v5H4a1 1 0 01-1-1z' },
-  { grp: 'gFront', id: 'cust', icon: 'M2 16v-1a4 4 0 014-4h2a4 4 0 014 4v1M7 4a3 3 0 110 6 3 3 0 010-6zM13 16v-1a4 4 0 00-3-3.87', ct: '4',
-    newai: ['new1'] },
+  { grp: 'gFront', id: 'cust', icon: 'M2 16v-1a4 4 0 014-4h2a4 4 0 014 4v1M7 4a3 3 0 110 6 3 3 0 010-6zM13 16v-1a4 4 0 00-3-3.87', ct: '4' },
   { grp: 'gFront', id: 'proj', icon: 'M3 5h5l1.5 2H17v9H3z', ct: '10' },
   { grp: 'gFront', id: 'watch', icon: 'M10 4c-4 0-6.5 3-7 5 .5 2 3 5 7 5s6.5-3 7-5c-.5-2-3-5-7-5zM10 11a2 2 0 100-4 2 2 0 000 4z', ct: '12' },
   { grp: 'gFront', id: 'vend', icon: 'M4 7l6-3 6 3v7l-6 3-6-3zM10 4v13', ct: '3' },
