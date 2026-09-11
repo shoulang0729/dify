@@ -1174,9 +1174,11 @@ function renderRail() {
   nav.innerHTML = PSCREENS.map(s => {
     let head = '';
     if (s.grp && s.grp !== last) { head = '<div class="navgrp">' + pt(s.grp) + '</div>'; last = s.grp; }
+    // 'ai'（AI サービス）だけは SVCS.length（カタログの正）から出す。他は業務データの固定件数（§4-4）
+    const ct = s.id === 'ai' ? String((typeof SVCS !== 'undefined' ? SVCS.length : 0)) : s.ct;
     return head + '<button class="navbtn" type="button" data-scr="' + s.id + '"' + (s.id === pstate.scr ? ' aria-current="page"' : '') + '>' +
       '<svg class="ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + s.icon + '"/></svg>' +
-      '<span>' + pt(s.id) + '</span>' + (s.ct ? '<span class="ct">' + s.ct + '</span>' : '') + '</button>';
+      '<span>' + pt(s.id) + '</span>' + (ct ? '<span class="ct">' + ct + '</span>' : '') + '</button>';
   }).join('');
 }
 
