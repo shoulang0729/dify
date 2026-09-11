@@ -69,6 +69,15 @@ document.addEventListener('click', (e) => {
     return;
   }
 
+  /* ---------- 結果を行に残す（js/portal/app.js の pstate.back。設計書 §5-9。PR-4） ---------- */
+  const backopen = e.target.closest('[data-backopen]');
+  if (backopen) {
+    const [scr, id, svc] = backopen.dataset.backopen.split('|');
+    const row = pctxRow(scr, id);
+    openSvcDrawer(svc, scr, row, { showResult: true });
+    return;
+  }
+
   /* ---------- 実行ドロワー（台本の再生。js/portal/demo.js。PR-3） ---------- */
   const drun = e.target.closest('[data-drun]');
   if (drun) { dRun(); return; }
@@ -76,6 +85,8 @@ document.addEventListener('click', (e) => {
   if (dchip) { dChip(dchip.dataset.dchip); return; }
   const dsend = e.target.closest('[data-dsend]');
   if (dsend) { dSend(); return; }
+  const dkeep = e.target.closest('[data-dkeep]');
+  if (dkeep) { dKeepResult(); return; }
 });
 
 document.addEventListener('change', (e) => {

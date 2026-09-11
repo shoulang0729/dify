@@ -46,7 +46,10 @@ const pstate = {
   kindFilter: '',
   /* PCAND のクローン（採用/見送りの状態を持つ。js/data/portal/** は書き換えない） */
   cand: (typeof PCAND !== 'undefined' ? PCAND.map(c => Object.assign({}, c)) : []),
-  candSeq: 960
+  candSeq: 960,
+  /* 結果を行に残す（PR-4。設計書 §5-9）。back[画面id][行id] = [{ svc, at, line }]。
+     メモリのみ。localStorage には書かない（§2-6。4 つ目のキーを作らない） */
+  back: {}
 };
 
 /* ============================================================
@@ -214,6 +217,70 @@ function prowAi(list, rowCtx) {
     if (rowCtx) { opt.ctxScr = rowCtx.scr; opt.ctxId = rowCtx.id; }
     return psvcBtn(n, opt);
   }).join('') + '</span>';
+}
+
+/* ============================================================
+   結果を行に残す（PR-4。設計書 §5-9）。
+   pstate.back[画面id][行id] = [{ svc, at, line }]（メモリのみ。§2-6）。
+   行の下に「✦ <管理番号> <AI の戻り>  <line>  <時刻> [開く]」を 1 行残す。
+   ============================================================ */
+/** いまの時刻の 'HH:MM'（ポータルに DEMO_DATE 相当の固定日付が無いため new Date() を使う。設計書 §5-9） */
+function pnow() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+/** 呼び出し元の行 id（rowCtx として渡した id と同じ規則。proj は行の id、cust は顧客名）。
+    行が無い（ブロックからの呼び出し）なら null（§5-4 と同じ「行なし」判定）。 */
+function pbackRowId(scr, row) {
+  if (!row) return null;
+  if (scr === 'proj') return row.id;
+  if (scr === 'cust') return row.cu;
+  return null;
+}
+/** scn.result[lang].title と items[0].k（表なら rows[0][0]）から 1 行要約を作る。新しい文言は作らない（§5-9） */
+function pbackLine(r) {
+  if (!r) return '';
+  const title = r.title || '';
+  const head = title.length > 24 ? title.slice(0, 23) + '…' : title;
+  let first = '';
+  if (r.items && r.items[0]) first = r.items[0].k;
+  else if (r.columns && r.rows && r.rows[0]) first = String(r.rows[0][0]);
+  return first ? head + ' ／ ' + first : head;
+}
+/** 戻りを記録する（同じ行・同じサービスなら上書き。重複を積まない） */
+function pbackKeep(scr, id, svc, line) {
+  pstate.back[scr] = pstate.back[scr] || {};
+  const list = pstate.back[scr][id] = pstate.back[scr][id] || [];
+  const at = pnow();
+  const existing = list.find(b => b.svc === svc);
+  if (existing) { existing.at = at; existing.line = line; }
+  else list.push({ svc, at, line });
+}
+/** 行の下に描く戻りの一覧（無ければ空文字＝何も出さない） */
+function pbackHTML(scr, id) {
+  const list = (pstate.back[scr] && pstate.back[scr][id]) || [];
+  if (!list.length) return '';
+  return list.map(b => {
+    const code = psvcCode(b.svc);
+    return '<div class="pback-item"><span class="pback-mark">&#10022;</span>' +
+      '<span class="pback-tag">' + pesc(code) + ' ' + pesc(pt('rowBack')) + '</span>' +
+      '<span class="pback-line">' + pesc(b.line) + '</span>' +
+      '<span class="pback-at">' + pesc(b.at) + '</span>' +
+      '<button class="pback-open" type="button" data-backopen="' + pesc(scr) + '|' + pesc(String(id)) + '|' + pesc(b.svc) + '">' +
+      pesc(pt('rowBackOpen')) + '</button></div>';
+  }).join('');
+}
+/** 行の描画に埋め込む戻りのコンテナ。data-scr/data-id を持たせ、キープ後は pbackRefresh() でここだけ差し替える
+    （§2-3 の fav と同じ考え方：全体を描き直すとスクロール位置が飛ぶため）。 */
+function pbackContainer(scr, id) {
+  return '<div class="pback" data-scr="' + pesc(scr) + '" data-id="' + pesc(String(id)) + '">' + pbackHTML(scr, id) + '</div>';
+}
+/** キープ／再描画のあとで、対応するコンテナだけを差し替える */
+function pbackRefresh(scr, id) {
+  const sid = String(id).replace(/"/g, '\\"');
+  document.querySelectorAll('.pback[data-scr="' + scr + '"][data-id="' + sid + '"]').forEach(el => {
+    el.innerHTML = pbackHTML(scr, id);
+  });
 }
 
 /* ============================================================
