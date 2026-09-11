@@ -65,7 +65,7 @@ CI（`verify.yml`／`portal-verify.yml`）からは行わない。§6）。
 
 | 分類 | 例 | 書き方 |
 |---|---|---|
-| **秘密**（漏れると事故） | 人事・勤怠 DB の接続文字列、SSO のクライアントシークレット、Dify Service API キー、NocoBase の `APP_KEY`・DB パスワード | `${PORTAL_DSN_HR}` のように `${VAR}` で。値はリポジトリの外（`~/.config/portal/<env>.env`） |
+| **秘密**（漏れると事故） | 人事・勤怠 DB の接続文字列、SSO のクライアントシークレット（**Professional+ 購入後の将来拡張用。Community のうちは使わない**。`docs/handoff/2026-09-10-portal-nocobase.md` rev3 §0-2 D-1・§4-4b・R-0【1】・A13）、Dify Service API キー、NocoBase の `APP_KEY`・DB パスワード | `${PORTAL_DSN_HR}` のように `${VAR}` で。値はリポジトリの外（`~/.config/portal/<env>.env`） |
 | **秘密ではないが公開したくない値** | 年休取得率の通知閾値、所定労働時間・締め日 | 同上。`.env.example` に変数名だけを置く（値は入れない） |
 | **公開してよい既定値** | データソース名 `hr`、テーブル名、ロール名、管理番号 | 直値で書いてよい（`${VAR}` にしない） |
 

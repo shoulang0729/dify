@@ -2,6 +2,10 @@
 #
 # 実値は 1 つも書かない。すべて ${VAR}（値はリポジトリの外、~/.config/portal/prod.env）。
 # 設計書 docs/handoff/2026-09-11-repo-layout-v3.md §2-4。
+#
+# 【注意】SSO/OIDC/LDAP/SAML は NocoBase Professional+ の機能。docs/handoff/2026-09-10-portal-nocobase.md
+# rev3（§0-2 D-1・§4-4b・R-0【1】・A13）で「買う日までは本番もローカルユーザー」と確定しているため、
+# ここに sso 系のフラグは置かない（Community のうちは常にローカルユーザー認証）。
 schema: 1
 name: prod
 datasource:
@@ -12,6 +16,3 @@ thresholds:
 workhours:
   std_hours_per_month: '${PORTAL_WORKHOURS_STD}'
   closing_day: '${PORTAL_CLOSING_DAY}'
-flags:
-  sso: on
-  sso_client_id: '${PORTAL_OIDC_CLIENT_ID}'
