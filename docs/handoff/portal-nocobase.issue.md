@@ -105,7 +105,29 @@
 |---|---|
 | **`2026-09-11-repo-layout-v3.md`**（NocoBase 実装を dify の `portal/` に取り込む案。**PM 判断待ち**） | **§1（分けた理由）はそのまま残し、§1-5 を足して「v3 で再検討中。結論は v3 に従う」と明記。** `portal` リポの **PR #1 の扱いも v3 に委ねる**。**申し送り「rev2 §4-11 の Professional＋方式 (b) は成り立たない」は R-0【1】で既に処理済み＝整合を確認した**（方式 (a) の歯止め C2 も §3-5 に既存、rev3 で §3-5b に抜き出した） |
 | **`2026-09-11-portal-mock-pages.md`**（`mock/portal.html`） | **§16 で役割分担を明示：モック＝見せるもの・UI の正本／本書＝動かすもの・業務ルールの正本。** 食い違ったときどちらが勝つかを事項ごとに表にした（画面 id はモック、文言は本書、`place` はモックのデータ層、テーブル定義は本書） |
-| **`2026-09-11-it-industry.md`**（カタログに IT 業を足す。新分類 `sl`・14 分類 77 サービス） | **ポータル発のユースケース 10 件はそちらに吸収された。** → **`docs/handoff/portal-usecases.issue.md` は作らない。§17 を「it-industry を参照する」節に差し替えた**（10 件と本書の出どころの対応表つき）。**管理番号は本書で先に切らない** |
+| **`2026-09-11-it-industry.md`**（カタログに IT 業を足す。新分類 `sl`・14 分類 77 サービス） | **① ユースケース 10 件はそちらに吸収された** → `portal-usecases.issue.md` は作らない。**§17 を「it-industry を参照する」節に差し替えた**。**② `data/world/dept/` を取り下げ、自部門の架空世界は `data/world/it/` の 1 つに寄せた**（§14-8''）。**③ 5 名の氏名の食い違いは PM 判断 11-19 に上げた**（本書は it-industry を 1 文字も触っていない） |
+
+### ★ 翠雲システムズの定義の正本はどこか（**1 つに揃えた**。設計書 §14-8''-3）
+
+| 冊 | 何を持つか | 正本か |
+|---|---|---|
+| **it-industry** → **`data/world/it/`**（8 ファイル） | 社名・部署・人・顧客・協力会社・KPI・カレンダー・文書番号 | **✅ 正本**（`CLAUDE.md` §2-13 に素直に従う唯一の置き場） |
+| **portal-mock-pages** → `mock/js/data/portal/org.js` | 同じ会社・人・顧客をモック表示用に | **v1 では正本**（Q4：昇格は別 Issue）。**一時的に二重** |
+| **本書** → `data/world/it/` に 9 ファイルを追記 | 案件・To Do・売上・勤怠・ナレッジ・ニュース・申請・経費・目標 | **正本ではない**（会社の定義を持たない） |
+
+**二重は設計で解かず、順序で解く：**
+
+```
+① it-industry PR-1 が data/world/it/ の 8 ファイルを作る（着手中）
+      ↓
+② portal-mock-pages Q4 を閉じる
+   —— 「昇格は別 Issue」の "別 Issue" が ① で済んでいるので、
+      org.js は data/world/it/ からの派生物になる（検査を足すかは向こうの判断）
+      ↓
+③ 本書の PR-2 が data/world/it/ に 9 ファイルを追記する（② を待たなくてよい。① は必須）
+```
+
+**本書が決めているのはこれだけ**：**社名・部署・人・顧客・協力会社・KPI・カレンダー・文書番号を本書では定義しない。** 本書に出てくるそれらの語は**すべて `data/world/it/` からの引用**で、**食い違ったら `data/world/it/` が勝つ**。
 
 **★ 本書は他の 3 冊を 1 文字も書き換えていない。**
 
@@ -118,7 +140,7 @@
 | **PR-1** | 設計書の初版 | `docs/handoff/2026-09-10-portal-nocobase.md` | **マージ済み**（#243） |
 | **PR-1b** | 改訂（前提変更＋公式調査） | 同上 ＋ `2026-09-11-nocobase-research.md` | **マージ済み**（`bf3ffb3`） |
 | **PR-1c**（**本 PR**） | **rev3 の再改訂 ＋ 本 Issue 本文の更新。コード変更なし** | `docs/handoff/2026-09-10-portal-nocobase.md`・`docs/handoff/portal-nocobase.issue.md` | **本 PR** |
-| **PR-2** | **`data/world/dept/` を新設**（**12 ファイル**。§14-8'）＋ `data/world/README.md` に追記 | `data/world/dept/*`・`data/world/README.md` | PR-1c の後。**11-16 を待つのは `knowledge.csv` と `kpi.csv` の 2 本だけ** |
+| **PR-2**（**差し替え**） | ~~`data/world/dept/` を新設~~ → **`data/world/it/` に ポータル固有の 9 ファイルを追記**（§14-8''-2）＋ `data/world/README.md` の **`it/` の節**に追記 | `data/world/it/{pipeline,todos,revenue,people_ops,knowledge,news,requests,expenses,goals}.csv`・`data/world/README.md` | **it-industry PR-1 の後（直列）。** 11-16 を待つのは `knowledge.csv` と `goals.csv` の 2 本だけ |
 | **PR-3** | `docs/dify/**` の追記（§9-2）＋ `README.md` 1 行 ＋ `CLAUDE.md` 1 行 | `docs/dify/platform-components.md`・`README.md`・`CLAUDE.md` | PR-1c の後。**`CLAUDE.md` の行は構成 v3 の結論待ちにしてよい** |
 | **PR-4**（**別 Issue**） | 実機 12 本の Dify アプリ id と公開 Web アプリ URL の登録（P0 のブロッカー B-2） | `dify/env/cloud-master/env.yml`・`mock/js/data/live.js` | **`run:mac` / `run:runner`。本 Issue に含めない** |
 
@@ -126,14 +148,16 @@
 
 ```
 PR-1c（本 PR・先行必須）
-  ├── PR-2   data/world/dept/**               ┐ 並列可
-  └── PR-3   docs/dify/** README.md CLAUDE.md ┘
+  └── PR-3   docs/dify/** README.md CLAUDE.md
+
+it-industry PR-1（data/world/it/ の 8 ファイルを作る）
+  └── PR-2   data/world/it/ に 9 ファイルを追記   ★ 直列
 
 PR-4 は別 Issue（run:* の軸が違う）
 別 Issue（他 architect）: portal-mock-pages（mock/**・tools/**）／it-industry（mock/js/data/**・data/world/it/**）
 ```
 
-**⚠️ PR-2 と it-industry の PR-1 が `data/world/README.md` で衝突しうる**（両方が表に 1 節足す）。**直列にするか、足す位置を分ける**（`dept/` は末尾、`it/` はその手前）。
+**⚠️ PR-2 と it-industry の PR-1 は `data/world/it/` という同じディレクトリと `data/world/README.md` の同じ節を触るので、直列にする**（`CLAUDE.md` §5）。① it-industry PR-1 が `it/` と README の節を作る → ② 本 Issue の PR-2 が**同じディレクトリに追記し、同じ節に行を足す**（**節を 2 つ作らない**）。**並列にできるのは PR-3 だけ。**
 
 ## 触らない範囲（reviewer の diff 監査の基準）
 
@@ -161,15 +185,17 @@ PR-4 は別 Issue（run:* の軸が違う）
 
 ## 受け入れ条件（PR-2）
 
-- 追加するのは `data/world/dept/` の **12 ファイル**と `data/world/README.md` への追記だけ
-- **`mfg`（17 名）・`fin`（14 名）の人を増やさない。** 部員 5 名は `dept/` の中だけ。**姓・名・フルネームの 3 段で既存 31 名と照合する**（§14-8'b の教訓）
-- **顧客 2 社の社名は `mfg`/`fin` の `company.md` から引く**（新しい社名を作らない）。**α/β/γ/δ/ε は既存記号と重複しない**
-- **mfg と fin を互いに混ぜない**（`CLAUDE.md` §2-13）。`dept/` が両方を顧客に持つのは可（片方向参照）
+- **`data/world/dept/` を作らない。** 追加するのは **`data/world/it/` への 9 ファイル**と `data/world/README.md` の **`it/` の節**への追記だけ（§14-8''-2）
+- **it-industry PR-1 の 8 ファイル（`company.md`・`org.csv`・`people.csv`・`clients.csv`・`vendors.csv`・`kpi.csv`・`calendar.md`・`documents.csv`）を 1 バイトも書き換えない**（社名・部署・人・顧客・協力会社の正本はあちら。§14-8''-3）
+- **`mfg`・`fin` の人を増やさない。** 部員 5 名は `it/people.csv` の中だけ。**姓・名・フルネームの 3 段で既存 37 名と照合する**（§14-8'b）
+- **顧客 2 社は `clients.csv` の `ref_world` で参照し、社名の 3 言語表記を二重に持たない**。**α/β（顧客）・γ/δ/ε（協力会社）は it-industry §3-4-2 の割り当てに従う**
+- **世界の「今日」は `2026-09-11`**（it-industry `calendar.md`）。**`revenue.csv` の Q1/Q2 実績・Q3/Q4 見込 はこれと整合させる**
+- **mfg と fin を互いに混ぜない**（`CLAUDE.md` §2-13）。`it/` が両方を顧客に持つのは可（片方向・社名と拠点名だけ）
 - **`people_ops.csv` は §5-15-1 の物語が成立するように作る**（Red 案件の担当者 1 名が 残業 15h 超 ＋ 年休取得率 30% 未満 ＋ 必須研修の期限超過）
 - **`goals.csv` は 1 名を「未設定」、1 名を「中間未提出」にする**（自動起票のデモ）
 - `npm run world` の **warn 件数が増えない** ／ `npm test` PASS（regress は差分ゼロ）
 
-## PM 判断（**18 件。⏳ が 6 件。P0 を止めるものは 1 つも無い**。設計書 §11）
+## PM 判断（**19 件。⏳ が 7 件。P0 を止めるものは 1 つも無い**。設計書 §11）
 
 | # | 状態 | 論点 | architect の推奨 |
 |---|---|---|---|
@@ -179,7 +205,7 @@ PR-4 は別 Issue（run:* の軸が違う）
 | 11-4 ✅ | 了承 | NocoBase の AI 機能を使わない | 維持 |
 | 11-5 ✅ | 了承（**v3 で再検討中**） | 新リポの名前と可視性 | `shoulang0729/portal`・public。**ただし結論は構成 v3 に従う**（§1-5） |
 | 11-6 ✅ | 了承 | §9-1・§9-2 の追記 | 適用（PC-19 だけ保留） |
-| 11-7 🔄 | 更新 | `data/world/` に足すもの | **`data/world/dept/` 12 ファイル**（rev3 後半で 5 本増えた） |
+| 11-7 🔄 | 更新 | `data/world/` に足すもの | ~~`data/world/dept/` を新設~~ → **`data/world/it/` に 9 ファイルを追記**（**自部門＝IT 業なので世界は 1 つ**。§14-8''） |
 | 11-8 ✅ | 了承 | P0 をどこで動かすか | ローカル docker **2 台**（**理由が Migration Manager → M1 定義バンドルに変わった**） |
 | **11-9'** ✅ | **PM 回答済み（反転）** | Professional を買うか | ~~買う~~ → **買わない。Community。** 帰結は F-1〜F-9、代替は §4-12・§4-13 |
 | **11-10** ⏳ | | 中国拠点から `github.com` に到達できるか | 情シスに確認。否なら GitLab に片方向ミラー。**P1 着手前まででよい** |
@@ -190,13 +216,14 @@ PR-4 は別 Issue（run:* の軸が違う）
 | **11-15** ⏳ | **新規** | サーベイ 6 種を匿名にするか記名にするか（**後から変えられない**） | §5-16-4 の推奨どおり。**匿名でも「提出した事実」は別テーブルで持つ**（匿名は破れない） |
 | **11-16** ⏳ | **新規・P1 のブロッカー** | ナレッジ中分類 46・KPI 指標 46・目標の指標の**3 言語** | **PM が名前を確定してから 3 言語表にする。** 分類軸はプロダクト判断なので architect が単独で確定させない。**確定まで seed を作らない** |
 | **11-17'** ✅ | **PM 回答済み** | 自部門の社名 | **翠雲システムズ / 翠云系统 / Suiun Systems, Ltd.**。**残る確認は「実在企業と一致しないこと」1 点** |
-| **11-18'** ✅ | **PM 回答済み** | 自部門 5 名の氏名 | **確定。既存 31 名との衝突なし**（rev2 案の 2 件の衝突は解消） |
+| **11-18'** ✅ | **PM 回答済み** | 自部門 5 名の氏名 | **確定。既存 37 名との衝突なし**（rev2 案の 2 件の衝突は解消） |
+| **11-19** ⏳ | **新規・it-industry PR-1 のブロッカー** | **5 名の氏名が本書と `2026-09-11-it-industry.md` §3-4-1 で食い違う**（本書＝篠崎/黄/蔡/村井/岸本、向こう＝藤井/李 雯/周 建偉/村井/島田） | **本書の 5 名を採る。** ① PM が 2026-09-11 夕に確定させたもので時系列が新しい ② 既存 37 名と姓・名・フルネームのどれも衝突しない ③ it-industry §3-4-1 自身が「採否は PM」と書いている。**正本は `data/world/it/people.csv`。直す場所は 4 つだけ**（§14-8'b）
 
 ## P0 のブロッカー（**1 つ消えた**）
 
 1. ~~NocoBase Professional の購入~~ → **✅ 消滅**（買わない）
 2. **実機 12 本の Dify アプリ id と公開 Web アプリ URL の登録**（PR-4・別 Issue）
-3. **`data/world/dept/`**（PR-2）
+3. **`data/world/it/`**（**it-industry PR-1 が 8 ファイルを作る → 本 Issue の PR-2 が 9 ファイルを追記**。直列）
 
 **待つ間にできること**：`migrations/V1__init.sql` ／ **G-1〜G-3 の台帳（AC-0）** ／ **M1 のスクリプト 3 本**。**とくに G-1〜G-3 は初日にやらないと取り返しがつかない。**
 
