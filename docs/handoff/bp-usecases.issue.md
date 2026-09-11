@@ -1,22 +1,23 @@
-# BP の実装済み AI 製品 8 種をカタログとシナリオに取り込む（設計完了・実装待ち）
+# BP の実装済み AI 製品 8 種をカタログとシナリオに取り込む（**PM 判断確定・実装可**）
 
 - **ラベル**：`run:cloud`
-- **設計書**：[`docs/handoff/2026-09-11-bp-usecases.md`](./2026-09-11-bp-usecases.md)
+- **設計書**：[`docs/handoff/2026-09-11-bp-usecases.md`](./2026-09-11-bp-usecases.md)（**rev2**。追補 §13 が本文より優先する）
 - **レーン**：M/L（データ層 `CATS`/`SVCS`/`TAGS` に触る）
 - **⚠️ 本 Issue の §7 は [`docs/handoff/2026-09-10-portal-nocobase.md`](./2026-09-10-portal-nocobase.md) の **rev4 の入力**です**（同設計書はこの Issue では 1 文字も触りません）
+- **更新（2026-09-11）**：**PM 判断 Q1〜Q9 が確定**しました（設計書 §13-1）。**Q6（Dify Enterprise）は保留**＝推奨と違います（§13-2）。件数の期待値を **main の現況（15 分類 35 中分類 81 サービス）** に合わせ直し（§13-3）、**PR を PR-A / PR-B / PR-C の 3 本に確定**しました（§13-5）。**設計の判断は 1 つも変わっていません。**
 
 ---
 
 ## 概要
 
-BP（ビジネスパートナー。本リポジトリでは **`ζ 社`** と呼ぶ）が実装済みの AI 製品 8 種を、カタログ（14 分類 33 中分類 77 サービス）と照らし合わせ、**5 軸（分類・タグ・ペルソナ・入出力・出口）の一致数**で統廃合を判定しました。
+BP（ビジネスパートナー。本リポジトリでは **`ζ 社`** と呼ぶ）が実装済みの AI 製品 8 種を、カタログ（**15 分類 35 中分類 81 サービス**。2026-09-11 現在）と照らし合わせ、**5 軸（分類・タグ・ペルソナ・入出力・出口）の一致数**で統廃合を判定しました。
 
 | 判定 | 件数 | 内訳 |
 |---|---|---|
 | **統合**（新規採番しない） | **5** | LG-01（翻訳）／NM-05（ChatBI）／DC-02（議事録）／KN-09（個人 KB → チーム KB）／PT-05（履歴書スクリーニング） |
-| **新規**（採番候補） | **1** | **DC-11 契約書レビュー（逸脱条項の検出と修正案）** |
+| **新規**（**採番確定 2026-09-11**） | **1** | **DC-11 契約書レビュー（逸脱条項の検出と修正案）**。**永久欠番として確定**。`place` は `proj` |
 | **対象外**（PM 判断 2026-09-11） | **2** | アパレルデザイン／採点 |
-| **ポータルに取り込む**（PM 判断 2026-09-11） | **1** | AI ポータル。**特にコンテンツ監査と LLM ゲートウェイ** |
+| **ポータルに取り込む**（PM 判断 2026-09-11） | **1** | AI ポータル。**特にコンテンツ監査と LLM ゲートウェイ**。⚠️ **Dify Enterprise は保留**（§13-2） |
 
 **カタログのデータ層で動くのは DC-11 の 1 件追加だけ**です。8 製品のうち 1 つも「カタログに BP 製品を並べる」形にしていません。カタログは「**どの業務ができるか**」の台帳であって、「**どの製品を買うか**」の台帳ではないためです。
 
@@ -71,29 +72,33 @@ BP（ビジネスパートナー。本リポジトリでは **`ζ 社`** と呼�
 | `industries` | `['mfg', 'fin', 'it']`（製造＝サプライヤー契約／金融＝融資契約／IT＝業務委託契約） |
 | `tags` | `['contract', 'legal']`（`legal` は**新規 1 キー**。3 言語は設計書 §4-3） |
 | テンプレート | `upload`（新テンプレートは増やさない） |
+| `place`（ポータルの画面） | **`proj`（案件）**。契約は顧客ではなく案件単位に付き、出口が SL-01 と同じ動線（設計書 §13-4） |
 
 **`dc/apply` の `industries` を `['mfg']` → `['mfg','fin','it']` に広げる**必要があります（verify が `SVCS.industries ⊆ cat ∩ sub` を検査するため）。既存 3 件（DC-05・DC-06・DC-07）の `industries` は変えません。
 
 **3 言語の `name`/`desc` 全文は設計書 §4-4 にあります。implementer はそれをそのまま転記してください（翻訳・言い換えをしない）。**
 
-> **⚠️ 管理番号 DC-11 は PM 承認後に確定します**（`CLAUDE.md` §2-11：通番は永久欠番）。
+> **✅ 管理番号 DC-11 は PM 承認済み（2026-09-11）。この時点で永久欠番です**（`CLAUDE.md` §2-11）。
 
 ---
 
 ## 変更前後の件数と id 一覧（reviewer が `regress.mjs` の差分と照合する）
 
-| | 変更前 | 変更後 |
+**（2026-09-11 更新：main の現況に合わせた確定値。設計書 §13-3-3）**
+
+| | 変更前（main 現況） | 変更後 |
 |---|---|---|
-| 分類 `cats` | 14 | **14** |
-| 中分類 `subs` | 33 | **33** |
-| サービス `svcs` | 77 | **78** |
-| タグ `tags` | 64 | **65** |
+| 分類 `cats` | 15 | **15** |
+| 中分類 `subs` | 35 | **35** |
+| サービス `svcs` | **81** | **82** |
+| タグ `tags` | 66 | **67** |
 | UI キー `ui` | 91 | **91** |
-| 成熟度 | 12 / 29 / 36 | 12 / 29 / **37** |
-| 業種別 | mfg 49／fin 29／it 21 | **mfg 50／fin 30／it 22** |
+| 成熟度 | 12 / 29 / 40 | 12 / 29 / **41** |
+| 業種別 `svcs` | mfg 49／fin 29／**it 25** | **mfg 50／fin 30／it 26** |
+| 業種別 `cats` | mfg 10／fin 8／it 7 | **変わらない**（`dc` は既に 3 業種） |
 | `svcsMulti` | 11 | **12** |
 
-**追加 id：`dc11` の 1 件のみ。削除・改名・分類移動は 0 件。**
+**追加 id：`dc11` の 1 件のみ。削除・改名・分類移動は 0 件。既存 81 件の `cat`／`sub`／`st`／`tags`／`industries`／`place` は 1 件も変えない。**
 
 ---
 
@@ -106,11 +111,11 @@ PM 判断により、AI ポータル製品は**ポータルに入れます**。�
 | 機能 | 持ち主 | 根拠 |
 |---|---|---|
 | **コンテンツ監査** | **ポータルの PostgreSQL**（`ai_audit_log` 新設） | rev3 §0-2 の「監査・履歴」行と同じ流儀（Audit logs は Enterprise+ なので自前）。**(a′) の呼び出しはポータルが本文を組み立てる**ので、ポータル側で記録すれば漏れが最小 |
-| **LLM ゲートウェイ** | **Dify（Cloud → Enterprise）1 本のまま** | ポータルは LLM を直接叩かない（rev3 §14-5）。キー・利用量・モデル切替・国内モデルは既に `dify/env/<env>/env.yml` に集約済み。**GW をもう 1 段挟むと出口が 2 本になり、管理番号で追えない呼び出しが生まれる** |
-| エージェント統合管理 | **NocoBase**（`ai_services`） | 77 サービスのカタログ構造を持てるのはこちらだけ |
+| **LLM ゲートウェイ** | **Dify 1 本のまま**（⚠️ **Enterprise は保留**。本番の出口は未定＝§13-2） | ポータルは LLM を直接叩かない（rev3 §14-5）。キー・利用量・モデル切替・国内モデルは既に `dify/env/<env>/env.yml` に集約済み。**GW をもう 1 段挟むと出口が 2 本になり、管理番号で追えない呼び出しが生まれる** |
+| エージェント統合管理 | **NocoBase**（`ai_services`） | 81 サービスのカタログ構造を持てるのはこちらだけ |
 | 統合 ID 認証 | **判断待ち**（§10 Q7） | Community では SSO 不可。「NocoBase Professional を買う」の代替として ζ 社が候補に。**C3 がどちらでも効く保険なので P0・P1 は決めずに進める** |
 | IM 連携 | **Dify**（PC-14） | rev3 は「通知はデモでは作らない」。P1 以降 |
-| プリセットのエージェント | **我々のカタログ 77 件** | ζ 社のプリセットは初期値としての価値のみ |
+| プリセットのエージェント | **我々のカタログ 81 件** | ζ 社のプリセットは初期値としての価値のみ |
 
 ### コンテンツ監査の要点
 
@@ -119,23 +124,24 @@ PM 判断により、AI ポータル製品は**ポータルに入れます**。�
 - **組織長は本文を見ない**を既定にする（rev3 §5-18-4「誰が AI を使っていないかを出す画面を作らない」と同じ理由）。本文を見たら `ai_audit_access` に必ず記録
 - **送る文字列と記録する文字列を同一にする**（別々にマスクすると監査の役に立たない）。`redaction_rules_version` を持つ
 - **`pii_erasure_requests` の対象に `ai_audit_log` を必ず含める**（含め忘れると「消せないところ」が 1 つ残る）
-- **画面は増やさない（15 のまま）**：集計＝KPI 画面 K8 のブロック／本文の検索＝AI サービス画面の**ロール限定タブ**
+- **画面は増やさない**（rev3 の本番設計の 15 画面。モックの `PSCREENS` は sysops 後 16 件だが別の数）：集計＝KPI 画面 K8 のブロック／本文の検索＝AI サービス画面の**ロール限定タブ**
 
 ### rev4 に反映すべき差分
 
 設計書 **§7-6 の表**がそのまま引き渡しの一覧です（11 箇所）。新しく増える未確認 **U26〜U29** は §7-7。
 **rev3 の判断は 1 つも覆しません**（Community を買わない・方式 (a)・M1 定義バンドル・C1〜C3・G-1〜G-3・業務スキーマ・15 画面・P0 のスコープ）。
+**⚠️ Q6 の保留に伴う読み替えが 1 件だけあります**：§7-3-5 の「LLM の出口」行の**「本番で置き換わるもの」欄が「Dify Enterprise のモデル設定」→「未定（(ア) Enterprise ／ (イ) Dify Community のセルフホスト ／ (ウ) ζ 社 GW ／ (エ) 本番では AI を出さない のいずれか）」**に変わります（設計書 §13-2-3）。**rev4 は「Enterprise が入る」を前提に書かず、前提条件として持ち越します。**
 
 ---
 
 ## 触らない範囲（reviewer の diff 監査の基準）
 
-- **既存 77 件の `SVCS` の値**（`name`/`desc`/`cat`/`sub`/`st`/`tags`/`industries`）— **1 文字も変えない**。特に `pt5.desc`・**`po3` の全フィールド（対象外）**・`lg1`/`nm5`/`dc2`
-- `CATS` の `name`/`abbr`/`subs[].name`（変えるのは `subs.apply.industries` の配列だけ）／`TAGS` の既存 64 キー
+- **既存 81 件の `SVCS` の値**（`name`/`desc`/`cat`/`sub`/`st`/`tags`/`industries`）— **1 文字も変えない**。特に `pt5.desc`・**`po3` の全フィールド（対象外）**・`lg1`/`nm5`/`dc2`
+- `CATS` の `name`/`abbr`/`subs[].name`（変えるのは `subs.apply.industries` の配列だけ）／`TAGS` の既存 66 キー
 - `T`・`TEMPLATES`（5 種）・`PATTERNS`・`HOME`・`FEED`・`CAT_STYLE`・`LIVE`・`state`・`data-act`・`localStorage`（3 キー）
 - `mock/js/app.js`・`render.js`・`events.js`・`mock/css/**`（`--ntt-*` を含む）・`mock/catalog.html`
 - **`mock/portal.html`・`mock/js/portal/**`・`mock/js/data/portal/**`・`mock/css/portal.css`**（portal-mock-pages の範囲）
-- **`mock/js/data/scenarios/it/**`**（it-industry PR-4 の範囲）
+- **`mock/js/data/scenarios/**` の既存台本**（1 件も書き換えない。**PR-C で `{mfg,fin,it}/dc.js` に DC-11 を足すのは PR-B のマージ後**）
 - `tools/**` の**ロジック**（`regress.baseline.json` の `--update` を除く）／`.github/workflows/**`／`mock/.nojekyll`
 - `CLAUDE.md`・`.claude/**`（§6 の件数 1 行は **PM が更新**）
 - **`docs/handoff/2026-09-10-portal-nocobase.md`**（§7 は rev4 の**入力**であって、この Issue で書き換えるものではない）
@@ -145,29 +151,27 @@ PM 判断により、AI ポータル製品は**ポータルに入れます**。�
 
 ---
 
-## PR 分割案
+## PR 分割案（**確定版 2026-09-11**。設計書 §13-5）
 
-| PR | 内容 | 依存 |
-|---|---|---|
-| **PR-1** | 設計書と Issue 本文（docs のみ） | なし。**すぐ出せる** |
-| **PR-2** | `docs/dify/build-or-buy.md` 新設 ＋ `usecases/{LG-01,NM-05,DC-02,PT-05}.md` の §10 に 1 行 ＋ `docs/dify/README.md` 1 行 | Q1。PR-1 と並行可 |
-| **PR-3** | `data/world/it/vendors.csv` に `ζ 社` 1 行 | it-industry PR-4 のマージ後が望ましい |
-| **PR-4** | **データ層：DC-11 の追加**（`ui.js`・`catalog.js`・`regress.baseline.json`・`docs/service-map.md`・`docs/handoff/service-index.md`） | **it-industry PR-4 ＋ portal-mock-pages PR-2 のマージ後**／Q2・Q3 |
-| **PR-5** | DC-11 の台本 3 本（`scenarios/{mfg,fin,it}/dc.js`）＋ `docs/dify/usecases/DC-11.md` ＋ `usecases/README.md` | **PR-4 のマージ後** |
+**旧 PR-1（設計書と Issue 本文）は #262 でマージ済み。** 残りを **3 本**に組み替えました（旧 PR-2 ＋ PR-3 → **PR-A**／旧 PR-4 → **PR-B**／旧 PR-5 → **PR-C**）。**待ち条件（it-industry PR-4 ＋ portal-mock-pages PR-2 のマージ）は充足済み**です。
+
+| PR | 内容 | 触るファイル | 依存 | 並列 |
+|---|---|---|---|---|
+| **PR-A** | **文書**：`build-or-buy.md` の新設／統合 5 件の追記／`ζ 社`／PT-05 の PIPL 注記 | `docs/dify/build-or-buy.md`（新規）・`docs/dify/usecases/{LG-01,NM-05,DC-02,PT-05}.md`（§10 に 1 行ずつ＝**4 ファイル**）・`docs/dify/README.md`（1 行）・`data/world/it/vendors.csv`（1 行） | Q1（確定済み） | **PR-B と並列可** |
+| **PR-B** | **データ層：DC-11 の追加**（本件で唯一 `mock/**` を触る） | `mock/js/data/ui.js`・`mock/js/data/catalog.js`・`tools/regress.baseline.json`・`docs/service-map.md`・`docs/handoff/service-index.md` | Q2・Q3（確定済み） | **PR-A と並列可。`catalog.js`・`regress.baseline.json` を触る他のお題とは直列** |
+| **PR-C** | **DC-11 の台本 3 本＋実装リファレンス** | `mock/js/data/scenarios/{mfg,fin,it}/dc.js`・`docs/dify/usecases/DC-11.md`（新規）・`docs/dify/usecases/README.md` | **PR-B のマージ後** | 単独 |
+
+```
+   PR-A（docs/dify/** ・ data/world/it/vendors.csv）   ┐ 順不同
+   PR-B（mock/js/data/** ・ regress.baseline.json ・ service-map ・ service-index）
+        └────→ PR-C（scenarios/{mfg,fin,it}/dc.js ・ usecases/DC-11.md）
+```
+
+**統合 5 件の記録先**：`build-or-buy.md` に **5 行**、`usecases/` は **4 ファイル**。**KN-09 は `docs/dify/usecases/KN-09.md` が存在しない**（IT 固有の実装リファレンスは未着手）ので `build-or-buy.md` の行だけにします。**新規には作りません。**
+
+**PT-05 の PIPL 注記（必須）**：`usecases/PT-05.md` §10 に「BP 製品で実現する場合、**PT-05 の匿名 ID 前提は採れない**（履歴書の原本を自社側で解析＝自社が個人情報の取扱者になり、PC-15 の `not_sent` 表示が成り立たない）。**PIPL 評価と保管・削除の経路（PC-10）を先に決める**」。**`SVCS.pt5.desc` は 1 文字も変えません**（設計書 §2-7）。
 
 **ポータル（§7）に PR はありません。** rev4 の改訂と `shoulang0729/portal` の実装は本 Issue の範囲外です。
-
-### 並行作業との順序
-
-```
-  it-industry PR-4（scenarios/it/** ・ check-world.mjs）
-  portal-mock-pages PR-2（catalog.js の place ・ regress.mjs ・ baseline）
-        │
-        ▼
-  本件 PR-4（catalog.js ・ ui.js ・ baseline ・ service-map）
-        ▼
-  本件 PR-5（scenarios/{mfg,fin,it}/dc.js ・ usecases/DC-11.md）
-```
 
 ---
 
@@ -184,46 +188,46 @@ git grep -n -i -f ~/.config/dify/bp-denylist.txt -- . || echo "OK: 0 hits"
 → **0 hit**。リストが手元に無い環境では、**何も明かさない汎用パターン**（11 桁の連番・`¥` 金額・生の URL）で代替します。手順は設計書 §9-1。
 **reviewer は必ず目で diff を読むこと。** 機械検査は補助です。
 
-### PR-4（データ層）— **scratchpad の作業用コピーで実走済み**
+### PR-B（データ層）— **scratchpad の作業用コピーで実走済み（2026-09-11・main `4a4f3d1`）**
 
 `node tools/regress.mjs`（`--update` 前）が**この 9 行だけ**を出すこと：
 
 ```
-   - counts.svcs: 77 → 78
-   - counts.tags: 64 → 65
+   業種別 svcs: mfg=50 fin=30 it=26 ／ svcsMulti(2 業種以上)=12（svcs=82）
+   - counts.svcs: 81 → 82
+   - counts.tags: 66 → 67
    - counts.byIndustry.mfg: {"svcs":49,"cats":10} → {"svcs":50,"cats":10}
    - counts.byIndustry.fin: {"svcs":29,"cats":8} → {"svcs":30,"cats":8}
-   - counts.byIndustry.it: {"svcs":21,"cats":6} → {"svcs":22,"cats":6}
+   - counts.byIndustry.it: {"svcs":25,"cats":7} → {"svcs":26,"cats":7}
    - counts.svcsMulti: 11 → 12
    - CATS.dc.subs.apply industries: [mfg] → [mfg,fin,it]
    - SVCS 追加: dc11
    - TAGS 追加: legal
 ```
 
-`node tools/verify.mjs` が **`✅ ALL PASS`**、warn が **16 → 18 件**。増える 2 件は `業種 "fin"/"mfg" で台本の無い SVCS 1 件: dc11` のみ（PR-5 で 0 に戻る）。
+`node tools/verify.mjs` が **`✅ ALL PASS`**、warn が **17 → 19 件**（**`npm run index` を実行した後**。忘れると §11 の索引鮮度が FAIL します）。増える 2 行は `業種 "mfg"/"fin" で台本の無い SVCS 1 件: dc11` のみで、**IT は行が増えず既存行の件数が 11 → 12 になるだけ**（PR-C で 0 に戻る）。
+
+`docs/handoff/service-index.md` は **2 箇所だけ**：①「分類コード」表の `dc/apply`（製造）→（製造・金融・IT） ② DC-10 の直後に DC-11 の 1 行。**「欠番」節は「欠番なし」のまま。**
 
 `npm run index` 後の `docs/service-map.md` に：
 ```
 | DC-11 | 契約書レビュー（逸脱条項の検出と修正案） | DC/apply | 製造・金融・IT | 構想 | — | — | — | — | — | — | — |
 ```
 
-### PR-1・PR-2（docs のみ）
+### PR-A（文書・`ζ 社`）
 
-- `verify` / `regress` が変更前とまったく同じ出力（`ALL PASS / ⚠️ 16 warn`・`regress PASS`）
-- `git diff --stat` に `mock/`・`tools/`・`dify/`・`data/` が **1 行も現れない**
-- `usecases/{LG-01,NM-05,DC-02,PT-05}.md` の差分が **§10 への 1 行追加のみ**。**`PO-03.md` が差分に現れない**
+- `verify` / `regress` が変更前とまったく同じ出力（**`✅ ALL PASS / ⚠️ 17 warn`**・`✅ regress PASS`）
+- `npm run world` の件数が **12 件のまま変わらない**（`vendors.csv` には「未使用」検査が掛からないことを確認済み）
+- `git diff --stat` に **`mock/`・`tools/`・`dify/` が 1 行も現れない**（`data/` は `it/vendors.csv` の **1 行追加のみ**。既存行は 1 文字も変わらない）
+- `usecases/{LG-01,NM-05,DC-02,PT-05}.md` の差分が **§10 への 1 行追加のみ**。**`PO-03.md` が差分に現れない**（採点は対象外）
 
-### PR-3（`ζ 社`）
+### PR-C（台本・実装リファレンス）
 
-- `npm run world` の warn 件数が **14 件のまま変わらない**（`vendors.csv` には「未使用」検査が掛からないことを確認済み）
-- `verify` / `regress` が変更前と同じ。`vendors.csv` の差分が **1 行追加のみ**
-
-### PR-5（台本・実装リファレンス）
-
-- `verify` の warn から `dc11` の「台本の無い SVCS」が **3 業種とも消える**
-- `regress` が **`--update` 無しで PASS**
+- `verify` の warn が **19 → 17 に戻る**（`dc11` の行が mfg・fin から消え、it の行が 12 → 11 件に戻る）
+- `regress` が **`--update` 無しで PASS**（台本はスナップショット対象外）
 - 台本に **`ζ` の文字・製品名・ベンダ名が 1 つも無い**
-- `npm run world` の warn が増えない
+- ペルソナは `data/world/{mfg,fin,it}/people.csv` の実在人物（`nakamura-daisuke` / `takanashi-naoto` / `murai-takuya`。設計書 §4-5）。**新しい人名・会社名・品番を作らない**
+- `npm run world` が **12 件のまま**
 
 ### 目視（reviewer）
 
@@ -236,16 +240,32 @@ git grep -n -i -f ~/.config/dify/bp-denylist.txt -- . || echo "OK: 0 hits"
 
 ---
 
-## PM 判断待ち（推奨つき。詳細は設計書 §10）
+## PM 判断（**9 件すべて確定 2026-09-11**。詳細は設計書 §13-1）
 
-| | 問い | 推奨 |
+| | 問い | **決定** |
 |---|---|---|
-| **Q1** | 顧客に見せるカタログで「BP 製品で作れます」をどこまで出すか | **出さない**（案 (c)）。営業の場では口頭・提案書（リポジトリ外）で |
-| **Q2** | DC-11 の採番を確定してよいか | **確定を推奨**（承認時点で永久欠番になる） |
-| **Q3** | `dc/apply` を 3 業種に広げてよいか。中分類名は据え置きでよいか | **広げる・名前は据え置き** |
+| **Q1** | 顧客に見せるカタログで「BP 製品で作れます」をどこまで出すか | **出さない**（案 (c)）。`build-or-buy.md` にだけ書く。`SVCS` に新フィールドも新タグも足さない |
+| **Q2** | DC-11 の採番を確定してよいか | **確定。`dc11` ＝ DC-11 は永久欠番。** `place` は `proj`（§13-4） |
+| **Q3** | `dc/apply` を 3 業種に広げてよいか。中分類名は据え置きか | **広げる・名前は据え置き**（3 言語とも変えない） |
 | **Q4** | LG-01 の台本に「元の体裁のまま返す」を足すか | **本件から切り離し、別 Issue に** |
-| **Q5** | `CLAUDE.md` §6 の件数 1 行の更新 | PR-4 マージ後に `14 分類 33 中分類 78 サービス（提供中 12／試行版 29／構想 37）` へ（**現在の §6 は IT 業追加にも未追従なので併せて直す**） |
-| **Q6** | **Dify Enterprise を入れるか**（§7-3-4） | **入れる前提で進める。** 入れるなら LLM ゲートウェイは Dify 1 本で ζ 社 GW は不要 |
-| **Q7** | 統合 ID 認証をどうするか | **いま決めない。** C3 がどの選択肢でも効く保険なので P0・P1 は進められる |
-| **Q8** | U26〜U29 を ζ 社に問い合わせるか | **U29 と U28 の 2 つだけ先に聞く**（2 問で判断材料の大半が揃う） |
-| **Q9** | `ai_audit_log` の保持 90 日・本文は組織長に見せない、でよいか | **推奨どおり** |
+| **Q5** | `CLAUDE.md` §6 の件数 1 行の更新 | **PM が PR-B マージ後に更新。** 確定値は **`15 分類 35 中分類 82 サービス（提供中 12／試行版 29／構想 41。製造 50／金融 30／IT 26／2 業種以上 12）`**（現在の §6 は IT 業追加にも `so` 追加にも未追従なので併せて直す） |
+| **Q6** | **Dify Enterprise を入れるか** | **⚠️ 推奨と違う。保留。** Community／現行の Dify Cloud で代替できる形を基本にし、Enterprise でしかできない点は注記に留める。**導入そのものは今は決めない** → 下記 |
+| **Q7** | 統合 ID 認証をどうするか | **いま決めない**（C3 がどの選択肢でも効く保険） |
+| **Q8** | U26〜U29 を ζ 社に問い合わせるか | **U29 と U28 の 2 つだけ先に聞く**（Q6 が保留でも U28 は ζ 社 GW の可否の材料として生きる） |
+| **Q9** | `ai_audit_log` の保持 90 日・本文は組織長に見せない | **推奨どおり** |
+
+### Q6（Dify Enterprise 保留）の影響 —— 正直に書きます
+
+- **デモ（モック・Pages）には影響しません。** PR-A・PR-B・PR-C は `mock/**` のデータ層・台本・docs だけを触り、Dify 実機にも `dify/env/**` にも 1 行も触りません。**3 本とも今すぐ出せます**
+- **本番設計（`portal-nocobase` rev4）では「Enterprise 未定」を前提条件として持ち越します。** rev3 §14-5 の歯止め（本番の実データを Dify Cloud に送らない。(a′)/(c) は Enterprise に切り替わるまで有効にしない）は**そのまま生きる**ので、**Enterprise を入れないまま本番に行くと (a′) と (c) が本番で無効**になり、ポータルから呼べる AI は **(b)（iframe。架空データしか入っていない公開 Web アプリに限る）だけ**になります。これは設計書 §7-3-4 のとおりで、**この決定で覆しません**
+- **rev4 は「Enterprise が入る」を前提に書かず**、(a′)/(c) を本番で有効にする条件を **precondition として明記**し、代替を並べるだけにします：**(ア) Enterprise ／ (イ) Dify Community のセルフホスト（未調査＝U30 候補） ／ (ウ) ζ 社 GW ／ (エ) 本番では AI を出さない**。**どれを採るかは決めません**
+- **ζ 社 GW は候補のまま。採否は保留。** 設計書 §7-3-2 の判定（(i) 推奨・(ii)(iii) 不可）は「**Dify が本番の出口として使える場合**」の比較であり、使えない場合の比較はしていません
+- **§7 の 11 箇所のうち Enterprise に依存していたのは §7-3-5 の「本番で置き換わるもの」欄 1 つだけ**です。コンテンツ監査（ポータルの PostgreSQL）・出口の集約（`env.yml`）・NocoBase の役割・SSO（Q7）・画面を増やさない、は**どれも変わりません**
+
+### 残る申し送り
+
+1. **`CLAUDE.md` §6 の件数 1 行**（Q5。**PM のみが触る**。PR-B マージ後）
+2. **LG-01 の台本**（Q4。別 Issue）
+3. **`portal-nocobase` rev4 の改訂**（引き渡しは設計書 §7-6 の 11 箇所 ＋ §13-2-3 の読み替え 1 件 ＋ 新しい未確認 **U30**）
+4. **U29・U28 を ζ 社に問い合わせる**（Q8）
+5. **別件・S レーン候補**：`mock/js/data/portal/ui.js` の `PSCREENS` のコメントが「15 画面」のままだが実データは **16 件**（sysops で `sys` が入った）。**本 Issue のどの PR でも直さない**（`mock/js/data/portal/**` は触らない範囲）
