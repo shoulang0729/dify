@@ -11,8 +11,8 @@ AIエージェントカタログの画面案（モック）一式です。`index
 
 | | 画面 | 内容 |
 |---|------|------|
-| **A** | `catalog.html` — AIエージェントカタログ | 表示パターン3案（① 階層ナビ／② ダッシュボード／③ 業務フィード。3案とも実装済み）を切替。同じカタログ・同じ詳細/デモ画面に、3通りの入口から入れる。業種2（製造・金融）×大分類13×中分類29×67サービス（在中日系製造業 49 件／在中日系銀行 29 件。うち 11 件は業種横断。パートナー連携8件を含む）。業種の切替は上部グレー帯（`.mockbar`）。一覧 → 詳細（担当者ペルソナ・利用シナリオ）→ **業務デモ**（QA／アップロード→結果／フォーム→ドラフト／差分比較／照会の5テンプレート。日本語・中国語どちらで入力しても入力言語で応答）。 |
-| **B** | `portal.html` — 部門ポータル | 自部門（翠雲システムズ）の社内ポータルの概念モック（15 画面）。`catalog.html` と同じ `CATS`/`SVCS`（`mock/js/data/catalog.js`）・`SCENARIOS`/`TEMPLATES` を読み、業務の画面（案件・顧客・To Do・会議・ナレッジ・KPI・目標・経費・申請・研修・ニュース・仕入先ほか）からサービスを呼ぶ側の見せ方を確認する。カタログ 67 件のうちポータルに置くのは 49 件（`js/data/portal/svc.js` の `PLACE`）。台本の再生（右ドロワー）・行への戻りは後続 PR（詳細は設計書 `docs/handoff/2026-09-11-portal-mock-pages.md`）。 |
+| **A** | `catalog.html` — AIエージェントカタログ | 表示パターン3案（① 階層ナビ／② ダッシュボード／③ 業務フィード。3案とも実装済み）を切替。同じカタログ・同じ詳細/デモ画面に、3通りの入口から入れる。業種3（製造・金融・IT）×大分類14×中分類33×77サービス（在中日系製造業 49 件／在中日系銀行 29 件／日系 SIer 21 件。うち 11 件は業種横断。パートナー連携8件を含む）。業種の切替は上部グレー帯（`.mockbar`）。一覧 → 詳細（担当者ペルソナ・利用シナリオ）→ **業務デモ**（QA／アップロード→結果／フォーム→ドラフト／差分比較／照会の5テンプレート。日本語・中国語どちらで入力しても入力言語で応答）。 |
+| **B** | `portal.html` — 部門ポータル | 自部門（翠雲システムズ）の社内ポータルの概念モック（15 画面）。`catalog.html` と同じ `CATS`/`SVCS`（`mock/js/data/catalog.js`）・`SCENARIOS`/`TEMPLATES` を読み、業務の画面（案件・顧客・To Do・会議・ナレッジ・KPI・目標・経費・申請・研修・ニュース・仕入先ほか）からサービスを呼ぶ側の見せ方を確認する。カタログ 77 件のうちポータルに置くのは 49 件（`mock/js/data/catalog.js` の `SVCS[].place`）。台本の再生（右ドロワー）・行への戻りは後続 PR（詳細は設計書 `docs/handoff/2026-09-11-portal-mock-pages.md`）。 |
 
 `catalog.html` / `portal.html` はいずれもメニュー表示を日本語／中文／English で切替でき、ライト／ダークテーマに対応（エージェント本体の入出力は日中）。`mock.lang` / `mock.theme` は両ページで共有される。純粋な静的 HTML/CSS/JS（ビルド不要）。
 
@@ -23,8 +23,8 @@ AIエージェントカタログの画面案（モック）一式です。`index
 ```
 mock/
 ├── index.html            デモガイド（catalog.html / portal.html への導線、日／中切替。css/tokens.css を <link> で共有）
-├── catalog.html          モックA：AIエージェントカタログ（殻。<link> 2 本と <script src> 26 本のみ）
-├── portal.html           モックB：部門ポータル（殻。<link> 2 本と <script src> 31 本のみ）
+├── catalog.html          モックA：AIエージェントカタログ（殻。<link> 2 本と <script src> 31 本のみ）
+├── portal.html           モックB：部門ポータル（殻。<link> 2 本と <script src> 36 本のみ）
 ├── css/
 │   ├── tokens.css        デザイントークン層（ブランドパレット・セマンティックトークン・light/dark。両ページが共有）
 │   ├── components.css    カタログ用コンポーネント CSS
@@ -38,7 +38,8 @@ mock/
 │   │   ├── live.js       LIVE（本番リンク。カタログのみ）
 │   │   ├── scenarios/    SCENARIOS（デモ台本。業種ごとに大分類 1 ファイル。両ページが読む）
 │   │   │   ├── mfg/       製造 10 ファイル: kn/qa/dc/lg/nm/en/gn/pt/po/eg
-│   │   │   └── fin/       金融 8 ファイル: kn/rs/cv/fa/dc/gn/po/eg
+│   │   │   ├── fin/       金融 8 ファイル: kn/rs/cv/fa/dc/gn/po/eg
+│   │   │   └── it/        IT 5 ファイル: kn/dc/gn/po/sl
 │   │   └── portal/       ポータル固有データ（7 ファイル。純粋なリテラル宣言のみ）
 │   │       ├── ui.js      PT / PGRP / PSCREENS / PHOW / PHOWLONG / PST（ラベル辞書・画面台帳）
 │   │       ├── svc.js     PSVC / PLACE / PNEW / PSTAGE_AI（サービス別の説明・配置・ステージ別 AI）
