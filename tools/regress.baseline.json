@@ -9,7 +9,8 @@
       "id": "kn",
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "subs": [
         {
@@ -22,7 +23,8 @@
           "id": "rule",
           "industries": [
             "mfg",
-            "fin"
+            "fin",
+            "it"
           ]
         },
         {
@@ -129,14 +131,16 @@
       "id": "dc",
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "subs": [
         {
           "id": "report",
           "industries": [
             "mfg",
-            "fin"
+            "fin",
+            "it"
           ]
         },
         {
@@ -217,7 +221,8 @@
       "id": "gn",
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "subs": [
         {
@@ -230,7 +235,8 @@
           "id": "daily",
           "industries": [
             "mfg",
-            "fin"
+            "fin",
+            "it"
           ]
         }
       ]
@@ -259,21 +265,24 @@
       "id": "po",
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "subs": [
         {
           "id": "collect",
           "industries": [
             "mfg",
-            "fin"
+            "fin",
+            "it"
           ]
         },
         {
           "id": "mgmt",
           "industries": [
             "mfg",
-            "fin"
+            "fin",
+            "it"
           ]
         }
       ]
@@ -282,14 +291,16 @@
       "id": "eg",
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "subs": [
         {
           "id": "sysspec",
           "industries": [
             "mfg",
-            "fin"
+            "fin",
+            "it"
           ]
         }
       ]
@@ -341,7 +352,8 @@
       "st": 2,
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "tags": [
         "faq",
@@ -355,7 +367,8 @@
       "st": 2,
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "tags": [
         "authority",
@@ -432,7 +445,8 @@
       "st": 1,
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "tags": [
         "meeting",
@@ -509,7 +523,8 @@
       "st": 2,
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "tags": [
         "report",
@@ -736,7 +751,8 @@
       "st": 2,
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "tags": [
         "calendar",
@@ -750,7 +766,8 @@
       "st": 3,
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "tags": [
         "calendar",
@@ -1102,7 +1119,8 @@
       "st": 3,
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "tags": [
         "survey",
@@ -1116,7 +1134,8 @@
       "st": 3,
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "tags": [
         "idea",
@@ -1130,7 +1149,8 @@
       "st": 3,
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "tags": [
         "education",
@@ -1144,7 +1164,8 @@
       "st": 3,
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "tags": [
         "workload",
@@ -1158,7 +1179,8 @@
       "st": 3,
       "industries": [
         "mfg",
-        "fin"
+        "fin",
+        "it"
       ],
       "tags": [
         "spec",
@@ -1348,8 +1370,8 @@
         "cats": 8
       },
       "it": {
-        "svcs": 0,
-        "cats": 0
+        "svcs": 11,
+        "cats": 5
       }
     },
     "svcsMulti": 11

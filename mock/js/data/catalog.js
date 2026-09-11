@@ -8,12 +8,12 @@
    ============================================================ */
 const CATS = [
   { id: 'kn',
-    industries: ['mfg', 'fin'],
+    industries: ['mfg', 'fin', 'it'],
     name: { ja: 'ナレッジ検索・問い合わせ', zh: '知识检索与咨询', en: 'Knowledge & Inquiry' },
     abbr: { ja: 'ナレッジ', zh: '知识', en: 'Knowledge' },
     subs: [
       { id: 'tech', industries: ['mfg'], name: { ja: '技術・設備ナレッジ', zh: '技术与设备知识', en: 'Technical & Equipment' } },
-      { id: 'rule', industries: ['mfg', 'fin'], name: { ja: '規程・労務・当局', zh: '规章・劳务・监管', en: 'Policies, HR & Regulators' } },
+      { id: 'rule', industries: ['mfg', 'fin', 'it'], name: { ja: '規程・労務・当局', zh: '规章・劳务・监管', en: 'Policies, HR & Regulators' } },
       { id: 'bizlog', industries: ['fin'], name: { ja: '営業情報・履歴', zh: '营业信息与记录', en: 'Sales Records & History' } }
     ]},
   { id: 'rs',
@@ -51,11 +51,11 @@ const CATS = [
       { id: 'change', industries: ['mfg'], name: { ja: '変更・クレーム・監査', zh: '变更・客诉・审核', en: 'Change, Claims & Audits' } }
     ]},
   { id: 'dc',
-    industries: ['mfg', 'fin'],
+    industries: ['mfg', 'fin', 'it'],
     name: { ja: '文書・資料作成', zh: '文档与资料制作', en: 'Documents & Reports' },
     abbr: { ja: '文書', zh: '文档', en: 'Docs' },
     subs: [
-      { id: 'report', industries: ['mfg', 'fin'], name: { ja: '報告・会議', zh: '汇报与会议', en: 'Reporting & Meetings' } },
+      { id: 'report', industries: ['mfg', 'fin', 'it'], name: { ja: '報告・会議', zh: '汇报与会议', en: 'Reporting & Meetings' } },
       { id: 'site', industries: ['mfg'], name: { ja: '教育・現場掲示', zh: '培训与现场看板', en: 'Training & Shop Floor' } },
       { id: 'apply', industries: ['mfg'], name: { ja: '申請・契約・貿易', zh: '申请・合同・贸易', en: 'Applications, Contracts & Trade' } }
     ]},
@@ -84,12 +84,12 @@ const CATS = [
       { id: 'bom', industries: ['mfg'], name: { ja: 'BOM・図面', zh: 'BOM与图纸', en: 'BOM & Drawings' } }
     ]},
   { id: 'gn',
-    industries: ['mfg', 'fin'],
+    industries: ['mfg', 'fin', 'it'],
     name: { ja: '汎用業務支援', zh: '通用业务支持', en: 'General Office Support' },
     abbr: { ja: '汎用', zh: '通用', en: 'General' },
     subs: [
       { id: 'office', industries: ['mfg'], name: { ja: '経理・受発注', zh: '财务与订单', en: 'Finance & Orders' } },
-      { id: 'daily', industries: ['mfg', 'fin'], name: { ja: '日常業務', zh: '日常业务', en: 'Daily Work' } }
+      { id: 'daily', industries: ['mfg', 'fin', 'it'], name: { ja: '日常業務', zh: '日常业务', en: 'Daily Work' } }
     ]},
   { id: 'pt',
     industries: ['mfg'],
@@ -100,19 +100,19 @@ const CATS = [
       { id: 'service', industries: ['mfg'], name: { ja: '代行・エージェント', zh: '代办与代理', en: 'Agents & Outsourcing' } }
     ]},
   { id: 'po',
-    industries: ['mfg', 'fin'],
+    industries: ['mfg', 'fin', 'it'],
     name: { ja: '組織運営・PMO', zh: '组织运营与PMO', en: 'Organization & PMO' },
     abbr: { ja: '組織', zh: '组织', en: 'PMO' },
     subs: [
-      { id: 'collect', industries: ['mfg', 'fin'], name: { ja: '収集・集計', zh: '收集与统计', en: 'Collection & Tallying' } },
-      { id: 'mgmt', industries: ['mfg', 'fin'], name: { ja: '進捗・工数', zh: '进度与工时', en: 'Progress & Workload' } }
+      { id: 'collect', industries: ['mfg', 'fin', 'it'], name: { ja: '収集・集計', zh: '收集与统计', en: 'Collection & Tallying' } },
+      { id: 'mgmt', industries: ['mfg', 'fin', 'it'], name: { ja: '進捗・工数', zh: '进度与工时', en: 'Progress & Workload' } }
     ]},
   { id: 'eg',
-    industries: ['mfg', 'fin'],
+    industries: ['mfg', 'fin', 'it'],
     name: { ja: 'エンジニアリング支援', zh: '工程支持', en: 'Engineering Support' },
     abbr: { ja: '開発', zh: '开发', en: 'Eng.' },
     subs: [
-      { id: 'sysspec', industries: ['mfg', 'fin'], name: { ja: '仕様・設計', zh: '规格与设计', en: 'Specs & Design' } }
+      { id: 'sysspec', industries: ['mfg', 'fin', 'it'], name: { ja: '仕様・設計', zh: '规格与设计', en: 'Specs & Design' } }
     ]}
 ];
 
@@ -137,12 +137,12 @@ const SVCS = [
     desc: { ja: '就業規則・経費規程・出張規程・工場管理規定などの社内文書から、根拠条文を引用して質問に答えます。日本語版と中国語版の規程を突き合わせ、版ズレがあれば併記して注意を促します。',
             zh: '从员工手册、费用规定、出差规定、工厂管理规定等公司文件中引用条款回答提问。同时对照日文版与中文版规章，若版本不一致则并列提示。',
             en: 'Answers questions by quoting the governing clause from work rules, expense and travel policies and factory regulations. Cross-checks the Japanese and Chinese editions and flags any version mismatch.' } },
-  { id: 'kn4', cat: 'kn', sub: 'rule', st: 2, industries: ['mfg', 'fin'], tags: ['faq', 'hr'],
+  { id: 'kn4', cat: 'kn', sub: 'rule', st: 2, industries: ['mfg', 'fin', 'it'], tags: ['faq', 'hr'],
     name: { ja: '社内問い合わせ受付とFAQ蓄積', zh: '内部咨询受理与FAQ沉淀', en: 'Internal Helpdesk & FAQ Knowledge Base' },
     desc: { ja: '社内からの問い合わせを受け付け、蓄積された FAQ と申請手順をもとに回答します。答えが無い質問は担当部署へ引き継いで回答を促し、返ってきた回答を FAQ に貯めます。問い合わせと回答は分類して残し、定期的に件数と未回答の統計を返します。',
             zh: '受理来自公司内部的咨询，依据已沉淀的 FAQ 与申请手续作答。没有答案的问题转交主管部门并催促回复，收到的回答再沉淀进 FAQ。咨询与回答分类留存，并定期返回件数与未回答事项的统计。',
             en: 'Receives internal inquiries and answers them from the accumulated FAQ and application procedures. Questions with no answer are routed to the owning department with a nudge, and the reply that comes back is added to the FAQ. Inquiries and answers are kept classified, with periodic statistics on volume and unanswered items.' } },
-  { id: 'kn5', cat: 'kn', sub: 'rule', st: 2, industries: ['mfg', 'fin'], tags: ['authority', 'regulation'],
+  { id: 'kn5', cat: 'kn', sub: 'rule', st: 2, industries: ['mfg', 'fin', 'it'], tags: ['authority', 'regulation'],
     name: { ja: '当局通達の影響分析・マニュアル反映', zh: '监管通知影响分析与手册更新', en: 'Regulatory Notice Impact & Manual Update' },
     desc: { ja: '所管当局（外貨管理・税関・税務・地方政府など。業種により金融当局を含む）の通達を読み込み、自社への影響（対象業務・期限・必要な対応）を整理します。さらに影響を受ける社内マニュアル・規定の該当箇所を特定し、改訂案のドラフトまで作成します。',
             zh: '读取主管部门（外汇管理、海关、税务、地方政府等，视行业亦含金融主管部门）的通知文件，整理对本公司的影响（涉及业务、期限、应对事项），并定位受影响的内部手册与规定条款，生成修订草案。',
@@ -176,7 +176,7 @@ const SVCS = [
     desc: { ja: '月次実績・品質状況・トピックスのメモや数字を渡すと、本社フォーマットの報告資料（要旨・実績・課題・対策）のドラフトを作成します。中国語の現場データから日本語の報告を直接起こせます。会議資料・報告資料全般に使えます。',
             zh: '提供月度实绩、质量状况与要点备注后，按总部格式生成汇报资料（要点・实绩・课题・对策）草案。可直接从中文现场数据生成日文汇报，也适用于一般会议资料。',
             en: 'Turns monthly figures, quality status and topic notes into a headquarters-format report draft (summary, results, issues, actions). Produces Japanese reports directly from Chinese shop-floor data; usable for meeting materials in general.' } },
-  { id: 'dc2', cat: 'dc', sub: 'report', st: 1, industries: ['mfg', 'fin'], tags: ['meeting', 'summary'],
+  { id: 'dc2', cat: 'dc', sub: 'report', st: 1, industries: ['mfg', 'fin', 'it'], tags: ['meeting', 'summary'],
     name: { ja: '議事録作成と次回論点整理', zh: '会议纪要生成与下次议题整理', en: 'Meeting Minutes & Next-Agenda Builder' },
     desc: { ja: '日中混在の会議録音・メモから、決定事項・担当・期限・未決事項を整理した議事録を作成し、次回会議で議論すべき論点リストを提案します。日本語版・中国語版の議事録を同時に出力できます。',
             zh: '基于中日混合的会议录音或笔记，整理决议事项、负责人、期限与待定事项生成纪要，并提出下次会议应讨论的议题清单。可同时输出中日双语纪要。',
@@ -206,7 +206,7 @@ const SVCS = [
     desc: { ja: '取引基本契約・品質保証協定・秘密保持契約などを、契約類型と条件を指定すると社内標準条項に基づいてドラフトします。中国語の契約書と日本語対訳の同時作成、相手方案文との条項比較にも対応します。最終判断は法務レビューを前提とします。',
             zh: '指定合同类型与条件后，基于公司标准条款起草基本交易合同、质量保证协议、保密协议等。支持中文合同与日文对照同时生成、与对方版本的条款比对。最终以法务审核为准。',
             en: 'Drafts master supply agreements, quality assurance agreements and NDAs from standard clauses given the type and terms. Produces the Chinese contract with a Japanese parallel text and compares clauses against the counterparty draft. Final sign-off stays with Legal.' } },
-  { id: 'dc8', cat: 'dc', sub: 'report', st: 2, industries: ['mfg', 'fin'], tags: ['report', 'kpi'], added: '2026-09-07',
+  { id: 'dc8', cat: 'dc', sub: 'report', st: 2, industries: ['mfg', 'fin', 'it'], tags: ['report', 'kpi'], added: '2026-09-07',
     name: { ja: '報告レビュー（提出前チェック／受領後の論点整理）', zh: '汇报评审（提交前自查／收到后的要点梳理）', en: 'Report Review — Pre-submission Check and Post-receipt Framing' },
     desc: { ja: '報告種別（担当週報・組織長週報・月次報告・人事要員報告・障害報告ほか）と読み手、目的（提出前のセルフチェック／受領後の論点整理）を選ぶと、その組み合わせに合う観点で読みます。提出前は規定と照らして行を整理し、曖昧な表現や不足項目を書き手向けの助言に。受領後は要旨・確認したい論点 3〜5 件・数字のブリッジ・改善後の報告案を返し、台帳と照合して未回答・期限超過・同じ論点の再発を示します。',
             zh: '按汇报种类（担当周报、组织长周报、月度报告、人事要员报告、故障报告等）、读者与目的（提交前自查／收到后的要点梳理）选择模式。提交前对照规定整理条目，把模糊表述与缺失项目变成面向撰写者的建议；收到后返回要点摘要、需确认的议题3〜5条、数字桥接与改进后的汇报稿，并与台账核对未回答、超期与再发。',
@@ -304,12 +304,12 @@ const SVCS = [
     desc: { ja: '長文の報告書・仕様書・通達・メールスレッドを、目的に応じた粒度の要点サマリーに変換します。中国語の長文を日本語 1 枚に要約する、日本語の本社資料を中国語の箇条書きにするなど、言語をまたいだ要約に対応します。',
             zh: '将长篇报告、规格书、通知与邮件往来压缩为不同粒度的要点摘要。支持跨语言摘要，例如将中文长文概括为一页日文，或将日文总部资料整理为中文要点。',
             en: 'Condenses long reports, specifications, notices and email threads into summaries at your chosen level of detail. Works across languages — a one-page Japanese summary of a Chinese document, or Chinese bullet points from Japanese HQ materials.' } },
-  { id: 'gn6', cat: 'gn', sub: 'daily', st: 2, industries: ['mfg', 'fin'], tags: ['calendar', 'kpi'], added: '2026-09-07',
+  { id: 'gn6', cat: 'gn', sub: 'daily', st: 2, industries: ['mfg', 'fin', 'it'], tags: ['calendar', 'kpi'], added: '2026-09-07',
     name: { ja: '頼まれ事・放置業務の追跡', zh: '零星委托与搁置事项的跟踪', en: 'Small Task & Stalled Work Tracker' },
     desc: { ja: 'デスクの整理や週次の報告提出のような定型業務、ふと頼まれた小さな用件、PC 在庫・固定資産・倉庫整理のように後回しにされがちな業務を、ひとつずつ票にして追跡します。チャットの一言から担当・種別・大きさ・期限・繰り返しを埋めた票のドラフトを作り、期限と放置日数で並べ替えます。振られた側には今週の残件と期限、振った側には頼んだ件の進捗と止まっている理由、四半期の棚卸しには完了率と滞留の集計を返し、催促がなくても放置が表に出るようにします。間に合わないときは上長への相談メモも作ります。',
             zh: '把桌面整理、周报提交这类例行事务，临时被拜托的零星小事，以及电脑库存、固定资产、仓库整理这类容易被一再推后的事项，逐条变成任务票进行跟踪。从聊天中的一句话生成填好负责人、类别、工作量、期限与重复设置的任务票草案，并按期限与搁置天数排序。对被委托方给出本周的余件与期限，对委托方给出所托事项的进展与卡住的原因，对季度盘点给出完成率与滞留汇总，让无人催促的事项也能浮出水面。来不及时还会生成向上级请示的备忘。',
             en: 'Tracks routine chores such as tidying the desk and filing the weekly report, small favours asked in passing, and low-priority work such as PC stock counts, fixed-asset checks and warehouse clean-ups, turning each one into a ticket. A single line of chat becomes a draft ticket with owner, type, size, due date and recurrence, ordered by deadline and by the number of days it has been left untouched. The person asked sees the open items and deadlines for the week, the requester sees progress and why items are stuck, and the quarterly review sees completion rates and stalled-work totals, so neglected work surfaces without anyone having to chase it. When the work will not fit, it also drafts a note to escalate to the line manager.' } },
-  { id: 'gn7', cat: 'gn', sub: 'daily', st: 3, industries: ['mfg', 'fin'], tags: ['calendar', 'travel'], added: '2026-09-08',
+  { id: 'gn7', cat: 'gn', sub: 'daily', st: 3, industries: ['mfg', 'fin', 'it'], tags: ['calendar', 'travel'], added: '2026-09-08',
     name: { ja: '幹部来訪・出張のアテンド段取り', zh: '高管来访与出差的接待安排', en: 'Executive Visit & Trip Coordination' },
     desc: { ja: '幹部の来訪・出張を 1 件の案件として持ち、到着便・出迎え・社用車やハイヤーの手配・会食・宿泊・緊急連絡先といった事実を、決まった順に追記していきます。追記のたびに予定表を作り直し、いつでも最新版を社内向け（日本語・中国語）と社外向け（抜粋）で出せます。会社契約ホテルの名称・住所・連絡先は日本語・英語・中国語で持ち、会食では仕向け（当社が接待する側か、される側か）と双方の部署・役職・氏名を稟議添付の形に整え、幹部の略歴交換も段取りします。Outlook に一括で取り込めるファイルも出力します。',
             zh: '将高管的来访与出差作为一个案件来管理，把到达航班、接机、公务车或包车安排、宴请、住宿、紧急联络人等事实按敲定的顺序不断追加。每次追加都会重新编制日程表，随时可输出最新版的对内版（日文・中文）与对外版（摘录）。公司协议酒店的名称、地址、联系方式以日文・英文・中文三种语言保存；宴请方面则整理出仕向（由我方招待还是受对方招待）以及双方的部门、职务、姓名，形成可作为审批附件的格式，并安排高管履历的事前交换。还可输出能批量导入 Outlook 的文件。',
@@ -449,27 +449,27 @@ const SVCS = [
     desc: { ja: '出来上がったバリュエーションを、比較企業の選び方・手法の適用・社内のレビュー基準に照らして点検します。基準から外れている箇所と、その理由として書くべき説明の候補を返します。',
             zh: '依据可比公司的选取、方法的适用与行内评审标准，对已完成的估值进行检查。返回偏离标准之处，以及可作为理由记载的说明候选。',
             en: 'Checks a completed valuation against the choice of comparables, the application of the method and the internal review standards. Returns where it deviates and what explanation should be recorded as the reason.' } },
-  { id: 'po1', cat: 'po', sub: 'collect', st: 3, industries: ['mfg', 'fin'], tags: ['survey', 'faq'], added: '2026-09-08',
+  { id: 'po1', cat: 'po', sub: 'collect', st: 3, industries: ['mfg', 'fin', 'it'], tags: ['survey', 'faq'], added: '2026-09-08',
     name: { ja: 'アンケート・インタビュー収集', zh: '问卷与访谈收集', en: 'Survey & Interview Collection' },
     desc: { ja: '設問に沿って対話形式で回答を集め、曖昧な回答にはその場で追加の質問をして具体化します。集まった回答は設問ごとに整理し、自由記述は論点別にまとめて返します。',
             zh: '按设问以对话方式收集回答，对含糊的回答当场追问以使其具体化。收集到的回答按设问整理，自由填写部分按议题归纳后返回。',
             en: 'Collects answers in a conversational form and asks follow-up questions on the spot when an answer is vague. Responses are organized per question, with free text grouped by theme.' } },
-  { id: 'po2', cat: 'po', sub: 'collect', st: 3, industries: ['mfg', 'fin'], tags: ['idea', 'survey'], added: '2026-09-08',
+  { id: 'po2', cat: 'po', sub: 'collect', st: 3, industries: ['mfg', 'fin', 'it'], tags: ['idea', 'survey'], added: '2026-09-08',
     name: { ja: 'アイデアの募集・蓄積・投票集計', zh: '创意征集・沉淀・投票统计', en: 'Idea Collection, Backlog & Voting' },
     desc: { ja: '業務改善や活用アイデアを幅広く集めて 1 か所に貯め、似た提案は束ねて重複を減らします。定期的に投票を回して結果を集計し、検討に進めるものを順位付きで返します。',
             zh: '广泛征集业务改善与应用创意并集中沉淀，对相似提案进行归并以减少重复。定期发起投票并统计结果，按顺位返回可推进讨论的条目。',
             en: 'Gathers improvement and use-case ideas from across the organization into one backlog and merges near-duplicates. Runs periodic votes, tallies the results and returns a ranked list of what should move forward.' } },
-  { id: 'po3', cat: 'po', sub: 'collect', st: 3, industries: ['mfg', 'fin'], tags: ['education', 'kpi'], added: '2026-09-08',
+  { id: 'po3', cat: 'po', sub: 'collect', st: 3, industries: ['mfg', 'fin', 'it'], tags: ['education', 'kpi'], added: '2026-09-08',
     name: { ja: '小テスト・コンプライアンスチェックの実施と集計', zh: '小测验与合规检查的实施及统计', en: 'Quiz & Compliance Check Delivery and Scoring' },
     desc: { ja: '社員向けの小テストやコンプライアンス確認をその場で実施し、実施状況と正答状況をリアルタイムで集計します。誤答の多い設問を示すので、次の教育で何を補えばよいかがわかります。',
             zh: '面向员工即时实施小测验与合规确认，实时统计实施情况与正确率。提示错误率高的题目，便于确定下次培训需要补强的内容。',
             en: 'Runs short quizzes and compliance checks for staff on the spot and tallies completion and correctness in real time. Highlights the questions most often answered wrongly so the next training session knows what to cover.' } },
-  { id: 'po4', cat: 'po', sub: 'mgmt', st: 3, industries: ['mfg', 'fin'], tags: ['workload', 'kpi'], added: '2026-09-08',
+  { id: 'po4', cat: 'po', sub: 'mgmt', st: 3, industries: ['mfg', 'fin', 'it'], tags: ['workload', 'kpi'], added: '2026-09-08',
     name: { ja: '稼働の集計とコスト配分の提案', zh: '工时汇总与成本分摊建议', en: 'Workload Aggregation & Cost Allocation Suggestions' },
     desc: { ja: '各担当の稼働実績を集め、案件・組織単位に集計して月末のコスト配分案を提示します。前月からの偏りや、報告と実績が合っていない箇所も合わせて示します。',
             zh: '汇集各成员的工时实绩，按案件与组织统计，提出月末的成本分摊方案。同时提示与上月相比的偏差，以及汇报与实绩不一致之处。',
             en: 'Collects each member\'s recorded effort, aggregates it by project and organization, and proposes the month-end cost allocation. Also shows shifts from the previous month and places where reports and actuals disagree.' } },
-  { id: 'eg1', cat: 'eg', sub: 'sysspec', st: 3, industries: ['mfg', 'fin'], tags: ['spec', 'faq'], added: '2026-09-08',
+  { id: 'eg1', cat: 'eg', sub: 'sysspec', st: 3, industries: ['mfg', 'fin', 'it'], tags: ['spec', 'faq'], added: '2026-09-08',
     name: { ja: '上流工程の仕様支援（読解・質問回答・エラー対処）', zh: '上游工序的规格支持（解读・答疑・错误处置）', en: 'Upstream Specification Support (Reading, Q&A, Error Handling)' },
     desc: { ja: '仕様書を読み込み、理解のために確認すべき点を質問の形で提示し、仕様に関する問い合わせにも根拠箇所を引用して答えます。エラーコードを入れれば対処の候補を返し、仕様間の矛盾も指摘します。',
             zh: '读取规格书，以提问形式提示为理解所需确认的要点，并引用依据回答关于规格的咨询。输入错误码可返回处置候选，同时指出规格之间的矛盾。',

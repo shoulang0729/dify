@@ -59,6 +59,32 @@ const HOME = {
                zh: '不必再每次手动收集客户与行业新闻，只需设定一次。',
                en: 'No more manually collecting client and industry news every time. Set it up once.' } }
     ]
+  },
+  /* ---- IT（日系 SIer 上海拠点）。世界マスタは data/world/it/**（設計書 §3-4）。
+     台本は未投入（PR-4）なので、ここで挙げるサービスも start は chat フォールバックになる ---- */
+  it: {
+    frequent: [
+      { id: 'dc2', uses: 241 },
+      { id: 'eg1', uses: 188 },
+      { id: 'po4', uses: 163 },
+      { id: 'gn6', uses: 141 },
+      { id: 'kn4', uses: 126 },
+      { id: 'dc8', uses: 104 }
+    ],
+    recommended: [
+      { id: 'eg1',
+        why: { ja: '仕様書の読解と顧客からの質問対応は、どの案件でも立ち上がりに必ず起きます。最初に効果が見える 1 本です。',
+               zh: '规格书的解读与客户提问应对，在任何项目的启动期都必然发生，是最先见效的一个。',
+               en: 'Reading the spec and answering the client\'s questions happens at the start of every project. The quickest place to see value.' } },
+      { id: 'dc2',
+        why: { ja: '日中が混ざる案件レビューの議事録を、その場で両言語に起こせます。すでに提供中で、今日から使えます。',
+               zh: '中日混合的项目评审纪要可当场生成双语版本。已在提供中，今天即可使用。',
+               en: 'Turns a mixed Japanese/Chinese project review into minutes in both languages on the spot. Already in service — usable today.' } },
+      { id: 'po4',
+        why: { ja: '案件ごとの稼働とコスト配分は、毎月手で集計している部分です。集計の型を一度決めれば繰り返し使えます。',
+               zh: '各项目的稼动与成本分摊目前每月都在手工汇总，口径定好一次即可反复使用。',
+               en: 'Utilization and cost allocation per project are tallied by hand every month. Define the format once and reuse it.' } }
+    ]
   }
 };
 
@@ -160,6 +186,52 @@ const FEED = {
         note: { ja: '報告レビューの対象に「当局報告」の種別が加わりました。台帳との照合ルールを確認してください。',
                 zh: '报告评审新增「当局报告」种类，请确认与台账的核对规则。',
                 en: 'Report review now covers the regulatory-report type as well. Check the reconciliation rule against the log.' } }
+    ]
+  },
+  /* ---- IT（日系 SIer 上海拠点）。persona は data/world/it/people.csv の岸本奈津（PMO室 主任）。
+     部署・拠点・文書番号の書式は data/world/it/**（org.csv・calendar.md）の正本に合わせる ---- */
+  it: {
+    persona: { name: { ja: '岸本 奈津', zh: '岸本奈津', en: 'Natsu Kishimoto' },
+               role: { ja: 'PMO室 主任', zh: 'PMO室 主管', en: 'PMO Office Lead' },
+               site: { ja: '上海拠点', zh: '上海分公司', en: 'Shanghai Office' } },
+    mine:   ['po', 'dc', 'kn'],
+    recent: ['dc2', 'po4', 'eg1', 'gn6'],
+    items: [
+      { id: 'po4', kind: 'due',
+        when: { ja: '本日 17:00 まで', zh: '今天 17:00 前', en: 'Today, by 17:00' },
+        note: { ja: '先月分の稼働を案件別に配分します。管理部への提出は明日です。',
+                zh: '将上月的稼动按项目分摊，明天需提交管理部。',
+                en: 'Allocate last month\'s utilization by project. Due to Administration tomorrow.' } },
+      { id: 'dc8', kind: 'due',
+        when: { ja: '明日まで', zh: '明天前', en: 'By tomorrow' },
+        note: { ja: '月次の進捗報告。提出前に数字と本文の食い違いを見ておきます。',
+                zh: '月度进度报告。提交前需检查数字与正文是否一致。',
+                en: 'The monthly progress report. Check the figures against the text before it goes out.' } },
+      { id: 'gn6', kind: 'due',
+        when: { ja: '今週中', zh: '本周内', en: 'This week' },
+        note: { ja: '営業部から頼まれた要員表の更新が止まっています。期限が近いので声掛けが必要です。',
+                zh: '受营业部委托的人员表更新仍未完成，期限将近，需要提醒。',
+                en: 'The staffing sheet asked for by Sales is stalled. The deadline is close and it needs a nudge.' } },
+      { id: 'dc2', kind: 'routine',
+        when: { ja: '毎週月曜', zh: '每周一', en: 'Every Monday' },
+        note: { ja: '週次の案件レビューの議事録を作り、未決事項を次回の論点として整理します。',
+                zh: '整理每周项目评审的纪要，并把未决事项列为下次的议题。',
+                en: 'Write up the weekly project review and carry the open items over as next week\'s agenda.' } },
+      { id: 'po3', kind: 'routine',
+        when: { ja: '毎月 1 日', zh: '每月 1 日', en: 'The 1st of each month' },
+        note: { ja: '情報セキュリティの小テストを配信し、未受験者を集計します。',
+                zh: '发送信息安全小测验并统计未参加人员。',
+                en: 'Send out the information-security quiz and tally who has not taken it.' } },
+      { id: 'kn5', kind: 'notify',
+        when: { ja: '新着', zh: '最新', en: 'New' },
+        note: { ja: '個人情報の取り扱いに関する通達が更新されました。受託案件の手順書への影響を確認してください。',
+                zh: '个人信息处理相关通知已更新，请确认对受托项目作业手册的影响。',
+                en: 'A notice on handling personal data was updated. Check the impact on the procedures for client projects.' } },
+      { id: 'po1', kind: 'notify',
+        when: { ja: '新着', zh: '最新', en: 'New' },
+        note: { ja: '要員アンケートの回答期限が近づいています。未回答が 3 割残っています。',
+                zh: '人员问卷的回答期限临近，仍有三成未回答。',
+                en: 'The staffing survey closes soon; 30% have not answered.' } }
     ]
   }
 };
