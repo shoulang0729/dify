@@ -1,0 +1,32 @@
+# ---- OS / Editor ----
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# ---- Logs ----
+*.log
+
+# ---- Secrets（shoulang0729/dify CLAUDE.md §2-10 相当。値は環境変数か ~/.config/portal/<env>.env に置く） ----
+.env
+.env.*
+!.env.example
+!*.env.example
+*.key
+*.pem
+secrets/
+
+# ---- 実データの主要な混入経路（check-nodata.mjs G2・G3。CSV は seed/ の下だけ許可） ----
+*.sql
+*.dump
+*.bak
+*.xlsx
+*.db
+*.sqlite
+
+# schema/**（Flyway の DDL）は上の *.sql に引っかかるので明示的に許可する
+!schema/*.sql
+
+# ---- Node（S-2：portal/ は独立 npm プロジェクト） ----
+node_modules/

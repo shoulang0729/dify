@@ -1,0 +1,18 @@
+# portal/env/prod/portal.yml — 部門内の実運用インスタンスの環境差分
+#
+# 実値は 1 つも書かない。すべて ${VAR}（値はリポジトリの外、~/.config/portal/prod.env）。
+# 設計書 docs/handoff/2026-09-11-repo-layout-v3.md §2-4。
+#
+# 【注意】SSO/OIDC/LDAP/SAML は NocoBase Professional+ の機能。docs/handoff/2026-09-10-portal-nocobase.md
+# rev3（§0-2 D-1・§4-4b・R-0【1】・A13）で「買う日までは本番もローカルユーザー」と確定しているため、
+# ここに sso 系のフラグは置かない（Community のうちは常にローカルユーザー認証）。
+schema: 1
+name: prod
+datasource:
+  hr: { kind: postgres, dsn: '${PORTAL_DSN_HR}' }
+thresholds:
+  leave_rate_pct: '${PORTAL_THRESHOLD_LEAVE_RATE}'
+  overtime_hours: '${PORTAL_THRESHOLD_OVERTIME_HOURS}'
+workhours:
+  std_hours_per_month: '${PORTAL_WORKHOURS_STD}'
+  closing_day: '${PORTAL_CLOSING_DAY}'

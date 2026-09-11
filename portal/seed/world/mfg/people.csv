@@ -1,0 +1,22 @@
+# 生成物。手で編集しない。node portal/scripts/gen-seed.mjs で shoulang0729/dify の data/world/mfg/people.csv から生成
+person_id,name_ja,name_zh,name_en,dept_id,title_ja,title_zh,title_en,alt_title_ja,alt_title_zh,alt_title_en,site_id,native,note
+wang-lei,王 磊,王磊,Wang Lei,gijutsu,生産技術課 主任,生产技术科 主管,Production Engineering Supervisor,生産技術課 主任（教育担当兼務）;生産技術課 主任（用語集管理者）,生产技术科 主管（兼培训担当）;生产技术科 主管（术语表管理者）,Production Engineering Supervisor (Training Lead);Production Engineering Supervisor (Glossary Owner),suzhou,zh,主務は kn1/en3/pt3。兼務: 教育担当（dc3）／用語集管理者（lg2）。役職ゆれ W2 で検出
+liu-yang,劉 洋,刘洋,Liu Yang,hozen,設備保全課 技師,设备保全科 技师,Maintenance Technician,,,,suzhou,zh,出典 kn2
+sato-misaki,佐藤 美咲,佐藤美咲,Misaki Sato,kanri,管理部 総務・人事 駐在員,管理部 总务人事 驻在员,Admin & HR Expatriate,,,,suzhou,ja,出典 kn3/gn4/pt4/gn6
+zhang-xiaoyu,張 小雨,张小雨,Zhang Xiaoyu,seizo2,製造二課 作業者（入社 2 か月）,制造二科 作业员（入职2个月）,"Operator, Manufacturing Sec. 2 (2 months in)",,,,suzhou,zh,出典 kn4
+nakamura-daisuke,中村 大輔,中村大辅,Daisuke Nakamura,kanri,管理部 財務・法務 駐在員,管理部 财务法务 驻在员,Finance & Legal Expatriate,,,,suzhou,ja,出典 kn5/dc7/pt1
+chen-jing,陳 静,陈静,Chen Jing,hinshitsu,品質保証課 係長,品质保证科 组长,QA Team Leader,,,,suzhou,zh,出典 qa1/en2
+li-qiang,李 強,李强,Li Qiang,seizo2,製造二課 課長,制造二科 科长,Manufacturing Sec. 2 Manager,,,,suzhou,zh,出典 qa2/dc5/nm3。FEED.persona と同一人物
+takahashi-ryo,高橋 亮,高桥亮,Ryo Takahashi,eigyo,営業・顧客対応 駐在員,销售・客户对应 驻在员,Sales & Customer Liaison Expatriate,,,,suzhou,ja,出典 qa3/lg4/nm1
+zhou-min,周 敏,周敏,Zhou Min,hinshitsu,品質保証課 監査対応担当,品质保证科 审核对应担当,QA Audit Coordinator,品質保証課 顧客仕様担当,品质保证科 客户规格担当,QA Customer Specification Coordinator,suzhou,zh,主務は qa4。役職ゆれ: 顧客仕様担当（en1）。W2 で検出
+kobayashi-makoto,小林 誠,小林诚,Makoto Kobayashi,kojocho,工場長,厂长,Plant Manager,,,,suzhou,ja,出典 dc1/nm5/gn5
+wu-ting,呉 婷,吴婷,Wu Ting,kojocho,工場長室 秘書・通訳,厂长办公室 秘书・翻译,Plant Manager Office Secretary & Interpreter,生産管理課 受注担当,生产管理科 订单担当,"Production Control, Order Desk",suzhou,zh,主務は dc2/dc8/lg1。役職ゆれ: 生産管理課 受注担当（gn3）。W2 で検出
+tanaka-koji,田中 浩二,田中浩二,Koji Tanaka,seizobu,製造部 部長,制造部 部长,Manufacturing Director,製造部 部長（安全衛生委員長）,制造部 部长（安全卫生委员长）,Manufacturing Director (Safety Committee Chair),suzhou,ja,主務は製造部 部長（dc4/lg3 共通）。安全衛生委員長は兼務（alt_title 参照。dc4）
+sun-li,孫 麗,孙丽,Sun Li,butsuryu,物流課 輸出入担当,物流科 进出口担当,"Import/Export Coordinator, Logistics",物流課 出荷・在庫担当,物流科 出货・库存担当,Shipping & Inventory Coordinator,suzhou,zh,主務は dc6。役職ゆれ: 出荷・在庫担当（nm4）。W2 で検出
+zhao-wei,趙 偉,赵伟,Zhao Wei,koubai,購買課 担当,采购科 担当,Procurement Staff,,,,suzhou,zh,出典 nm2/pt2/pt7
+feng-jianguo,馮 建国,冯建国,Feng Jianguo,koubai,購買課 課長,采购科 科长,Purchasing Manager,,,,suzhou,zh,出典 pt6
+qian-fang,銭 芳,钱芳,Qian Fang,zaimu,財務課 経費担当,财务科 费用担当,"Finance Staff, Expenses",財務課 買掛担当,财务科 应付担当,"Finance Staff, Accounts Payable",suzhou,zh,主務は gn1。役職ゆれ: 買掛担当（gn2）。W2 で検出
+hu-na,胡 娜,胡娜,Hu Na,jinji,人事課 採用担当,人事科 招聘担当,HR Recruiting Specialist,,,,suzhou,zh,出典 pt5
+watanabe-katsuhiko,渡辺 克彦,渡边克彦,Katsuhiko Watanabe,honsha_seisan,常務執行役員 生産本部長,常务执行董事 生产本部长,"Senior Managing Executive Officer, Head of Production Division",,,,jp_hq,ja,出典 GN-07（設計書 §4-4）。蘇州工場を視察する来訪者
+arai-shiho,新井 志保,新井志保,Shiho Arai,honsha_hisho,秘書室 秘書,秘书室 秘书,Secretariat Secretary,,,,jp_hq,ja,出典 GN-07（設計書 §4-4）。到着便の変更などの事実の出どころ
+zhu-hai,朱 海,朱海,Zhu Hai,soumu,総務課 運転手,总务科 司机,"Driver, General Affairs",,,,suzhou,zh,出典 GN-07（設計書 §4-4）。社用車 1 号車の運転手

@@ -1,0 +1,18 @@
+# portal/env/demo/portal.yml — デモ・意識合わせ用インスタンスの環境差分
+#
+# shoulang0729/dify の data/world/ の架空世界を見るインスタンスなので、値は直値で書いてよい
+# （設計書 docs/handoff/2026-09-11-repo-layout-v3.md §2-4）。
+#
+# 【注意】SSO/OIDC/LDAP/SAML は NocoBase Professional+ の機能。docs/handoff/2026-09-10-portal-nocobase.md
+# rev3（§0-2 D-1・§4-4b・R-0【1】・A13）で「買う日までは本番もローカルユーザー」と確定しているため、
+# ここに sso 系のフラグは置かない（Community のうちは常にローカルユーザー認証）。
+schema: 1
+name: demo
+datasource:
+  hr: { kind: none }   # デモでは外部データソースへ接続しない（seed/** のデータだけで動かす）
+thresholds:
+  leave_rate_pct: 50
+  overtime_hours: 45
+workhours:
+  std_hours_per_month: 160
+  closing_day: 20
