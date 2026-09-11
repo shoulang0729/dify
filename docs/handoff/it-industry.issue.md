@@ -54,7 +54,7 @@ IT 業の世界は**架空の日系 SIer の中国拠点（上海）ソリュー
 
 | ポータルの名前 | 判定 | **確定（PM 2026-09-11）** |
 |---|---|---|
-| **高橋 亮** | **✗ 完全衝突。`data/world/mfg/people.csv` に `takahashi-ryo,高橋 亮,Ryo Takahashi` が既にいる** | **篠崎 悠真 / 篠崎悠真 / Yuma Shinozaki** |
+| **高橋 亮** | **✗ 完全衝突。`data/world/mfg/people.csv` に `takahashi-ryo,高橋 亮,Ryo Takahashi` が既にいる** | **篠崎 悠真 / 筱崎悠真 / Yuma Shinozaki**（zh は簡体字。`篠` → `筱`。既存の `高桥亮`・`渡边克彦` と体系を揃える） |
 | 李 婷 | ⚠ 名「婷」が既に 2 人（呉 婷・潘 婷） | **黄 思涵 / 黄思涵 / Huang Sihan** |
 | 周 建国 | ⚠ 名「建国」が既に 2 人（馮 建国・楊 建国） | **蔡 文博 / 蔡文博 / Cai Wenbo** |
 | 村井 拓也 | ✓ 問題なし | **村井 拓也 / 村井拓也 / Takuya Murai**（そのまま） |

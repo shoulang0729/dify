@@ -330,13 +330,15 @@ This company, its people and all figures are fictional and unrelated to any real
 
 | 確定（PM 2026-09-11） | ja | zh | en | 部署 | 役職（ja / zh / en） | 拠点 | native |
 |---|---|---|---|---|---|---|---|
-| 高橋 亮 → **篠崎 悠真** | 篠崎 悠真 | 篠崎悠真 | Yuma Shinozaki | `deli1` | プロジェクトマネージャ / 项目经理 / Project Manager | 上海 | ja |
+| 高橋 亮 → **篠崎 悠真** | 篠崎 悠真 | 筱崎悠真 | Yuma Shinozaki | `deli1` | プロジェクトマネージャ / 项目经理 / Project Manager | 上海 | ja |
 | 李 婷 → **黄 思涵** | 黄 思涵 | 黄思涵 | Huang Sihan | `deli2` | プロジェクトマネージャ / 项目经理 / Project Manager | 上海 | zh |
 | 周 建国 → **蔡 文博** | 蔡 文博 | 蔡文博 | Cai Wenbo | `deli1` | デリバリリーダー / 交付负责人 / Delivery Lead | 上海 | zh |
 | 村井 拓也（そのまま） | 村井 拓也 | 村井拓也 | Takuya Murai | `sales` | 営業課長 / 营业科长 / Sales Manager | 上海 | ja |
 | 石田 真希 → **岸本 奈津** | 岸本 奈津 | 岸本奈津 | Natsu Kishimoto | `pmo` | PMO室 主任 / PMO室 主管 / PMO Office Lead | 上海 | ja |
 
 確定 5 名は**姓・名とも既存 37 名（mfg 20・fin 17）と重複が無い**（姓名の完全一致どころか、姓だけ・名だけの重複も無い）。§9-2 で `data/world/README.md` に足す規約を最も強い形で満たす。**部署・役職・拠点・`native` は仮案から変えていない**（変わったのは名前だけ）。
+
+**zh は簡体字に直して書く。** `篠` は簡体字に無いので `筱` を当てる（`篠崎悠真` ではなく **`筱崎悠真`**）。既存マスタの日本人名も `高橋 亮 → 高桥亮`・`渡辺 克彦 → 渡边克彦` と簡体字化しており、体系を揃える（PM 2026-09-11）。
 
 ##### 3-4-1-R.（記録）PM 判断前の仮案 —— **採用しない**
 
