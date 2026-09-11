@@ -60,6 +60,18 @@ document.addEventListener('click', (e) => {
   const cu = e.target.closest('[data-cu]');
   if (cu && (cu.classList.contains('chip') || cu.classList.contains('culink'))) { filterContacts(cu.dataset.cu); return; }
 
+  /* ---------- システム稼働状況（sysops-usecase PR-4。設計書 §6-5・§6-9） ---------- */
+  const sysScopeBtn = e.target.closest('[data-act="sysscope"]');
+  if (sysScopeBtn) { pstate.sysScope = sysScopeBtn.dataset.val; renderAll(); return; }
+
+  const sysNowBtn = e.target.closest('[data-act="sysnow"]');
+  if (sysNowBtn) {
+    pstate.now = sysNowBtn.dataset.val;
+    document.querySelectorAll('#nowSw .chip').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.val === pstate.now)));
+    renderAll();
+    return;
+  }
+
   const svcBtnEl = e.target.closest('[data-svc]');
   if (svcBtnEl) {
     const scr = svcBtnEl.dataset.ctxScr || null;
@@ -92,6 +104,13 @@ document.addEventListener('click', (e) => {
 document.addEventListener('change', (e) => {
   const f = e.target.closest('[data-df]');
   if (f) { pstate.dealF[f.dataset.df] = f.value; renderDealList(); }
+
+  /* システム稼働状況：顧客／状態の絞り込み（sysops-usecase PR-4。設計書 §6-2） */
+  const sf = e.target.closest('[data-act="sysf"]');
+  if (sf) {
+    if (sf.dataset.key === 'cu') pstate.sysCu = sf.value; else pstate.sysSt = sf.value;
+    renderAll();
+  }
 });
 
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
@@ -137,4 +156,5 @@ document.getElementById('themeBtn').addEventListener('click', () => {
 /* ================= 起動 ================= */
 ploadPrefs();
 applyPortalPrefs();
+renderNowSw();
 renderAll();

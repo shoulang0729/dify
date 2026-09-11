@@ -49,7 +49,14 @@ const pstate = {
   candSeq: 960,
   /* 結果を行に残す（PR-4。設計書 §5-9）。back[画面id][行id] = [{ svc, at, line }]。
      メモリのみ。localStorage には書かない（§2-6。4 つ目のキーを作らない） */
-  back: {}
+  back: {},
+  /* システム稼働状況（sysops-usecase PR-4。設計書 §6-8）。now は PSYSNOW の id、sysScope は
+     自分が使う/担当/全社の切替、sysCu/sysSt は顧客・状態の絞り込み。どれも localStorage には
+     保存しない（§2-6。ポータルの許可集合は言語とテーマの 2 つだけ。新しいキーは作らない） */
+  now: 'day',
+  sysScope: 'all',
+  sysCu: '',
+  sysSt: ''
 };
 
 /* ============================================================
@@ -281,6 +288,160 @@ function pbackRefresh(scr, id) {
   document.querySelectorAll('.pback[data-scr="' + scr + '"][data-id="' + sid + '"]').forEach(el => {
     el.innerHTML = pbackHTML(scr, id);
   });
+}
+
+/* ============================================================
+   システム稼働状況（sysops-usecase PR-4。設計書 §6-4・§6-8・§6-9）。
+   「サービス時間対象外」「夜間バッチ処理中」は保存せず、PSYS（台帳）と PSYSEV（イベント）と
+   PSYSNOW（時刻プリセット）から毎回導出する。実時計 new Date() は使わない
+   （PSYSNOW/PSYSEV の literal な 'YYYY-MM-DD HH:MM' 文字列だけを解釈する。CLAUDE.md 禁止事項）。
+   ============================================================ */
+
+/** 'YYYY-MM-DD HH:MM'（CST・上海の壁時計）を比較可能な数値に変換する。Date.UTC() はその年月日時分を
+    「UTC の値として」変換するだけで、実行環境の実タイムゾーンに依存しない（設計書 §6-4：時刻はすべて CST）。 */
+function pSysDT(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(s || '');
+  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) : NaN;
+}
+/** 曜日（0=日〜6=土）。y/m/d の組から機械的に決まるので、pSysDT と同じく実時計に依存しない。 */
+function pSysDow(ms) { return new Date(ms).getUTCDay(); }
+/** その日の 0 時からの分。 */
+function pSysHM(ms) { const d = new Date(ms); return d.getUTCHours() * 60 + d.getUTCMinutes(); }
+
+/** サービス時間の文字列（例 '平日 07:00-22:00; 土 07:00-13:00' / '24 時間'）を解析する。 */
+function pSysParseHours(spec) {
+  if (spec === '24 時間') return { all: true };
+  const wd = /平日\s*(\d{2}):(\d{2})-(\d{2}):(\d{2})/.exec(spec || '');
+  const sat = /土\s*(\d{2}):(\d{2})-(\d{2}):(\d{2})/.exec(spec || '');
+  return {
+    all: false,
+    wd: wd ? [+wd[1] * 60 + +wd[2], +wd[3] * 60 + +wd[4]] : null,
+    sat: sat ? [+sat[1] * 60 + +sat[2], +sat[3] * 60 + +sat[4]] : null
+  };
+}
+/** dow（曜日）・hm（分）がサービス時間の中かどうか（土のみ定義があるとき日曜は対象外＝offhours）。 */
+function pSysInHours(spec, dow, hm) {
+  const p = pSysParseHours(spec);
+  if (p.all) return true;
+  if (dow >= 1 && dow <= 5) return !!p.wd && hm >= p.wd[0] && hm < p.wd[1];
+  if (dow === 6) return !!p.sat && hm >= p.sat[0] && hm < p.sat[1];
+  return false;
+}
+/** バッチ窓の文字列（例 '日次 01:00-04:00'）を解析する。'月次 月初3営業日 …' は営業日カレンダーが要るため
+    対象外とする（デモの 3 プリセットはいずれも月初 3 営業日に当たらない。設計書 §8-4 と同じ簡略化）。 */
+function pSysParseBatch(spec) {
+  if (!spec || spec.indexOf('日次') !== 0) return null;
+  const m = /(\d{2}):(\d{2})-(\d{2}):(\d{2})/.exec(spec);
+  return m ? [+m[1] * 60 + +m[2], +m[3] * 60 + +m[4]] : null;
+}
+/** hm がバッチ窓の中か（日をまたぐ窓 '23:00-02:00' にも対応）。 */
+function pSysInBatch(spec, hm) {
+  const w = pSysParseBatch(spec);
+  if (!w) return false;
+  const [s, e] = w;
+  return s <= e ? (hm >= s && hm < e) : (hm >= s || hm < e);
+}
+/** バッチ窓の「開始」を hm と同じ日基準の分に直す（日をまたぐ窓で、いまが日付をまたいだ後なら前日開始扱い）。 */
+function pSysBatchStart(spec, hm) {
+  const w = pSysParseBatch(spec);
+  if (!w) return null;
+  const [s] = w;
+  return hm >= s ? s : s - 1440;
+}
+
+/** その時刻（nowMs）までに起きた、system_id・kind に一致する最新のイベント時刻（ms）。無ければ null。 */
+function pSysLastAt(sysId, kind, nowMs) {
+  const list = PSYSEV.filter(e => e.sys === sysId && e.kind === kind && pSysDT(e.at) <= nowMs);
+  if (!list.length) return null;
+  return Math.max(...list.map(e => pSysDT(e.at)));
+}
+/** on/off の 2 種類のイベント（alert系はseverityで判定するため専用。block/unblock・maint_start/maint_end 用）
+    から、nowMs 時点で「開いている（on の後に off が来ていない）」かどうかを返す。 */
+function pSysOpenFlag(sysId, nowMs, onKind, offKind) {
+  const evs = PSYSEV.filter(e => e.sys === sysId && (e.kind === onKind || e.kind === offKind) && pSysDT(e.at) <= nowMs)
+    .sort((a, b) => pSysDT(a.at) - pSysDT(b.at));
+  let open = false;
+  evs.forEach(e => { open = e.kind === onKind; });
+  return open;
+}
+/** nowMs 時点で開いている alert の重大度（'high'/'critical'/'warn'）。閉じていれば null。 */
+function pSysOpenSeverity(sysId, nowMs) {
+  const evs = PSYSEV.filter(e => e.sys === sysId && (e.kind === 'alert' || e.kind === 'recover') && pSysDT(e.at) <= nowMs)
+    .sort((a, b) => pSysDT(a.at) - pSysDT(b.at));
+  let sev = null;
+  evs.forEach(e => { sev = e.kind === 'alert' ? e.sev : null; });
+  return sev;
+}
+
+/** 表示状態を導出する（設計書 §6-4 の 7 段。上ほど強い）。base_state 相当（incident/degraded/maint/blocked）は
+    イベントから、batch/offhours は台帳とカレンダーから、どちらでもなければ normal。 */
+function pSysState(sys, nowMs, dow, hm) {
+  const sev = pSysOpenSeverity(sys.id, nowMs);
+  if (sev === 'high' || sev === 'critical') return 'incident';
+  if (sev === 'warn') return 'degraded';
+  if (pSysOpenFlag(sys.id, nowMs, 'maint_start', 'maint_end')) return 'maint';
+  if (pSysOpenFlag(sys.id, nowMs, 'block', 'unblock')) return 'blocked';
+  if (pSysInBatch(sys.batch, hm)) return 'batch';
+  if (!pSysInHours(sys.hours, dow, hm)) return 'offhours';
+  return 'normal';
+}
+
+/** 継続時間の表示（分／時間／日）。 */
+function pSysDurLabel(ms) {
+  const min = Math.max(0, Math.round(ms / 60000));
+  if (min < 60) return min + '分';
+  const h = Math.floor(min / 60), m2 = min % 60;
+  if (h < 24) return m2 ? h + '時間' + m2 + '分' : h + '時間';
+  return Math.floor(h / 24) + '日';
+}
+/** 「継続」列。イベント駆動の状態（incident/degraded/blocked/maint）はそのイベントからの経過、
+    batch はバッチ窓の開始からの経過。offhours/normal は導出の起点があいまいなため '—'（設計書に明記が
+    無い簡略化。デモの表示上の見せ方であり base_state・システムの状態そのものには影響しない）。 */
+function pSysSince(sys, state, nowMs, hm) {
+  if (state === 'incident' || state === 'degraded') {
+    const t = pSysLastAt(sys.id, 'alert', nowMs); return t != null ? pSysDurLabel(nowMs - t) : '—';
+  }
+  if (state === 'blocked') { const t = pSysLastAt(sys.id, 'block', nowMs); return t != null ? pSysDurLabel(nowMs - t) : '—'; }
+  if (state === 'maint') { const t = pSysLastAt(sys.id, 'maint_start', nowMs); return t != null ? pSysDurLabel(nowMs - t) : '—'; }
+  if (state === 'batch') {
+    const start = pSysBatchStart(sys.batch, hm);
+    return start != null ? pSysDurLabel((hm - start) * 60000) : '—';
+  }
+  return '—';
+}
+/** 「直近の出来事」列。nowMs までに起きた最新のイベントを 1 件表示する（無ければ '—'）。 */
+function pSysLatestEvent(sysId, nowMs) {
+  const list = PSYSEV.filter(e => e.sys === sysId && pSysDT(e.at) <= nowMs)
+    .sort((a, b) => pSysDT(b.at) - pSysDT(a.at));
+  return list[0] || null;
+}
+const PSYSEVLABEL = { alert: '検知', recover: '復旧', maint_start: '計画停止開始', maint_end: '計画停止終了', block: '閉塞', unblock: '閉塞解除' };
+function pSysEventText(ev) {
+  if (!ev) return '—';
+  const tag = /^INC-/.test(ev.id) ? ev.id + ' ' : '';
+  return tag + (PSYSEVLABEL[ev.kind] || ev.kind) + '：' + ev.summary;
+}
+
+/** システム 9 件を、いまのプリセット（pstate.now）で状態つきに展開する。 */
+function pSysRows() {
+  const now = (typeof PSYSNOW !== 'undefined' ? PSYSNOW : []).find(p => p.id === pstate.now) || PSYSNOW[0];
+  const nowMs = pSysDT(now.date), dow = pSysDow(nowMs), hm = pSysHM(nowMs);
+  return PSYS.map(s => {
+    const state = pSysState(s, nowMs, dow, hm);
+    return Object.assign({}, s, {
+      state, since: pSysSince(s, state, nowMs, hm),
+      lastEvent: pSysEventText(pSysLatestEvent(s.id, nowMs))
+    });
+  });
+}
+/** スコープで絞る（設計書 §6-5）。'mine'＝内製の社内システム（自社スタッフが使う）／
+    'own'＝担当システム（owner_person_id が自分）／'all'＝全社（重大障害だけの一覧。CIO・CEO 向け）。
+    デモの固定ペルソナは topbar のアバターと同じ 岸本 奈津（kishimoto-natsu・PMO）。 */
+const PSYS_VIEWER = 'kishimoto-natsu';
+function pSysInScope(row, scope) {
+  if (scope === 'own') return row.ownerId === PSYS_VIEWER;
+  if (scope === 'mine') return row.kind === 'internal';
+  return row.criticality === '高' && row.state === 'incident'; // 'all'
 }
 
 /* ============================================================

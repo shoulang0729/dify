@@ -26,6 +26,19 @@ V.home = () => `
   </section>
 
   <section class="block">
+   <header><h2>いま止まっているシステム</h2><span class="sub">障害・縮退・閉塞のみ</span></header>
+   <div class="body">
+   ${(() => {
+     const stopped = pSysRows().filter(r => r.state === 'incident' || r.state === 'degraded' || r.state === 'blocked');
+     if (!stopped.length) return '<div class="note">すべて定常運転中です</div>';
+     return '<ul class="list">' + stopped.map(r =>
+       '<li><div><b>' + pesc(r.name) + '</b> ' + pSysChip(r.state) +
+       '<span class="m">' + pesc(r.client) + ' ／ ' + r.id + '</span></div></li>').join('') + '</ul>';
+   })()}
+   </div>
+  </section>
+
+  <section class="block">
    <header><h2>手当てが要る案件</h2><span class="sub">Red / Yellow</span><span class="sp"></span>
     <span class="sub">行から直接 AI を呼べる →</span></header>
    <div class="body flush">
@@ -321,6 +334,92 @@ V.act = () => `
   </section>
  </div>
 </div>`;
+
+/* ---------- システム稼働状況（sysops-usecase PR-4。設計書 §6） ---------- */
+/** 状態チップ（.rag。lv=g/y/r/n の 4 色だけ。7 状態はラベルの文字で区別する。§6-3） */
+function pSysChip(state) {
+  const st = PSYSST[state];
+  return '<span class="rag ' + st.lv + '">' + pesc(PL(st)) + '</span>';
+}
+V.sys = () => {
+  const nowP = (typeof PSYSNOW !== 'undefined' ? PSYSNOW : []).find(p => p.id === pstate.now) || PSYSNOW[0];
+  const rows = pSysRows();
+  const scoped = rows.filter(r => pSysInScope(r, pstate.sysScope));
+  const clients = [...new Set(rows.map(r => r.client))];
+  const filtered = scoped.filter(r => (!pstate.sysCu || r.client === pstate.sysCu) && (!pstate.sysSt || r.state === pstate.sysSt));
+  const cnt = { incident: 0, warn: 0, planned: 0 };
+  scoped.forEach(r => {
+    if (r.state === 'incident') cnt.incident++;
+    else if (r.state === 'degraded' || r.state === 'blocked') cnt.warn++;
+    else if (r.state === 'maint' || r.state === 'batch' || r.state === 'offhours') cnt.planned++;
+  });
+  const availRate = '99.42'; // 当月の稼働率（デモの代表値。本番は §6-7 の式で system_events から集計する）
+
+  const scopeBtn = (val, label) => '<button class="chip" type="button" data-act="sysscope" data-val="' + val +
+    '" aria-pressed="' + (pstate.sysScope === val) + '">' + label + '</button>';
+
+  const rowsHTML = filtered.length ? filtered.map(r => '<tr>' +
+    '<td>' + pSysChip(r.state) + '</td>' +
+    '<td class="nw"><b>' + pesc(r.name) + '</b><span class="m">' + r.id + '</span></td>' +
+    '<td class="nw">' + pesc(r.client) + '</td>' +
+    '<td class="nw">' + (r.project ? r.project : '<span class="m">—</span>') + '</td>' +
+    '<td class="nw">' + pesc(r.owner) + '</td>' +
+    '<td class="nw">' + r.criticality + '</td>' +
+    '<td class="nw">' + pesc(r.hours) + '</td>' +
+    '<td class="num">' + r.since + '</td>' +
+    '<td>' + pesc(r.lastEvent) + '</td></tr>').join('')
+    : '<tr><td colspan="9" class="m">' + (pstate.sysScope === 'all' ? '重大障害はありません' : '該当するシステムはありません') + '</td></tr>';
+
+  return `
+<div class="grid">
+ <section class="block">
+  <header><h2>システムの状態</h2><span class="sub">${pesc(nowP.label)}（上海）</span></header>
+  <div class="body">
+   <div class="sysbar">
+    <span class="chips" id="sysScopeSw" aria-label="スコープ">
+     ${scopeBtn('mine', '自分が使う')}${scopeBtn('own', '担当')}${scopeBtn('all', '全社')}
+    </span>
+    <span class="pn">このセグメントは本番では出ません（ロールで決まります）</span>
+    <select class="selctl" data-act="sysf" data-key="cu">
+     <option value="">顧客（すべて）</option>
+     ${clients.map(c => '<option value="' + pesc(c) + '"' + (pstate.sysCu === c ? ' selected' : '') + '>' + pesc(c) + '</option>').join('')}
+    </select>
+    <select class="selctl" data-act="sysf" data-key="st">
+     <option value="">状態（すべて）</option>
+     ${Object.keys(PSYSST).map(k => '<option value="' + k + '"' + (pstate.sysSt === k ? ' selected' : '') + '>' + pesc(PL(PSYSST[k])) + '</option>').join('')}
+    </select>
+   </div>
+   <div class="tiles" style="margin-top:12px">
+    <div class="tile${cnt.incident ? ' alarm' : ''}"><div class="lbl">障害発生中</div><div class="num">${cnt.incident}<small>件</small></div></div>
+    <div class="tile"><div class="lbl">縮退・閉塞</div><div class="num">${cnt.warn}<small>件</small></div></div>
+    <div class="tile"><div class="lbl">予定どおり停止</div><div class="num">${cnt.planned}<small>件</small></div></div>
+    <div class="tile"><div class="lbl">当月の稼働率</div><div class="num">${availRate}<small>%</small></div></div>
+   </div>
+  </div>
+ </section>
+
+ <section class="block">
+  <header><h2>システム一覧</h2><span class="sub">${filtered.length} 件</span></header>
+  <div class="body flush">
+   <div class="tw systbl"><table><thead><tr>
+    <th>状態</th><th>システム</th><th>顧客／自社</th><th>案件</th><th>担当</th><th>重要度</th>
+    <th>サービス時間</th><th class="num">継続</th><th>直近の出来事</th>
+   </tr></thead><tbody>${rowsHTML}</tbody></table></div>
+  </div>
+  <div class="body" style="border-top:1px solid var(--border-subtle)">
+   <div class="note">「サービス時間対象外」と「夜間バッチ処理中」は台帳に保存していません。表示のたびに、システム台帳のサービス時間・バッチ窓と、いまの時刻から導いています。</div>
+   <div class="pn blk">本番：状態は運用監視ツールからのポーリング（5 分間隔）で system_events に積み、この一覧はそこから導出します</div>
+  </div>
+ </section>
+
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
+  <div class="body">
+   ${paiRow(pscreenAiIds('sys'))}
+  </div>
+ </section>
+</div>`;
+};
 
 V.ppl = () => {
   const attRows = PATT.map(a => {
@@ -1040,6 +1139,22 @@ V.vend = () => `
   </div>
  </section>
 </div>`;
+
+/* ============================================================
+   .mockbar の時刻プリセット（sysops-usecase PR-4。設計書 §6-9）。
+   portal.html は <script src> の 1 行しか変更しない（設計書 §11 PR-4 の触るファイル一覧）ため、
+   .mockbar の #indSw（業種チップ）の直後に、ここから 1 回だけ挿入する。足場なので常に日本語
+   （mockbar 本体の業種チップと同じ作法。§2-4）。起動時に 1 回呼ぶ（js/portal/events.js）。
+   ============================================================ */
+function renderNowSw() {
+  const anchor = document.getElementById('indSw');
+  if (!anchor || document.getElementById('nowSw')) return;
+  const html = '<span class="chips" id="nowSw" aria-label="時刻">' +
+    (typeof PSYSNOW !== 'undefined' ? PSYSNOW : []).map(p =>
+      '<button class="chip" type="button" data-act="sysnow" data-val="' + p.id + '" aria-pressed="' +
+      (pstate.now === p.id) + '">' + pesc(p.label) + '</button>').join('') + '</span>';
+  anchor.insertAdjacentHTML('afterend', html);
+}
 
 /* ============================================================
    ナビ・タイトル・パンくずの描画
