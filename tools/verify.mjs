@@ -67,15 +67,18 @@
  *        ＋ scenarios の実ファイル数 ＋ js/data/portal/** ＋ js/portal/**）・すべて実在・すべて相対パス／
  *        17-b インライン <script> 0 個・<style> 0 個、<link> は css/tokens.css → css/portal.css の 2 本、
  *        トークン定義（--ntt-* の定義行）のコピーが無い／
+ *        17-c（PR-2）SVCS[].place の値域が PSCREENS の画面 id ／ '*' ／ 'out' のいずれか（値域外は FAIL）。
+ *        キー自体が無いもの（未配置）は warn／
  *        17-d mock/css/portal.css に色の直値（#RGB/#RRGGBB）が無く、var(--x) がすべて tokens.css で定義済み／
  *        17-e PT が ja/zh/en を全部持ち空でなく en にかな残りなし。js/data/portal/** に現れる
  *        `{ja:…}` 形のオブジェクトはすべて同じ検査（PSVC[].short を含む）／
  *        17-f js/portal/*.js に現れる mock.* のリテラルが mock.lang / mock.theme の部分集合／
+ *        17-g（PR-2）PSVC / PSTAGE_AI / PSCREENS[].newai の管理番号が SVCS（または PNEW）に存在し、
+ *        POUT のキーが SVCS[].place === 'out' の管理番号と過不足なく一致する／
  *        17-h portal.html に class="mockbar"・id="langSel"・id="themeBtn" がある／
  *        17-i PSVC が st / name / cat を持たない／
  *        17-j portal.html・portal.css・js/portal/**・js/data/portal/** に生 URL（http(s)://）が無い
- *        （設計書 docs/handoff/2026-09-11-portal-mock-pages.md §9-2。この PR は PR-1 の範囲＝17-c,g は含まない
- *        （PR-2 で追加。SVCS[].place がまだ無いため）
+ *        （設計書 docs/handoff/2026-09-11-portal-mock-pages.md §9-2）
  *
  * データの取り出しは tools/lib/load.mjs（node:vm で js/data/** を実行順に評価）を使う。
  * grab()（正規表現抽出）は廃止。
@@ -1294,6 +1297,25 @@ section('17. 部門ポータル（mock/portal.html）契約');
     if (/--ntt-[a-z0-9-]+\s*:/i.test(portal.html)) { fail('portal.html にトークン定義のコピー（--ntt-* の定義行）が残っている'); bad17++; }
     if (!bad17) ok('portal.html: インライン <script>/<style> 0 個・<link> 2 本（tokens → portal）・トークンのコピーなし');
 
+    /* 17-c: SVCS[].place の値域（PSCREENS の画面 id ／ '*' ／ 'out'）。キー自体が無いものは warn（未配置） */
+    const screenIds17 = new Set((portal.data.PSCREENS || []).map(s => s.id));
+    const managementCode17 = (id) => id.replace(/^([a-z]+)(\d+)$/, (_, a, b) => a.toUpperCase() + '-' + String(b).padStart(2, '0'));
+    const placeless17 = [];
+    let placeBad17 = 0;
+    for (const s of portal.data.SVCS || []) {
+      const place = s.place;
+      if (place === undefined) { placeless17.push(s.id); continue; }
+      if (place === '*' || place === 'out' || screenIds17.has(place)) continue;
+      fail(`SVCS.${s.id}.place の値が値域外: "${place}"（PSCREENS の画面 id ／ '*' ／ 'out' のいずれかであること）`);
+      placeBad17++;
+    }
+    if (!placeBad17) {
+      const placedCount = (portal.data.SVCS || []).length - placeless17.length;
+      ok(`SVCS[].place ${placedCount} 件がすべて値域内（画面 id ／ '*' ／ 'out'）`);
+    }
+    bad17 += placeBad17;
+    if (placeless17.length) warn(`置き場所を決めていない: ${placeless17.map(managementCode17).join(', ')}`);
+
     /* 17-d: portal.css に色の直値が無く、var(--x) がすべて tokens.css で定義済み */
     const portalCssStripped = portal.portalCss.replace(/\/\*[\s\S]*?\*\//g, '');
     const hexP = [...portalCssStripped.matchAll(/#[0-9a-f]{3,8}\b/gi)].map(m => m[0]);
@@ -1308,7 +1330,7 @@ section('17. 部門ポータル（mock/portal.html）契約');
     /* 17-e: PT と js/data/portal/** に現れる {ja:…} 形のオブジェクトがすべて 3 言語 */
     const PORTAL_ONLY_KEYS = [
       'PT', 'PGRP', 'PSCREENS', 'PHOW', 'PHOWLONG', 'PST',
-      'PSVC', 'PLACE', 'PNEW', 'PSTAGE_AI', 'PORG',
+      'PSVC', 'POUT', 'PNEW', 'PSTAGE_AI', 'PORG',
       'PSTAGE', 'PDEALS', 'PCUST', 'PCONTACT', 'PHIST', 'PNEWS', 'PVENDOR',
       'PACT', 'PCAND', 'PMEET', 'PKNOW', 'PKNOWACT',
       'PPEOPLE', 'PATT', 'PKPI', 'PKPITOPIC', 'PSRC', 'PGOAL', 'PQTR', 'PCUR_Q',
@@ -1338,6 +1360,43 @@ section('17. 部門ポータル（mock/portal.html）契約');
     const disallowedP = [...mockKeysP].filter(k => !allowedP.has(k));
     if (disallowedP.length) { fail(`js/portal/**: 許可されていない localStorage キー: ${disallowedP.join(', ')}`); bad17++; }
     else ok(`js/portal/** の localStorage キーは許可集合の部分集合（${[...mockKeysP].join(', ') || 'なし'}）`);
+
+    /* 17-g: PSVC / PSTAGE_AI / PSCREENS[].newai に出てくる管理番号が SVCS に存在する（PNEW の id は除く）。
+       PCTXDEF のキーが PSCREENS の id に存在する（PCTXDEF は PR-3 で導入。無ければ skip）。
+       POUT のキーが place === 'out' の管理番号と過不足なく一致する。 */
+    const svcIds17 = new Set((portal.data.SVCS || []).map(s => s.id));
+    const pnewIds17 = new Set(portal.data.PNEW || []);
+    let refBad17 = 0;
+    for (const id of Object.keys(portal.data.PSVC || {})) {
+      if (pnewIds17.has(id)) continue;
+      if (!svcIds17.has(id)) { fail(`PSVC.${id}: SVCS に存在しない id`); refBad17++; }
+    }
+    for (const [stage, ids] of Object.entries(portal.data.PSTAGE_AI || {})) {
+      for (const id of (ids || [])) {
+        if (!svcIds17.has(id)) { fail(`PSTAGE_AI.${stage}: SVCS に存在しない id "${id}"`); refBad17++; }
+      }
+    }
+    for (const scr of portal.data.PSCREENS || []) {
+      for (const id of (scr.newai || [])) {
+        if (pnewIds17.has(id) || svcIds17.has(id)) continue;
+        fail(`PSCREENS.${scr.id}.newai: SVCS にも PNEW にも存在しない id "${id}"`); refBad17++;
+      }
+    }
+    if (portal.data.PCTXDEF) {
+      for (const key of Object.keys(portal.data.PCTXDEF)) {
+        if (!screenIds17.has(key)) { fail(`PCTXDEF.${key}: PSCREENS に存在しない画面 id`); refBad17++; }
+      }
+    }
+    const outIds17 = new Set((portal.data.SVCS || []).filter(s => s.place === 'out').map(s => s.id));
+    const poutIds17 = new Set(Object.keys(portal.data.POUT || {}));
+    const missingPout17 = [...outIds17].filter(id => !poutIds17.has(id));
+    const extraPout17 = [...poutIds17].filter(id => !outIds17.has(id));
+    if (missingPout17.length) { fail(`POUT に理由文が無い（SVCS[].place === 'out'）: ${missingPout17.join(', ')}`); refBad17++; }
+    if (extraPout17.length) { fail(`POUT に place !== 'out' のキーがある: ${extraPout17.join(', ')}`); refBad17++; }
+    if (!refBad17) {
+      ok(`PSVC / PSTAGE_AI / PSCREENS[].newai の管理番号は SVCS（または PNEW）に存在し、POUT（${poutIds17.size} 件）は place: 'out'（${outIds17.size} 件）と過不足なく一致`);
+    }
+    bad17 += refBad17;
 
     /* 17-h: 足場（mockbar）とプロダクト機能（言語・テーマ切替）の存在 */
     if (!/class="mockbar"/.test(portal.html)) { fail('portal.html に class="mockbar" が無い'); bad17++; }

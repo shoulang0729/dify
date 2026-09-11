@@ -74,40 +74,28 @@ const PGRP = ['gFront', 'gCommon', 'gMgmt', 'gBack'];
 
 /* ============================================================
    PSCREENS — 画面台帳（15 画面）。
-   ai: は「この画面の AI」ブロックの手書きリスト（SVCS の内部 id）。
-   place ベースの自動生成は PR-2 で行う（設計書 §4-4）。それまではここに残す。
+   「この画面の AI」ブロックは SVCS[].place から自動生成する（手書きの ai: リストは持たない。
+   設計書 §4-4。生成は js/portal/app.js の pscreenAiIds() / pcrossAiIds()）。
+   newai: は PNEW（未採番の追加候補）のうち、この画面の末尾に「提案」として出すもの
+   （place を持てないため。設計書 §4-4）。
    ============================================================ */
 const PSCREENS = [
-  { grp: '', id: 'home', icon: 'M3 9l7-6 7 6v8a1 1 0 01-1 1h-4v-5H8v5H4a1 1 0 01-1-1z',
-    ai: ['gn5', 'kn4'] },
+  { grp: '', id: 'home', icon: 'M3 9l7-6 7 6v8a1 1 0 01-1 1h-4v-5H8v5H4a1 1 0 01-1-1z' },
   { grp: 'gFront', id: 'cust', icon: 'M2 16v-1a4 4 0 014-4h2a4 4 0 014 4v1M7 4a3 3 0 110 6 3 3 0 010-6zM13 16v-1a4 4 0 00-3-3.87', ct: '4',
-    ai: ['new1', 'rs3', 'cv2'] },
-  { grp: 'gFront', id: 'proj', icon: 'M3 5h5l1.5 2H17v9H3z', ct: '10',
-    ai: ['dc8', 'dc1', 'gn5'] },
-  { grp: 'gFront', id: 'watch', icon: 'M10 4c-4 0-6.5 3-7 5 .5 2 3 5 7 5s6.5-3 7-5c-.5-2-3-5-7-5zM10 11a2 2 0 100-4 2 2 0 000 4z', ct: '12',
-    ai: ['rs1', 'rs3', 'pt2'] },
-  { grp: 'gFront', id: 'vend', icon: 'M4 7l6-3 6 3v7l-6 3-6-3zM10 4v13', ct: '3',
-    ai: ['pt1', 'nm2', 'pt7'] },
-  { grp: 'gCommon', id: 'act', icon: 'M4 10l4 4 8-9', ct: '10',
-    ai: ['gn6', 'lg4'] },
-  { grp: 'gCommon', id: 'meet', icon: 'M4 4h12v12H4zM4 8h12M8 2v3M12 2v3', ct: '4',
-    ai: ['dc2', 'gn4', 'gn7'] },
-  { grp: 'gCommon', id: 'know', icon: 'M4 3h9a2 2 0 012 2v12H6a2 2 0 01-2-2z M6 3v14', ct: '12',
-    ai: ['kn3', 'kn4', 'lg2', 'gn5'] },
-  { grp: 'gCommon', id: 'ai', icon: 'M10 3l2 4 4 2-4 2-2 4-2-4-4-2 4-2z', ct: '67',
-    ai: [] },
-  { grp: 'gMgmt', id: 'kpi', icon: 'M3 17V8M8 17V4M13 17v-6M18 17v-9', ct: '9',
-    ai: ['nm3', 'rs5', 'dc1', 'po1'] },
-  { grp: 'gMgmt', id: 'goal', icon: 'M10 2v16M2 10h16M10 5a5 5 0 100 10 5 5 0 000-10z', ct: '4',
-    ai: ['po1', 'dc8'] },
-  { grp: 'gMgmt', id: 'ppl', icon: 'M10 10a3 3 0 100-6 3 3 0 000 6zM3 17a7 7 0 0114 0', ct: '5',
-    ai: ['po4', 'pt4', 'kn3'] },
-  { grp: 'gBack', id: 'exp', icon: 'M3 6h14v9H3zM3 9h14M6 12h3', ct: '9',
-    ai: ['gn1', 'gn2', 'fa2'] },
-  { grp: 'gBack', id: 'req', icon: 'M6 3h8v14H6zM8 7h4M8 10h4M8 13h2', ct: '4',
-    ai: ['dc5', 'dc7'] },
-  { grp: 'gBack', id: 'trn', icon: 'M10 4L3 7.5 10 11l7-3.5zM5.5 9v4c0 1 2 2 4.5 2s4.5-1 4.5-2V9', ct: '16',
-    ai: ['pt8', 'po3', 'po1', 'po2'] }
+    newai: ['new1'] },
+  { grp: 'gFront', id: 'proj', icon: 'M3 5h5l1.5 2H17v9H3z', ct: '10' },
+  { grp: 'gFront', id: 'watch', icon: 'M10 4c-4 0-6.5 3-7 5 .5 2 3 5 7 5s6.5-3 7-5c-.5-2-3-5-7-5zM10 11a2 2 0 100-4 2 2 0 000 4z', ct: '12' },
+  { grp: 'gFront', id: 'vend', icon: 'M4 7l6-3 6 3v7l-6 3-6-3zM10 4v13', ct: '3' },
+  { grp: 'gCommon', id: 'act', icon: 'M4 10l4 4 8-9', ct: '10' },
+  { grp: 'gCommon', id: 'meet', icon: 'M4 4h12v12H4zM4 8h12M8 2v3M12 2v3', ct: '4' },
+  { grp: 'gCommon', id: 'know', icon: 'M4 3h9a2 2 0 012 2v12H6a2 2 0 01-2-2z M6 3v14', ct: '12' },
+  { grp: 'gCommon', id: 'ai', icon: 'M10 3l2 4 4 2-4 2-2 4-2-4-4-2 4-2z', ct: '67' },
+  { grp: 'gMgmt', id: 'kpi', icon: 'M3 17V8M8 17V4M13 17v-6M18 17v-9', ct: '9' },
+  { grp: 'gMgmt', id: 'goal', icon: 'M10 2v16M2 10h16M10 5a5 5 0 100 10 5 5 0 000-10z', ct: '4' },
+  { grp: 'gMgmt', id: 'ppl', icon: 'M10 10a3 3 0 100-6 3 3 0 000 6zM3 17a7 7 0 0114 0', ct: '5' },
+  { grp: 'gBack', id: 'exp', icon: 'M3 6h14v9H3zM3 9h14M6 12h3', ct: '9' },
+  { grp: 'gBack', id: 'req', icon: 'M6 3h8v14H6zM8 7h4M8 10h4M8 13h2', ct: '4' },
+  { grp: 'gBack', id: 'trn', icon: 'M10 4L3 7.5 10 11l7-3.5zM5.5 9v4c0 1 2 2 4.5 2s4.5-1 4.5-2V9', ct: '16' }
 ];
 
 /* ============================================================

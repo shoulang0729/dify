@@ -41,7 +41,7 @@ V.home = () => `
   <section class="block">
    <header><h2>横断で使う AI</h2><span class="sub">どの画面からでも開く</span></header>
    <div class="body">
-    ${paiRow(['gn5', 'kn4', 'lg1'])}
+    ${paiRow(pcrossAiIds())}
     <div class="pn blk">本番：呼び先が Dify Enterprise（社内）に替わる。ポータル側で変わるのは接続先とキーだけ（<code>${'${DIFY_BASE_URL}'}</code>）</div>
    </div>
   </section>
@@ -203,7 +203,7 @@ V.cust = () => {
  <section class="block">
   <header><h2>この画面の AI</h2></header>
   <div class="body">
-   ${paiRow(['new1', 'rs3', 'cv2'])}
+   ${paiRow(pscreenAiIds('cust'))}
    <div class="note" style="margin-top:10px"><b>「名刺の読み取りと項目抽出（日中英）」はカタログに無いので新規です。</b>名刺管理そのものは NocoBase に持ち、AI が受け持つのは読み取りと項目抽出だけ、という切り分けです。製造業カタログにも金融カタログにもありません。分類と管理番号は実装時に採番します（CLAUDE.md §2-11 は分類コード＋2 桁通番）。</div>
    <div class="note" style="margin-top:8px"><b>ここがカタログとの接続点です。</b>顧客 = 青嶺精工・碧洋銀行にすると、自部門の顧客を見ている画面から、その顧客向けに作った AI カタログへ地続きになります（製造業 49 サービス／金融 29 サービス）。</div>
    <div class="note" style="margin-top:8px"><b>自社は架空の日系 SIerです（PM 確定）。α 社・β 社は顧客側の仮置きです。</b>新しい名前は <code>data/world/</code> に足してから使う決まり（CLAUDE.md §2-13）なので、実装前にマスタへ登録します。</div>
@@ -273,7 +273,7 @@ V.proj = () => {
  <section class="block">
   <header><h2>この画面の AI</h2></header>
   <div class="body">
-   ${paiRow(['rs1', 'dc9', 'nm1', 'dc8', 'dc1'])}
+   ${paiRow(pscreenAiIds('proj'))}
    <div class="note" style="margin-top:10px"><b>行の文脈を渡すのがポイントです。</b>「報告レビュー」を Dify の画面で単体で開くと、案件名も期間も自分で打ち込むことになります。案件カードのボタンから呼べば、案件 id・顧客・ステージ・前回報告が自動で載ります。<b>これが「メニューの背後に置く」ことの中身です。</b></div>
 
    <div style="margin-top:14px">
@@ -306,7 +306,7 @@ V.act = () => `
   <section class="block">
    <header><h2>この画面の AI</h2></header>
    <div class="body">
-    ${paiRow(['gn6', 'lg4'])}
+    ${paiRow(pscreenAiIds('act'))}
     <div class="note" style="margin-top:10px"><b>GN-06 はこの画面の相棒です。</b>メール・チャット・議事録から「頼まれたまま放置されている仕事」を拾い、To Do 候補として起票します。裏で回して結果をテーブルに書く型（Workflow の HTTP request）。</div>
    </div>
   </section>
@@ -406,7 +406,7 @@ V.ppl = () => {
  <section class="block">
   <header><h2>この画面の AI</h2></header>
   <div class="body">
-   ${paiRow(['po4', 'pt4', 'po3', 'po1'])}
+   ${paiRow(pscreenAiIds('ppl'))}
    <div style="margin-top:14px">
     <div style="font-size:11px;color:var(--text-secondary);margin-bottom:7px">カタログに無い — 追加候補</div>
     <div class="ai">
@@ -472,7 +472,7 @@ V.trn = () => {
   <section class="block">
    <header><h2>この画面の AI</h2></header>
    <div class="body">
-    ${paiRow(['pt8', 'po1', 'po3'])}
+    ${paiRow(pscreenAiIds('trn'))}
     <div class="note" style="margin-top:10px"><b>どれも構想段階です。</b>実機はまだありません。押すと「何を渡して何が返るか」だけが出ます。</div>
    </div>
   </section>
@@ -532,7 +532,7 @@ V.meet = () => `
  <section class="block">
   <header><h2>この画面の AI</h2></header>
   <div class="body">
-   ${paiRow(['dc2', 'gn4', 'gn7'])}
+   ${paiRow(pscreenAiIds('meet'))}
    <div class="note" style="margin-top:10px"><b>DC-02 は稼働中です。</b>議事録から返ってくる「次回論点」と「To Do 候補」を、そのまま To Do テーブルに落とします。<b>会議 → To Do → 案件が 1 本につながる</b>のがポータルに置く意味です。</div>
   </div>
  </section>
@@ -612,7 +612,7 @@ V.know = () => {
  <section class="block">
   <header><h2>この画面の AI</h2></header>
   <div class="body">
-   ${paiRow(['kn3', 'kn4', 'lg2', 'gn5'])}
+   ${paiRow(pscreenAiIds('know'))}
    <div class="note" style="margin-top:10px"><b>KN-03 は稼働中</b>で、全社ナレッジの C3 制度・規程を読みます。日本語でも中国語でも、聞いた言語で返ります。KN-04 は部門ナレッジ側で、答えられなかった質問が FAQ の候補として溜まります——<b>溜まった FAQ が、次に足すべき中分類を教えてくれます</b>。</div>
    <div style="margin-top:14px">
     <div style="font-size:11px;color:var(--text-secondary);margin-bottom:7px">カタログに無い — 追加候補</div>
@@ -629,8 +629,11 @@ V.know = () => {
 V.ai = () => {
   const IND = { mfg: '製造業', fin: '金融業', it: 'IT 業' };
   const base = pstate.ind === 'it' ? SVCS : SVCS.filter(s => s.industries.includes(pstate.ind));
-  const out = base.filter(s => (PLACE[s.id] || ['out'])[0] === 'out');
-  const inn = base.filter(s => (PLACE[s.id] || ['out'])[0] !== 'out');
+  /* place は mock/js/data/catalog.js の SVCS[].place が正本（PR-2。設計書 §4-3）。
+     キーが無いもの（未配置）は「置き場所を決めていない」として別集計する（verify §17-c の warn と対）。 */
+  const out = base.filter(s => s.place === 'out');
+  const inn = base.filter(s => s.place && s.place !== 'out');
+  const unplaced = base.filter(s => !s.place);
   const live = base.filter(s => s.st === 1).length;
   const mfgN = SVCS.filter(s => s.industries.includes('mfg')).length;
   const finN = SVCS.filter(s => s.industries.includes('fin')).length;
@@ -638,7 +641,7 @@ V.ai = () => {
   out.forEach(s => { (byCat[s.cat] = byCat[s.cat] || []).push(s); });
   const outRows = Object.keys(byCat).map(k => {
     const list = byCat[k];
-    const reasons = [...new Set(list.map(s => PLACE[s.id][1]))];
+    const reasons = [...new Set(list.map(s => POUT[s.id] || ''))];
     const cat = CATS.find(c => c.id === k);
     return '<tr><td class="nw"><span class="no" style="color:var(--cat-' + k + ')">' + k.toUpperCase() + '</span> <b>' + pesc(cat ? PL(cat.name) : k) + '</b></td>' +
       '<td class="num">' + list.length + '</td>' +
@@ -655,6 +658,7 @@ V.ai = () => {
     <div class="tile"><div class="lbl">${IND[pstate.ind]}のサービス</div><div class="num">${pstate.ind === 'it' ? 0 : base.length}<small>件</small></div><div class="delta">${pstate.ind === 'it' ? 'カタログに IT 業種はまだありません' : 'カタログ全体は ' + SVCS.length + ' 件'}</div></div>
     <div class="tile"><div class="lbl">ポータルから辿れる</div><div class="num">${inn.length}<small>件</small></div><div class="delta">${pstate.ind === 'it' ? '製造業・金融業から流用中' : '13 画面のどこかに出る'}</div></div>
     <div class="tile alarm"><div class="lbl">ポータルからは辿れない</div><div class="num">${out.length}<small>件</small></div><div class="delta">顧客・管理部の業務</div></div>
+    <div class="tile${unplaced.length ? ' alarm' : ''}"><div class="lbl">置き場所を決めていない</div><div class="num">${unplaced.length}<small>件</small></div><div class="delta">${unplaced.length ? unplaced.map(s => psvcCode(s.id)).join(' ') : 'いまは無し'}</div></div>
     <div class="tile"><div class="lbl">実機が稼働中</div><div class="num">${live}<small>件</small></div><div class="delta">残りは試行版・構想</div></div>
    </div>
    <div style="border:2px dashed var(--border-default);border-radius:var(--radius-md);padding:22px 18px;text-align:center;background:var(--surface-sunken)">
@@ -682,7 +686,7 @@ V.ai = () => {
   </div>
   <div class="body" style="border-top:1px solid var(--border-subtle)">
    <div class="note"><b>これは欠陥ではありません。</b>${out.length} 件は顧客自身の業務（青嶺精工の製造現場・碧洋銀行の窓口）と管理部の業務（経理の月次）で、自部門のポータルに置く筋合いのものではありません。顧客画面からカタログへ辿れれば足ります。</div>
-   <div class="note">見ておく価値があるのは<b>「辿れる ${inn.length} 件のうち、まだ画面が無いもの」</b>で、いまは 0 件です。カタログにサービスが増えたときここが 0 でなくなり、それが「置き場所を決めていない」の合図になります。</div>
+   <div class="note">見ておく価値があるのは<b>「カタログに増えたのに、まだ画面を決めていないもの」</b>で、いまは ${unplaced.length} 件です${unplaced.length ? '（' + unplaced.map(s => psvcCode(s.id)).join(' ') + '）' : ''}。カタログにサービスが増えたときここが 0 でなくなり、それが「置き場所を決めていない」の合図になります。</div>
    <div class="note"><b>バッジはカタログのデータ層に持たせます。</b>サービスごとに「どのポータル画面・どのステージに出るか」を列で持てば、バッジも配置も同じ 1 か所から決まり、<b>1 行足すだけで画面のボタンが増えます</b>（画面側は直しません）。成熟度はカタログ側の値をそのまま使います。<b>顧客に見せるときはバッジを出しません</b>——ポータルに埋め込んだときだけ出す形を提案します。ここは PM 判断です。</div>
    <div class="pn blk">本番：埋め込み先が社内のカタログに替わる。管理番号（KN-02 など）は不変なので、対応表の値だけが入れ替わる</div>
   </div>
@@ -791,7 +795,7 @@ V.kpi = () => {
  <section class="block">
   <header><h2>この画面の AI</h2></header>
   <div class="body">
-   ${paiRow(['nm3', 'rs5', 'dc1', 'po1'])}
+   ${paiRow(pscreenAiIds('kpi'))}
    <div class="note" style="margin-top:10px">NM-03 は<b>稼働中</b>。毎朝バッチで回して集計をテーブルに書き、この画面はその結果を描くだけにします（画面を開くたびに AI を呼ばない）。PO-01 は K7 のアンケートを回すところに効きますが構想段階です。</div>
    <div style="margin-top:14px">
     <div style="font-size:11px;color:var(--text-secondary);margin-bottom:7px">カタログに無い — 追加候補</div>
@@ -947,7 +951,7 @@ V.exp = () => `
  <section class="block">
   <header><h2>この画面の AI</h2></header>
   <div class="body">
-   ${paiRow(['gn1', 'gn2', 'fa2', 'fa1', 'fa3', 'fa4', 'fa5'])}
+   ${paiRow(pscreenAiIds('exp'))}
    <div class="note">全員が毎月触る画面なので、<b>ポータルを開く習慣がここでつきます</b>。稼働中の AI が 2 本あるのはこの画面だけです（GN-01・GN-02）。</div>
    <div class="note">FA の 5 本はすべて構想段階です。実機はまだありません。</div>
   </div>
@@ -975,7 +979,7 @@ V.req = () => `
  <section class="block">
   <header><h2>この画面の AI</h2></header>
   <div class="body">
-   ${paiRow(['dc5', 'dc7'])}
+   ${paiRow(pscreenAiIds('req'))}
    <div class="note" style="margin-top:10px">DC-05 は<b>記載漏れの検出</b>が本体です。R-0909 の「記載不備」は DC-05 が出した指摘、という想定。出す前に気づけば差戻しの往復が消えます。</div>
    <div class="note" style="margin-top:8px"><b>承認ノードは Professional+ です。</b>無料版では「状態を持つテーブル＋通知」で同じことをします。承認の履歴を残す Record history も Professional+ なので、履歴が要るなら買う理由になります。</div>
   </div>
@@ -1003,7 +1007,7 @@ V.watch = () => `
  <section class="block">
   <header><h2>この画面の AI</h2><span class="sub">6 本。カタログでいちばん大きい塊</span></header>
   <div class="body">
-   ${paiRow(['rs1', 'rs2', 'rs3', 'rs4', 'pt2', 'pt3'])}
+   ${paiRow(pscreenAiIds('watch'))}
    <div class="note" style="margin-top:10px">RS-03（顧客 IR・決算の要約）は顧客画面からも呼べます。同じサービスを 2 か所に出すのは構いません——<b>出す画面をテーブルの列で持つので、1 行に複数書けば済みます</b>。</div>
   </div>
  </section>
@@ -1032,7 +1036,7 @@ V.vend = () => `
  <section class="block">
   <header><h2>この画面の AI</h2></header>
   <div class="body">
-   ${paiRow(['pt1', 'nm2', 'pt6', 'pt7', 'gn3'])}
+   ${paiRow(pscreenAiIds('vend'))}
    <div class="note" style="margin-top:10px">購買まわり（見積比較・戦略購買・RFQ 起草・発注書の読み取り）はここにまとめました。**別メニューにするほどの量ではない**と判断しています。増えたら分けます。</div>
   </div>
  </section>

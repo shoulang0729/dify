@@ -95,7 +95,7 @@ const PORTAL_DATA_KEYS = [
   'T', 'PATTERNS', 'TAGS', 'TEMPLATES', 'INDUSTRIES', 'CATS', 'SVCS', 'CAT_STYLE',
   // ポータル固有データ層（js/data/portal/**）
   'PT', 'PGRP', 'PSCREENS', 'PHOW', 'PHOWLONG', 'PST',
-  'PSVC', 'PLACE', 'PNEW', 'PSTAGE_AI',
+  'PSVC', 'POUT', 'PNEW', 'PSTAGE_AI',
   'PORG',
   'PSTAGE', 'PDEALS', 'PCUST', 'PCONTACT', 'PHIST', 'PNEWS', 'PVENDOR',
   'PACT', 'PCAND', 'PMEET', 'PKNOW', 'PKNOWACT',

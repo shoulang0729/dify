@@ -39,7 +39,7 @@ const snapshot = {
   industries: INDUSTRIES.map(i => i.id),
   cats: CATS.map(c => ({ id: c.id, industries: [...(c.industries || [])],
                          subs: c.subs.map(s => ({ id: s.id, industries: [...(s.industries || [])] })) })),
-  svcs: SVCS.map(s => ({ id: s.id, cat: s.cat, sub: s.sub, st: s.st, industries: [...(s.industries || [])], tags: [...s.tags] })),
+  svcs: SVCS.map(s => ({ id: s.id, cat: s.cat, sub: s.sub, st: s.st, industries: [...(s.industries || [])], tags: [...s.tags], place: s.place })),
   tags: Object.keys(TAGS).sort(),
   patterns: PATTERNS.map(p => ({ id: p.id, ready: !!p.ready })),
   uiKeys: Object.keys(T).sort(),
@@ -126,6 +126,7 @@ for (const k of Object.keys(snapshot.counts)) {
     if (bs.industries && JSON.stringify(bs.industries) !== JSON.stringify(s.industries)) {
       diffs.push(`SVCS.${s.id} industries: [${bs.industries}] → [${s.industries}]`);
     }
+    if (bs.place !== s.place) diffs.push(`SVCS.${s.id} place: ${bs.place ?? '(なし)'} → ${s.place ?? '(なし)'}`);
   }
   if (!diffs.some(d => d.startsWith('SVCS')) && JSON.stringify(base.svcs.map(x => x.id)) !== JSON.stringify(snapshot.svcs.map(x => x.id)))
     diffs.push('SVCS の並び順が変わっている');
