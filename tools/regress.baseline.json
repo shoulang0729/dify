@@ -1457,7 +1457,8 @@
       "tags": [
         "monitor",
         "incident"
-      ]
+      ],
+      "place": "sys"
     },
     {
       "id": "so2",
@@ -1470,7 +1471,8 @@
       "tags": [
         "monitor",
         "search"
-      ]
+      ],
+      "place": "sys"
     },
     {
       "id": "so3",
@@ -1484,7 +1486,8 @@
         "monitor",
         "kpi",
         "report"
-      ]
+      ],
+      "place": "kpi"
     },
     {
       "id": "so4",
@@ -1498,7 +1501,8 @@
         "incident",
         "rootcause",
         "report"
-      ]
+      ],
+      "place": "sys"
     }
   ],
   "tags": [
