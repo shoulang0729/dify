@@ -110,7 +110,7 @@ V.cust = () => {
       '<td class="num qsep">' + sp.toFixed(1) + '</td><td class="num"><b>' + sv.toFixed(1) + '</b></td></tr>';
   }).join('') +
   '<tr style="background:var(--surface-sunken)"><td class="nw"><b>合計</b></td>' +
-    [0, 1, 2, 3].map(i => '<td class="num qsep' + (i === 1 ? ' qnow' : '') + '">' + tp[i].toFixed(1) + '</td><td class="num' + (i === 1 ? ' qnow' : '') + '"><b>' + tv[i].toFixed(1) + '</b></td></tr>').join('') +
+    [0, 1, 2, 3].map(i => '<td class="num qsep' + (i === 1 ? ' qnow' : '') + '">' + tp[i].toFixed(1) + '</td><td class="num' + (i === 1 ? ' qnow' : '') + '"><b>' + tv[i].toFixed(1) + '</b></td>').join('') +
     '<td class="num qsep">' + tp.reduce((a, b) => a + b, 0).toFixed(1) + '</td>' +
     '<td class="num"><b>' + tv.reduce((a, b) => a + b, 0).toFixed(1) + '</b></td></tr>';
 
