@@ -39,7 +39,7 @@ close し、リポジトリを archive する**（同設計書 §7・§9-1 PR-N3
 | `nocobase/export/` | 定義エクスポート（画面・コレクション・ロール・ワークフロー）の置き場。実機がまだ無いので現時点は空（`.gitkeep`） |
 | `nocobase/docker/` | NocoBase を動かす docker-compose 構成と `.env.example` |
 | `nocobase/plugins/` | 自作プラグイン（TypeScript）。当面は空（`.gitkeep`） |
-| `seed/` | **生成物。手で編集しない。** `data/world/{mfg,fin,it}` と `mock/js/data/portal/*.js` の指標名（ナレッジ 46・KPI 52・MBO 8）・`mock/js/data/catalog.js` のカタログ・`dify/env/cloud-master/env.yml` の `apps:` から `scripts/gen-seed.mjs` が生成する |
+| `seed/` | **生成物。手で編集しない。** `data/world/{mfg,fin,it}` と `mock/js/data/portal/*.js` の指標名（ナレッジ 46・KPI 52・MBO 8。ja は `mock/js/data/portal/{common,mgmt}.js`、zh/en は `data/world/it/{knowledge_categories,kpi_topics,goal_topics}.csv` が正本）・`mock/js/data/catalog.js` のカタログ・`dify/env/cloud-master/env.yml` の `apps:` から `scripts/gen-seed.mjs` が生成する |
 | `env/` | 環境差分（`dify/env/` と同じ作法）。`demo/portal.yml` は架空世界の値を直値で書いてよい。`prod/portal.yml` は `${VAR}` だけ |
 | `scripts/` | `gen-seed.mjs`（seed の生成） |
 | `tools/` | 機械検証（`check-nodata.mjs`・`check-seed-fresh.mjs`） |

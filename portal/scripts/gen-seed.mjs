@@ -7,7 +7,9 @@
  * 入力（すべて shoulang0729/dify 側。正本）:
  *   data/world/{mfg,fin,it}/{company.md,org.csv,people.csv}  … 架空世界（人名・部署・拠点）
  *   mock/js/data/catalog.js（CATS/SVCS）・ui.js（INDUSTRIES）                … サービスカタログ・管理番号
- *   mock/js/data/portal/{common,mgmt}.js（PKNOW/PKPITOPIC/PGOAL）           … ナレッジ 46・KPI 52・MBO 8 の指標名
+ *   mock/js/data/portal/{common,mgmt}.js（PKNOW/PKPITOPIC/PGOAL）           … ナレッジ 46・KPI 52・MBO 8 の名前（ja）・属性
+ *   data/world/it/{knowledge_categories,kpi_topics,goal_topics}.csv        … 上記の名前の zh/en（ja はモックとバイト一致する前提。
+ *                                                                             設計書 docs/handoff/2026-09-12-portal-indicators-i18n.md §2-3・§7）
  *   dify/env/cloud-master/env.yml の apps:                                  … 管理番号 → Dify アプリ id
  *
  * 出力: portal/seed/world/**・portal/seed/catalog.json・portal/seed/apps.json
@@ -72,7 +74,54 @@ function mgmtCode(id) {
   return id.replace(/^([a-z]+)(\d+)$/, (_, a, b) => a.toUpperCase() + '-' + String(b).padStart(2, '0'));
 }
 
-function buildCatalogJson(mockData, portalData) {
+const pad2 = (n) => String(n).padStart(2, '0');
+
+/* 正本 CSV 3 本（data/world/it/{knowledge_categories,kpi_topics,goal_topics}.csv）を読み、
+ * code → { name_zh, name_en, ... } の Map にする。ヘッダはクォート無し・ASCII カンマ無し前提
+ * （設計書 §6-1）なので単純な split(',') で十分（tools/verify.mjs §19 と同じ作法）。 */
+function parseI18nCsv(path) {
+  const raw = readIfExists(path);
+  if (raw == null) return null;
+  const lines = raw.split('\n');
+  if (lines[lines.length - 1] === '') lines.pop();
+  const header = lines[0].split(',');
+  const rows = lines.slice(1).map(line => {
+    const cols = line.split(',');
+    const obj = {};
+    header.forEach((h, i) => { obj[h] = cols[i] ?? ''; });
+    return obj;
+  });
+  return { header, rows, byCode: new Map(rows.map(r => [r.code, r])) };
+}
+
+function loadI18nMaps() {
+  const files = {
+    know: resolve(WORLD_DIR, 'it/knowledge_categories.csv'),
+    kpi: resolve(WORLD_DIR, 'it/kpi_topics.csv'),
+    goal: resolve(WORLD_DIR, 'it/goal_topics.csv'),
+  };
+  const out = {};
+  for (const [key, path] of Object.entries(files)) {
+    const parsed = parseI18nCsv(path);
+    if (!parsed) {
+      throw new Error(`${path} が見つからない（PR-1 #292 のマージ後に生成すること。data/world/it/{knowledge_categories,kpi_topics,goal_topics}.csv の 3 本が要る）`);
+    }
+    out[key] = parsed;
+  }
+  return out;
+}
+
+/** CSV の 1 行から name.{zh,en} を作る。code / kind / name_ja が期待どおりでなければ例外で止める（黙って空文字を書かない）。 */
+function csvName(i18nFile, fileLabel, code, expectKind, expectParent, expectJa) {
+  const row = i18nFile.byCode.get(code);
+  if (!row) throw new Error(`${fileLabel}.csv: code "${code}" が見つからない（mock との食い違い）`);
+  if (row.kind !== expectKind) throw new Error(`${fileLabel}.csv: code "${code}" の kind が "${row.kind}"（期待 "${expectKind}"）`);
+  if ((row.parent || '') !== (expectParent || '')) throw new Error(`${fileLabel}.csv: code "${code}" の parent が "${row.parent}"（期待 "${expectParent || ''}"）`);
+  if (row.name_ja !== expectJa) throw new Error(`${fileLabel}.csv: code "${code}" の name_ja "${row.name_ja}" が mock の "${expectJa}" と不一致`);
+  return { ja: expectJa, zh: row.name_zh, en: row.name_en };
+}
+
+function buildCatalogJson(mockData, portalData, i18n) {
   const CATS = (mockData && mockData.CATS) || [];
   const SVCS = (mockData && mockData.SVCS) || [];
   const INDUSTRIES = (mockData && mockData.INDUSTRIES) || [];
@@ -102,35 +151,63 @@ function buildCatalogJson(mockData, portalData) {
 
   const knowledge = { corp: [], dept: [] };
   let knowledgeSubTotal = 0;
+  let knowUsedCodes = 0;
   for (const scope of ['corp', 'dept']) {
     for (const row of PKNOW[scope] || []) {
       const [code, majorName, subs, , reviewDays] = row;
-      knowledge[scope].push({ code, majorName, subs, reviewDays });
+      const name = csvName(i18n.know, 'knowledge_categories', code, 'major', '', majorName);
+      knowUsedCodes++;
+      const subEntries = subs.map((subName, j) => {
+        const subCode = `${code}-${pad2(j + 1)}`;
+        const subNameI18n = csvName(i18n.know, 'knowledge_categories', subCode, 'minor', code, subName);
+        knowUsedCodes++;
+        return { code: subCode, name: subNameI18n };
+      });
+      knowledge[scope].push({ code, name, reviewDays, subs: subEntries });
       knowledgeSubTotal += subs.length;
     }
   }
+  if (knowUsedCodes !== i18n.know.rows.length) {
+    throw new Error(`knowledge_categories.csv の行数（${i18n.know.rows.length}）と mock から生成したコード数（${knowUsedCodes}）が食い違う`);
+  }
 
   const kpi = { topics: [], measureTotal: 0 };
+  let kpiUsedCodes = 0;
   for (const row of PKPITOPIC) {
     const [code, topicName, measures, frequency, source, viewers, srcState] = row;
-    kpi.topics.push({ code, topicName, measures, frequency, source, viewers, srcState });
+    const name = csvName(i18n.kpi, 'kpi_topics', code, 'topic', '', topicName);
+    kpiUsedCodes++;
+    const measureEntries = measures.map((measureName, j) => {
+      const mCode = `${code}-${pad2(j + 1)}`;
+      const mNameI18n = csvName(i18n.kpi, 'kpi_topics', mCode, 'metric', code, measureName);
+      kpiUsedCodes++;
+      return { code: mCode, name: mNameI18n };
+    });
+    kpi.topics.push({ code, name, frequency, source, viewers, srcState, measures: measureEntries });
     kpi.measureTotal += measures.length;
+  }
+  if (kpiUsedCodes !== i18n.kpi.rows.length) {
+    throw new Error(`kpi_topics.csv の行数（${i18n.kpi.rows.length}）と mock から生成したコード数（${kpiUsedCodes}）が食い違う`);
   }
 
   const goal = { topics: [] };
   for (const row of PGOAL.topics || []) {
     const [code, topicName, measureType] = row;
-    goal.topics.push({ code, topicName, measureType });
+    const name = csvName(i18n.goal, 'goal_topics', code, 'topic', '', topicName);
+    goal.topics.push({ code, name, measureType });
+  }
+  if (goal.topics.length !== i18n.goal.rows.length) {
+    throw new Error(`goal_topics.csv の行数（${i18n.goal.rows.length}）と mock から生成したコード数（${goal.topics.length}）が食い違う`);
   }
 
   return {
-    _comment: 'portal/scripts/gen-seed.mjs で生成。手で編集しない。正本は shoulang0729/dify の mock/js/data/catalog.js（CATS/SVCS）・mock/js/data/portal/{common,mgmt}.js（PKNOW/PKPITOPIC/PGOAL）',
+    _comment: 'portal/scripts/gen-seed.mjs で生成。手で編集しない。正本は shoulang0729/dify の mock/js/data/catalog.js（CATS/SVCS）。ナレッジ／KPI／MBO の名前は data/world/it/{knowledge_categories,kpi_topics,goal_topics}.csv（zh/en）と mock/js/data/portal/{common,mgmt}.js（ja・属性）',
     industries: INDUSTRIES.map(i => ({ id: i.id, name: i.name })),
     cats,
     svcs,
-    knowledge: { ...knowledge, subTotal: knowledgeSubTotal },
-    kpi,
-    goal,
+    knowledge: { ...knowledge, majorTotal: knowledge.corp.length + knowledge.dept.length, subTotal: knowledgeSubTotal },
+    kpi: { topics: kpi.topics, topicTotal: kpi.topics.length, measureTotal: kpi.measureTotal },
+    goal: { ...goal, topicTotal: goal.topics.length },
   };
 }
 
@@ -197,7 +274,8 @@ async function main() {
 
   const worldFiles = buildWorldFiles();
   const { mock, portal } = await loadMockData();
-  const catalogJson = jsonStable(buildCatalogJson(mock && mock.data, portal && portal.data));
+  const i18n = loadI18nMaps();
+  const catalogJson = jsonStable(buildCatalogJson(mock && mock.data, portal && portal.data, i18n));
   const appsJson = jsonStable(buildAppsJson());
 
   const outputs = {

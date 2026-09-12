@@ -36,9 +36,9 @@ External PostgreSQL）が無いため、**方式 (a)（NocoBase のメイン DB 
 | `projects` | プロジェクト（デリバリ） |
 | `todos` | To Do（`PACT` 相当） |
 | `ai_services` | AI サービス（管理番号・`seed/catalog.json` を参照する台帳） |
-| `knowledge_categories` | ナレッジの分類（全社 6 ＋ 部門 6・中分類 46。`seed/catalog.json` から seed） |
-| `kpi_topics` | 組織 KPI の観点（`PKPITOPIC` 相当・9 観点・指標 52 件） |
-| `goal_topics` | 個人目標（MBO）の観点（`PGOAL.topics` 相当・8 観点） |
+| `knowledge_categories` | ナレッジの分類（全社 6 ＋ 部門 6・中分類 46＝1 行 1 分類で 58 行。`seed/catalog.json` から seed。名前の正本は `data/world/it/knowledge_categories.csv`〔zh/en〕と `mock/js/data/portal/common.js` の `PKNOW`〔ja・属性〕） |
+| `kpi_topics` | 組織 KPI の観点・指標（`PKPITOPIC` 相当・9 観点＋指標 52 件＝1 行 1 分類で 61 行。名前の正本は `data/world/it/kpi_topics.csv`〔zh/en〕と `PKPITOPIC`〔ja・属性〕） |
+| `goal_topics` | 個人目標（MBO）の観点（`PGOAL.topics` 相当・8 観点。名前の正本は `data/world/it/goal_topics.csv`〔zh/en〕と `PGOAL.topics`〔ja・属性〕） |
 
 ビュー `v_pipeline`、履歴テーブル `projects_history`／`todos_history` は P0 の実装時に追加する
 （このディレクトリはまだ骨組みの段階。設計書 `docs/handoff/2026-09-10-portal-nocobase.md` §8）。
