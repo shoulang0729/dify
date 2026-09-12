@@ -124,10 +124,10 @@ CREATE TABLE knowledge_categories (
   created_at    timestamptz NOT NULL DEFAULT now()
 );
 
--- kpi_topics: 組織 KPI の観点（9 観点・指標 52 件。seed/catalog.json から seed）
+-- kpi_topics: 組織 KPI の観点（9 観点・指標 52 件。1 行 1 指標なので topic_code は複数行に重複する。seed/catalog.json から seed）
 CREATE TABLE kpi_topics (
   id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  topic_code    text UNIQUE NOT NULL,   -- 例: K1
+  topic_code    text NOT NULL,          -- 例: K1（1 観点に指標が複数あるため重複可。UNIQUE にしない）
   topic_name    text NOT NULL,
   measure_name  text NOT NULL,
   frequency     text,

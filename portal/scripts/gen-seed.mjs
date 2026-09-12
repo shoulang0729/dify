@@ -104,7 +104,7 @@ function buildCatalogJson(mockData, portalData) {
   let knowledgeSubTotal = 0;
   for (const scope of ['corp', 'dept']) {
     for (const row of PKNOW[scope] || []) {
-      const [code, majorName, subs, reviewDays] = row;
+      const [code, majorName, subs, , reviewDays] = row;
       knowledge[scope].push({ code, majorName, subs, reviewDays });
       knowledgeSubTotal += subs.length;
     }
