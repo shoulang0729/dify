@@ -347,9 +347,14 @@ tr[hidden] { display: none; }
   border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 8px 10px;
   white-space: pre-wrap; word-break: break-word; color: var(--text-body); }
 
-/* ---- 実行ドロワー（台本あり）専用パーツ。ドロワー全体は AI 層の色（--ai-*）。§5-3 の違い #6 ---- */
-.drawer.exec { background: var(--ai-bg); }
-.drawer.exec header,
+/* ---- 実行ドロワー（台本あり）専用パーツ。ドロワー全体は AI 層の色（--ai-*）。§5-3 の違い #6 ----
+   --ai-bg はほぼ透明な色味トークンなので、不透明な --surface-card の上に重ねて透けを防ぐ
+   （多重背景：上のレイヤーが色味、下のレイヤーが不透明な下地）。 */
+.drawer.exec { background: linear-gradient(var(--ai-bg), var(--ai-bg)), var(--surface-card); }
+.drawer.exec header {
+  background: linear-gradient(var(--ai-bg), var(--ai-bg)), var(--surface-card);
+  border-color: var(--ai-bd);
+}
 .drawer.exec .sec { background: transparent; border-color: var(--ai-bd); }
 .drawer.exec .sec.body-sec { background: var(--surface-card); }
 
