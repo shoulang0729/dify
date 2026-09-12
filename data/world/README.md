@@ -79,6 +79,9 @@ IT（在中日系 SIer）の第 3 世界は `docs/handoff/2026-09-11-it-industry
 | `calendar.md` | 会計年度（4/1〜3/31）・月次クローズ・案件マイルストン・世界の「今日」（2026-09-11）・文書番号体系 |
 | `documents.csv` | 案件・提案書・変更要求・SOW のレコード ID 台帳 4 ＋ 社内規程 3 ＋ 障害番号 1（`kind`＝`record_id`/`rule`）。障害番号は `docs/handoff/2026-09-11-sysops-usecase.md` PR-2 で追加 |
 | `systems.csv` | システム台帳 9（受託保守中の顧客システム 6・自社の社内システム 3）。`docs/handoff/2026-09-11-sysops-usecase.md` §8-1（PR-2）で新設。新しい固有名詞は 0 件（顧客・案件・担当はすべて既存マスタと `PDEALS` の値） |
+| `knowledge_categories.csv` | ポータルのナレッジ分類名 58 件（大分類 12 ＋ 中分類 46）の zh/en 対訳台帳。ja はモック（`mock/js/data/portal/common.js` の `PKNOW`）とバイト一致が正本。`docs/handoff/2026-09-12-portal-indicators-i18n.md` §5-1・§6 で新設 |
+| `kpi_topics.csv` | ポータルの KPI 観点・指標名 61 件（観点 9 ＋ 指標 52）の zh/en 対訳台帳。ja はモック（`mock/js/data/portal/mgmt.js` の `PKPITOPIC`）とバイト一致が正本。`docs/handoff/2026-09-12-portal-indicators-i18n.md` §5-2・§6 で新設 |
+| `goal_topics.csv` | ポータルの目標（MBO）観点名 8 件の zh/en 対訳台帳。ja はモック（`mock/js/data/portal/mgmt.js` の `PGOAL.topics`）とバイト一致が正本。`docs/handoff/2026-09-12-portal-indicators-i18n.md` §5-3・§6 で新設 |
 
 IT には `equipment.csv`・`products.csv`（部品・設備が主役でない業種のため）と `hotels/vehicles/airports/
 routes/contacts.csv`（GN-07 用。GN-07 の IT 台本を書く PR-4 の範囲外）を置かない（設計書 §3-4）。

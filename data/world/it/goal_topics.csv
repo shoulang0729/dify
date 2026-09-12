@@ -1,0 +1,9 @@
+kind,code,parent,seq,name_ja,name_zh,name_en
+topic,P1,,1,業績,业绩,Performance
+topic,P2,,2,顧客,客户,Customers
+topic,P3,,3,案件遂行,项目执行,Project execution
+topic,P4,,4,品質・改善,质量与改善,Quality and improvement
+topic,P5,,5,育成・自己開発,培养与自我提升,Development and self-learning
+topic,P6,,6,組織・チーム,组织与团队,Organization and team
+topic,P7,,7,業務改善・AI 活用,业务改善与 AI 应用,Process improvement and AI adoption
+topic,P0,,8,共通・必須（全員に自動で付く）,通用・必须（全员自动分配）,Common and mandatory (auto-assigned to all)

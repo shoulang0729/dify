@@ -1,0 +1,62 @@
+kind,code,parent,seq,name_ja,name_zh,name_en
+topic,K1,,1,業績,业绩,Performance
+metric,K1-01,K1,1,受注高,签约额,Bookings
+metric,K1-02,K1,2,売上,销售额,Revenue
+metric,K1-03,K1,3,粗利（率）,毛利（率）,Gross profit (margin)
+metric,K1-04,K1,4,営業利益（率）,营业利润（率）,Operating profit (margin)
+metric,K1-05,K1,5,予算比,预算达成率,Budget attainment
+metric,K1-06,K1,6,受注残,在手订单,Order backlog
+metric,K1-07,K1,7,パイプライン（確度加重）,商机金额（按成功率加权）,Pipeline (probability-weighted)
+topic,K2,,2,案件の健全性,项目健康度,Project health
+metric,K2-01,K2,1,Red/Yellow/Green 比率,红/黄/绿 比例,Red/Yellow/Green ratio
+metric,K2-02,K2,2,納期遵守率,交期达成率,On-time delivery rate
+metric,K2-03,K2,3,検収までの日数,至验收的天数,Days to acceptance
+metric,K2-04,K2,4,変更要求の件数,变更请求件数,Change requests
+metric,K2-05,K2,5,手戻り工数,返工工时,Rework hours
+topic,K3,,3,顧客,客户,Customers
+metric,K3-01,K3,1,顧客別売上,各客户销售额,Revenue by customer
+metric,K3-02,K3,2,上位顧客への集中度,大客户集中度,Top-customer concentration
+metric,K3-03,K3,3,継続率,续约率,Retention rate
+metric,K3-04,K3,4,新規顧客数,新增客户数,New customers
+metric,K3-05,K3,5,提案勝率,中标率,Win rate
+metric,K3-06,K3,6,失注理由の構成,失单原因构成,Loss reasons breakdown
+topic,K4,,4,要員・稼働,人员与稼动,People and utilization
+metric,K4-01,K4,1,稼働率,稼动率,Utilization rate
+metric,K4-02,K4,2,要員数,人员数,Headcount
+metric,K4-03,K4,3,残業時間,加班工时,Overtime hours
+metric,K4-04,K4,4,年休取得率,年假使用率,Annual leave taken
+metric,K4-05,K4,5,離職率,离职率,Attrition rate
+metric,K4-06,K4,6,採用充足率,招聘达成率,Hiring fill rate
+metric,K4-07,K4,7,一人当たり粗利,人均毛利,Gross profit per head
+topic,K5,,5,品質・障害,质量与故障,Quality and incidents
+metric,K5-01,K5,1,稼働率,系统可用率,System availability
+metric,K5-02,K5,2,障害件数,故障件数,Incidents
+metric,K5-03,K5,3,重大障害,重大故障,Major incidents
+metric,K5-04,K5,4,MTTR,平均修复时间（MTTR）,MTTR (mean time to repair)
+metric,K5-05,K5,5,再発率,再发生率,Recurrence rate
+metric,K5-06,K5,6,一次回答までの時間,首次响应时间,First-response time
+metric,K5-07,K5,7,顧客からの指摘件数,客户指出问题件数,Customer-raised issues
+topic,K6,,6,人材育成,人才培养,People development
+metric,K6-01,K6,1,必須研修の受講率,必修培训完成率,Mandatory training completion
+metric,K6-02,K6,2,資格保有者数,持证人数,Certified staff
+metric,K6-03,K6,3,スキル充足率,技能满足率,Skill coverage
+metric,K6-04,K6,4,育成計画の進捗,培养计划进度,Development plan progress
+metric,K6-05,K6,5,OJT 完了率,OJT 完成率,OJT completion rate
+topic,K7,,7,チームビルディング,团队建设,Team building
+metric,K7-01,K7,1,エンゲージメント調査スコア,敬业度调研得分,Engagement survey score
+metric,K7-02,K7,2,1on1 の実施率,1on1 实施率,One-on-one completion rate
+metric,K7-03,K7,3,部門イベントの参加率,部门活动参与率,Team event participation
+metric,K7-04,K7,4,ナレッジ投稿数,知识库投稿数,Knowledge contributions
+metric,K7-05,K7,5,新任 1 年の定着率,新员工一年留存率,First-year retention
+topic,K8,,8,社内施策・改善,内部举措与改善,Internal initiatives and improvement
+metric,K8-01,K8,1,施策の件数と進捗,举措件数与进度,Initiatives and progress
+metric,K8-02,K8,2,改善提案の件数と採用率,改善提案件数与采纳率,Improvement proposals and adoption rate
+metric,K8-03,K8,3,標準化の適用率,标准化适用率,Standardization adoption
+metric,K8-04,K8,4,AI の利用者数・利用回数,AI 使用人数・使用次数,AI users and usage count
+metric,K8-05,K8,5,AI による削減時間,AI 节省工时,Hours saved by AI
+metric,K8-06,K8,6,ナレッジの要見直し件数,待复审知识件数,Knowledge items due for review
+topic,K9,,9,コンプライアンス・統制,合规与内控,Compliance and controls
+metric,K9-01,K9,1,必須研修の未了件数,必修培训未完成件数,Overdue mandatory training
+metric,K9-02,K9,2,セキュリティ事故件数,安全事件件数,Security incidents
+metric,K9-03,K9,3,監査指摘件数,审计指出事项件数,Audit findings
+metric,K9-04,K9,4,申請の期限遵守率,申请按期完成率,Request on-time rate
