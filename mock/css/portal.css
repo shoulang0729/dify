@@ -36,9 +36,24 @@ a { color: var(--text-link); }
 #usrTgl[aria-pressed="true"] { background: var(--usr-bg); border-color: var(--usr-bd); color: var(--usr-fg); }
 #usrTgl[aria-pressed="true"] .dot { background: var(--usr-fg); }
 
-/* ---------- shell ---------- */
+/* ---------- mockbar の折りたたみ（足場を隠す/戻す。PM 指示）----------
+   .mockbar は display:flex を持つため、既定の [hidden]（UA スタイルの display:none）が
+   author スタイルの display:flex に負けないよう明示する（既存の .screen[hidden] と同じ作法）。 */
+.mockbar[hidden] { display: none; }
+.mockbar-fold { margin-left: auto; }
+.mocktab { display: inline-flex; align-items: center; border: 0; border-bottom: 1px solid var(--border-default);
+  background: var(--surface-sunken); color: var(--text-secondary); font-family: inherit; font-size: 11px;
+  padding: 4px 10px; cursor: pointer; }
+.mocktab:hover { background: var(--surface-hover); color: var(--action-primary); }
+.mocktab[hidden] { display: none; }
+
+/* ---------- shell ----------
+   .rail と .topbar（header）は sticky でスクロール中も見えたままにする（PM 指示）。
+   z-index はドロワー／スクリム（.drawer/.scrim。position: fixed）より下・本文（無指定 = auto）より
+   上に置くための整数値で、色ではないので直値のまま書いてよい（CLAUDE.md §2-2 は色の直値の話）。 */
 .shell { display: flex; min-height: 80vh; align-items: stretch; }
-.rail { flex: 0 0 212px; background: var(--surface-rail); color: var(--text-on-rail); padding-block: 14px 24px; }
+.rail { flex: 0 0 212px; background: var(--surface-rail); color: var(--text-on-rail); padding-block: 14px 24px;
+  position: sticky; top: 0; align-self: flex-start; max-height: 100vh; overflow-y: auto; z-index: 1; }
 .rail .org { padding: 2px 16px 14px; margin-bottom: 10px; position: relative; }
 .rail .org::after { content: ""; position: absolute; left: 16px; right: 16px; bottom: 0;
   height: 2px; background: var(--ntt-turquoise); opacity: .85; border-radius: 2px; }
@@ -65,7 +80,8 @@ a { color: var(--text-link); }
 
 .main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .topbar { background: var(--surface-header); border-bottom: 1px solid var(--border-subtle);
-  padding: 10px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  padding: 10px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 2; }
 .topbar h1 { font-size: 17px; letter-spacing: .01em; }
 .topbar .crumb { color: var(--text-muted); font-size: 11px; }
 .topbar .sp { flex: 1 1 auto; }
@@ -332,9 +348,9 @@ tr[hidden] { display: none; }
    情報ドロワー（openDrawer / openKnowDrawer / openHistDrawer。js/portal/render.js）が共用する。
    幅 min(560px, 96vw)：呼び出した行と数字が後ろに見えたまま、縦 1 列（文脈 → 入力 → 結果 → 往復 → 解説）
    で読める大きさ（設計書 D9・§5-3）。 */
-.scrim { position: fixed; inset: 0; background: rgba(7,15,38,.42); border: 0; padding: 0; }
+.scrim { position: fixed; inset: 0; background: rgba(7,15,38,.42); border: 0; padding: 0; z-index: 10; }
 .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 96vw); background: var(--surface-card);
-  border-left: 1px solid var(--border-card); overflow-y: auto; padding: 0 0 28px; }
+  border-left: 1px solid var(--border-card); overflow-y: auto; padding: 0 0 28px; z-index: 11; }
 .drawer header { position: sticky; top: 0; background: var(--surface-card); border-bottom: 1px solid var(--border-subtle);
   padding: 13px 16px; display: flex; gap: 9px; align-items: flex-start; }
 .drawer header h2 { font-size: 14px; }
@@ -347,9 +363,14 @@ tr[hidden] { display: none; }
   border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 8px 10px;
   white-space: pre-wrap; word-break: break-word; color: var(--text-body); }
 
-/* ---- 実行ドロワー（台本あり）専用パーツ。ドロワー全体は AI 層の色（--ai-*）。§5-3 の違い #6 ---- */
-.drawer.exec { background: var(--ai-bg); }
-.drawer.exec header,
+/* ---- 実行ドロワー（台本あり）専用パーツ。ドロワー全体は AI 層の色（--ai-*）。§5-3 の違い #6 ----
+   --ai-bg はほぼ透明な色味トークンなので、不透明な --surface-card の上に重ねて透けを防ぐ
+   （多重背景：上のレイヤーが色味、下のレイヤーが不透明な下地）。 */
+.drawer.exec { background: linear-gradient(var(--ai-bg), var(--ai-bg)), var(--surface-card); }
+.drawer.exec header {
+  background: linear-gradient(var(--ai-bg), var(--ai-bg)), var(--surface-card);
+  border-color: var(--ai-bd);
+}
 .drawer.exec .sec { background: transparent; border-color: var(--ai-bd); }
 .drawer.exec .sec.body-sec { background: var(--surface-card); }
 
@@ -398,8 +419,11 @@ tr[hidden] { display: none; }
 .dsend:hover { background: var(--action-primary-hover); }
 
 @media (max-width: 760px) {
+  /* 狭い幅では .shell が display:block になり、.rail（横並びの上部ナビ）→ .main（sticky ヘッダ＋本文）の
+     縦積みになる。両方を sticky にすると小さい縦幅を上部バー 2 段で圧迫するため、.rail の sticky は解除し
+     （AC-9 の「レールを固定しない」選択）、.topbar（ヘッダ）だけ top:0 で sticky のままにする。 */
   .shell { display: block; }
-  .rail { flex: none; width: auto; padding-block: 10px; }
+  .rail { flex: none; width: auto; padding-block: 10px; position: static; max-height: none; overflow-y: visible; }
   .rail nav { flex-direction: row; overflow-x: auto; gap: 2px; }
   .navbtn { border-left: 0; border-bottom: 3px solid transparent; white-space: nowrap; padding: 7px 11px; }
   .navbtn[aria-current="page"] { border-left: 0; border-bottom-color: var(--ntt-future-blue-50); }

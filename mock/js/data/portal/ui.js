@@ -57,6 +57,10 @@ const PT = {
                 zh: '这不是 NocoBase 的实现。公司・人物・数字均为虚构。此栏为评审用的脚手架，正式画面中不会出现。',
                 en: 'This is not a NocoBase implementation. The company, people and numbers are all fictional. This bar is review scaffolding and does not appear in the real screens.' },
 
+  /* ---- .mockbar の折りたたみ（足場を隠す/戻す。PM 指示。メモリのみ＝pstate.mockbar。§2-6） ---- */
+  mockbarHide: { ja: '▲ 足場を隠す', zh: '▲ 隐藏脚手架', en: '▲ Hide scaffolding' },
+  mockbarShow: { ja: '▼ 足場', zh: '▼ 脚手架', en: '▼ Scaffolding' },
+
   /* ---- 生成した AI ボタンが使う一般フォールバック文言（PSVC に個別の説明が無いサービス用） ---- */
   ctxGeneric: { ja: 'この画面の行（案件 id・顧客・担当者など）', zh: '本画面所在行（项目 id・客户・负责人等）', en: 'The row on this screen (project id, customer, owner, etc.)' },
   outGeneric: { ja: 'カタログの説明を参照', zh: '请参见目录说明', en: 'See the catalog description' },

@@ -1447,6 +1447,40 @@ function applyPortalPrefs() {
   document.getElementById('mockDesc').textContent = pt('mockDesc');
   document.getElementById('indSw').setAttribute('aria-label', pt('indLabel'));
   paintThemeIcon();
+  renderMockbarFold();
+}
+
+/* ---------- .mockbar の折りたたみ（レビュー用の足場を表示/非表示。PM 指示）----------
+   portal.html は変更範囲外なので、折りたたみボタンと隠したときの小タブは
+   ここで一度だけ DOM に足す（以後は再利用）。状態は pstate.mockbar のメモリだけで持ち、
+   localStorage には書かない（§2-6：ポータルの許可集合は「mock」+「.」+「lang」/「theme」の 2 つのまま）。
+   .mockbar 自体はレビュー用の足場（§2-4）なので、ヘッダの言語・テーマ切替（プロダクト機能）
+   や pstate.ind/now/prod 等の現在値には触れない（表示を消すだけ）。 */
+function renderMockbarFold() {
+  const bar = document.querySelector('.mockbar');
+  if (!bar) return;
+  let btn = document.getElementById('mockbarTgl');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'mockbarTgl';
+    btn.className = 'tgl mockbar-fold';
+    btn.setAttribute('data-act', 'mockbarfold');
+    bar.appendChild(btn);
+  }
+  let tab = document.getElementById('mockbarTab');
+  if (!tab) {
+    tab = document.createElement('button');
+    tab.type = 'button';
+    tab.id = 'mockbarTab';
+    tab.className = 'mocktab';
+    tab.setAttribute('data-act', 'mockbarfold');
+    bar.insertAdjacentElement('afterend', tab);
+  }
+  bar.hidden = !pstate.mockbar;
+  tab.hidden = pstate.mockbar;
+  btn.textContent = pt('mockbarHide');
+  tab.textContent = pt('mockbarShow');
 }
 
 function renderAll() {

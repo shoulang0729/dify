@@ -99,6 +99,10 @@ document.addEventListener('click', (e) => {
   if (dsend) { dSend(); return; }
   const dkeep = e.target.closest('[data-dkeep]');
   if (dkeep) { dKeepResult(); return; }
+
+  /* ---------- .mockbar の折りたたみ（足場を隠す/戻す。PM 指示。§2-4） ---------- */
+  const mockbarFold = e.target.closest('[data-act="mockbarfold"]');
+  if (mockbarFold) { pstate.mockbar = !pstate.mockbar; renderMockbarFold(); return; }
 });
 
 document.addEventListener('change', (e) => {
