@@ -636,3 +636,42 @@ topic,P6,,6,組織・チーム,组织与团队,Organization and team
 topic,P7,,7,業務改善・AI 活用,业务改善与 AI 应用,Process improvement and AI adoption
 topic,P0,,8,共通・必須（全員に自動で付く）,通用・必须（全员自动分配）,Common and mandatory (auto-assigned to all)
 ```
+
+---
+
+## §14 追補
+
+### 14-1. PM 判断の確定（2026-09-12）—— §13 の 4 件すべて決定
+
+**§0〜§13 と付録 A は 1 バイトも書き換えていない**（`CLAUDE.md` §4 の作法。決着は追補として足す）。
+**4 件とも architect の推奨どおり**で、**設計の中身は 1 か所も変わっていない**。
+
+| # | 論点 | **決定** | 効果 |
+|---|---|---|---|
+| **1** | zh / en 127 件の訳（§5・付録 A） | **そのまま採用。NG なし**（§13 が名指しした 3 か所 —— `C1 全社の基本動作` → `全公司基本工作规范` / `Company-wide working basics`、`D2 中国拠点の実務` → `中国分公司实务` / `China office practices`、`K4 稼働率`＝`稼动率`（人）と `K5 稼働率`＝`系统可用率`（システム）の訳し分け —— **すべて承認**） | `data/world/it/` の CSV 3 本の `name_zh` / `name_en` が**確定**。以後この CSV が zh/en の正本（§2-2） |
+| **2** | モックを中国語で見せるか | **日本語固定＝`2026-09-11-portal-mock-pages.md` §7-1 **D12** を維持** | `mock/js/data/portal/{common,mgmt}.js` と `mock/js/portal/render.js` は**触らない**（§3・§11）。中国語で見せたくなったら**別 Issue**（見出し・散文ごと `PT` に移す作業が付く） |
+| **3** | `P0 共通・必須` の zh | **`通用・必须` のまま**（`PT.gCommon` の既存訳 `共通业务` と字面を揃えない。§5-4-6） | `mock/js/data/portal/ui.js` の `PT` は**直さない**。直すなら**別 Issue**（verify §17-e の対象なので **ja/zh/en 同時**＝`CLAUDE.md` §2-1） |
+| **4** | `portal/schema/V001__init.sql` を直接書き換えるか | **直接書き換えで確認。`V002__` を作らない**（実機がまだ無いため。§7-2） | **#291・#294 で実施済み**（§14-2） |
+
+**「別 Issue」に送ったもの（2 件）**：モックの中国語表示（決定 2）と `PT.gCommon` の訳の統一（決定 3）。
+**どちらも本件では起票しない。** 起票するときは本節に番号を 1 行追記する（**本文は書き換えない**）。
+
+### 14-2. 実装状況 —— **3 本ともマージ済み**（`git log origin/main` で確認、2026-09-12）
+
+| PR | 設計上の位置づけ（§9） | 番号 | commit | 状態 |
+|---|---|---|---|---|
+| **PR-A** | `portal/` 側・既存バグ 2 件の修正（§12） | **#291** | `4afe3b9` | **マージ済み**（2026-09-12） |
+| **PR-1** | ルート側・正本 CSV 3 本 ＋ `data/world/README.md` ＋ verify **§19** | **#292** | `d1d324e` | **マージ済み**（2026-09-12） |
+| **PR-2** | `portal/` 側・`gen-seed.mjs` が CSV を読み 3 言語で出す ＋ DDL に `name_zh` / `name_en` ＋ seed 再生成 | **#294** | `279ca45` | **マージ済み**（2026-09-12） |
+
+- **実際のマージ順は #291 → #292 → #294**。§9 が課した依存（**PR-2 は PR-1 と PR-A の両方のマージ後**）は満たされている。PR-1 と PR-A は並列可の関係だったが、実際には順に入った（衝突なし）
+- 設計書本体（`2026-09-12-portal-indicators-i18n.md` ＋ Issue 本文）は **#288**（`c21c5e5`）でマージ済み
+- **`main` 上で確認できる成果物**：`data/world/it/knowledge_categories.csv`（58 行＋ヘッダ）・`kpi_topics.csv`（61 行＋ヘッダ）・`goal_topics.csv`（8 行＋ヘッダ）＝**127 件**／`tools/verify.mjs` の **§19**（19-a〜19-f）／`portal/schema/V001__init.sql` の `name_zh` / `name_en` 列／`portal/seed/catalog.json` の `name{ja,zh,en}`
+- **§12 の既存バグ 2 件は PR-A（#291）で解消済み**（`gen-seed.mjs` の `reviewDays` に文書数が入っていた件／`kpi_topics.topic_code` の `UNIQUE`）
+
+### 14-3. 本件はこれで完了 —— 残作業の扱い
+
+- **本設計書の実装は完了。追加の実装 PR は無い。**
+- 今後 **ja の名前を変えたくなったとき**の順序は §0-2 のまま：**① モック（`mock/js/data/portal/**` のリテラル）→ ② `data/world/it/` の CSV → ③ seed 再生成**（`2026-09-10-portal-nocobase.md` §18-1-4 は生きている）。**zh / en を変えるときは ② が起点**（モックは zh/en を持たない）
+- **verify §19 がモックの ja と CSV の `name_ja` のバイト一致を見る**ので、①だけ変えて②を忘れると **`npm test` が FAIL する**（意図した歯止め）
+- 別 Issue 送りの 2 件（§14-1 の決定 2・3）は**本件の完了を妨げない**
