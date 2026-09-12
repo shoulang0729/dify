@@ -94,6 +94,18 @@
  *        参照しない。mock/portal.html・js/portal/**・js/data/portal/**・css/portal.css は
  *        別物＝①デモの一部なので誤検知しない書き方にする）
  *        （設計書 docs/handoff/2026-09-11-repo-layout-v3.md §5-3・§9 PR-R4）
+ *   19.  （新規）ポータル指標名の 3 言語対訳（正本は data/world/it/{knowledge_categories,kpi_topics,
+ *        goal_topics}.csv）。data/world/it/knowledge_categories.csv が無ければ節ごと skip（§16〜§18 と
+ *        同じ作法）：
+ *        19-a ヘッダが設計書 §6-2 の列名・列順と一致／
+ *        19-b 行数が 58 / 61 / 8、`kind` の内訳が 12+46 / 9+52 / 8／
+ *        19-c `name_ja` が mock（`mock/js/data/portal/{common,mgmt}.js` の `PKNOW` / `PKPITOPIC` /
+ *        `PGOAL.topics`）の値とバイト一致（`code` の採番規則で対応づけて並び順も一致）／
+ *        19-d `name_zh` / `name_en` が空でない・`name_en` にかなが無い（§2-1 と同じ正規表現）／
+ *        19-e `code` が 3 ファイル横断で一意・採番規則（`親-2 桁`）どおり・`parent` が実在／
+ *        19-f どのフィールドにも ASCII の `,` `"` が無い
+ *        （設計書 docs/handoff/2026-09-12-portal-indicators-i18n.md §8-1。Issue #289 PR-1。
+ *        mock/js/data/portal/** の読み出しは tools/lib/load.mjs の loadPortal() を使う）
  *
  * 節番号の採番規則（設計書 docs/handoff/2026-09-11-repo-layout-v3.md §8-4・R-P3。
  * docs/handoff/README.md にも明記）：設計書は節番号を予約しない。実装時に「実装済みの最大 ＋ 1」を
@@ -1579,6 +1591,168 @@ section('18. portal/（NocoBase）取り込みの前提契約');
     if (offenders18d.length) {
       fail(`mock/** の中に先頭が "portal/" の相対リンクがある（Pages に出ない ⑤ポータルを参照している）: ${offenders18d.join(', ')}`);
     } else ok('mock/** に先頭が "portal/" の相対リンクが無い（mock/portal.html 等の誤検知なし）');
+  }
+}
+
+/* ---------- 19. ポータル指標名の 3 言語対訳（data/world/it/*.csv） ---------- */
+section('19. ポータル指標名の 3 言語対訳（data/world/it/*.csv）');
+{
+  const KNOW_CSV = resolve(ROOT, 'data/world/it/knowledge_categories.csv');
+  const KPI_CSV = resolve(ROOT, 'data/world/it/kpi_topics.csv');
+  const GOAL_CSV = resolve(ROOT, 'data/world/it/goal_topics.csv');
+  if (!existsSync(KNOW_CSV)) {
+    ok('data/world/it/knowledge_categories.csv が無いため §19 は skip');
+  } else {
+    const kanaRe19 = /[぀-ヿ]/;
+    const pad2 = (n) => String(n).padStart(2, '0');
+
+    const parseCsv19 = (path) => {
+      const raw = readFileSync(path, 'utf8');
+      const endsWithLf = raw.endsWith('\n');
+      const lines = raw.split('\n');
+      if (lines[lines.length - 1] === '') lines.pop();
+      const header = lines[0].split(',');
+      const rows = lines.slice(1).map(line => line.split(','));
+      return { endsWithLf, header, rows };
+    };
+
+    const files19 = {
+      knowledge_categories: { path: KNOW_CSV, header: ['scope', 'kind', 'code', 'parent', 'seq', 'name_ja', 'name_zh', 'name_en'], count: 58 },
+      kpi_topics: { path: KPI_CSV, header: ['kind', 'code', 'parent', 'seq', 'name_ja', 'name_zh', 'name_en'], count: 61 },
+      goal_topics: { path: GOAL_CSV, header: ['kind', 'code', 'parent', 'seq', 'name_ja', 'name_zh', 'name_en'], count: 8 },
+    };
+
+    let bad19 = 0;
+    const parsed19 = {};
+    for (const [key, spec] of Object.entries(files19)) {
+      if (!existsSync(spec.path)) { fail(`data/world/it/${key}.csv が無い`); bad19++; continue; }
+      const csv = parseCsv19(spec.path);
+      parsed19[key] = csv;
+      // 19-a: ヘッダの列名・列順
+      if (csv.header.join(',') !== spec.header.join(',')) {
+        fail(`19-a ${key}.csv: ヘッダが期待と異なる（実際: ${csv.header.join(',')} / 期待: ${spec.header.join(',')}）`); bad19++;
+      } else ok(`19-a ${key}.csv: ヘッダが列名・列順どおり`);
+      if (!csv.endsWithLf) { fail(`${key}.csv: 末尾に改行が無い`); bad19++; }
+      // 19-b: 行数
+      if (csv.rows.length !== spec.count) {
+        fail(`19-b ${key}.csv: 行数が ${csv.rows.length}（期待 ${spec.count}）`); bad19++;
+      } else ok(`19-b ${key}.csv: ${csv.rows.length} 行（ヘッダ含め ${csv.rows.length + 1} 行）`);
+    }
+
+    if (parsed19.knowledge_categories && parsed19.kpi_topics && parsed19.goal_topics) {
+      // 19-b: kind の内訳
+      const knowMajor = parsed19.knowledge_categories.rows.filter(r => r[1] === 'major').length;
+      const knowMinor = parsed19.knowledge_categories.rows.filter(r => r[1] === 'minor').length;
+      if (knowMajor !== 12 || knowMinor !== 46) { fail(`19-b knowledge_categories.csv: kind 内訳が major ${knowMajor} / minor ${knowMinor}（期待 12 / 46）`); bad19++; }
+      else ok('19-b knowledge_categories.csv: kind 内訳 major 12 / minor 46');
+
+      const kpiTopic = parsed19.kpi_topics.rows.filter(r => r[0] === 'topic').length;
+      const kpiMetric = parsed19.kpi_topics.rows.filter(r => r[0] === 'metric').length;
+      if (kpiTopic !== 9 || kpiMetric !== 52) { fail(`19-b kpi_topics.csv: kind 内訳が topic ${kpiTopic} / metric ${kpiMetric}（期待 9 / 52）`); bad19++; }
+      else ok('19-b kpi_topics.csv: kind 内訳 topic 9 / metric 52');
+
+      const goalTopic = parsed19.goal_topics.rows.filter(r => r[0] === 'topic').length;
+      if (goalTopic !== 8) { fail(`19-b goal_topics.csv: kind 内訳が topic ${goalTopic}（期待 8）`); bad19++; }
+      else ok('19-b goal_topics.csv: kind 内訳 topic 8');
+
+      // 19-e: code の一意性・採番規則（親-2 桁）・parent の実在（3 ファイル横断で一意）
+      const entriesByFile = {};
+      for (const [key, csv] of Object.entries(parsed19)) {
+        const codeIdx = csv.header.indexOf('code');
+        const parentIdx = csv.header.indexOf('parent');
+        const seqIdx = csv.header.indexOf('seq');
+        entriesByFile[key] = csv.rows.map(r => ({ code: r[codeIdx], parent: r[parentIdx], seq: r[seqIdx] }));
+      }
+      const allCodesFlat = Object.values(entriesByFile).flat().map(x => x.code);
+      const seen19 = new Set(); const dup19 = new Set();
+      for (const c of allCodesFlat) { if (seen19.has(c)) dup19.add(c); seen19.add(c); }
+      if (dup19.size) { fail(`19-e code が 3 ファイル横断で重複: ${[...dup19].join(', ')}`); bad19++; }
+      else ok(`19-e code が 3 ファイル横断で一意（${allCodesFlat.length} 件）`);
+
+      let numberingBad = 0;
+      for (const [key, entries] of Object.entries(entriesByFile)) {
+        const codeSet = new Set(entries.map(e => e.code));
+        for (const e of entries) {
+          if (e.parent) {
+            const expectedCode = `${e.parent}-${pad2(e.seq)}`;
+            if (e.code !== expectedCode) { fail(`19-e ${key}.csv: code "${e.code}" が採番規則と不一致（期待 "${expectedCode}"）`); numberingBad++; }
+            if (!codeSet.has(e.parent)) { fail(`19-e ${key}.csv: parent "${e.parent}" が実在しない`); numberingBad++; }
+          }
+        }
+      }
+      if (!numberingBad) ok('19-e code の採番規則（親-2 桁）と parent の実在をすべて満たす');
+      bad19 += numberingBad;
+
+      // 19-c / 19-d / 19-f: mock との突き合わせ・空値・かな・ASCII カンマ/引用符・列数
+      const portal19 = loadPortal(ROOT);
+      if (!portal19) {
+        warn('mock/portal.html が無いため 19-c（mock との突き合わせ）を skip');
+      } else {
+        const { PKNOW, PKPITOPIC, PGOAL } = portal19.data;
+        const expected19 = new Map(); // code -> name_ja（mock 側の正本値）
+        if (PKNOW) {
+          for (const list of [PKNOW.corp, PKNOW.dept]) {
+            (list || []).forEach((row) => {
+              const [code, majorName, subs] = row;
+              expected19.set(code, majorName);
+              (subs || []).forEach((subName, j) => { expected19.set(`${code}-${pad2(j + 1)}`, subName); });
+            });
+          }
+        } else warn('PKNOW が読めないため knowledge_categories.csv の 19-c を skip');
+        if (PKPITOPIC) {
+          PKPITOPIC.forEach((row) => {
+            const [code, topicName, metrics] = row;
+            expected19.set(code, topicName);
+            (metrics || []).forEach((metricName, j) => { expected19.set(`${code}-${pad2(j + 1)}`, metricName); });
+          });
+        } else warn('PKPITOPIC が読めないため kpi_topics.csv の 19-c を skip');
+        if (PGOAL && PGOAL.topics) {
+          PGOAL.topics.forEach((row) => {
+            const [code, topicName] = row;
+            expected19.set(code, topicName);
+          });
+        } else warn('PGOAL.topics が読めないため goal_topics.csv の 19-c を skip');
+
+        let mismatchC = 0, emptyD = 0, kanaD = 0, quoteF = 0;
+        for (const [key, csv] of Object.entries(parsed19)) {
+          const codeIdx = csv.header.indexOf('code');
+          const jaIdx = csv.header.indexOf('name_ja');
+          const zhIdx = csv.header.indexOf('name_zh');
+          const enIdx = csv.header.indexOf('name_en');
+          for (const r of csv.rows) {
+            const code = r[codeIdx];
+            // 19-f: 列数（ASCII カンマが混入すると崩れる）。崩れていたら以降の列参照はしない
+            if (r.length !== csv.header.length) {
+              fail(`19-f ${key}.csv: code "${code}" の列数が ${r.length}（期待 ${csv.header.length}。ASCII カンマ混入の疑い）`);
+              quoteF++; continue;
+            }
+            const ja = r[jaIdx], zh = r[zhIdx], en = r[enIdx];
+            // 19-f: 二重引用符
+            if (r.some(field => field.includes('"'))) { fail(`19-f ${key}.csv: code "${code}" のフィールドに二重引用符が含まれる`); quoteF++; }
+            // 19-c: mock との突き合わせ
+            if (expected19.has(code)) {
+              if (expected19.get(code) !== ja) { fail(`19-c ${key}.csv: code "${code}" の name_ja "${ja}" が mock の "${expected19.get(code)}" と不一致`); mismatchC++; }
+            } else { fail(`19-c ${key}.csv: code "${code}" が mock 側に存在しない`); mismatchC++; }
+            // 19-d: 空値・かな残り
+            if (!zh || !zh.trim()) { fail(`19-d ${key}.csv: code "${code}" の name_zh が空`); emptyD++; }
+            if (!en || !en.trim()) { fail(`19-d ${key}.csv: code "${code}" の name_en が空`); emptyD++; }
+            if (en && kanaRe19.test(en)) { fail(`19-d ${key}.csv: code "${code}" の name_en にかなが残っている → "${en}"`); kanaD++; }
+          }
+        }
+        // mock 側にあって CSV に無いもの（対訳漏れの逆方向）
+        const csvCodes19 = new Set(allCodesFlat);
+        const missingFromCsv19 = [...expected19.keys()].filter(c => !csvCodes19.has(c));
+        if (missingFromCsv19.length) { fail(`19-c mock にあるが CSV に無い code: ${missingFromCsv19.join(', ')}`); mismatchC++; }
+
+        if (!mismatchC) ok('19-c name_ja が mock（PKNOW/PKPITOPIC/PGOAL.topics）の値と全 127 件バイト一致');
+        if (!emptyD) ok('19-d name_zh / name_en に空値なし');
+        if (!kanaD) ok('19-d name_en にかな残りなし');
+        if (!quoteF) ok('19-f 全フィールドに ASCII カンマ・二重引用符なし（列数も一致）');
+        bad19 += mismatchC + emptyD + kanaD + quoteF;
+      }
+    }
+
+    if (!bad19) ok('§19 すべて PASS（19-a〜19-f）');
   }
 }
 

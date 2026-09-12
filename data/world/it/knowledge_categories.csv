@@ -1,0 +1,59 @@
+scope,kind,code,parent,seq,name_ja,name_zh,name_en
+corp,major,C1,,1,全社の基本動作,全公司基本工作规范,Company-wide working basics
+corp,minor,C1-01,C1,1,仕事の進め方の基本,工作推进的基本方法,Basics of getting work done
+corp,minor,C1-02,C1,2,報告・連絡・相談,报告・联络・商谈,Reporting and escalation
+corp,minor,C1-03,C1,3,会議と議事録,会议与会议纪要,Meetings and minutes
+corp,minor,C1-04,C1,4,文書の作り方と保管,文档编写与保管,Writing and storing documents
+corp,major,C2,,2,理念・行動規範,理念与行为规范,Values and code of conduct
+corp,minor,C2-01,C2,1,経営理念,经营理念,Corporate philosophy
+corp,minor,C2-02,C2,2,行動規範,行为规范,Code of conduct
+corp,minor,C2-03,C2,3,組織と権限,组织与权限,Organization and authority
+corp,minor,C2-04,C2,4,倫理・通報,伦理与举报,Ethics and whistleblowing
+corp,major,C3,,3,制度・規程,制度与规程,Policies and regulations
+corp,minor,C3-01,C3,1,就業・労務,劳动规章与考勤,Work rules and labor
+corp,minor,C3-02,C3,2,報酬・評価,薪酬与考核,Compensation and evaluation
+corp,minor,C3-03,C3,3,休暇,休假,Leave
+corp,minor,C3-04,C3,4,出張・経費,出差与费用,Travel and expenses
+corp,minor,C3-05,C3,5,福利厚生,福利待遇,Employee benefits
+corp,major,C4,,4,統制・セキュリティ,内控与安全,Controls and security
+corp,minor,C4-01,C4,1,情報セキュリティ,信息安全,Information security
+corp,minor,C4-02,C4,2,個人情報・データ保護,个人信息与数据保护,Personal data protection
+corp,minor,C4-03,C4,3,輸出管理・貿易,出口管制与贸易,Export control and trade
+corp,minor,C4-04,C4,4,契約・法務,合同与法务,Contracts and legal
+corp,major,C5,,5,申請と手続き,申请与手续,Requests and procedures
+corp,minor,C5-01,C5,1,稟議・決裁,请示与审批,Approval requests
+corp,minor,C5-02,C5,2,購買・発注,采购与下单,Purchasing and ordering
+corp,minor,C5-03,C5,3,採用・異動,招聘与调动,Hiring and transfers
+corp,minor,C5-04,C5,4,システム利用申請,系统使用申请,System access requests
+corp,major,C6,,6,教育・研修,教育与培训,Education and training
+corp,minor,C6-01,C6,1,必須研修,必修培训,Mandatory training
+corp,minor,C6-02,C6,2,新任・着任時,新任与到任,Onboarding
+corp,minor,C6-03,C6,3,資格・スキル,资格与技能,Qualifications and skills
+dept,major,D1,,1,部門の基本動作,部门基本工作规范,Department working basics
+dept,minor,D1-01,D1,1,着任時の手引き,到任指南,Onboarding guide
+dept,minor,D1-02,D1,2,用語と略語,术语与缩略语,Terms and abbreviations
+dept,minor,D1-03,D1,3,連絡と報告のルール,联络与报告规则,Contact and reporting rules
+dept,minor,D1-04,D1,4,ツールとアカウント,工具与账号,Tools and accounts
+dept,major,D2,,2,中国拠点の実務,中国分公司实务,China office practices
+dept,minor,D2-01,D2,1,現地の手続き（ビザ・居留・届出）,当地手续（签证・居留・备案）,Local procedures (visa / residence / filings)
+dept,minor,D2-02,D2,2,現地の商習慣,当地商业习惯,Local business customs
+dept,minor,D2-03,D2,3,日中コミュニケーション,日中沟通,Japan-China communication
+dept,minor,D2-04,D2,4,拠点の連絡先,分公司联系方式,Office contacts
+dept,major,D3,,3,顧客と案件,客户与项目,Customers and projects
+dept,minor,D3-01,D3,1,顧客プロファイル,客户档案,Customer profiles
+dept,minor,D3-02,D3,2,提案・見積,提案与报价,Proposals and quotes
+dept,minor,D3-03,D3,3,議事録,会议纪要,Meeting minutes
+dept,minor,D3-04,D3,4,検収・納品,验收与交付,Acceptance and delivery
+dept,major,D4,,4,デリバリ標準,交付标准,Delivery standards
+dept,minor,D4-01,D4,1,見積の考え方,估算方法,Estimating approach
+dept,minor,D4-02,D4,2,設計とレビュー,设计与评审,Design and review
+dept,minor,D4-03,D4,3,品質・テスト,质量与测试,Quality and testing
+dept,minor,D4-04,D4,4,リリース・移行,发布与迁移,Release and migration
+dept,major,D5,,5,障害とトラブル,故障与问题,Incidents and troubles
+dept,minor,D5-01,D5,1,障害報告,故障报告,Incident reports
+dept,minor,D5-02,D5,2,再発防止,防止再发生,Preventing recurrence
+dept,minor,D5-03,D5,3,既知の問題,已知问题,Known issues
+dept,major,D6,,6,ノウハウ,经验与诀窍,Know-how
+dept,minor,D6-01,D6,1,勝ちパターン,制胜模式,Winning patterns
+dept,minor,D6-02,D6,2,失注の記録,失单记录,Lost-deal records
+dept,minor,D6-03,D6,3,技術メモ,技术备忘,Technical notes
