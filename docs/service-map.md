@@ -24,7 +24,7 @@
 | DC-06 | 輸出入・通関書類の確認 | DC/apply | 製造 | 試行版 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) upload | — | — | — | [DC-06.md](./dify/usecases/DC-06.md) | — | — |
 | DC-07 | サプライヤー契約書ドラフト支援 | DC/apply | 製造 | 試行版 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) form | — | — | — | [DC-07.md](./dify/usecases/DC-07.md) | — | — |
 | DC-08 | 報告レビュー（提出前チェック／受領後の論点整理） | DC/report | 製造・金融・IT | 試行版 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) form | [fin/dc.js](../mock/js/data/scenarios/fin/dc.js) form | — | — | [DC-08.md](./dify/usecases/DC-08.md) | — | — |
-| LG-01 | 日中翻訳（社内の言い方に揃える） | LG/trans | 製造 | 提供中 | [mfg/lg.js](../mock/js/data/scenarios/mfg/lg.js) form | — | — | [LG-01-ja-zh-translation.yml](../dify/apps/LG-01-ja-zh-translation.yml) | [LG-01.md](./dify/usecases/LG-01.md) | — | [4 件](../dify/tests/LG-01.json) |
+| LG-01 | 日中翻訳（社内の言い方に揃える） | LG/trans | 製造 | 提供中 | [mfg/lg.js](../mock/js/data/scenarios/mfg/lg.js) upload | — | — | [LG-01-ja-zh-translation.yml](../dify/apps/LG-01-ja-zh-translation.yml) | [LG-01.md](./dify/usecases/LG-01.md) | — | [4 件](../dify/tests/LG-01.json) |
 | LG-02 | 社内用語・呼称の統一（用語集） | LG/trans | 製造 | 試行版 | [mfg/lg.js](../mock/js/data/scenarios/mfg/lg.js) upload | — | — | — | [LG-02.md](./dify/usecases/LG-02.md) | — | — |
 | LG-03 | 現地スタッフとの認識合わせ（手順の中国語書き下し） | LG/align | 製造 | 試行版 | [mfg/lg.js](../mock/js/data/scenarios/mfg/lg.js) form | — | — | — | [LG-03.md](./dify/usecases/LG-03.md) | — | — |
 | LG-04 | ビジネスメール作成（日中往復） | LG/align | 製造 | 提供中 | [mfg/lg.js](../mock/js/data/scenarios/mfg/lg.js) form | — | — | [LG-04-business-email.yml](../dify/apps/LG-04-business-email.yml) | [LG-04.md](./dify/usecases/LG-04.md) | — | [4 件](../dify/tests/LG-04.json) |
