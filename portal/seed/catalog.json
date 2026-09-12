@@ -1,5 +1,5 @@
 {
-  "_comment": "portal/scripts/gen-seed.mjs で生成。手で編集しない。正本は shoulang0729/dify の mock/js/data/catalog.js（CATS/SVCS）・mock/js/data/portal/{common,mgmt}.js（PKNOW/PKPITOPIC/PGOAL）",
+  "_comment": "portal/scripts/gen-seed.mjs で生成。手で編集しない。正本は shoulang0729/dify の mock/js/data/catalog.js（CATS/SVCS）。ナレッジ／KPI／MBO の名前は data/world/it/{knowledge_categories,kpi_topics,goal_topics}.csv（zh/en）と mock/js/data/portal/{common,mgmt}.js（ja・属性）",
   "industries": [
     {
       "id": "mfg",
@@ -1892,328 +1892,1133 @@
     "corp": [
       {
         "code": "C1",
-        "majorName": "全社の基本動作",
+        "name": {
+          "ja": "全社の基本動作",
+          "zh": "全公司基本工作规范",
+          "en": "Company-wide working basics"
+        },
+        "reviewDays": 90,
         "subs": [
-          "仕事の進め方の基本",
-          "報告・連絡・相談",
-          "会議と議事録",
-          "文書の作り方と保管"
-        ],
-        "reviewDays": 90
+          {
+            "code": "C1-01",
+            "name": {
+              "ja": "仕事の進め方の基本",
+              "zh": "工作推进的基本方法",
+              "en": "Basics of getting work done"
+            }
+          },
+          {
+            "code": "C1-02",
+            "name": {
+              "ja": "報告・連絡・相談",
+              "zh": "报告・联络・商谈",
+              "en": "Reporting and escalation"
+            }
+          },
+          {
+            "code": "C1-03",
+            "name": {
+              "ja": "会議と議事録",
+              "zh": "会议与会议纪要",
+              "en": "Meetings and minutes"
+            }
+          },
+          {
+            "code": "C1-04",
+            "name": {
+              "ja": "文書の作り方と保管",
+              "zh": "文档编写与保管",
+              "en": "Writing and storing documents"
+            }
+          }
+        ]
       },
       {
         "code": "C2",
-        "majorName": "理念・行動規範",
+        "name": {
+          "ja": "理念・行動規範",
+          "zh": "理念与行为规范",
+          "en": "Values and code of conduct"
+        },
+        "reviewDays": 365,
         "subs": [
-          "経営理念",
-          "行動規範",
-          "組織と権限",
-          "倫理・通報"
-        ],
-        "reviewDays": 365
+          {
+            "code": "C2-01",
+            "name": {
+              "ja": "経営理念",
+              "zh": "经营理念",
+              "en": "Corporate philosophy"
+            }
+          },
+          {
+            "code": "C2-02",
+            "name": {
+              "ja": "行動規範",
+              "zh": "行为规范",
+              "en": "Code of conduct"
+            }
+          },
+          {
+            "code": "C2-03",
+            "name": {
+              "ja": "組織と権限",
+              "zh": "组织与权限",
+              "en": "Organization and authority"
+            }
+          },
+          {
+            "code": "C2-04",
+            "name": {
+              "ja": "倫理・通報",
+              "zh": "伦理与举报",
+              "en": "Ethics and whistleblowing"
+            }
+          }
+        ]
       },
       {
         "code": "C3",
-        "majorName": "制度・規程",
+        "name": {
+          "ja": "制度・規程",
+          "zh": "制度与规程",
+          "en": "Policies and regulations"
+        },
+        "reviewDays": 180,
         "subs": [
-          "就業・労務",
-          "報酬・評価",
-          "休暇",
-          "出張・経費",
-          "福利厚生"
-        ],
-        "reviewDays": 180
+          {
+            "code": "C3-01",
+            "name": {
+              "ja": "就業・労務",
+              "zh": "劳动规章与考勤",
+              "en": "Work rules and labor"
+            }
+          },
+          {
+            "code": "C3-02",
+            "name": {
+              "ja": "報酬・評価",
+              "zh": "薪酬与考核",
+              "en": "Compensation and evaluation"
+            }
+          },
+          {
+            "code": "C3-03",
+            "name": {
+              "ja": "休暇",
+              "zh": "休假",
+              "en": "Leave"
+            }
+          },
+          {
+            "code": "C3-04",
+            "name": {
+              "ja": "出張・経費",
+              "zh": "出差与费用",
+              "en": "Travel and expenses"
+            }
+          },
+          {
+            "code": "C3-05",
+            "name": {
+              "ja": "福利厚生",
+              "zh": "福利待遇",
+              "en": "Employee benefits"
+            }
+          }
+        ]
       },
       {
         "code": "C4",
-        "majorName": "統制・セキュリティ",
+        "name": {
+          "ja": "統制・セキュリティ",
+          "zh": "内控与安全",
+          "en": "Controls and security"
+        },
+        "reviewDays": 180,
         "subs": [
-          "情報セキュリティ",
-          "個人情報・データ保護",
-          "輸出管理・貿易",
-          "契約・法務"
-        ],
-        "reviewDays": 180
+          {
+            "code": "C4-01",
+            "name": {
+              "ja": "情報セキュリティ",
+              "zh": "信息安全",
+              "en": "Information security"
+            }
+          },
+          {
+            "code": "C4-02",
+            "name": {
+              "ja": "個人情報・データ保護",
+              "zh": "个人信息与数据保护",
+              "en": "Personal data protection"
+            }
+          },
+          {
+            "code": "C4-03",
+            "name": {
+              "ja": "輸出管理・貿易",
+              "zh": "出口管制与贸易",
+              "en": "Export control and trade"
+            }
+          },
+          {
+            "code": "C4-04",
+            "name": {
+              "ja": "契約・法務",
+              "zh": "合同与法务",
+              "en": "Contracts and legal"
+            }
+          }
+        ]
       },
       {
         "code": "C5",
-        "majorName": "申請と手続き",
+        "name": {
+          "ja": "申請と手続き",
+          "zh": "申请与手续",
+          "en": "Requests and procedures"
+        },
+        "reviewDays": 180,
         "subs": [
-          "稟議・決裁",
-          "購買・発注",
-          "採用・異動",
-          "システム利用申請"
-        ],
-        "reviewDays": 180
+          {
+            "code": "C5-01",
+            "name": {
+              "ja": "稟議・決裁",
+              "zh": "请示与审批",
+              "en": "Approval requests"
+            }
+          },
+          {
+            "code": "C5-02",
+            "name": {
+              "ja": "購買・発注",
+              "zh": "采购与下单",
+              "en": "Purchasing and ordering"
+            }
+          },
+          {
+            "code": "C5-03",
+            "name": {
+              "ja": "採用・異動",
+              "zh": "招聘与调动",
+              "en": "Hiring and transfers"
+            }
+          },
+          {
+            "code": "C5-04",
+            "name": {
+              "ja": "システム利用申請",
+              "zh": "系统使用申请",
+              "en": "System access requests"
+            }
+          }
+        ]
       },
       {
         "code": "C6",
-        "majorName": "教育・研修",
+        "name": {
+          "ja": "教育・研修",
+          "zh": "教育与培训",
+          "en": "Education and training"
+        },
+        "reviewDays": 365,
         "subs": [
-          "必須研修",
-          "新任・着任時",
-          "資格・スキル"
-        ],
-        "reviewDays": 365
+          {
+            "code": "C6-01",
+            "name": {
+              "ja": "必須研修",
+              "zh": "必修培训",
+              "en": "Mandatory training"
+            }
+          },
+          {
+            "code": "C6-02",
+            "name": {
+              "ja": "新任・着任時",
+              "zh": "新任与到任",
+              "en": "Onboarding"
+            }
+          },
+          {
+            "code": "C6-03",
+            "name": {
+              "ja": "資格・スキル",
+              "zh": "资格与技能",
+              "en": "Qualifications and skills"
+            }
+          }
+        ]
       }
     ],
     "dept": [
       {
         "code": "D1",
-        "majorName": "部門の基本動作",
+        "name": {
+          "ja": "部門の基本動作",
+          "zh": "部门基本工作规范",
+          "en": "Department working basics"
+        },
+        "reviewDays": 90,
         "subs": [
-          "着任時の手引き",
-          "用語と略語",
-          "連絡と報告のルール",
-          "ツールとアカウント"
-        ],
-        "reviewDays": 90
+          {
+            "code": "D1-01",
+            "name": {
+              "ja": "着任時の手引き",
+              "zh": "到任指南",
+              "en": "Onboarding guide"
+            }
+          },
+          {
+            "code": "D1-02",
+            "name": {
+              "ja": "用語と略語",
+              "zh": "术语与缩略语",
+              "en": "Terms and abbreviations"
+            }
+          },
+          {
+            "code": "D1-03",
+            "name": {
+              "ja": "連絡と報告のルール",
+              "zh": "联络与报告规则",
+              "en": "Contact and reporting rules"
+            }
+          },
+          {
+            "code": "D1-04",
+            "name": {
+              "ja": "ツールとアカウント",
+              "zh": "工具与账号",
+              "en": "Tools and accounts"
+            }
+          }
+        ]
       },
       {
         "code": "D2",
-        "majorName": "中国拠点の実務",
+        "name": {
+          "ja": "中国拠点の実務",
+          "zh": "中国分公司实务",
+          "en": "China office practices"
+        },
+        "reviewDays": 90,
         "subs": [
-          "現地の手続き（ビザ・居留・届出）",
-          "現地の商習慣",
-          "日中コミュニケーション",
-          "拠点の連絡先"
-        ],
-        "reviewDays": 90
+          {
+            "code": "D2-01",
+            "name": {
+              "ja": "現地の手続き（ビザ・居留・届出）",
+              "zh": "当地手续（签证・居留・备案）",
+              "en": "Local procedures (visa / residence / filings)"
+            }
+          },
+          {
+            "code": "D2-02",
+            "name": {
+              "ja": "現地の商習慣",
+              "zh": "当地商业习惯",
+              "en": "Local business customs"
+            }
+          },
+          {
+            "code": "D2-03",
+            "name": {
+              "ja": "日中コミュニケーション",
+              "zh": "日中沟通",
+              "en": "Japan-China communication"
+            }
+          },
+          {
+            "code": "D2-04",
+            "name": {
+              "ja": "拠点の連絡先",
+              "zh": "分公司联系方式",
+              "en": "Office contacts"
+            }
+          }
+        ]
       },
       {
         "code": "D3",
-        "majorName": "顧客と案件",
+        "name": {
+          "ja": "顧客と案件",
+          "zh": "客户与项目",
+          "en": "Customers and projects"
+        },
+        "reviewDays": 180,
         "subs": [
-          "顧客プロファイル",
-          "提案・見積",
-          "議事録",
-          "検収・納品"
-        ],
-        "reviewDays": 180
+          {
+            "code": "D3-01",
+            "name": {
+              "ja": "顧客プロファイル",
+              "zh": "客户档案",
+              "en": "Customer profiles"
+            }
+          },
+          {
+            "code": "D3-02",
+            "name": {
+              "ja": "提案・見積",
+              "zh": "提案与报价",
+              "en": "Proposals and quotes"
+            }
+          },
+          {
+            "code": "D3-03",
+            "name": {
+              "ja": "議事録",
+              "zh": "会议纪要",
+              "en": "Meeting minutes"
+            }
+          },
+          {
+            "code": "D3-04",
+            "name": {
+              "ja": "検収・納品",
+              "zh": "验收与交付",
+              "en": "Acceptance and delivery"
+            }
+          }
+        ]
       },
       {
         "code": "D4",
-        "majorName": "デリバリ標準",
+        "name": {
+          "ja": "デリバリ標準",
+          "zh": "交付标准",
+          "en": "Delivery standards"
+        },
+        "reviewDays": 180,
         "subs": [
-          "見積の考え方",
-          "設計とレビュー",
-          "品質・テスト",
-          "リリース・移行"
-        ],
-        "reviewDays": 180
+          {
+            "code": "D4-01",
+            "name": {
+              "ja": "見積の考え方",
+              "zh": "估算方法",
+              "en": "Estimating approach"
+            }
+          },
+          {
+            "code": "D4-02",
+            "name": {
+              "ja": "設計とレビュー",
+              "zh": "设计与评审",
+              "en": "Design and review"
+            }
+          },
+          {
+            "code": "D4-03",
+            "name": {
+              "ja": "品質・テスト",
+              "zh": "质量与测试",
+              "en": "Quality and testing"
+            }
+          },
+          {
+            "code": "D4-04",
+            "name": {
+              "ja": "リリース・移行",
+              "zh": "发布与迁移",
+              "en": "Release and migration"
+            }
+          }
+        ]
       },
       {
         "code": "D5",
-        "majorName": "障害とトラブル",
+        "name": {
+          "ja": "障害とトラブル",
+          "zh": "故障与问题",
+          "en": "Incidents and troubles"
+        },
+        "reviewDays": 90,
         "subs": [
-          "障害報告",
-          "再発防止",
-          "既知の問題"
-        ],
-        "reviewDays": 90
+          {
+            "code": "D5-01",
+            "name": {
+              "ja": "障害報告",
+              "zh": "故障报告",
+              "en": "Incident reports"
+            }
+          },
+          {
+            "code": "D5-02",
+            "name": {
+              "ja": "再発防止",
+              "zh": "防止再发生",
+              "en": "Preventing recurrence"
+            }
+          },
+          {
+            "code": "D5-03",
+            "name": {
+              "ja": "既知の問題",
+              "zh": "已知问题",
+              "en": "Known issues"
+            }
+          }
+        ]
       },
       {
         "code": "D6",
-        "majorName": "ノウハウ",
+        "name": {
+          "ja": "ノウハウ",
+          "zh": "经验与诀窍",
+          "en": "Know-how"
+        },
+        "reviewDays": 365,
         "subs": [
-          "勝ちパターン",
-          "失注の記録",
-          "技術メモ"
-        ],
-        "reviewDays": 365
+          {
+            "code": "D6-01",
+            "name": {
+              "ja": "勝ちパターン",
+              "zh": "制胜模式",
+              "en": "Winning patterns"
+            }
+          },
+          {
+            "code": "D6-02",
+            "name": {
+              "ja": "失注の記録",
+              "zh": "失单记录",
+              "en": "Lost-deal records"
+            }
+          },
+          {
+            "code": "D6-03",
+            "name": {
+              "ja": "技術メモ",
+              "zh": "技术备忘",
+              "en": "Technical notes"
+            }
+          }
+        ]
       }
     ],
+    "majorTotal": 12,
     "subTotal": 46
   },
   "kpi": {
     "topics": [
       {
         "code": "K1",
-        "topicName": "業績",
-        "measures": [
-          "受注高",
-          "売上",
-          "粗利（率）",
-          "営業利益（率）",
-          "予算比",
-          "受注残",
-          "パイプライン（確度加重）"
-        ],
+        "name": {
+          "ja": "業績",
+          "zh": "业绩",
+          "en": "Performance"
+        },
         "frequency": "月次",
         "source": "会計システム",
         "viewers": "経営・PM",
-        "srcState": "connect"
+        "srcState": "connect",
+        "measures": [
+          {
+            "code": "K1-01",
+            "name": {
+              "ja": "受注高",
+              "zh": "签约额",
+              "en": "Bookings"
+            }
+          },
+          {
+            "code": "K1-02",
+            "name": {
+              "ja": "売上",
+              "zh": "销售额",
+              "en": "Revenue"
+            }
+          },
+          {
+            "code": "K1-03",
+            "name": {
+              "ja": "粗利（率）",
+              "zh": "毛利（率）",
+              "en": "Gross profit (margin)"
+            }
+          },
+          {
+            "code": "K1-04",
+            "name": {
+              "ja": "営業利益（率）",
+              "zh": "营业利润（率）",
+              "en": "Operating profit (margin)"
+            }
+          },
+          {
+            "code": "K1-05",
+            "name": {
+              "ja": "予算比",
+              "zh": "预算达成率",
+              "en": "Budget attainment"
+            }
+          },
+          {
+            "code": "K1-06",
+            "name": {
+              "ja": "受注残",
+              "zh": "在手订单",
+              "en": "Order backlog"
+            }
+          },
+          {
+            "code": "K1-07",
+            "name": {
+              "ja": "パイプライン（確度加重）",
+              "zh": "商机金额（按成功率加权）",
+              "en": "Pipeline (probability-weighted)"
+            }
+          }
+        ]
       },
       {
         "code": "K2",
-        "topicName": "案件の健全性",
-        "measures": [
-          "Red/Yellow/Green 比率",
-          "納期遵守率",
-          "検収までの日数",
-          "変更要求の件数",
-          "手戻り工数"
-        ],
+        "name": {
+          "ja": "案件の健全性",
+          "zh": "项目健康度",
+          "en": "Project health"
+        },
         "frequency": "週次",
         "source": "案件テーブル",
         "viewers": "経営・PM",
-        "srcState": "have"
+        "srcState": "have",
+        "measures": [
+          {
+            "code": "K2-01",
+            "name": {
+              "ja": "Red/Yellow/Green 比率",
+              "zh": "红/黄/绿 比例",
+              "en": "Red/Yellow/Green ratio"
+            }
+          },
+          {
+            "code": "K2-02",
+            "name": {
+              "ja": "納期遵守率",
+              "zh": "交期达成率",
+              "en": "On-time delivery rate"
+            }
+          },
+          {
+            "code": "K2-03",
+            "name": {
+              "ja": "検収までの日数",
+              "zh": "至验收的天数",
+              "en": "Days to acceptance"
+            }
+          },
+          {
+            "code": "K2-04",
+            "name": {
+              "ja": "変更要求の件数",
+              "zh": "变更请求件数",
+              "en": "Change requests"
+            }
+          },
+          {
+            "code": "K2-05",
+            "name": {
+              "ja": "手戻り工数",
+              "zh": "返工工时",
+              "en": "Rework hours"
+            }
+          }
+        ]
       },
       {
         "code": "K3",
-        "topicName": "顧客",
-        "measures": [
-          "顧客別売上",
-          "上位顧客への集中度",
-          "継続率",
-          "新規顧客数",
-          "提案勝率",
-          "失注理由の構成"
-        ],
+        "name": {
+          "ja": "顧客",
+          "zh": "客户",
+          "en": "Customers"
+        },
         "frequency": "月次",
         "source": "案件＋顧客テーブル",
         "viewers": "経営・営業",
-        "srcState": "have"
+        "srcState": "have",
+        "measures": [
+          {
+            "code": "K3-01",
+            "name": {
+              "ja": "顧客別売上",
+              "zh": "各客户销售额",
+              "en": "Revenue by customer"
+            }
+          },
+          {
+            "code": "K3-02",
+            "name": {
+              "ja": "上位顧客への集中度",
+              "zh": "大客户集中度",
+              "en": "Top-customer concentration"
+            }
+          },
+          {
+            "code": "K3-03",
+            "name": {
+              "ja": "継続率",
+              "zh": "续约率",
+              "en": "Retention rate"
+            }
+          },
+          {
+            "code": "K3-04",
+            "name": {
+              "ja": "新規顧客数",
+              "zh": "新增客户数",
+              "en": "New customers"
+            }
+          },
+          {
+            "code": "K3-05",
+            "name": {
+              "ja": "提案勝率",
+              "zh": "中标率",
+              "en": "Win rate"
+            }
+          },
+          {
+            "code": "K3-06",
+            "name": {
+              "ja": "失注理由の構成",
+              "zh": "失单原因构成",
+              "en": "Loss reasons breakdown"
+            }
+          }
+        ]
       },
       {
         "code": "K4",
-        "topicName": "要員・稼働",
-        "measures": [
-          "稼働率",
-          "要員数",
-          "残業時間",
-          "年休取得率",
-          "離職率",
-          "採用充足率",
-          "一人当たり粗利"
-        ],
+        "name": {
+          "ja": "要員・稼働",
+          "zh": "人员与稼动",
+          "en": "People and utilization"
+        },
         "frequency": "月次",
         "source": "勤怠システム＋要員テーブル",
         "viewers": "経営・PM",
-        "srcState": "connect"
+        "srcState": "connect",
+        "measures": [
+          {
+            "code": "K4-01",
+            "name": {
+              "ja": "稼働率",
+              "zh": "稼动率",
+              "en": "Utilization rate"
+            }
+          },
+          {
+            "code": "K4-02",
+            "name": {
+              "ja": "要員数",
+              "zh": "人员数",
+              "en": "Headcount"
+            }
+          },
+          {
+            "code": "K4-03",
+            "name": {
+              "ja": "残業時間",
+              "zh": "加班工时",
+              "en": "Overtime hours"
+            }
+          },
+          {
+            "code": "K4-04",
+            "name": {
+              "ja": "年休取得率",
+              "zh": "年假使用率",
+              "en": "Annual leave taken"
+            }
+          },
+          {
+            "code": "K4-05",
+            "name": {
+              "ja": "離職率",
+              "zh": "离职率",
+              "en": "Attrition rate"
+            }
+          },
+          {
+            "code": "K4-06",
+            "name": {
+              "ja": "採用充足率",
+              "zh": "招聘达成率",
+              "en": "Hiring fill rate"
+            }
+          },
+          {
+            "code": "K4-07",
+            "name": {
+              "ja": "一人当たり粗利",
+              "zh": "人均毛利",
+              "en": "Gross profit per head"
+            }
+          }
+        ]
       },
       {
         "code": "K5",
-        "topicName": "品質・障害",
-        "measures": [
-          "稼働率",
-          "障害件数",
-          "重大障害",
-          "MTTR",
-          "再発率",
-          "一次回答までの時間",
-          "顧客からの指摘件数"
-        ],
+        "name": {
+          "ja": "品質・障害",
+          "zh": "质量与故障",
+          "en": "Quality and incidents"
+        },
         "frequency": "月次",
         "source": "システム稼働状況（system_events）＋障害ナレッジ（D5）",
         "viewers": "PM・デリバリ",
-        "srcState": "have"
+        "srcState": "have",
+        "measures": [
+          {
+            "code": "K5-01",
+            "name": {
+              "ja": "稼働率",
+              "zh": "系统可用率",
+              "en": "System availability"
+            }
+          },
+          {
+            "code": "K5-02",
+            "name": {
+              "ja": "障害件数",
+              "zh": "故障件数",
+              "en": "Incidents"
+            }
+          },
+          {
+            "code": "K5-03",
+            "name": {
+              "ja": "重大障害",
+              "zh": "重大故障",
+              "en": "Major incidents"
+            }
+          },
+          {
+            "code": "K5-04",
+            "name": {
+              "ja": "MTTR",
+              "zh": "平均修复时间（MTTR）",
+              "en": "MTTR (mean time to repair)"
+            }
+          },
+          {
+            "code": "K5-05",
+            "name": {
+              "ja": "再発率",
+              "zh": "再发生率",
+              "en": "Recurrence rate"
+            }
+          },
+          {
+            "code": "K5-06",
+            "name": {
+              "ja": "一次回答までの時間",
+              "zh": "首次响应时间",
+              "en": "First-response time"
+            }
+          },
+          {
+            "code": "K5-07",
+            "name": {
+              "ja": "顧客からの指摘件数",
+              "zh": "客户指出问题件数",
+              "en": "Customer-raised issues"
+            }
+          }
+        ]
       },
       {
         "code": "K6",
-        "topicName": "人材育成",
-        "measures": [
-          "必須研修の受講率",
-          "資格保有者数",
-          "スキル充足率",
-          "育成計画の進捗",
-          "OJT 完了率"
-        ],
+        "name": {
+          "ja": "人材育成",
+          "zh": "人才培养",
+          "en": "People development"
+        },
         "frequency": "四半期",
         "source": "研修テーブル＋LMS",
         "viewers": "経営・PM",
-        "srcState": "connect"
+        "srcState": "connect",
+        "measures": [
+          {
+            "code": "K6-01",
+            "name": {
+              "ja": "必須研修の受講率",
+              "zh": "必修培训完成率",
+              "en": "Mandatory training completion"
+            }
+          },
+          {
+            "code": "K6-02",
+            "name": {
+              "ja": "資格保有者数",
+              "zh": "持证人数",
+              "en": "Certified staff"
+            }
+          },
+          {
+            "code": "K6-03",
+            "name": {
+              "ja": "スキル充足率",
+              "zh": "技能满足率",
+              "en": "Skill coverage"
+            }
+          },
+          {
+            "code": "K6-04",
+            "name": {
+              "ja": "育成計画の進捗",
+              "zh": "培养计划进度",
+              "en": "Development plan progress"
+            }
+          },
+          {
+            "code": "K6-05",
+            "name": {
+              "ja": "OJT 完了率",
+              "zh": "OJT 完成率",
+              "en": "OJT completion rate"
+            }
+          }
+        ]
       },
       {
         "code": "K7",
-        "topicName": "チームビルディング",
-        "measures": [
-          "エンゲージメント調査スコア",
-          "1on1 の実施率",
-          "部門イベントの参加率",
-          "ナレッジ投稿数",
-          "新任 1 年の定着率"
-        ],
+        "name": {
+          "ja": "チームビルディング",
+          "zh": "团队建设",
+          "en": "Team building"
+        },
         "frequency": "四半期",
         "source": "アンケート（新規）",
         "viewers": "経営",
-        "srcState": "new"
+        "srcState": "new",
+        "measures": [
+          {
+            "code": "K7-01",
+            "name": {
+              "ja": "エンゲージメント調査スコア",
+              "zh": "敬业度调研得分",
+              "en": "Engagement survey score"
+            }
+          },
+          {
+            "code": "K7-02",
+            "name": {
+              "ja": "1on1 の実施率",
+              "zh": "1on1 实施率",
+              "en": "One-on-one completion rate"
+            }
+          },
+          {
+            "code": "K7-03",
+            "name": {
+              "ja": "部門イベントの参加率",
+              "zh": "部门活动参与率",
+              "en": "Team event participation"
+            }
+          },
+          {
+            "code": "K7-04",
+            "name": {
+              "ja": "ナレッジ投稿数",
+              "zh": "知识库投稿数",
+              "en": "Knowledge contributions"
+            }
+          },
+          {
+            "code": "K7-05",
+            "name": {
+              "ja": "新任 1 年の定着率",
+              "zh": "新员工一年留存率",
+              "en": "First-year retention"
+            }
+          }
+        ]
       },
       {
         "code": "K8",
-        "topicName": "社内施策・改善",
-        "measures": [
-          "施策の件数と進捗",
-          "改善提案の件数と採用率",
-          "標準化の適用率",
-          "AI の利用者数・利用回数",
-          "AI による削減時間",
-          "ナレッジの要見直し件数"
-        ],
+        "name": {
+          "ja": "社内施策・改善",
+          "zh": "内部举措与改善",
+          "en": "Internal initiatives and improvement"
+        },
         "frequency": "月次",
         "source": "To Do＋ナレッジ＋AI ログ",
         "viewers": "経営・PMO",
-        "srcState": "new"
+        "srcState": "new",
+        "measures": [
+          {
+            "code": "K8-01",
+            "name": {
+              "ja": "施策の件数と進捗",
+              "zh": "举措件数与进度",
+              "en": "Initiatives and progress"
+            }
+          },
+          {
+            "code": "K8-02",
+            "name": {
+              "ja": "改善提案の件数と採用率",
+              "zh": "改善提案件数与采纳率",
+              "en": "Improvement proposals and adoption rate"
+            }
+          },
+          {
+            "code": "K8-03",
+            "name": {
+              "ja": "標準化の適用率",
+              "zh": "标准化适用率",
+              "en": "Standardization adoption"
+            }
+          },
+          {
+            "code": "K8-04",
+            "name": {
+              "ja": "AI の利用者数・利用回数",
+              "zh": "AI 使用人数・使用次数",
+              "en": "AI users and usage count"
+            }
+          },
+          {
+            "code": "K8-05",
+            "name": {
+              "ja": "AI による削減時間",
+              "zh": "AI 节省工时",
+              "en": "Hours saved by AI"
+            }
+          },
+          {
+            "code": "K8-06",
+            "name": {
+              "ja": "ナレッジの要見直し件数",
+              "zh": "待复审知识件数",
+              "en": "Knowledge items due for review"
+            }
+          }
+        ]
       },
       {
         "code": "K9",
-        "topicName": "コンプライアンス・統制",
-        "measures": [
-          "必須研修の未了件数",
-          "セキュリティ事故件数",
-          "監査指摘件数",
-          "申請の期限遵守率"
-        ],
+        "name": {
+          "ja": "コンプライアンス・統制",
+          "zh": "合规与内控",
+          "en": "Compliance and controls"
+        },
         "frequency": "四半期",
         "source": "研修＋申請テーブル",
         "viewers": "経営・管理",
-        "srcState": "have"
+        "srcState": "have",
+        "measures": [
+          {
+            "code": "K9-01",
+            "name": {
+              "ja": "必須研修の未了件数",
+              "zh": "必修培训未完成件数",
+              "en": "Overdue mandatory training"
+            }
+          },
+          {
+            "code": "K9-02",
+            "name": {
+              "ja": "セキュリティ事故件数",
+              "zh": "安全事件件数",
+              "en": "Security incidents"
+            }
+          },
+          {
+            "code": "K9-03",
+            "name": {
+              "ja": "監査指摘件数",
+              "zh": "审计指出事项件数",
+              "en": "Audit findings"
+            }
+          },
+          {
+            "code": "K9-04",
+            "name": {
+              "ja": "申請の期限遵守率",
+              "zh": "申请按期完成率",
+              "en": "Request on-time rate"
+            }
+          }
+        ]
       }
     ],
+    "topicTotal": 9,
     "measureTotal": 52
   },
   "goal": {
     "topics": [
       {
         "code": "P1",
-        "topicName": "業績",
+        "name": {
+          "ja": "業績",
+          "zh": "业绩",
+          "en": "Performance"
+        },
         "measureType": "auto"
       },
       {
         "code": "P2",
-        "topicName": "顧客",
+        "name": {
+          "ja": "顧客",
+          "zh": "客户",
+          "en": "Customers"
+        },
         "measureType": "mix"
       },
       {
         "code": "P3",
-        "topicName": "案件遂行",
+        "name": {
+          "ja": "案件遂行",
+          "zh": "项目执行",
+          "en": "Project execution"
+        },
         "measureType": "auto"
       },
       {
         "code": "P4",
-        "topicName": "品質・改善",
+        "name": {
+          "ja": "品質・改善",
+          "zh": "质量与改善",
+          "en": "Quality and improvement"
+        },
         "measureType": "mix"
       },
       {
         "code": "P5",
-        "topicName": "育成・自己開発",
+        "name": {
+          "ja": "育成・自己開発",
+          "zh": "培养与自我提升",
+          "en": "Development and self-learning"
+        },
         "measureType": "auto"
       },
       {
         "code": "P6",
-        "topicName": "組織・チーム",
+        "name": {
+          "ja": "組織・チーム",
+          "zh": "组织与团队",
+          "en": "Organization and team"
+        },
         "measureType": "man"
       },
       {
         "code": "P7",
-        "topicName": "業務改善・AI 活用",
+        "name": {
+          "ja": "業務改善・AI 活用",
+          "zh": "业务改善与 AI 应用",
+          "en": "Process improvement and AI adoption"
+        },
         "measureType": "mix"
       },
       {
         "code": "P0",
-        "topicName": "共通・必須（全員に自動で付く）",
+        "name": {
+          "ja": "共通・必須（全員に自動で付く）",
+          "zh": "通用・必须（全员自动分配）",
+          "en": "Common and mandatory (auto-assigned to all)"
+        },
         "measureType": "auto"
       }
-    ]
+    ],
+    "topicTotal": 8
   }
 }

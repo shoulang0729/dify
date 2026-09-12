@@ -113,33 +113,47 @@ CREATE TABLE ai_services (
   updated_at    timestamptz NOT NULL DEFAULT now()
 );
 
--- knowledge_categories: 全社 6 ＋ 部門 6 の大分類・中分類 46（seed/catalog.json から seed。本文は持たない）
+-- knowledge_categories: 全社 6 ＋ 部門 6 の大分類・中分類（1 行 1 分類。58 行。seed/catalog.json から seed）。
+-- 名前の正本は data/world/it/knowledge_categories.csv（zh/en）と mock/js/data/portal/common.js の PKNOW（ja・属性）
+-- （設計書 docs/handoff/2026-09-12-portal-indicators-i18n.md §7-2）。
 CREATE TABLE knowledge_categories (
   id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  kind          text NOT NULL,          -- 'major' | 'minor'
+  code          text UNIQUE NOT NULL,   -- 例: C1 / C1-01 / D1 / D1-01
+  parent_code   text,                   -- 'major' は空。'minor' は親の code
   scope         text NOT NULL,          -- 'corp' | 'dept'
-  major_code    text NOT NULL,          -- 例: C1 / D1
-  major_name    text NOT NULL,
-  minor_name    text NOT NULL,
+  seq           integer NOT NULL,
+  name_ja       text NOT NULL,
+  name_zh       text,
+  name_en       text,
   review_days   integer,
   created_at    timestamptz NOT NULL DEFAULT now()
 );
 
--- kpi_topics: 組織 KPI の観点（9 観点・指標 52 件。1 行 1 指標なので topic_code は複数行に重複する。seed/catalog.json から seed）
+-- kpi_topics: 組織 KPI の観点（9）・指標（52）（1 行 1 分類。61 行。seed/catalog.json から seed）。
+-- 名前の正本は data/world/it/kpi_topics.csv（zh/en）と mock/js/data/portal/mgmt.js の PKPITOPIC（ja・属性）。
 CREATE TABLE kpi_topics (
   id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  topic_code    text NOT NULL,          -- 例: K1（1 観点に指標が複数あるため重複可。UNIQUE にしない）
-  topic_name    text NOT NULL,
-  measure_name  text NOT NULL,
+  kind          text NOT NULL,          -- 'topic' | 'metric'
+  code          text UNIQUE NOT NULL,   -- 例: K1 / K1-01
+  parent_code   text,                   -- 'topic' は空。'metric' は親の code
+  seq           integer NOT NULL,
+  name_ja       text NOT NULL,
+  name_zh       text,
+  name_en       text,
   frequency     text,
   source_state  text,                   -- 'have' | 'connect' | 'new'
   created_at    timestamptz NOT NULL DEFAULT now()
 );
 
--- goal_topics: 個人目標（MBO）の観点（8 観点。seed/catalog.json から seed）
+-- goal_topics: 個人目標（MBO）の観点（8 観点。seed/catalog.json から seed）。
+-- 名前の正本は data/world/it/goal_topics.csv（zh/en）と mock/js/data/portal/mgmt.js の PGOAL.topics（ja・属性）。
 CREATE TABLE goal_topics (
   id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  topic_code    text UNIQUE NOT NULL,   -- 例: P1 / P0
-  topic_name    text NOT NULL,
+  code          text UNIQUE NOT NULL,   -- 例: P1 / P0
+  name_ja       text NOT NULL,
+  name_zh       text,
+  name_en       text,
   measure_type  text NOT NULL,          -- 'auto' | 'mix' | 'man'
   created_at    timestamptz NOT NULL DEFAULT now()
 );
