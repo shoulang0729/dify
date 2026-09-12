@@ -39,6 +39,10 @@ const pstate = {
   dev: true,    // 開発メモを表示
   usr: true,    // 使い方を表示
   prod: false,  // 本番との違いを表示
+  /* .mockbar（レビュー用の足場）の表示/非表示。メモリのみ（localStorage には保存しない。
+     §2-6 の許可集合は「mock」+「.」+「lang」/「theme」/「fav」の 3 つだけ。4 つ目を作らない）。
+     リロードで再び表示に戻ってよい（PM 指示）。 */
+  mockbar: true,
   pipeCu: '', pipeTeam: '',
   dealSort: { key: 'sg', dir: 'asc' },
   dealF: { cu: '', ow: '', sg: '', rag: '' },

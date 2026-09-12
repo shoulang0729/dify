@@ -36,6 +36,17 @@ a { color: var(--text-link); }
 #usrTgl[aria-pressed="true"] { background: var(--usr-bg); border-color: var(--usr-bd); color: var(--usr-fg); }
 #usrTgl[aria-pressed="true"] .dot { background: var(--usr-fg); }
 
+/* ---------- mockbar の折りたたみ（足場を隠す/戻す。PM 指示）----------
+   .mockbar は display:flex を持つため、既定の [hidden]（UA スタイルの display:none）が
+   author スタイルの display:flex に負けないよう明示する（既存の .screen[hidden] と同じ作法）。 */
+.mockbar[hidden] { display: none; }
+.mockbar-fold { margin-left: auto; }
+.mocktab { display: inline-flex; align-items: center; border: 0; border-bottom: 1px solid var(--border-default);
+  background: var(--surface-sunken); color: var(--text-secondary); font-family: inherit; font-size: 11px;
+  padding: 4px 10px; cursor: pointer; }
+.mocktab:hover { background: var(--surface-hover); color: var(--action-primary); }
+.mocktab[hidden] { display: none; }
+
 /* ---------- shell ----------
    .rail と .topbar（header）は sticky でスクロール中も見えたままにする（PM 指示）。
    z-index はドロワー／スクリム（.drawer/.scrim。position: fixed）より下・本文（無指定 = auto）より
