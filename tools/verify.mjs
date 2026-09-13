@@ -86,6 +86,11 @@
  *        17-l（PR-3）js/portal/demo.js に pstate.ind の参照が無い（§14-4 規則 3）。
  *        pscreenAiIds/pcrossAiIds の本体に industries の参照が無い（§14-2 規則 1）
  *        （設計書 docs/handoff/2026-09-11-portal-mock-pages.md §9-2・§14-9）。
+ *        17-l 後半 ＋ 17-r（PR-F・rev4。1 ブロックにまとめる）：js/portal/app.js の pworldOf() が
+ *        || pstate.ind へフォールバックしている（AC-36）／js/portal/demo.js の PCTXLBL について、
+ *        画面 id が PCTXDEF に実在する・キーが PCTXDEF[画面] の部分集合である・値（PT のキー名）が
+ *        PT に実在する。PCTXDEF にあって PCTXLBL に無いキーは warn にしない
+ *        （設計書 docs/handoff/2026-09-12-portal-industry-rev4.md §18-11d・AC-47）。
  *        17-m（新・PR-A・rev4）PSCREENS[].ind の値が INDUSTRIES の id のみ／省略＝全業種／
  *        home と ai はすべての業種で見える／PSCREENS[].id ごとに V[id] が js/portal/render.js に
  *        定義されている／lbl の値が PT に存在するキー（17-c の値域は本節では未改訂。業種ごとの
@@ -130,6 +135,7 @@ import { readFileSync, existsSync, writeFileSync, unlinkSync, readdirSync } from
 import { execFileSync } from 'node:child_process';
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 import { loadMock, loadPortal } from './lib/load.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -1620,6 +1626,62 @@ section('17. 部門ポータル（mock/portal.html）契約');
       }
       if (!bad17l) ok('js/portal/demo.js・pscn() に pstate.ind の参照が無く、pscreenAiIds/pcrossAiIds は industries を参照している（§14 規則 1\'・3）');
       bad17 += bad17l;
+    }
+
+    /* 17-l 後半 ＋ 17-r（PR-F。docs/handoff/2026-09-12-portal-industry-rev4.md §18-11d・AC-36・AC-47。
+       同じ PR が verify を触るため 1 ブロックにまとめる）：
+       ① js/portal/app.js の pworldOf() が || pstate.ind へフォールバックしている（AC-36 前半。
+          「demo.js・pscn() に pstate.ind が無い」は上の 17-l ブロックで検査済み＝AC-36 後半）
+       ② js/portal/demo.js の PCTXLBL について、画面 id が PCTXDEF に実在する／
+          キーが PCTXDEF[画面] の部分集合である／値（PT のキー名）が PT に実在する。
+          PCTXDEF にあって PCTXLBL に無いキーは warn にしない（配線していない画面を正直に
+          空にするため。§18-11a） */
+    {
+      const stripComments17r = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+      let bad17r = 0;
+
+      /* ① pworldOf() の fallback（js/portal/app.js） */
+      const appSrc17r = stripComments17r(portal.appSources.filter(f => f.path === 'js/portal/app.js').map(f => f.src).join('\n'));
+      const pworldOfMatch = /const\s+pworldOf\s*=\s*\([^)]*\)\s*=>\s*([^;\n]+);/.exec(appSrc17r);
+      if (!pworldOfMatch) { fail('pworldOf() が js/portal/app.js に見つからない'); bad17r++; }
+      else if (!/\|\|\s*pstate\s*\.\s*ind\b/.test(pworldOfMatch[1])) {
+        fail(`pworldOf() が pstate.ind へフォールバックしていない（AC-36）: ${pworldOfMatch[1].trim()}`); bad17r++;
+      }
+
+      /* ② PCTXLBL（js/portal/demo.js。app 層の定数なので data ではなくソーステキストから
+         balanced-brace で切り出し、リテラルとして評価する。文字列値だけの単純なオブジェクトなので
+         vm.runInNewContext で安全に評価できる） */
+      const demoFile17r = portal.appSources.find(f => f.path === 'js/portal/demo.js');
+      if (!demoFile17r) { warn('js/portal/demo.js が無いため 17-r の PCTXLBL 検査を skip'); }
+      else {
+        const src = demoFile17r.src;
+        const declIdx = src.indexOf('const PCTXLBL');
+        if (declIdx === -1) { fail('PCTXLBL が js/portal/demo.js に見つからない'); bad17r++; }
+        else {
+          const braceStart = src.indexOf('{', declIdx);
+          let i = braceStart, depth = 0;
+          do { if (src[i] === '{') depth++; else if (src[i] === '}') depth--; i++; } while (depth > 0 && i < src.length);
+          let pctxlbl = null;
+          try { pctxlbl = vm.runInNewContext('(' + src.slice(braceStart, i) + ')'); }
+          catch (e) { fail(`PCTXLBL の構文を読めない: ${e.message}`); bad17r++; }
+          if (pctxlbl) {
+            const pctxdef = portal.data.PCTXDEF || {};
+            const ptDict = portal.data.PT || {};
+            let checked = 0;
+            for (const [scr, labels] of Object.entries(pctxlbl)) {
+              if (!(scr in pctxdef)) { fail(`PCTXLBL.${scr}: PCTXDEF に存在しない画面 id`); bad17r++; continue; }
+              const defKeys = new Set(pctxdef[scr] || []);
+              for (const [k, ptKey] of Object.entries(labels)) {
+                checked++;
+                if (!defKeys.has(k)) { fail(`PCTXLBL.${scr}.${k}: PCTXDEF.${scr} に無いキー`); bad17r++; }
+                if (!(ptKey in ptDict)) { fail(`PCTXLBL.${scr}.${k} = "${ptKey}" が PT に存在しない`); bad17r++; }
+              }
+            }
+            if (!bad17r) ok(`pworldOf() が pstate.ind へフォールバックし、PCTXLBL（画面 ${Object.keys(pctxlbl).length} 件・ラベル ${checked} 件）が PCTXDEF/PT と整合している（AC-36・AC-47）`);
+          }
+        }
+      }
+      bad17 += bad17r;
     }
 
     /* 17-m（新・PR-A・rev4）: PSCREENS[].ind の値が INDUSTRIES の id のみ／省略＝全業種／

@@ -1836,6 +1836,7 @@ function applyPortalPrefs() {
   document.getElementById('mockLabel').textContent = pt('mockLabel');
   document.getElementById('mockDesc').textContent = pt('mockDesc');
   document.getElementById('indSw').setAttribute('aria-label', pt('indLabel'));
+  document.getElementById('indNote').textContent = pt('indNote'); /* rev4 PR-F 差し戻し対応：#297 と同じ作法で言語切替に追従させる */
   paintThemeIcon();
   renderMockbarFold();
 }

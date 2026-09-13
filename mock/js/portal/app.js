@@ -185,8 +185,10 @@ function ptbl(head, rows) {
 /* ============================================================
    台本の実行ドロワー（PR-3）が使うヘルパー。設計書 §14-4〜§14-7。
    ============================================================ */
-/** 行の世界：行の顧客がどの架空世界の会社かを PWORLD から引く。行が無い／IT 世界の内側なら 'it'（§14-4・§14-5） */
-const pworldOf = (ctx) => (ctx && PWORLD[ctx.cu]) || 'it';
+/** 行の世界：行の顧客がどの架空世界の会社かを PWORLD から引く。行が無い／行の顧客が世界を跨がないなら、
+    いま見ているポータルの業種（＝その会社の世界。rev4 §2-3・§4）。pstate.ind を読むのはこの 1 関数だけ
+    （verify §17-l が担保）。 */
+const pworldOf = (ctx) => (ctx && PWORLD[ctx.cu]) || pstate.ind;
 
 /** サービス id と呼び出しの文脈（行。無ければ null）から、どの業種の台本を引くかを決める。
     候補の順番：① 行の世界 → ② そのサービスが属する業種（宣言順） → ③ INDUSTRIES の宣言順。
@@ -544,7 +546,8 @@ function pSysRowAiIds(row) {
 }
 
 /** PSYS.client（例 '青嶺精工 蘇州'）から PWORLD のキー（例 '青嶺精工'）を引く。社内システム
-    （'自社（上海）'）はどの PWORLD キーにも一致せず ''（pworldOf が既定の 'it' に落ちる。§14-4・§14-5）。 */
+    （'自社（上海）'）はどの PWORLD キーにも一致せず ''（pworldOf が表示中の業種（pstate.ind）に落ちる。
+    rev4 §2-3・§4）。 */
 function pSysClientCode(client) {
   return (typeof PWORLD !== 'undefined' ? Object.keys(PWORLD) : []).find(k => (client || '').indexOf(k) === 0) || '';
 }

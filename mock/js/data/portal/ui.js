@@ -104,9 +104,11 @@ const PT = {
   scriptWorldRow:{ ja: 'この台本は{from}の世界のものです。この行の顧客（{cu}）は{want}なので、会話と結果に出る会社名・拠点・品番は台本の世界のものになります',
                    zh: '此脚本取自{from}的虚构世界。本行客户（{cu}）属于{want}，因此对话与结果中出现的公司名称、厂区与品号均来自脚本所在的世界',
                    en: "This script comes from the {from} world. The customer on this row ({cu}) is {want}, so the company names, sites and part numbers in the conversation and result belong to the script's world" },
-  scriptWorldPlain:{ ja: 'この台本は{from}の世界のものです。会話と結果に出る会社名・拠点・品番は台本の世界のものです',
-                   zh: '此脚本取自{from}的虚构世界。对话与结果中出现的公司名称、厂区与品号均来自该世界',
-                   en: "This script comes from the {from} world. The company names, sites and part numbers in the conversation and result belong to that world" },
+  /* rev4 §12-3：いま見ているポータルの業種（{want}）に触れる形へ更新（PR-F。dWorldNoteHTML() は
+     {want}/{from} を両方置換済みのため demo.js 側の変更は不要）。scriptWorldRow は変えない（§12-3）。 */
+  scriptWorldPlain:{ ja: 'いま見ているのは{want}のポータルですが、この台本は{from}の世界のものです。会話と結果に出る会社名・拠点・品番は台本の世界のものになります',
+                   zh: '当前查看的是{want}的门户，但此脚本取自{from}的虚构世界。对话与结果中出现的公司名称、厂区与品号均来自脚本所在的世界',
+                   en: "You are viewing the {want} portal, but this script comes from the {from} world, so the company names, sites and part numbers in the conversation and result belong to the script's world" },
   noScript:     { ja: 'このサービスには台本を用意していません。渡すもの・返るものだけを出します', zh: '此服务尚未准备脚本，仅展示输入与输出的设想', en: 'No script for this service — only the intended input and output are shown' },
   noPlace:      { ja: '置き場所を決めていない', zh: '尚未确定放置位置', en: 'No screen assigned yet' },
   uploadNote:   { ja: '本番では、この行に付いている添付をそのまま渡します', zh: '正式环境下将直接传递此行的附件', en: 'In production the attachment on this row is passed as-is' },
@@ -146,7 +148,18 @@ const PT = {
   ctxIssued:    { ja: '発出日', zh: '发布日期', en: 'Issued' },
   ctxAuthority: { ja: '区分（当局）', zh: '类别（监管）', en: 'Authority' },
   ctxTopic:     { ja: '論点', zh: '要点', en: 'Topic' },
-  ctxDept:      { ja: '担当部署', zh: '负责部门', en: 'Owning dept.' }
+  ctxDept:      { ja: '担当部署', zh: '负责部门', en: 'Owning dept.' },
+
+  /* ---- 文脈カードのラベル（PCTXLBL。mock/js/portal/demo.js。rev4 PR-F・§18-11b）。
+     dCtxRows() が生キー（'sys' / 'client' 等）のまま出していたのを直すために足す 6 キー。
+     sys（PCTXDEF.sys）と cred.no（PCRD-… の審査番号。ctxRecord は qual/order の記録番号と
+     紛れるため流用しない。§18-11b） ---- */
+  ctxSystemNo:    { ja: 'システム番号', zh: '系统编号', en: 'System ID' },
+  ctxSystemName:  { ja: 'システム', zh: '系统', en: 'System' },
+  ctxClient:      { ja: '利用先', zh: '使用方', en: 'Used by' },
+  ctxCriticality: { ja: '重要度', zh: '重要程度', en: 'Criticality' },
+  ctxIncidentNo:  { ja: '障害番号', zh: '故障编号', en: 'Incident no.' },
+  ctxCaseNo:      { ja: '審査番号', zh: '审查编号', en: 'Case no.' }
 };
 
 /* ============================================================
