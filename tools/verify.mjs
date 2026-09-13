@@ -1383,7 +1383,9 @@ section('17. 部門ポータル（mock/portal.html）契約');
       'PSTAGE', 'PDEALS', 'PPART', 'PCONTACT', 'PHIST', 'PNEWS', 'PVENDOR',
       'PACT', 'PCAND', 'PMEET', 'PKNOW', 'PKNOWACT',
       'PPEOPLE', 'PATT', 'PKPI', 'PKPITOPIC', 'PSRC', 'PGOAL', 'PQTR', 'PCUR_Q',
-      'PEXP', 'PREQ', 'PTRAIN', 'PMYTRAIN', 'PMYITEM', 'PTODO_STATE', 'PSURVEY', 'PMYSURVEY'
+      'PEXP', 'PREQ', 'PTRAIN', 'PMYTRAIN', 'PMYITEM', 'PTODO_STATE', 'PSURVEY', 'PMYSURVEY',
+      // 新設 4 画面の中身（設計書 2026-09-12-portal-industry-rev4.md §9・§14-1 17-e・§15-1 PR-D）
+      'PQUAL', 'PORDER', 'PCRED', 'PREG'
     ];
     let ml17 = 0;
     const foundML = [];
