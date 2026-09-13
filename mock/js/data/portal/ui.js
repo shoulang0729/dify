@@ -13,10 +13,18 @@
 const PT = {
   /* ---- ナビ（画面ラベル。画面数は PSCREENS が正本） ---- */
   home: { ja: 'ホーム', zh: '首页', en: 'Home' },
-  cust: { ja: '顧客', zh: '客户', en: 'Customers' },
+  /* rev4 §12-1：'顧客' → '取引先'（cust を「顧客」から「取引先」テンプレートへ作り替える。PM 決定 (b)） */
+  cust: { ja: '取引先', zh: '交易对象', en: 'Business partners' },
   proj: { ja: '案件', zh: '项目', en: 'Projects' },
+  /* ---- 新画面 4 枚（rev4 §3-1・§9。PR-A では殻のみ、中身は PR-D） ---- */
+  qual: { ja: '品質・不具合', zh: '质量与不良', en: 'Quality & defects' },
+  order:{ ja: '受注・出荷', zh: '订单与出货', en: 'Orders & shipping' },
+  cred: { ja: '与信・審査', zh: '授信与审查', en: 'Credit & review' },
+  reg:  { ja: '当局対応・レポート', zh: '监管应对与报告', en: 'Regulatory & reporting' },
   act:  { ja: 'To Do', zh: '待办', en: 'To Do' },
   sys:  { ja: 'システム稼働状況', zh: '系统运行状况', en: 'System Status' },
+  /* ---- 'sys' の業種別ラベル上書き（PSCREENS[].lbl。rev4 §3-1・§10-1） ---- */
+  sysMfg: { ja: '設備の稼働状況', zh: '设备运行状况', en: 'Equipment status' },
   ppl:  { ja: '要員', zh: '人员', en: 'People' },
   trn:  { ja: '研修・サーベイ', zh: '培训与调研', en: 'Training & Surveys' },
   meet: { ja: '会議', zh: '会议', en: 'Meetings' },
@@ -105,6 +113,13 @@ const PT = {
   openCatalog:  { ja: 'カタログを開く', zh: '打开服务目录', en: 'Open the catalog' },
   screenAi:     { ja: 'この画面の AI', zh: '本画面的 AI', en: 'AI on this screen' },
   crossAi:      { ja: '横断で使う AI', zh: '跨画面使用的 AI', en: 'AI used across screens' },
+  /* ---- 空マス文言（rev4 §2-1・§12-1。規則 1 撤回により 0 本の画面が正直に出る） ---- */
+  noScreenAi:   { ja: 'この画面の AI はまだありません', zh: '本画面尚无 AI 服务', en: 'No AI services on this screen yet' },
+  noCrossAi:    { ja: '横断で使う AI はまだありません', zh: '尚无跨画面使用的 AI', en: 'No cross-screen AI services yet' },
+  /* ---- .mockbar の業種チップの説明（足場。rev4 §12-1。PR-F で 1 行として出す） ---- */
+  indNote:      { ja: '会社（業種）ごとのポータルを切り替えます。画面・データ・AI がまとめて替わります',
+                  zh: '切换不同行业（公司）的门户。画面、数据与 AI 会一并变化',
+                  en: 'Switches between the portals of different companies (industries); screens, data and AI all change together' },
 
   /* ---- 文脈カードの行ラベル（PCTXDEF の proj/cust に対応。付録 B の 29 キーには無いが、
      §5-4「ラベルは PT の 3 言語」の要求を満たすために必要な最小限を追加。§7-2 の「半端な 3 言語を
@@ -128,24 +143,37 @@ const PGRP = ['gFront', 'gCommon', 'gMgmt', 'gBack'];
    設計書 §4-4。生成は js/portal/app.js の pscreenAiIds() / pcrossAiIds()）。
    newai: は PNEW（未採番の追加候補）のうち、この画面の末尾に「提案」として出すもの
    （place を持てないため。設計書 §4-4）。
+
+   rev4（設計書 2026-09-12-portal-industry-rev4.md §3）で業種化：
+   - ind を省略＝全業種（home・cust と共通・マネジメント・バックの 14 枚）。ind があれば
+     その業種の配列のときだけナビに出る（home と ai は必ず ind を省略する）
+   - ct は文字列 → 業種別オブジェクト（{ mfg, fin, it }）。'ai' は現行どおり SVCS.length から出す
+   - lbl はラベルキーの業種別上書き（いまは sys の mfg だけ。PT.sysMfg＝設備の稼働状況）
+   - watch・vend は gFront → gCommon へ移動（業種に関係なく同じ形で成立するため。§3-2）
+   - 新設 4 画面（qual/order/cred/reg）は PR-A で殻（見出し・空の一覧・「この画面の AI」ブロック）のみ、
+     中身は PR-D。アイコンは §3-3
    ============================================================ */
 const PSCREENS = [
   { grp: '', id: 'home', icon: 'M3 9l7-6 7 6v8a1 1 0 01-1 1h-4v-5H8v5H4a1 1 0 01-1-1z' },
-  { grp: 'gFront', id: 'cust', icon: 'M2 16v-1a4 4 0 014-4h2a4 4 0 014 4v1M7 4a3 3 0 110 6 3 3 0 010-6zM13 16v-1a4 4 0 00-3-3.87', ct: '4' },
-  { grp: 'gFront', id: 'proj', icon: 'M3 5h5l1.5 2H17v9H3z', ct: '10' },
-  { grp: 'gFront', id: 'watch', icon: 'M10 4c-4 0-6.5 3-7 5 .5 2 3 5 7 5s6.5-3 7-5c-.5-2-3-5-7-5zM10 11a2 2 0 100-4 2 2 0 000 4z', ct: '12' },
-  { grp: 'gFront', id: 'vend', icon: 'M4 7l6-3 6 3v7l-6 3-6-3zM10 4v13', ct: '3' },
-  { grp: 'gCommon', id: 'act', icon: 'M4 10l4 4 8-9', ct: '10' },
-  { grp: 'gCommon', id: 'sys', icon: 'M3 4.5h14v9H3zM8.5 16h3M10 13.5V16M6.5 9h1.8l1.2-2.6 1.6 4.8 1.2-2.2h2', ct: '9' },
-  { grp: 'gCommon', id: 'meet', icon: 'M4 4h12v12H4zM4 8h12M8 2v3M12 2v3', ct: '4' },
-  { grp: 'gCommon', id: 'know', icon: 'M4 3h9a2 2 0 012 2v12H6a2 2 0 01-2-2z M6 3v14', ct: '12' },
+  { grp: 'gFront', id: 'cust', icon: 'M2 16v-1a4 4 0 014-4h2a4 4 0 014 4v1M7 4a3 3 0 110 6 3 3 0 010-6zM13 16v-1a4 4 0 00-3-3.87', ct: { mfg: '3', fin: '5', it: '4' } },
+  { grp: 'gFront', id: 'proj', icon: 'M3 5h5l1.5 2H17v9H3z', ind: ['it'], ct: { it: '10' } },
+  { grp: 'gFront', id: 'qual', icon: 'M10 2.5l6.5 3v5c0 3.6-2.7 6.3-6.5 7-3.8-.7-6.5-3.4-6.5-7v-5z M7.4 10l1.9 1.9 3.3-3.6', ind: ['mfg'], ct: { mfg: '12' } },
+  { grp: 'gFront', id: 'order', icon: 'M3 6h9l2 3h3v6H3z M6 15a1.4 1.4 0 100 .1 M13 15a1.4 1.4 0 100 .1 M3 4h6', ind: ['mfg'], ct: { mfg: '7' } },
+  { grp: 'gFront', id: 'cred', icon: 'M3 8l7-4 7 4v1H3z M5 9v5M9 9v5M13 9v5M15 9v5M3 16h14', ind: ['fin'], ct: { fin: '7' } },
+  { grp: 'gFront', id: 'reg', icon: 'M5 3h10v14H5z M7.5 6.5h5M7.5 9.5h5M7.5 12.5h3 M14.5 14.5l1.5 1.5', ind: ['fin'], ct: { fin: '14' } },
+  { grp: 'gCommon', id: 'act', icon: 'M4 10l4 4 8-9', ct: { mfg: '10', fin: '10', it: '10' } },
+  { grp: 'gCommon', id: 'sys', icon: 'M3 4.5h14v9H3zM8.5 16h3M10 13.5V16M6.5 9h1.8l1.2-2.6 1.6 4.8 1.2-2.2h2', ind: ['mfg', 'it'], lbl: { mfg: 'sysMfg' }, ct: { mfg: '6', it: '9' } },
+  { grp: 'gCommon', id: 'meet', icon: 'M4 4h12v12H4zM4 8h12M8 2v3M12 2v3', ct: { mfg: '4', fin: '4', it: '4' } },
+  { grp: 'gCommon', id: 'know', icon: 'M4 3h9a2 2 0 012 2v12H6a2 2 0 01-2-2z M6 3v14', ct: { mfg: '12', fin: '12', it: '12' } },
+  { grp: 'gCommon', id: 'watch', icon: 'M10 4c-4 0-6.5 3-7 5 .5 2 3 5 7 5s6.5-3 7-5c-.5-2-3-5-7-5zM10 11a2 2 0 100-4 2 2 0 000 4z', ct: { mfg: '5', fin: '5', it: '5' } },
+  { grp: 'gCommon', id: 'vend', icon: 'M4 7l6-3 6 3v7l-6 3-6-3zM10 4v13', ct: { mfg: '6', fin: '3', it: '3' } },
   { grp: 'gCommon', id: 'ai', icon: 'M10 3l2 4 4 2-4 2-2 4-2-4-4-2 4-2z' },
-  { grp: 'gMgmt', id: 'kpi', icon: 'M3 17V8M8 17V4M13 17v-6M18 17v-9', ct: '9' },
-  { grp: 'gMgmt', id: 'goal', icon: 'M10 2v16M2 10h16M10 5a5 5 0 100 10 5 5 0 000-10z', ct: '4' },
-  { grp: 'gMgmt', id: 'ppl', icon: 'M10 10a3 3 0 100-6 3 3 0 000 6zM3 17a7 7 0 0114 0', ct: '5' },
-  { grp: 'gBack', id: 'exp', icon: 'M3 6h14v9H3zM3 9h14M6 12h3', ct: '9' },
-  { grp: 'gBack', id: 'req', icon: 'M6 3h8v14H6zM8 7h4M8 10h4M8 13h2', ct: '4' },
-  { grp: 'gBack', id: 'trn', icon: 'M10 4L3 7.5 10 11l7-3.5zM5.5 9v4c0 1 2 2 4.5 2s4.5-1 4.5-2V9', ct: '16' }
+  { grp: 'gMgmt', id: 'kpi', icon: 'M3 17V8M8 17V4M13 17v-6M18 17v-9', ct: { mfg: '9', fin: '9', it: '9' } },
+  { grp: 'gMgmt', id: 'goal', icon: 'M10 2v16M2 10h16M10 5a5 5 0 100 10 5 5 0 000-10z', ct: { mfg: '4', fin: '4', it: '4' } },
+  { grp: 'gMgmt', id: 'ppl', icon: 'M10 10a3 3 0 100-6 3 3 0 000 6zM3 17a7 7 0 0114 0', ct: { mfg: '6', fin: '6', it: '5' } },
+  { grp: 'gBack', id: 'exp', icon: 'M3 6h14v9H3zM3 9h14M6 12h3', ct: { mfg: '3', fin: '3', it: '3' } },
+  { grp: 'gBack', id: 'req', icon: 'M6 3h8v14H6zM8 7h4M8 10h4M8 13h2', ct: { mfg: '4', fin: '4', it: '4' } },
+  { grp: 'gBack', id: 'trn', icon: 'M10 4L3 7.5 10 11l7-3.5zM5.5 9v4c0 1 2 2 4.5 2s4.5-1 4.5-2V9', ct: { mfg: '8', fin: '8', it: '11' } }
 ];
 
 /* ============================================================

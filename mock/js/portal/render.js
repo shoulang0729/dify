@@ -1150,6 +1150,76 @@ V.vend = () => `
 </div>`;
 
 /* ============================================================
+   新画面 4 枚の殻（qual/order/cred/reg。設計書 2026-09-12-portal-industry-rev4.md §9・§15-1 PR-A）。
+   見出し・空の一覧・「この画面の AI」ブロックだけを持つ。行データ（PQUAL/PORDER/PCRED/PREG）と
+   タイル・補助テーブル・解説は PR-D で足す。既存の .block / .tw table / ptbl() / paiRow() だけを使い、
+   新しい CSS クラスは 1 つも足さない（§1-3・AC-27）。
+   ============================================================ */
+V.qual = () => `
+<div class="grid g-main">
+ <section class="block">
+  <header><h2>${pesc(pt('qual'))}</h2></header>
+  <div class="body flush">
+  ${ptbl([{t:'番号'},{t:'区分'},{t:'発生日'},{t:'品番'},{t:'設備'},{t:'相手'},{t:'担当課'},{t:'期限'},{t:'状態'},{t:'この行で使う AI'}], '')}
+  </div>
+ </section>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
+  <div class="body">
+   ${paiRow(pscreenAiIds('qual'))}
+  </div>
+ </section>
+</div>`;
+
+V.order = () => `
+<div class="grid g-main">
+ <section class="block">
+  <header><h2>${pesc(pt('order'))}</h2></header>
+  <div class="body flush">
+  ${ptbl([{t:'番号'},{t:'区分'},{t:'受付日'},{t:'品番'},{t:'相手'},{t:'数量'},{t:'納期'},{t:'状態'},{t:'この行で使う AI'}], '')}
+  </div>
+ </section>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
+  <div class="body">
+   ${paiRow(pscreenAiIds('order'))}
+  </div>
+ </section>
+</div>`;
+
+V.cred = () => `
+<div class="grid g-main">
+ <section class="block">
+  <header><h2>${pesc(pt('cred'))}</h2></header>
+  <div class="body flush">
+  ${ptbl([{t:'審査番号'},{t:'稟議番号'},{t:'先'},{t:'商品'},{t:'金額（億元）',n:1},{t:'ステージ'},{t:'申請日'},{t:'期限'},{t:'審査担当'},{t:'この行で使う AI'}], '')}
+  </div>
+ </section>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
+  <div class="body">
+   ${paiRow(pscreenAiIds('cred'))}
+  </div>
+ </section>
+</div>`;
+
+V.reg = () => `
+<div class="grid g-main">
+ <section class="block">
+  <header><h2>${pesc(pt('reg'))}</h2></header>
+  <div class="body flush">
+  ${ptbl([{t:'通達番号'},{t:'発出日'},{t:'区分'},{t:'論点'},{t:'影響する部署'},{t:'対応期限'},{t:'状態'},{t:'この行で使う AI'}], '')}
+  </div>
+ </section>
+ <section class="block blk-ai">
+  <header><h2>${pesc(pt('screenAi'))}</h2></header>
+  <div class="body">
+   ${paiRow(pscreenAiIds('reg'))}
+  </div>
+ </section>
+</div>`;
+
+/* ============================================================
    .mockbar の時刻プリセット（sysops-usecase PR-4。設計書 §6-9）。
    portal.html は <script src> の 1 行しか変更しない（設計書 §11 PR-4 の触るファイル一覧）ため、
    .mockbar の #indSw（業種チップ）の直後に、ここから 1 回だけ挿入する。足場なので常に日本語
@@ -1168,17 +1238,23 @@ function renderNowSw() {
 /* ============================================================
    ナビ・タイトル・パンくずの描画
    ============================================================ */
+/** その画面が現在の業種で見えるか（PSCREENS[].ind を省略＝全業種。rev4 §3-1）。 */
+function pscreenVisible(s) { return !s.ind || s.ind.includes(pstate.ind); }
+/** ナビ・タイトルに出すラベルキー（PSCREENS[].lbl の業種別上書きが無ければ画面 id そのもの。rev4 §3-1）。 */
+function pscreenLabelKey(s) { return (s.lbl && s.lbl[pstate.ind]) || s.id; }
+
 function renderRail() {
   const nav = document.getElementById('nav');
   let last = null;
-  nav.innerHTML = PSCREENS.map(s => {
+  nav.innerHTML = PSCREENS.filter(pscreenVisible).map(s => {
     let head = '';
     if (s.grp && s.grp !== last) { head = '<div class="navgrp">' + pt(s.grp) + '</div>'; last = s.grp; }
-    // 'ai'（AI サービス）だけは SVCS.length（カタログの正）から出す。他は業務データの固定件数（§4-4）
-    const ct = s.id === 'ai' ? String((typeof SVCS !== 'undefined' ? SVCS.length : 0)) : s.ct;
+    // 'ai'（AI サービス）だけは SVCS.length（カタログの正）から出す。他は業種別の固定件数（§4-4・rev4 §3-1）
+    const ct = s.id === 'ai' ? String((typeof SVCS !== 'undefined' ? SVCS.length : 0)) :
+      (s.ct && typeof s.ct === 'object' ? s.ct[pstate.ind] : s.ct);
     return head + '<button class="navbtn" type="button" data-scr="' + s.id + '"' + (s.id === pstate.scr ? ' aria-current="page"' : '') + '>' +
       '<svg class="ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + s.icon + '"/></svg>' +
-      '<span>' + pt(s.id) + '</span>' + (ct ? '<span class="ct">' + ct + '</span>' : '') + '</button>';
+      '<span>' + pt(pscreenLabelKey(s)) + '</span>' + (ct ? '<span class="ct">' + ct + '</span>' : '') + '</button>';
   }).join('');
 }
 
@@ -1193,8 +1269,11 @@ function showScreen(id) {
   document.querySelectorAll('.navbtn').forEach(b => {
     if (b.dataset.scr === id) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
-  document.getElementById('ttl').textContent = pt(id);
-  document.getElementById('crumb').textContent = pt('org').split(' ')[0] + ' ' + pt('brand') + ' ／ ' + pt(id);
+  // 業種別のラベル上書き（PSCREENS[].lbl。rev4 §3-1・§10-1）。会社名・部門名（org）の置き換えは PR-B（§5-3）
+  const scrDef = PSCREENS.find(s => s.id === id);
+  const labelKey = scrDef ? pscreenLabelKey(scrDef) : id;
+  document.getElementById('ttl').textContent = pt(labelKey);
+  document.getElementById('crumb').textContent = pt('org').split(' ')[0] + ' ' + pt('brand') + ' ／ ' + pt(labelKey);
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
