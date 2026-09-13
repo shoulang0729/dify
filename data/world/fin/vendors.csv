@@ -1,2 +1,4 @@
 code,kind,role_ja,role_zh,role_en,country,note
 己社,service,旅行会社（ハイヤー手配・出張手配）,旅行社（包车与差旅安排）,Travel agency (chartered cars & trip arrangements),,fin には仕入先系のマスタが無いため新設（設計書 §4-4）。clients.csv（顧客専用）とは別体系。記号は clients.csv の甲乙丙丁戊に続く十干（己）を使う。GN-07（出張アテンド）の `charter` 車両で使用
+庚社,service,システム保守ベンダ（帳票基盤の運用委託）,系统运维厂商（报表平台运维外包）,System maintenance vendor for the reporting platform,CN,設計書 2026-09-12-portal-industry-rev4.md §6-7。記号は十干（己 に続く 庚）
+辛社,service,事務代行（帳票の入力・照合の外部委託）,事务代办（报表录入与核对外包）,BPO vendor for form entry and reconciliation,CN,同上

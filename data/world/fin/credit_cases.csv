@@ -1,0 +1,8 @@
+case_id,ringi_id,client_code,product_id,amount_mm,stage,applied,due,reviewer_id,note
+CRD-26-0087,RNG-2026-0142,丙社,loan-capex,850,review,2026-08-28,2026-09-18,takanashi-naoto,台本既出（scenarios/fin/cv.js CV-03）
+CRD-26-0091,RNG-2026-0089,甲社,loan-working,1200,approved,2026-07-10,2026-08-05,yang-jianguo,台本既出（cv.js）
+CRD-26-0094,RNG-2026-0151,乙社,lc-trade,600,review,2026-09-01,2026-09-25,yang-jianguo,本設計で追加（書式は calendar.md の CRD-YY-NNNN / RNG-YYYY-NNNN）
+CRD-26-0096,RNG-2026-0158,丁社,loan-capex,2400,draft,2026-09-05,2026-10-09,takanashi-naoto,本設計で追加
+CRD-26-0098,RNG-2026-0160,戊社,loan-working,300,kyc,2026-09-08,2026-09-30,yang-jianguo,本設計で追加。KYC スクリーニングで保留（CV-04）
+CRD-26-0079,RNG-2026-0120,甲社,fx-forward,450,approved,2026-06-02,2026-06-28,takanashi-naoto,本設計で追加
+CRD-26-0101,RNG-2026-0163,丙社,loan-working,500,returned,2026-09-08,2026-09-24,yang-jianguo,本設計で追加。記載不備で差戻し

@@ -1,0 +1,11 @@
+notice_id,issued,authority,topic_ja,topic_zh,topic_en,affects_dept,due,owner_dept,note
+NTF-2026-017,2026-09-07,privacy,行内システムのログ保存に関する留意事項,关于行内系统日志留存的注意事项,Points to note on system log retention,system,2026-12-31,system,本設計で追加（書式は calendar.md の NTF-YYYY-NNN）
+NTF-2026-016,2026-09-08,fx,為替予約の実需原則に関する照会回答,关于远期结售汇实需原则的答复,Reply on the genuine-demand rule for FX forwards,shijo,2026-11-30,shijo,本設計で追加
+NTF-2026-015,2026-09-02,banking,四半期報告の提出期限の前倒し,季度报告提交期限提前,Earlier deadline for quarterly regulatory reports,kikaku,2026-10-20,kikaku,本設計で追加
+NTF-2026-013,2026-08-24,banking,与信審査記録の保存年限の見直し,授信审查记录保存年限的调整,Revision of the retention period for credit-review records,shinsa,2026-10-31,compliance,台本既出（scenarios/fin/kn.js KN-05・KN-08）
+NTF-2026-011,2026-07-15,aml,疑わしい取引の届出様式の変更,可疑交易报告表格变更,Change to the suspicious-transaction report form,jimu,2026-09-30,compliance,本設計で追加
+NTF-2026-008,2026-06-02,fx,クロスボーダー人民元送金の報告項目追加,跨境人民币汇款报告项目新增,Added reporting items for cross-border RMB remittance,shijo,2026-09-15,risk,本設計で追加
+NTF-2026-004,2026-04-10,privacy,個人情報の越境移転に関する運用指針,个人信息跨境转移操作指引,Guidance on cross-border transfer of personal data,jimu,2026-09-12,compliance,本設計で追加。ポータルのニュース行と対応
+NTF-2025-041,2025-11-28,banking,自己資本比率の算定方法の一部改定,资本充足率计算方法部分修订,Partial revision of the capital-ratio calculation,risk,2026-03-31,risk,台本既出（kn.js KN-08 の過去比較）
+NTF-2025-032,2025-09-05,banking,大口与信の報告閾値の引き下げ,大额授信报告阈值下调,Lower reporting threshold for large exposures,shinsa,2025-12-31,risk,本設計で追加
+NTF-2025-019,2025-05-20,aml,顧客管理の継続的確認の頻度,客户尽职调查持续核实频率,Frequency of ongoing customer due diligence,jimu,2025-09-30,compliance,本設計で追加
