@@ -106,7 +106,9 @@ const PORTAL_DATA_KEYS = [
   'PACT', 'PCAND', 'PMEET', 'PKNOW', 'PKNOWACT',
   'PPEOPLE', 'PATT', 'PKPI', 'PKPITOPIC', 'PSRC', 'PGOAL', 'PQTR', 'PCUR_Q',
   'PEXP', 'PREQ', 'PTRAIN', 'PMYTRAIN', 'PMYITEM', 'PTODO_STATE', 'PSURVEY', 'PMYSURVEY',
-  'PSYS', 'PSYSEV', 'PSYSST', 'PSYSNOW'
+  'PSYS', 'PSYSEV', 'PSYSST', 'PSYSNOW',
+  // 新設 4 画面の中身（設計書 2026-09-12-portal-industry-rev4.md §9・§15-1 PR-D。front.js）
+  'PQUAL', 'PORDER', 'PCRED', 'PREG'
 ];
 
 export function loadPortal(ROOT) {

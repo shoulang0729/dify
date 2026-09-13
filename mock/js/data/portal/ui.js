@@ -129,7 +129,24 @@ const PT = {
   ctxOwner:     { ja: '担当', zh: '负责人', en: 'Owner' },
   ctxStage:     { ja: 'ステージ', zh: '阶段', en: 'Stage' },
   ctxDue:       { ja: '期限', zh: '截止日期', en: 'Due date' },
-  ctxState:     { ja: '状態', zh: '状态', en: 'Status' }
+  ctxState:     { ja: '状態', zh: '状态', en: 'Status' },
+
+  /* ---- 新設 4 画面の文脈カードのラベル（PCTXDEF の qual/order/cred/reg に対応。
+     rev4 §9-5・§12-2。ctxStage は上ですでに定義済みのため重複させない）。
+     既存の ctxCustomer / ctxDue / ctxState はそのまま使い回す ---- */
+  ctxRecord:    { ja: '記録番号', zh: '记录编号', en: 'Record no.' },
+  ctxKind:      { ja: '区分', zh: '类别', en: 'Type' },
+  ctxPartNo:    { ja: '品番', zh: '品号', en: 'Part no.' },
+  ctxEquip:     { ja: '設備', zh: '设备', en: 'Equipment' },
+  ctxQty:       { ja: '数量', zh: '数量', en: 'Quantity' },
+  ctxRingi:     { ja: '稟議番号', zh: '稟议编号', en: 'Approval no.' },
+  ctxProduct:   { ja: '商品', zh: '产品', en: 'Product' },
+  ctxAmount:    { ja: '金額', zh: '金额', en: 'Amount' },
+  ctxNotice:    { ja: '通達番号', zh: '通知编号', en: 'Notice no.' },
+  ctxIssued:    { ja: '発出日', zh: '发布日期', en: 'Issued' },
+  ctxAuthority: { ja: '区分（当局）', zh: '类别（监管）', en: 'Authority' },
+  ctxTopic:     { ja: '論点', zh: '要点', en: 'Topic' },
+  ctxDept:      { ja: '担当部署', zh: '负责部门', en: 'Owning dept.' }
 };
 
 /* ============================================================

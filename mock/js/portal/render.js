@@ -1183,19 +1183,72 @@ V.vend = () => `
 </div>`;
 
 /* ============================================================
-   新画面 4 枚の殻（qual/order/cred/reg。設計書 2026-09-12-portal-industry-rev4.md §9・§15-1 PR-A）。
-   見出し・空の一覧・「この画面の AI」ブロックだけを持つ。行データ（PQUAL/PORDER/PCRED/PREG）と
-   タイル・補助テーブル・解説は PR-D で足す。既存の .block / .tw table / ptbl() / paiRow() だけを使い、
+   新画面 4 枚の中身（qual/order/cred/reg。設計書 2026-09-12-portal-industry-rev4.md §9・§15-1 PR-D）。
+   殻（見出し・空の一覧・「この画面の AI」ブロック）は PR-A。ここで tiles・表・解説を足す。
+   既存の .block / .tiles / .tile / .tw table / ptbl() / paiRow() / prowAi() / pbackContainer() だけを使い、
    新しい CSS クラスは 1 つも足さない（§1-3・AC-27）。
-   ============================================================ */
-V.qual = () => `
+
+   行内 AI（prowAi の rowCtx）は既存の proj/cust と同じ形（{ scr, id }）で配線してある。
+   ただし js/portal/app.js の pctxRow() には qual/order/cred/reg の分岐がまだ無いため、
+   「この行から渡す文脈」カード（PCTXDEF 経由の自動入力）はこの 4 画面では空のまま出る
+   （行が無いブロック呼び出しと同じ表示に落ちる。壊れはしない）。「結果を画面に残す」
+   （pbackContainer）は pctxRow に依存しないので、これは他画面と同じく機能する。 */
+const pTile = (t) => '<div class="tile' + (t.alarm ? ' alarm' : '') + '"><div class="lbl">' + pesc(t.lbl) + '</div>' +
+  '<div class="num">' + pesc(t.num) + '<small>' + pesc(t.unit) + '</small></div>' +
+  '<div class="delta">' + pesc(t.delta) + '</div></div>';
+/* 表の「状態／ステージ」列の色分け。完了系＝st1、差戻し・未着手・保留＝due、それ以外＝進行中の st2。 */
+const pQState = (v) => {
+  if (['完了', '承認済', '通関済', '受領済', '提出済'].includes(v)) return '<span class="st st1">' + pesc(v) + '</span>';
+  if (v === '差戻し' || v.indexOf('未着手') === 0 || v.indexOf('保留') === 0) return '<span class="due">' + pesc(v) + '</span>';
+  return '<span class="st st2">' + pesc(v) + '</span>';
+};
+const pQDash = (v) => (v === '—' ? '<span class="m">—</span>' : pesc(v));
+
+V.qual = () => {
+  /* renderCanvas() は全 20 画面を業種にかかわらず毎回描く（表示は hidden 属性で切り替える。§4-3）。
+     PQUAL は mfg のみを持つので、pd() の 'it' フォールバックは効かない（qual は 'it' でも 'fin' でも
+     出さない画面）。他業種で描かれたときは空のまま返す（§9-1・PSCREENS[].ind:['mfg']）。 */
+  const d = PQUAL[pstate.ind];
+  if (!d) return '<div class="grid g-main"></div>';
+  return `
 <div class="grid g-main">
  <section class="block">
   <header><h2>${pesc(pt('qual'))}</h2></header>
+  <div class="body"><div class="tiles">
+   ${d.tiles.map(pTile).join('')}
+  </div></div>
+ </section>
+
+ <section class="block">
+  <header><h2>不具合・クレーム・変更要求</h2><span class="sub">${d.rows.length} 件</span></header>
   <div class="body flush">
-  ${ptbl([{t:'番号'},{t:'区分'},{t:'発生日'},{t:'品番'},{t:'設備'},{t:'相手'},{t:'担当課'},{t:'期限'},{t:'状態'},{t:'この行で使う AI'}], '')}
+  ${ptbl(d.head.map(h => ({ t: h })).concat([{ t: 'この行で使う AI' }]),
+    d.rows.map(r => '<tr><td class="nw"><span class="no">' + pesc(r[0]) + '</span></td>' +
+      '<td class="nw">' + pesc(r[1]) + '</td><td class="nw">' + pesc(r[2]) + '</td>' +
+      '<td class="nw">' + pesc(r[3]) + '</td><td class="nw">' + pQDash(r[4]) + '</td>' +
+      '<td class="nw">' + pQDash(r[5]) + '</td><td class="nw">' + pesc(r[6]) + '</td>' +
+      '<td class="nw">' + pQDash(r[7]) + '</td><td class="nw">' + pQState(r[8]) + '</td>' +
+      '<td>' + prowAi(d.ai, { scr: 'qual', id: r[0] }) + pbackContainer('qual', r[0]) + '</td></tr>').join(''))}
   </div>
  </section>
+
+ <section class="block">
+  <header><h2>技術報告・是正処置</h2><span class="sub">${d.tr.length} 件</span></header>
+  <div class="body flush">
+  ${ptbl(d.trHead.map(h => ({ t: h })).concat([{ t: 'この行で使う AI' }]),
+    d.tr.map(r => '<tr><td class="nw"><span class="no">' + pesc(r[0]) + '</span></td>' +
+      '<td class="nw">' + pesc(r[1]) + '</td><td class="nw">' + pesc(r[2]) + '</td>' +
+      '<td class="nw">' + pesc(r[3]) + '</td><td class="nw">' + pQDash(r[4]) + '</td>' +
+      '<td class="nw">' + pesc(r[5]) + '</td><td class="nw">' + pQState(r[6]) + '</td>' +
+      '<td>' + prowAi(d.trAi, { scr: 'qual', id: r[0] }) + pbackContainer('qual', r[0]) + '</td></tr>').join(''))}
+  </div>
+  <div class="body" style="border-top:1px solid var(--border-subtle)">
+   <div class="note">${d.notes[0]}</div>
+   <div class="note" style="margin-top:8px">${d.notes[1]}</div>
+   <div class="pn blk">${d.prod}</div>
+  </div>
+ </section>
+
  <section class="block blk-ai">
   <header><h2>${pesc(pt('screenAi'))}</h2></header>
   <div class="body">
@@ -1203,15 +1256,51 @@ V.qual = () => `
   </div>
  </section>
 </div>`;
+};
 
-V.order = () => `
+V.order = () => {
+  /* renderCanvas() は全 20 画面を業種にかかわらず毎回描く（§4-3）。PORDER は mfg のみを持つ。 */
+  const d = PORDER[pstate.ind];
+  if (!d) return '<div class="grid g-main"></div>';
+  return `
 <div class="grid g-main">
  <section class="block">
   <header><h2>${pesc(pt('order'))}</h2></header>
+  <div class="body"><div class="tiles">
+   ${d.tiles.map(pTile).join('')}
+  </div></div>
+ </section>
+
+ <section class="block">
+  <header><h2>引合・受注</h2><span class="sub">${d.rows.length} 件</span></header>
   <div class="body flush">
-  ${ptbl([{t:'番号'},{t:'区分'},{t:'受付日'},{t:'品番'},{t:'相手'},{t:'数量'},{t:'納期'},{t:'状態'},{t:'この行で使う AI'}], '')}
+  ${ptbl(d.head.map(h => ({ t: h })).concat([{ t: 'この行で使う AI' }]),
+    d.rows.map(r => '<tr><td class="nw"><span class="no">' + pesc(r[0]) + '</span></td>' +
+      '<td class="nw">' + pesc(r[1]) + '</td><td class="nw">' + pesc(r[2]) + '</td>' +
+      '<td class="nw">' + pesc(r[3]) + '</td><td class="nw">' + pesc(r[4]) + '</td>' +
+      '<td class="nw">' + pesc(r[5]) + '</td><td class="nw">' + pesc(r[6]) + '</td>' +
+      '<td class="nw">' + pQState(r[7]) + '</td>' +
+      '<td>' + prowAi(d.ai, { scr: 'order', id: r[0] }) + pbackContainer('order', r[0]) + '</td></tr>').join(''))}
   </div>
  </section>
+
+ <section class="block">
+  <header><h2>出荷・通関</h2><span class="sub">${d.ship.length} 件</span></header>
+  <div class="body flush">
+  ${ptbl(d.shipHead.map(h => ({ t: h })).concat([{ t: 'この行で使う AI' }]),
+    d.ship.map(r => '<tr><td class="nw"><span class="no">' + pesc(r[0]) + '</span></td>' +
+      '<td class="nw">' + pesc(r[1]) + '</td><td class="nw">' + pesc(r[2]) + '</td>' +
+      '<td class="nw">' + pesc(r[3]) + '</td><td class="nw">' + pesc(r[4]) + '</td>' +
+      '<td class="nw">' + pesc(r[5]) + '</td><td class="nw">' + pQState(r[6]) + '</td>' +
+      '<td>' + prowAi(d.shipAi, { scr: 'order', id: r[0] }) + pbackContainer('order', r[0]) + '</td></tr>').join(''))}
+  </div>
+  <div class="body" style="border-top:1px solid var(--border-subtle)">
+   <div class="note">${d.notes[0]}</div>
+   <div class="note" style="margin-top:8px">${d.notes[1]}</div>
+   <div class="pn blk">${d.prod}</div>
+  </div>
+ </section>
+
  <section class="block blk-ai">
   <header><h2>${pesc(pt('screenAi'))}</h2></header>
   <div class="body">
@@ -1219,15 +1308,39 @@ V.order = () => `
   </div>
  </section>
 </div>`;
+};
 
-V.cred = () => `
+V.cred = () => {
+  /* renderCanvas() は全 20 画面を業種にかかわらず毎回描く（§4-3）。PCRED は fin のみを持つ。 */
+  const d = PCRED[pstate.ind];
+  if (!d) return '<div class="grid g-main"></div>';
+  return `
 <div class="grid g-main">
  <section class="block">
   <header><h2>${pesc(pt('cred'))}</h2></header>
+  <div class="body"><div class="tiles">
+   ${d.tiles.map(pTile).join('')}
+  </div></div>
+ </section>
+
+ <section class="block">
+  <header><h2>与信案件</h2><span class="sub">${d.rows.length} 件</span></header>
   <div class="body flush">
-  ${ptbl([{t:'審査番号'},{t:'稟議番号'},{t:'先'},{t:'商品'},{t:'金額（億元）',n:1},{t:'ステージ'},{t:'申請日'},{t:'期限'},{t:'審査担当'},{t:'この行で使う AI'}], '')}
+  ${ptbl(d.head.map((h, i) => (i === 4 ? { t: h, n: 1 } : { t: h })).concat([{ t: 'この行で使う AI' }]),
+    d.rows.map(r => '<tr><td class="nw"><span class="no">' + pesc(r[0]) + '</span></td>' +
+      '<td class="nw">' + pesc(r[1]) + '</td><td class="nw">' + pesc(r[2]) + '</td>' +
+      '<td class="nw">' + pesc(r[3]) + '</td><td class="num">' + pesc(r[4]) + '</td>' +
+      '<td class="nw">' + pQState(r[5]) + '</td><td class="nw">' + pesc(r[6]) + '</td>' +
+      '<td class="nw">' + pesc(r[7]) + '</td><td class="nw">' + pesc(r[8]) + '</td>' +
+      '<td>' + prowAi(d.ai, { scr: 'cred', id: r[0] }) + pbackContainer('cred', r[0]) + '</td></tr>').join(''))}
+  </div>
+  <div class="body" style="border-top:1px solid var(--border-subtle)">
+   <div class="note">${d.notes[0]}</div>
+   <div class="note" style="margin-top:8px">${d.notes[1]}</div>
+   <div class="pn blk">${d.prod}</div>
   </div>
  </section>
+
  <section class="block blk-ai">
   <header><h2>${pesc(pt('screenAi'))}</h2></header>
   <div class="body">
@@ -1235,15 +1348,49 @@ V.cred = () => `
   </div>
  </section>
 </div>`;
+};
 
-V.reg = () => `
+V.reg = () => {
+  /* renderCanvas() は全 20 画面を業種にかかわらず毎回描く（§4-3）。PREG は fin のみを持つ。 */
+  const d = PREG[pstate.ind];
+  if (!d) return '<div class="grid g-main"></div>';
+  return `
 <div class="grid g-main">
  <section class="block">
   <header><h2>${pesc(pt('reg'))}</h2></header>
+  <div class="body"><div class="tiles">
+   ${d.tiles.map(pTile).join('')}
+  </div></div>
+ </section>
+
+ <section class="block">
+  <header><h2>当局通達と対応状況</h2><span class="sub">${d.rows.length} 件</span></header>
   <div class="body flush">
-  ${ptbl([{t:'通達番号'},{t:'発出日'},{t:'区分'},{t:'論点'},{t:'影響する部署'},{t:'対応期限'},{t:'状態'},{t:'この行で使う AI'}], '')}
+  ${ptbl(d.head.map(h => ({ t: h })).concat([{ t: 'この行で使う AI' }]),
+    d.rows.map(r => '<tr><td class="nw"><span class="no">' + pesc(r[0]) + '</span></td>' +
+      '<td class="nw">' + pesc(r[1]) + '</td><td class="nw">' + pesc(r[2]) + '</td>' +
+      '<td>' + pesc(r[3]) + '</td><td class="nw">' + pesc(r[4]) + '</td>' +
+      '<td class="nw">' + pesc(r[5]) + '</td><td class="nw">' + pQState(r[6]) + '</td>' +
+      '<td>' + prowAi(d.ai, { scr: 'reg', id: r[0] }) + pbackContainer('reg', r[0]) + '</td></tr>').join(''))}
   </div>
  </section>
+
+ <section class="block">
+  <header><h2>定例レポート</h2><span class="sub">${d.rpt.length} 件</span></header>
+  <div class="body flush">
+  ${ptbl(d.rptHead.map(h => ({ t: h })).concat([{ t: 'この行で使う AI' }]),
+    d.rpt.map((r, i) => '<tr><td>' + pesc(r[0]) + '</td>' +
+      '<td class="nw">' + pesc(r[1]) + '</td><td class="nw">' + pQDash(r[2]) + '</td>' +
+      '<td class="nw">' + pesc(r[3]) + '</td><td class="nw">' + pQState(r[4]) + '</td>' +
+      '<td>' + prowAi(d.rptAi, { scr: 'reg', id: 'RPT-' + i }) + pbackContainer('reg', 'RPT-' + i) + '</td></tr>').join(''))}
+  </div>
+  <div class="body" style="border-top:1px solid var(--border-subtle)">
+   <div class="note">${d.notes[0]}</div>
+   <div class="note" style="margin-top:8px">${d.notes[1]}</div>
+   <div class="pn blk">${d.prod}</div>
+  </div>
+ </section>
+
  <section class="block blk-ai">
   <header><h2>${pesc(pt('screenAi'))}</h2></header>
   <div class="body">
@@ -1251,6 +1398,7 @@ V.reg = () => `
   </div>
  </section>
 </div>`;
+};
 
 /* ============================================================
    .mockbar の時刻プリセット（sysops-usecase PR-4。設計書 §6-9）。

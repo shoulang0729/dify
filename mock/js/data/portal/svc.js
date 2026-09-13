@@ -173,5 +173,11 @@ const PCTXDEF = {
      値は js/portal/app.js の pSysCtxRow() が PSYS／PSYSEV（data/world/it/systems.csv・
      documents.csv の写し）から組み立てる。 */
   sys:  ['sys', 'name', 'client', 'criticality', 'inc'],
+  /* 新設 4 画面（rev4 §9-5・PR-D）。値は js/portal/app.js の pctxRow() が該当画面のデータ
+     （PQUAL/PORDER/PCRED/PREG）から引く想定（proj/cust/sys と同じ仕組み）。 */
+  qual:  ['no', 'kind', 'part', 'equip', 'cu', 'due', 'state'],
+  order: ['no', 'kind', 'part', 'cu', 'qty', 'due', 'state'],
+  cred:  ['no', 'ringi', 'cu', 'product', 'amount', 'stage', 'due'],
+  reg:   ['no', 'issued', 'authority', 'topic', 'dept', 'due', 'state'],
   home: []
 };
