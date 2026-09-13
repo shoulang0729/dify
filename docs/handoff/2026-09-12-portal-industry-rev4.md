@@ -46,8 +46,8 @@
 ├ gFront フロント業務────────────────────────────────────────────────────────────
 │ cust   取引先          ● partners 顧客 3     ● clients 5           ● clients 4    ← 作り替え(b)
 │ proj   案件            －                     －                     ● PDEALS 10
-│ qual   品質・不具合    ● 新設 14 行          －                     －            ← 新設
-│ order  受注・出荷      ● 新設  9 行          －                     －            ← 新設
+│ qual   品質・不具合    ● 新設 12 行          －                     －            ← 新設
+│ order  受注・出荷      ● 新設  7 行          －                     －            ← 新設
 │ cred   与信・審査      －                     ● 新設  7 行          －            ← 新設
 │ reg    当局対応・レポート －                   ● 新設 14 行          －            ← 新設
 ├ gCommon 共通業務───────────────────────────────────────────────────────────────
@@ -225,8 +225,8 @@ const PSCREENS = [
   { grp: '',        id: 'home',  icon: '…', ct: null },
   { grp: 'gFront',  id: 'cust',  icon: '…', ct: { mfg: '3',  fin: '5',  it: '4'  } },
   { grp: 'gFront',  id: 'proj',  icon: '…', ind: ['it'],        ct: { it: '10' } },
-  { grp: 'gFront',  id: 'qual',  icon: '…', ind: ['mfg'],       ct: { mfg: '14' } },
-  { grp: 'gFront',  id: 'order', icon: '…', ind: ['mfg'],       ct: { mfg: '9'  } },
+  { grp: 'gFront',  id: 'qual',  icon: '…', ind: ['mfg'],       ct: { mfg: '12' } },
+  { grp: 'gFront',  id: 'order', icon: '…', ind: ['mfg'],       ct: { mfg: '7'  } },
   { grp: 'gFront',  id: 'cred',  icon: '…', ind: ['fin'],       ct: { fin: '7'  } },
   { grp: 'gFront',  id: 'reg',   icon: '…', ind: ['fin'],       ct: { fin: '14' } },
   { grp: 'gCommon', id: 'act',   icon: '…', ct: { mfg: '10', fin: '10', it: '10' } },
@@ -591,8 +591,8 @@ bo-he-gang,賀 剛,贺刚,He Gang,戊社,業務部 経理,业务部 经理,Busin
 
 | ファイル | 定数 | 行 | 画面 |
 |---|---|---|---|
-| `front.js` | `PQUAL` | mfg 10 ＋ 4 | `qual`（§9-1） |
-| `front.js` | `PORDER` | mfg 6 ＋ 3 | `order`（§9-2） |
+| `front.js` | `PQUAL` | mfg 8 ＋ 4 | `qual`（§9-1） |
+| `front.js` | `PORDER` | mfg 5 ＋ 2 | `order`（§9-2） |
 | `front.js` | `PCRED` | fin 7 | `cred`（§9-3） |
 | `front.js` | `PREG` | fin 10 ＋ 4 | `reg`（§9-4） |
 
