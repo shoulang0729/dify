@@ -10,9 +10,10 @@
   var missing = [];
   if (typeof INDUSTRIES === 'undefined') missing.push('js/data/ui.js (INDUSTRIES)');
   if (typeof CATS === 'undefined' || typeof SVCS === 'undefined') missing.push('js/data/catalog.js (CATS/SVCS)');
+  if (typeof FEED === 'undefined') missing.push('js/data/home.js (FEED)');
   if (typeof PT === 'undefined' || typeof PSCREENS === 'undefined') missing.push('js/data/portal/ui.js (PT/PSCREENS)');
   if (typeof PSVC === 'undefined' || typeof POUT === 'undefined') missing.push('js/data/portal/svc.js (PSVC/POUT)');
-  if (typeof PORG === 'undefined') missing.push('js/data/portal/org.js (PORG)');
+  if (typeof PORG === 'undefined' || typeof PCOMPANY === 'undefined') missing.push('js/data/portal/org.js (PORG/PCOMPANY)');
   if (typeof PDEALS === 'undefined') missing.push('js/data/portal/front.js (PDEALS)');
   if (typeof PACT === 'undefined') missing.push('js/data/portal/common.js (PACT)');
   if (typeof PPEOPLE === 'undefined') missing.push('js/data/portal/mgmt.js (PPEOPLE)');
@@ -48,12 +49,18 @@ const pstate = {
   dealF: { cu: '', ow: '', sg: '', rag: '' },
   cuFilter: '',
   kindFilter: '',
-  /* PCAND のクローン（採用/見送りの状態を持つ。js/data/portal/** は書き換えない） */
-  cand: (typeof PCAND !== 'undefined' ? PCAND.map(c => Object.assign({}, c)) : []),
-  candSeq: 960,
-  /* 結果を行に残す（PR-4。設計書 §5-9）。back[画面id][行id] = [{ svc, at, line }]。
-     メモリのみ。localStorage には書かない（§2-6。4 つ目のキーを作らない） */
-  back: {},
+  /* PCAND のクローン（採用/見送りの状態を持つ。js/data/portal/** は書き換えない）。
+     rev4 §4-2：業種チップを往復しても採否が消えないよう、業種ごとに別のクローンを持つ
+     （PCAND 自体は §4-2 の業種化で { mfg, fin, it } の形になっている）。 */
+  cand: (typeof PCAND !== 'undefined'
+    ? { mfg: (PCAND.mfg || []).map(c => Object.assign({}, c)),
+        fin: (PCAND.fin || []).map(c => Object.assign({}, c)),
+        it:  (PCAND.it  || []).map(c => Object.assign({}, c)) }
+    : { mfg: [], fin: [], it: [] }),
+  candSeq: { mfg: 960, fin: 960, it: 960 },
+  /* 結果を行に残す（PR-4。設計書 §5-9）。back[業種][画面id][行id] = [{ svc, at, line }]（rev4 §4-2）。
+     業種チップを往復しても消えない（§4-4）。メモリのみ。localStorage には書かない（§2-6。4 つ目のキーを作らない） */
+  back: { mfg: {}, fin: {}, it: {} },
   /* システム稼働状況（sysops-usecase PR-4。設計書 §6-8）。now は PSYSNOW の id、sysScope は
      自分が使う/担当/全社の切替、sysCu/sysSt は顧客・状態の絞り込み。どれも localStorage には
      保存しない（§2-6。ポータルの許可集合は言語とテーマの 2 つだけ。新しいキーは作らない） */
@@ -70,6 +77,12 @@ const pesc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').repla
 /** 多言語オブジェクトから現在言語の文字列を取り出す（catalog の L() と同じ規則） */
 const PL = (obj) => (obj && (obj[pstate.lang] ?? obj.ja)) || '';
 const pt = (key) => PL(PT[key]);
+
+/** 業種で行データを引く 1 つのヘルパー（rev4 §4-1。設計書 docs/handoff/2026-09-12-portal-industry-rev4.md）。
+    その業種のキーが無いときは it に落とす（PSCREENS[].ind で画面自体を隠しているので通常は起きない）。
+    描画側は「PACT.map(...)」ではなく「pd(PACT).map(...)」と、識別子をそのまま渡す形にする
+    （js/data/portal/** は const 宣言なので window に載らず、'PACT' のような文字列渡しは使えない）。 */
+const pd = (obj) => (obj && (obj[pstate.ind] ?? obj.it)) || [];
 
 /** サービス id（内部 id。例 'kn2'）→ 管理番号（'KN-02'）。表示のためだけの変換（CLAUDE.md §2-11） */
 const ppad2 = (n) => String(n).padStart(2, '0');
@@ -260,10 +273,13 @@ function pbackLine(r) {
   else if (r.columns && r.rows && r.rows[0]) first = String(r.rows[0][0]);
   return first ? head + ' ／ ' + first : head;
 }
-/** 戻りを記録する（同じ行・同じサービスなら上書き。重複を積まない） */
+/** 戻りを記録する（同じ行・同じサービスなら上書き。重複を積まない）。
+    rev4 §4-2・§4-4：業種ごとに別の入れ物を持つ（back[業種][画面id][行id]）ので、
+    業種チップを往復しても消えない。 */
 function pbackKeep(scr, id, svc, line) {
-  pstate.back[scr] = pstate.back[scr] || {};
-  const list = pstate.back[scr][id] = pstate.back[scr][id] || [];
+  const bucket = pstate.back[pstate.ind] = pstate.back[pstate.ind] || {};
+  bucket[scr] = bucket[scr] || {};
+  const list = bucket[scr][id] = bucket[scr][id] || [];
   const at = pnow();
   const existing = list.find(b => b.svc === svc);
   if (existing) { existing.at = at; existing.line = line; }
@@ -271,7 +287,8 @@ function pbackKeep(scr, id, svc, line) {
 }
 /** 行の下に描く戻りの一覧（無ければ空文字＝何も出さない） */
 function pbackHTML(scr, id) {
-  const list = (pstate.back[scr] && pstate.back[scr][id]) || [];
+  const bucket = pstate.back[pstate.ind] || {};
+  const list = (bucket[scr] && bucket[scr][id]) || [];
   if (!list.length) return '';
   return list.map(b => {
     const code = psvcCode(b.svc);
@@ -355,16 +372,17 @@ function pSysBatchStart(spec, hm) {
   return hm >= s ? s : s - 1440;
 }
 
-/** その時刻（nowMs）までに起きた、system_id・kind に一致する最新のイベント時刻（ms）。無ければ null。 */
+/** その時刻（nowMs）までに起きた、system_id・kind に一致する最新のイベント時刻（ms）。無ければ null。
+    rev4 §7-1・§10：PSYSEV は業種化された（金融は sys 画面が無いので fin キーは無い）。 */
 function pSysLastAt(sysId, kind, nowMs) {
-  const list = PSYSEV.filter(e => e.sys === sysId && e.kind === kind && pSysDT(e.at) <= nowMs);
+  const list = pd(PSYSEV).filter(e => e.sys === sysId && e.kind === kind && pSysDT(e.at) <= nowMs);
   if (!list.length) return null;
   return Math.max(...list.map(e => pSysDT(e.at)));
 }
 /** on/off の 2 種類のイベント（alert系はseverityで判定するため専用。block/unblock・maint_start/maint_end 用）
     から、nowMs 時点で「開いている（on の後に off が来ていない）」かどうかを返す。 */
 function pSysOpenFlag(sysId, nowMs, onKind, offKind) {
-  const evs = PSYSEV.filter(e => e.sys === sysId && (e.kind === onKind || e.kind === offKind) && pSysDT(e.at) <= nowMs)
+  const evs = pd(PSYSEV).filter(e => e.sys === sysId && (e.kind === onKind || e.kind === offKind) && pSysDT(e.at) <= nowMs)
     .sort((a, b) => pSysDT(a.at) - pSysDT(b.at));
   let open = false;
   evs.forEach(e => { open = e.kind === onKind; });
@@ -372,7 +390,7 @@ function pSysOpenFlag(sysId, nowMs, onKind, offKind) {
 }
 /** nowMs 時点で開いている alert の重大度（'high'/'critical'/'warn'）。閉じていれば null。 */
 function pSysOpenSeverity(sysId, nowMs) {
-  const evs = PSYSEV.filter(e => e.sys === sysId && (e.kind === 'alert' || e.kind === 'recover') && pSysDT(e.at) <= nowMs)
+  const evs = pd(PSYSEV).filter(e => e.sys === sysId && (e.kind === 'alert' || e.kind === 'recover') && pSysDT(e.at) <= nowMs)
     .sort((a, b) => pSysDT(a.at) - pSysDT(b.at));
   let sev = null;
   evs.forEach(e => { sev = e.kind === 'alert' ? e.sev : null; });
@@ -417,7 +435,7 @@ function pSysSince(sys, state, nowMs, hm) {
 }
 /** 「直近の出来事」列。nowMs までに起きた最新のイベントを 1 件表示する（無ければ '—'）。 */
 function pSysLatestEvent(sysId, nowMs) {
-  const list = PSYSEV.filter(e => e.sys === sysId && pSysDT(e.at) <= nowMs)
+  const list = pd(PSYSEV).filter(e => e.sys === sysId && pSysDT(e.at) <= nowMs)
     .sort((a, b) => pSysDT(b.at) - pSysDT(a.at));
   return list[0] || null;
 }
@@ -433,7 +451,7 @@ function pSysEventText(ev) {
 function pSysRows() {
   const now = (typeof PSYSNOW !== 'undefined' ? PSYSNOW : []).find(p => p.id === pstate.now) || PSYSNOW[0];
   const nowMs = pSysDT(now.date), dow = pSysDow(nowMs), hm = pSysHM(nowMs);
-  return PSYS.map(s => {
+  return pd(PSYS).map(s => {
     const state = pSysState(s, nowMs, dow, hm);
     const ev = pSysLatestEvent(s.id, nowMs);
     return Object.assign({}, s, {
@@ -475,7 +493,7 @@ function pSysCtxRow(id) {
   if (!row) return null;
   const nowP = (typeof PSYSNOW !== 'undefined' ? PSYSNOW : []).find(p => p.id === pstate.now) || PSYSNOW[0];
   const nowMs = pSysDT(nowP.date);
-  const inc = PSYSEV.filter(e => e.sys === id && e.kind === 'alert' && /^INC-/.test(e.id) && pSysDT(e.at) <= nowMs)
+  const inc = pd(PSYSEV).filter(e => e.sys === id && e.kind === 'alert' && /^INC-/.test(e.id) && pSysDT(e.at) <= nowMs)
     .sort((a, b) => pSysDT(b.at) - pSysDT(a.at))[0];
   return {
     sys: row.id, name: row.name, client: row.client, criticality: row.criticality, inc: inc ? inc.id : '',

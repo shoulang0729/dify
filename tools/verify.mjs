@@ -1307,7 +1307,9 @@ section('17. 部門ポータル（mock/portal.html）契約');
     const portalAppOrdered = PORTAL_APP_ORDER.filter(f => portalAppFiles.has(f));
     const portalAppExtra = [...portalAppFiles].filter(f => !PORTAL_APP_ORDER.includes(f)).sort();
     const portalAppTags = [...portalAppOrdered, ...portalAppExtra].map(f => `js/portal/${f}`);
-    const expectedOrderP = ['js/data/ui.js', 'js/data/catalog.js', 'js/data/style.js', ...scenarioTagsP, ...portalDataTags, ...portalAppTags];
+    /* rev4（docs/handoff/2026-09-12-portal-industry-rev4.md §5-3）：portal.html は
+       js/data/home.js を読むようになった（ログイン中の人＝FEED[業種].persona の正本）。 */
+    const expectedOrderP = ['js/data/ui.js', 'js/data/catalog.js', 'js/data/home.js', 'js/data/style.js', ...scenarioTagsP, ...portalDataTags, ...portalAppTags];
 
     if (JSON.stringify(portal.scriptSrcs) !== JSON.stringify(expectedOrderP)) {
       fail(`portal.html の <script src> の順序が期待と異なる:\n   期待: ${expectedOrderP.join(' → ')}\n   実際: ${portal.scriptSrcs.join(' → ')}`);
@@ -1365,9 +1367,11 @@ section('17. 部門ポータル（mock/portal.html）契約');
     else ok(`portal.css の var() 参照 ${usedTokensP.size} 件すべて tokens.css で定義済み`);
 
     /* 17-e: PT と js/data/portal/** に現れる {ja:…} 形のオブジェクトがすべて 3 言語 */
+    /* rev4（docs/handoff/2026-09-12-portal-industry-rev4.md §14-1 17-e）：PCOMPANY を追加
+       （PPART/PQUAL/PORDER/PCRED/PREG は PR-C・PR-D で追加、PCUST は PR-C で PPART に改名予定）。 */
     const PORTAL_ONLY_KEYS = [
       'PT', 'PGRP', 'PSCREENS', 'PHOW', 'PHOWLONG', 'PST',
-      'PSVC', 'POUT', 'PNEW', 'PSTAGE_AI', 'PORG',
+      'PSVC', 'POUT', 'PNEW', 'PSTAGE_AI', 'PORG', 'PCOMPANY',
       'PSTAGE', 'PDEALS', 'PCUST', 'PCONTACT', 'PHIST', 'PNEWS', 'PVENDOR',
       'PACT', 'PCAND', 'PMEET', 'PKNOW', 'PKNOWACT',
       'PPEOPLE', 'PATT', 'PKPI', 'PKPITOPIC', 'PSRC', 'PGOAL', 'PQTR', 'PCUR_Q',
@@ -1557,6 +1561,141 @@ section('17. 部門ポータル（mock/portal.html）契約');
       }
       if (!bad17m) ok(`PSCREENS[].ind/lbl が §3-1 の形を満たし、全 ${(portal.data.PSCREENS || []).length} 画面の V[id] が js/portal/render.js に定義されている`);
       bad17 += bad17m;
+    }
+
+    /* 17-n（新・PR-B・rev4）: 業種別の行データ定数（{mfg,fin,it} の形をしたもの）は、
+       PSCREENS でその業種に見える画面の定数はその業種のキーを持ち、配列ならその長さが 1 以上。
+       見えない業種のキーは無くてよい（PSYS に fin が無いのは正）。
+       （設計書 docs/handoff/2026-09-12-portal-industry-rev4.md §7-1・§14-1） */
+    {
+      let bad17n = 0;
+      const screenIndOf17n = (id) => {
+        const s = (portal.data.PSCREENS || []).find(x => x.id === id);
+        return (s && s.ind) || [...industryIds];
+      };
+      const ROW_CONSTS_17n = [
+        { name: 'PNEWS', screen: 'watch', get: d => d.PNEWS },
+        { name: 'PVENDOR', screen: 'vend', get: d => d.PVENDOR },
+        { name: 'PACT', screen: 'act', get: d => d.PACT },
+        { name: 'PCAND', screen: 'act', get: d => d.PCAND },
+        { name: 'PMEET', screen: 'meet', get: d => d.PMEET },
+        { name: 'PPEOPLE', screen: 'ppl', get: d => d.PPEOPLE },
+        { name: 'PATT', screen: 'ppl', get: d => d.PATT },
+        { name: 'PKPI', screen: 'ppl', get: d => d.PKPI },
+        { name: 'PGOAL.mine', screen: 'goal', get: d => d.PGOAL && d.PGOAL.mine },
+        { name: 'PGOAL.team', screen: 'goal', get: d => d.PGOAL && d.PGOAL.team },
+        { name: 'PEXP', screen: 'exp', get: d => d.PEXP },
+        { name: 'PREQ', screen: 'req', get: d => d.PREQ },
+        { name: 'PTRAIN', screen: 'trn', get: d => d.PTRAIN },
+        { name: 'PMYTRAIN', screen: 'trn', get: d => d.PMYTRAIN },
+        { name: 'PMYITEM', screen: 'trn', get: d => d.PMYITEM },
+        { name: 'PMYSURVEY', screen: 'trn', get: d => d.PMYSURVEY },
+        { name: 'PSURVEY', screen: 'trn', get: d => d.PSURVEY },
+        { name: 'PSYS', screen: 'sys', get: d => d.PSYS },
+        { name: 'PSYSEV', screen: 'sys', get: d => d.PSYSEV },
+        { name: 'PSYSST', screen: 'sys', get: d => d.PSYSST }
+      ];
+      for (const c of ROW_CONSTS_17n) {
+        const obj = c.get(portal.data);
+        if (!obj || typeof obj !== 'object' || Array.isArray(obj)) { fail(`${c.name}: { mfg, fin, it } の形が見つからない`); bad17n++; continue; }
+        for (const ind of screenIndOf17n(c.screen)) {
+          const v = obj[ind];
+          if (v === undefined) { fail(`${c.name}.${ind}: PSCREENS.${c.screen} が業種 "${ind}" で見えるのにキーが無い`); bad17n++; continue; }
+          if (Array.isArray(v) && !v.length) { fail(`${c.name}.${ind}: 配列の長さが 0`); bad17n++; }
+        }
+      }
+      if (!bad17n) ok(`業種別の行データ定数 ${ROW_CONSTS_17n.length} 件が、PSCREENS で見える画面の業種キーを持つ`);
+      bad17 += bad17n;
+    }
+
+    /* 17-o（新・PR-B・rev4）: PCOMPANY のキーが INDUSTRIES の id と過不足なく一致し、
+       各業種に av（2 文字）・fy・site（3 言語）・scope（3 言語）・staleBefore（YYYY-MM-DD）がある。
+       mock/js/data/home.js の FEED[業種].persona が 3 業種とも存在する
+       （設計書 docs/handoff/2026-09-12-portal-industry-rev4.md §5-2・§14-1） */
+    {
+      let bad17o = 0;
+      const pcompany = portal.data.PCOMPANY;
+      if (!pcompany) { fail('PCOMPANY が無い'); bad17o++; }
+      else {
+        const keys17o = Object.keys(pcompany);
+        const missing17o = [...industryIds].filter(i => !keys17o.includes(i));
+        const extra17o = keys17o.filter(k => !industryIds.has(k));
+        if (missing17o.length) { fail(`PCOMPANY にキーが無い: ${missing17o.join(', ')}`); bad17o++; }
+        if (extra17o.length) { fail(`PCOMPANY に INDUSTRIES に無いキーがある: ${extra17o.join(', ')}`); bad17o++; }
+        for (const ind of keys17o) {
+          if (!industryIds.has(ind)) continue;
+          const c = pcompany[ind] || {};
+          if (typeof c.av !== 'string' || c.av.length !== 2) { fail(`PCOMPANY.${ind}.av が 2 文字でない: "${c.av}"`); bad17o++; }
+          if (typeof c.fy !== 'string' || !c.fy) { fail(`PCOMPANY.${ind}.fy が無い`); bad17o++; }
+          for (const l of LANGS) {
+            if (!c.site || typeof c.site[l] !== 'string' || !c.site[l].trim()) { fail(`PCOMPANY.${ind}.site.${l} が欠落/空`); bad17o++; }
+            if (!c.scope || typeof c.scope[l] !== 'string' || !c.scope[l].trim()) { fail(`PCOMPANY.${ind}.scope.${l} が欠落/空`); bad17o++; }
+          }
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(c.staleBefore || '')) { fail(`PCOMPANY.${ind}.staleBefore が YYYY-MM-DD でない: "${c.staleBefore}"`); bad17o++; }
+        }
+      }
+      const feedForPortal = FEED || {};
+      const missingFeed17o = [...industryIds].filter(i => !(feedForPortal[i] && feedForPortal[i].persona));
+      if (missingFeed17o.length) { fail(`mock/js/data/home.js の FEED[業種].persona が無い: ${missingFeed17o.join(', ')}`); bad17o++; }
+      if (!bad17o) ok(`PCOMPANY（${Object.keys(pcompany || {}).length} 業種）が §5-2 の形を満たし、FEED[業種].persona が ${industryIds.size} 業種とも存在する`);
+      bad17 += bad17o;
+    }
+
+    /* 17-p（新・PR-B・rev4）: 世界の混ざりの検出。mock/js/data/portal/** の { mfg, fin, it } の
+       形をした値のうち .mfg の中に他業種の社名・（IT を除く他業種の）拠点略称が現れない／
+       .fin も同様（.it は data/world/it/clients.csv の ref_world の例外があるので検査しない）。
+       社名は INDUSTRIES[].wordmark.ja、拠点略称は PCOMPANY[].site.ja の「／」より前から取り、
+       tools に業種をハードコードしない（#251）。
+       （設計書 docs/handoff/2026-09-12-portal-industry-rev4.md §2-4・§14-1） */
+    {
+      let bad17p = 0;
+      const isIndustrySplit17p = (v) => v && typeof v === 'object' && !Array.isArray(v) &&
+        Object.keys(v).length > 0 && Object.keys(v).every(k => industryIds.has(k));
+      const collectStrings17p = (v, arr) => {
+        if (v == null) return;
+        if (typeof v === 'string') { arr.push(v); return; }
+        if (Array.isArray(v)) { v.forEach(x => collectStrings17p(x, arr)); return; }
+        if (typeof v === 'object') { for (const k of Object.keys(v)) collectStrings17p(v[k], arr); }
+      };
+      const mixBuckets17p = {};
+      for (const ind of industryIds) mixBuckets17p[ind] = [];
+      const walk17p = (v) => {
+        if (v == null || typeof v !== 'object') return;
+        if (!Array.isArray(v) && isIndustrySplit17p(v)) {
+          for (const k of Object.keys(v)) collectStrings17p(v[k], mixBuckets17p[k]);
+          return;
+        }
+        if (Array.isArray(v)) { v.forEach(walk17p); return; }
+        for (const k of Object.keys(v)) walk17p(v[k]);
+      };
+      for (const key of PORTAL_ONLY_KEYS) walk17p(portal.data[key]);
+
+      const wordmarkJa17p = (id) => { const i = (INDUSTRIES || []).find(x => x.id === id); return i && i.wordmark && i.wordmark.ja; };
+      const siteShortJa17p = (id) => {
+        const c = portal.data.PCOMPANY && portal.data.PCOMPANY[id];
+        const ja = c && c.site && c.site.ja;
+        return ja ? ja.split('／')[0].trim() : null;
+      };
+      /* 検査対象は mfg / fin のみ（it は ref_world の例外があるので検査しない）。
+         禁止語：他業種の社名（両方）＋ IT を除く他業種の拠点略称（IT の拠点は「上海」で
+         一般名詞的すぎ、正規のログの文中にも現れうるため検査対象にしない）。 */
+      const checks17p = [...industryIds].filter(id => id !== 'it').map(ind => {
+        const others = [...industryIds].filter(o => o !== ind);
+        const forbidden = [...new Set([
+          ...others.map(wordmarkJa17p).filter(Boolean),
+          ...others.filter(o => o !== 'it').map(siteShortJa17p).filter(Boolean)
+        ])];
+        return { ind, forbidden };
+      });
+      for (const { ind, forbidden } of checks17p) {
+        const bucket = mixBuckets17p[ind] || [];
+        for (const word of forbidden) {
+          const hit = bucket.find(s => typeof s === 'string' && s.includes(word));
+          if (hit) { fail(`mock/js/data/portal/** の .${ind} に他業種の語「${word}」が混ざっている: "${hit}"`); bad17p++; }
+        }
+      }
+      if (!bad17p) ok('mock/js/data/portal/** の .mfg / .fin に他業種の社名・拠点が混ざっていない（.it は ref_world の例外につき対象外）');
+      bad17 += bad17p;
     }
 
     if (portal.vmErrors.length) { for (const e of portal.vmErrors) { fail(`portal js/data/**: ${e}`); bad17++; } }

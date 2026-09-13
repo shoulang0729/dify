@@ -12,10 +12,21 @@ document.addEventListener('click', (e) => {
 
   const ib = e.target.closest('#indSw .chip');
   if (ib) {
+    /* 業種チップ（rev4 §4-3。規則 2 の撤回）。会社・部門・拠点・ログイン中の人・ナビ・全画面が
+       まとめて替わる（AC-16）。絞り込みは他業種の行 id を指しているため初期化する（§4-2）。 */
     pstate.ind = ib.dataset.ind;
     document.querySelectorAll('#indSw .chip').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.ind === pstate.ind)));
-    const sc = document.getElementById('scr-ai');
-    if (sc) { sc.innerHTML = V.ai(); classifyBlocks(); }
+    pstate.pipeCu = ''; pstate.pipeTeam = '';
+    pstate.dealSort = { key: 'sg', dir: 'asc' };
+    pstate.dealF = { cu: '', ow: '', sg: '', rag: '' };
+    pstate.cuFilter = '';
+    pstate.kindFilter = '';
+    pstate.sysScope = 'all'; pstate.sysCu = ''; pstate.sysSt = '';
+    const scrDef = PSCREENS.find(s => s.id === pstate.scr);
+    if (scrDef && !pscreenVisible(scrDef)) pstate.scr = 'home';
+    renderIdentity();
+    renderAll();
+    renderNowSw();
     return;
   }
 
@@ -24,10 +35,13 @@ document.addEventListener('click', (e) => {
 
   const cb = e.target.closest('[data-cand]');
   if (cb) {
-    const c = pstate.cand.find(x => x.id === cb.dataset.cand); if (!c) return;
+    const c = pstate.cand[pstate.ind].find(x => x.id === cb.dataset.cand); if (!c) return;
     const want = cb.dataset.act2;
     if (c.state === want) { c.state = 'new'; c.no = ''; }
-    else { c.state = want; if (want === 'ok' && !c.no) { pstate.candSeq += 1; c.no = 'A-0' + pstate.candSeq; } }
+    else {
+      c.state = want;
+      if (want === 'ok' && !c.no) { pstate.candSeq[pstate.ind] += 1; c.no = 'A-0' + pstate.candSeq[pstate.ind]; }
+    }
     renderCandList(); return;
   }
 

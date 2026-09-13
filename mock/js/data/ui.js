@@ -150,7 +150,11 @@ const INDUSTRIES = [
     name:     { ja: '製造',   zh: '制造',   en: 'Manufacturing' },
     desc:     { ja: '在中日系製造業（中国工場）', zh: '在华日资制造业（中国工厂）', en: 'Japanese-affiliated manufacturer in China' },
     wordmark: { ja: '青嶺精工', zh: '青岭精工', en: 'SEIREI SEIKO' },
-    dept:     { ja: '情報システム部', zh: '信息系统部', en: 'IT Department' } },
+    /* dept は 2026-09-12 に PM 判断で「情報システム部」→「製造二課」へ是正
+       （data/world/mfg/org.csv に情報システム部は存在せず、seizo2＝製造二課が実在する。
+       FEED.mfg.persona〔李 強／製造二課 課長〕の所属と一致させる。
+       設計書 docs/handoff/2026-09-12-portal-industry-rev4.md §5-1） */
+    dept:     { ja: '製造二課', zh: '制造二科', en: 'Manufacturing Section 2' } },
   { id: 'fin',
     name:     { ja: '金融', zh: '金融', en: 'Finance' },
     desc:     { ja: '在中日系銀行（中国拠点）', zh: '在华日资银行（中国网点）', en: 'Japanese-affiliated bank in China' },

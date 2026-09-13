@@ -91,16 +91,21 @@ export function loadMock(ROOT) {
  * （verify.mjs §17）はこれで節ごと skip する（§16 と同じ作法）。
  */
 const PORTAL_DATA_KEYS = [
-  // 共有データ層（catalog と同じ。js/data/ui.js・catalog.js・style.js）
-  'T', 'PATTERNS', 'TAGS', 'TEMPLATES', 'INDUSTRIES', 'CATS', 'SVCS', 'CAT_STYLE',
+  // 共有データ層（catalog と同じ。js/data/ui.js・catalog.js・home.js・style.js）
+  // FEED は rev4（docs/handoff/2026-09-12-portal-industry-rev4.md §5-3）で portal.html が
+  // js/data/home.js を読むようになったため追加（ログイン中の人＝FEED[業種].persona の正本）。
+  'T', 'PATTERNS', 'TAGS', 'TEMPLATES', 'INDUSTRIES', 'CATS', 'SVCS', 'CAT_STYLE', 'FEED',
   // ポータル固有データ層（js/data/portal/**）
+  // PCOMPANY は rev4 §5-2（org.js）で新設。PSYS/PSYSEV/PSYSST/PSYSNOW は sysops-usecase（sys.js）で
+  // 既に存在していたが、この読み出しリストに漏れていたため rev4 で合わせて足す。
   'PT', 'PGRP', 'PSCREENS', 'PHOW', 'PHOWLONG', 'PST',
   'PSVC', 'POUT', 'PNEW', 'PSTAGE_AI', 'PCTXDEF',
-  'PORG', 'PWORLD',
+  'PORG', 'PCOMPANY', 'PWORLD',
   'PSTAGE', 'PDEALS', 'PCUST', 'PCONTACT', 'PHIST', 'PNEWS', 'PVENDOR',
   'PACT', 'PCAND', 'PMEET', 'PKNOW', 'PKNOWACT',
   'PPEOPLE', 'PATT', 'PKPI', 'PKPITOPIC', 'PSRC', 'PGOAL', 'PQTR', 'PCUR_Q',
-  'PEXP', 'PREQ', 'PTRAIN', 'PMYTRAIN', 'PMYITEM', 'PTODO_STATE', 'PSURVEY', 'PMYSURVEY'
+  'PEXP', 'PREQ', 'PTRAIN', 'PMYTRAIN', 'PMYITEM', 'PTODO_STATE', 'PSURVEY', 'PMYSURVEY',
+  'PSYS', 'PSYSEV', 'PSYSST', 'PSYSNOW'
 ];
 
 export function loadPortal(ROOT) {

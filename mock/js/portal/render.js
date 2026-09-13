@@ -64,7 +64,7 @@ V.home = () => `
   <section class="block">
    <header><h2>期限超過 To Do</h2><span class="sub">自分と配下</span></header>
    <div class="body"><ul class="list">
-    ${PACT.filter(a => a[5].startsWith('超過')).map(a => '<li><span class="k">' + a[0] + '</span><div><b>' + a[2] + '</b><span class="m">' + a[3] + ' ／ 期限 ' + a[4] + '</span></div><span style="flex:1 1 auto"></span><span class="due">' + a[5] + '</span></li>').join('')}
+    ${pd(PACT).filter(a => a[5].startsWith('超過')).map(a => '<li><span class="k">' + a[0] + '</span><div><b>' + a[2] + '</b><span class="m">' + a[3] + ' ／ 期限 ' + a[4] + '</span></div><span style="flex:1 1 auto"></span><span class="due">' + a[5] + '</span></li>').join('')}
    </ul></div>
   </section>
 
@@ -310,7 +310,7 @@ V.act = () => `
   <header><h2>Action</h2><span class="sub">5 件（超過 2）</span></header>
   <div class="body flush">
   ${ptbl([{t:'Action'},{t:'案件'},{t:'担当'},{t:'期限'},{t:'残'},{t:'優先'},{t:'この行で使う AI'}],
-    PACT.map(a => '<tr><td><b>' + a[2] + '</b><span class="m">' + a[0] + '</span></td><td>' + a[1] + '</td><td>' + a[3] + '</td>' +
+    pd(PACT).map(a => '<tr><td><b>' + a[2] + '</b><span class="m">' + a[0] + '</span></td><td>' + a[1] + '</td><td>' + a[3] + '</td>' +
       '<td>' + a[4] + '</td><td>' + (a[5].startsWith('超過') ? '<span class="due">' + a[5] + '</span>' : a[5]) + '</td>' +
       '<td>' + a[6] + '</td><td>' + prowAi(['lg4', 'gn5']) + '</td></tr>').join(''))}
   </div>
@@ -338,7 +338,7 @@ V.act = () => `
 /* ---------- システム稼働状況（sysops-usecase PR-4。設計書 §6） ---------- */
 /** 状態チップ（.rag。lv=g/y/r/n の 4 色だけ。7 状態はラベルの文字で区別する。§6-3） */
 function pSysChip(state) {
-  const st = PSYSST[state];
+  const st = pd(PSYSST)[state];
   return '<span class="rag ' + st.lv + '">' + pesc(PL(st)) + '</span>';
 }
 V.sys = () => {
@@ -395,7 +395,7 @@ V.sys = () => {
     </select>
     <select class="selctl" data-act="sysf" data-key="st">
      <option value="">状態（すべて）</option>
-     ${Object.keys(PSYSST).map(k => '<option value="' + k + '"' + (pstate.sysSt === k ? ' selected' : '') + '>' + pesc(PL(PSYSST[k])) + '</option>').join('')}
+     ${Object.keys(pd(PSYSST)).map(k => '<option value="' + k + '"' + (pstate.sysSt === k ? ' selected' : '') + '>' + pesc(PL(pd(PSYSST)[k])) + '</option>').join('')}
     </select>
    </div>
    <div class="tiles" style="margin-top:12px">
@@ -431,7 +431,7 @@ V.sys = () => {
 };
 
 V.ppl = () => {
-  const attRows = PATT.map(a => {
+  const attRows = pd(PATT).map(a => {
     const rate = a[5] / a[4] * 100, low = rate < 30;
     return '<tr><td class="nw"><b>' + a[0] + '</b></td><td class="nw">' + a[1] + '</td>' +
       '<td class="num">' + a[2] + '</td>' +
@@ -442,7 +442,7 @@ V.ppl = () => {
       '<td>' + (a[6] ? a[6] : '<span class="m">—</span>') + '</td></tr>';
   }).join('');
 
-  const trRows = PTRAIN.map(t => {
+  const trRows = pd(PTRAIN).map(t => {
     const pct = t[2] / 5 * 100;
     return '<tr><td class="nw">' + t[0] + '</td><td><b>' + t[1] + '</b></td>' +
       '<td style="min-width:120px"><span class="bar"><i style="background:' +
@@ -458,7 +458,7 @@ V.ppl = () => {
   <header><h2>稼働</h2><span class="sub">5 名</span></header>
   <div class="body flush">
   ${ptbl([{t:'氏名'},{t:'Role'},{t:'担当案件'},{t:'稼働',n:1},{t:'Skill'}],
-    PPEOPLE.map(p => '<tr><td class="nw"><b>' + p[0] + '</b></td><td class="nw">' + p[1] + '</td><td>' + p[2] + '</td>' +
+    pd(PPEOPLE).map(p => '<tr><td class="nw"><b>' + p[0] + '</b></td><td class="nw">' + p[1] + '</td><td>' + p[2] + '</td>' +
       '<td class="num">' + p[3] + '%</td><td>' + p[4] + '</td></tr>').join(''))}
   </div>
  </section>
@@ -482,7 +482,7 @@ V.ppl = () => {
    <span class="sub">個人に割り当てられる指標だけを置く</span></header>
   <div class="body flush">
   ${ptbl([{t:'氏名'},{t:'必須研修',n:1},{t:'サーベイ回答',n:1},{t:'期限超過 To Do',n:1},{t:'担当案件の納期遵守',n:1},{t:'年休取得',n:1}],
-    PKPI.map(k => {
+    pd(PKPI).map(k => {
       const c = (v, lim) => v < lim ? '<span class="due">' + v + '%</span>' : v + '%';
       return '<tr><td class="nw"><b>' + k[0] + '</b></td>' +
         '<td class="num">' + c(k[1], 100) + '</td>' +
@@ -534,7 +534,8 @@ V.trn = () => {
     st === '受講中' ? '<span class="st st2">受講中</span>' :
     st === '推奨' ? '<span class="st stn">推奨</span>' :
     '<span class="st st1">' + st + '</span>';
-  const rows = PMYITEM.map(m =>
+  const myItems = pd(PMYITEM);
+  const rows = myItems.map(m =>
     '<tr data-kind="' + m[0] + '"><td class="nw">' + m[0] + '</td>' +
     '<td><b>' + m[1] + '</b></td>' +
     '<td class="nw">' + badge(m[2]) + '</td>' +
@@ -542,15 +543,15 @@ V.trn = () => {
     '<td>' + (m[4] ? m[4] : '<span class="m">—</span>') + '</td>' +
     '<td class="nw">' + (m[5] ? '<span class="no">' + m[5] + '</span>' : '<span class="m">—</span>') + '</td>' +
     '<td>' + (PTODO_STATE.includes(m[2]) ? prowAi(m[0] === 'サーベイ' ? ['po1'] : ['pt8']) : '<span class="m">—</span>') + '</td></tr>').join('');
-  const todo = PMYITEM.filter(m => PTODO_STATE.includes(m[2])).length;
-  const done = PMYITEM.filter(m => m[2] === '受講済' || m[2] === '回答済').length;
-  const reco = PMYITEM.filter(m => m[2] === '推奨').length;
+  const todo = myItems.filter(m => PTODO_STATE.includes(m[2])).length;
+  const done = myItems.filter(m => m[2] === '受講済' || m[2] === '回答済').length;
+  const reco = myItems.filter(m => m[2] === '推奨').length;
 
   return `
 <div class="grid">
 <div class="grid g-main">
  <section class="block">
-  <header><h2>自分の研修・サーベイ</h2><span class="sub" id="trnCount">${PMYITEM.length} 件</span><span class="sp"></span>
+  <header><h2>自分の研修・サーベイ</h2><span class="sub" id="trnCount">${myItems.length} 件</span><span class="sp"></span>
    <span class="chips" id="kindChips">
     <button class="chip" type="button" data-kind="" aria-pressed="true">すべて</button>
     <button class="chip" type="button" data-kind="必須研修">必須研修</button>
@@ -593,7 +594,7 @@ V.trn = () => {
    <span class="sub">回収率 60% 未満は赤</span></header>
   <div class="body flush">
   ${ptbl([{t:'種類'},{t:'頻度'},{t:'対象'},{t:'回収率'},{t:'回収',n:1},{t:'つながる KPI'},{t:'この行で使う AI'}],
-    PSURVEY.map(v => {
+    pd(PSURVEY).map(v => {
       const low = v[4] < 60;
       return '<tr><td class="nw"><span class="no">' + v[0] + '</span> <b>' + v[1] + '</b></td>' +
         '<td class="nw">' + v[2] + '</td><td class="nw">' + v[3] + '</td>' +
@@ -633,7 +634,7 @@ V.meet = () => `
   <header><h2>会議</h2><span class="sub">4 件</span></header>
   <div class="body flush">
   ${ptbl([{t:'会議'},{t:'日付'},{t:'出席'},{t:'議事録'},{t:'この行で使う AI'}],
-    PMEET.map(m => '<tr><td><b>' + m[1] + '</b><span class="m">' + m[0] + '</span></td><td>' + m[2] + '</td><td>' + m[3] + '</td>' +
+    pd(PMEET).map(m => '<tr><td><b>' + m[1] + '</b><span class="m">' + m[0] + '</span></td><td>' + m[2] + '</td><td>' + m[3] + '</td>' +
       '<td>' + (m[4].includes('未') ? '<span class="due">' + m[4] + '</span>' : m[4]) + '</td>' +
       '<td>' + prowAi(m[1].includes('来訪') ? ['gn7', 'gn4'] : ['dc2', 'gn4']) + '</td></tr>').join(''))}
   </div>
@@ -918,8 +919,9 @@ V.kpi = () => {
 };
 
 V.goal = () => {
-  const wsum = PGOAL.mine.reduce((a, g) => a + g[7], 0);
-  const rate = Math.round(PGOAL.mine.reduce((a, g) => {
+  const myGoals = pd(PGOAL.mine), teamGoals = pd(PGOAL.team);
+  const wsum = myGoals.reduce((a, g) => a + g[7], 0);
+  const rate = Math.round(myGoals.reduce((a, g) => {
     const t = parseFloat(g[3]), v = parseFloat(g[4]);
     return a + Math.min(v / t, 1) * g[7];
   }, 0));
@@ -945,7 +947,7 @@ V.goal = () => {
   </div>
   <div class="body flush">
   ${ptbl([{t:'番号'},{t:'観点'},{t:'目標'},{t:'目標値'},{t:'実績'},{t:'測り方'},{t:'期限'},{t:'ウェイト',n:1},{t:'進捗'}],
-    PGOAL.mine.map(g => {
+    myGoals.map(g => {
       const t0 = parseFloat(g[3]), v = parseFloat(g[4]), pc = Math.min(Math.round(v / t0 * 100), 100);
       return '<tr><td class="nw"><span class="no">' + g[0] + '</span></td>' +
         '<td class="nw">' + g[1] + '</td><td><b>' + g[2] + '</b></td>' +
@@ -979,7 +981,7 @@ V.goal = () => {
    <span class="sub">社員にはこの表は出ません</span></header>
   <div class="body flush">
   ${ptbl([{t:'氏名'},{t:'役割'},{t:'目標',n:1},{t:'設定'},{t:'設定日'},{t:'達成率',n:1},{t:'状況'},{t:'この行で使う AI'}],
-    PGOAL.team.map(m => '<tr><td class="nw"><b>' + m[0] + '</b></td><td class="nw">' + m[1] + '</td>' +
+    teamGoals.map(m => '<tr><td class="nw"><b>' + m[0] + '</b></td><td class="nw">' + m[1] + '</td>' +
       '<td class="num">' + m[2] + '</td>' +
       '<td class="nw"><span class="st st1">' + m[3] + '</span></td><td class="nw">' + m[4] + '</td>' +
       '<td style="min-width:110px"><span class="bar"><i style="background:' + (m[5] < 70 ? 'var(--rag-y)' : 'var(--action-primary)') + ';width:' + m[5] + '%"></i></span> ' +
@@ -1021,7 +1023,7 @@ V.exp = () => `
   <header><h2>自分の精算</h2><span class="sub">3 件（差戻し 1）</span></header>
   <div class="body flush">
   ${ptbl([{t:'番号'},{t:'内容'},{t:'申請者'},{t:'金額',n:1},{t:'状態'},{t:'指摘'},{t:'この行で使う AI'}],
-    PEXP.map(e => '<tr><td class="nw"><span class="no">' + e[0] + '</span></td><td><b>' + e[1] + '</b></td>' +
+    pd(PEXP).map(e => '<tr><td class="nw"><span class="no">' + e[0] + '</span></td><td><b>' + e[1] + '</b></td>' +
       '<td class="nw">' + e[2] + '</td><td class="num">' + e[3] + '</td>' +
       '<td class="nw">' + (e[4] === '差戻し' ? '<span class="due">差戻し</span>' : e[4] === '承認待ち' ? '<span class="st st2">承認待ち</span>' : '<span class="st st1">精算済</span>') + '</td>' +
       '<td>' + (e[5] === '—' ? '<span class="m">—</span>' : e[5]) + '</td>' +
@@ -1071,7 +1073,7 @@ V.req = () => `
   <header><h2>申請</h2><span class="sub">4 件（自分の承認待ち 1）</span></header>
   <div class="body flush">
   ${ptbl([{t:'番号'},{t:'種類'},{t:'件名'},{t:'申請者'},{t:'状態'},{t:'期限'},{t:'この行で使う AI'}],
-    PREQ.map(r => '<tr><td class="nw"><span class="no">' + r[0] + '</span></td><td class="nw">' + r[1] + '</td>' +
+    pd(PREQ).map(r => '<tr><td class="nw"><span class="no">' + r[0] + '</span></td><td class="nw">' + r[1] + '</td>' +
       '<td><b>' + r[2] + '</b></td><td class="nw">' + r[3] + '</td>' +
       '<td class="nw">' + (r[4] === '記載不備' ? '<span class="due">記載不備</span>' : r[4] === '承認済' ? '<span class="st st1">承認済</span>' : '<span class="st st2">' + r[4] + '</span>') + '</td>' +
       '<td class="nw">' + r[5] + '</td>' +
@@ -1100,7 +1102,7 @@ V.watch = () => `
    <span class="sub">案件に効くものは印を付ける</span></header>
   <div class="body flush">
   ${ptbl([{t:'対象'},{t:'区分'},{t:'見出し'},{t:'日付'},{t:'効く先'},{t:'この行で使う AI'}],
-    PNEWS.map(n => '<tr><td class="nw"><b>' + n[0] + '</b></td><td class="nw">' + n[1] + '</td>' +
+    pd(PNEWS).map(n => '<tr><td class="nw"><b>' + n[0] + '</b></td><td class="nw">' + n[1] + '</td>' +
       '<td>' + n[2] + '</td><td class="nw">' + n[3] + '</td>' +
       '<td>' + (n[4] === '—' ? '<span class="m">—</span>' : '<b>' + n[4] + '</b>') + '</td>' +
       '<td>' + prowAi(['gn5', 'rs3']) + '</td></tr>').join(''))}
@@ -1127,7 +1129,7 @@ V.vend = () => `
    <span class="sub">与信の状態と契約期限</span></header>
   <div class="body flush">
   ${ptbl([{t:'会社'},{t:'区分'},{t:'常駐'},{t:'関わる案件'},{t:'与信'},{t:'契約期限'},{t:'この行で使う AI'}],
-    PVENDOR.map(v => '<tr><td class="nw"><b>' + v[0] + '</b></td><td class="nw">' + v[1] + '</td>' +
+    pd(PVENDOR).map(v => '<tr><td class="nw"><b>' + v[0] + '</b></td><td class="nw">' + v[1] + '</td>' +
       '<td class="nw">' + v[2] + '</td><td class="nw">' + v[3] + '</td>' +
       '<td class="nw">' + (v[4] === '注意' ? '<span class="due">注意</span>' : '<span class="st st1">良</span>') + '</td>' +
       '<td class="nw">' + v[5] + '</td>' +
@@ -1269,11 +1271,11 @@ function showScreen(id) {
   document.querySelectorAll('.navbtn').forEach(b => {
     if (b.dataset.scr === id) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
-  // 業種別のラベル上書き（PSCREENS[].lbl。rev4 §3-1・§10-1）。会社名・部門名（org）の置き換えは PR-B（§5-3）
+  // 業種別のラベル上書き（PSCREENS[].lbl。rev4 §3-1・§10-1）。会社名・部門名（org）の置き換えは renderIdentity()（§5-3）
   const scrDef = PSCREENS.find(s => s.id === id);
   const labelKey = scrDef ? pscreenLabelKey(scrDef) : id;
   document.getElementById('ttl').textContent = pt(labelKey);
-  document.getElementById('crumb').textContent = pt('org').split(' ')[0] + ' ' + pt('brand') + ' ／ ' + pt(labelKey);
+  document.getElementById('crumb').textContent = PL(INDUSTRIES.find(i => i.id === pstate.ind).wordmark) + ' ' + pt('brand') + ' ／ ' + pt(labelKey);
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
@@ -1365,7 +1367,8 @@ function renderDealList() {
 /* ---------- 候補の描画 ---------- */
 function renderCandList() {
   const host = document.getElementById('candList'); if (!host) return;
-  host.innerHTML = pstate.cand.map(c => {
+  const cand = pstate.cand[pstate.ind];
+  host.innerHTML = cand.map(c => {
     const cls = c.state === 'ok' ? 'cand-row done' : c.state === 'ng' ? 'cand-row ng' : 'cand-row';
     const tag = c.state === 'ok' ? '<span class="st st1">採用</span>' :
                 c.state === 'ng' ? '<span class="st st3">見送り</span>' : '<span class="k">候補</span>';
@@ -1378,8 +1381,8 @@ function renderCandList() {
       '<button class="ng" type="button" data-cand="' + c.id + '" data-act2="ng" aria-pressed="' + (c.state === 'ng') + '">見送り</button>' +
       '</span></li>';
   }).join('');
-  const n = pstate.cand.filter(c => c.state === 'new').length;
-  const ok = pstate.cand.filter(c => c.state === 'ok').length;
+  const n = cand.filter(c => c.state === 'new').length;
+  const ok = cand.filter(c => c.state === 'ok').length;
   const lbl = document.getElementById('candCount');
   if (lbl) lbl.textContent = '未確認 ' + n + ' 件' + (ok ? ' ／ 採用 ' + ok + ' 件' : '');
 }
@@ -1506,6 +1509,21 @@ function paintThemeIcon() {
   if (path) path.setAttribute('d', dark ? P_SUN : P_MOON);
 }
 
+/* ---------- 会社・部門・拠点・ログイン中の人（rev4 §5-3。新設）----------
+   会社名・部門名は INDUSTRIES[pstate.ind].wordmark/dept、拠点・閲覧範囲・アバターは
+   PCOMPANY[pstate.ind]、ログイン中の利用者は mock/js/data/home.js の FEED[pstate.ind].persona
+   が正本（二重に持たない）。業種チップを切り替えるたびに呼ぶ（events.js）。 */
+function renderIdentity() {
+  const ind = INDUSTRIES.find(i => i.id === pstate.ind);
+  const co = PCOMPANY[pstate.ind];
+  const persona = FEED[pstate.ind].persona;
+  document.getElementById('brandOrg').textContent = PL(ind.wordmark) + ' ' + PL(ind.dept);
+  document.getElementById('brandSite').textContent = PL(co.site);
+  document.getElementById('avatar').textContent = co.av;
+  document.getElementById('whoName').textContent = PL(persona.name);
+  document.getElementById('whoRole').textContent = PL(persona.role) + ' ／ ' + PL(co.scope);
+}
+
 /* ---------- 全体再描画 ---------- */
 function applyPortalPrefs() {
   const root = document.documentElement;
@@ -1513,11 +1531,7 @@ function applyPortalPrefs() {
   root.setAttribute('data-lang', pstate.lang);
   root.setAttribute('lang', pstate.lang);
   document.getElementById('brandName').textContent = pt('brand');
-  document.getElementById('brandOrg').textContent = pt('org');
-  document.getElementById('brandSite').textContent = pt('site');
-  document.getElementById('whoRole').textContent = pt('role');
-  document.getElementById('whoName').textContent = PORG.persona.name;
-  document.getElementById('avatar').textContent = PORG.persona.avatar;
+  renderIdentity();
   document.getElementById('prodLbl').textContent = pt('prod');
   document.getElementById('themeBtn').setAttribute('aria-label', pt('theme'));
   document.getElementById('envchip').textContent = pstate.prod ? pt('envOn') : pt('env');
