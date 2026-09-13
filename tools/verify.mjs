@@ -82,7 +82,11 @@
  *        data/world/it/clients.csv の ref_world と矛盾しない／
  *        17-l（PR-3）js/portal/demo.js に pstate.ind の参照が無い（§14-4 規則 3）。
  *        pscreenAiIds/pcrossAiIds の本体に industries の参照が無い（§14-2 規則 1）
- *        （設計書 docs/handoff/2026-09-11-portal-mock-pages.md §9-2・§14-9）
+ *        （設計書 docs/handoff/2026-09-11-portal-mock-pages.md §9-2・§14-9）。
+ *        17-m（新・PR-A・rev4）PSCREENS[].ind の値が INDUSTRIES の id のみ／省略＝全業種／
+ *        home と ai はすべての業種で見える／PSCREENS[].id ごとに V[id] が js/portal/render.js に
+ *        定義されている／lbl の値が PT に存在するキー（17-c の値域は本節では未改訂。業種ごとの
+ *        place の扱いは PR-E で改訂する。設計書 docs/handoff/2026-09-12-portal-industry-rev4.md §3-1・§14-1）
  *   18.  （新規）portal/（NocoBase。リポジトリ直下の新設ディレクトリ ⑤ポータル）を取り込んだときに壊れうる
  *        4 点だけを見る。portal/ が無ければ節ごと skip（§16・§17 と同じ作法）：
  *        18-a .github/workflows/portal-verify.yml が実在し paths: に portal/** を含む／
@@ -1523,6 +1527,36 @@ section('17. 部門ポータル（mock/portal.html）契約');
       }
       if (!bad17l) ok('js/portal/demo.js に pstate.ind の参照が無く、pscreenAiIds/pcrossAiIds に industries の参照が無い（§14 規則 1・3）');
       bad17 += bad17l;
+    }
+
+    /* 17-m（新・PR-A・rev4）: PSCREENS[].ind の値が INDUSTRIES の id のみ／省略＝全業種／
+       home と ai はすべての業種で見える／PSCREENS[].id ごとに V[id] が js/portal/render.js に
+       定義されている／lbl の値が PT に存在するキー
+       （設計書 docs/handoff/2026-09-12-portal-industry-rev4.md §3-1・§14-1） */
+    {
+      let bad17m = 0;
+      const renderSrc17m = portal.appSources.filter(f => f.path === 'js/portal/render.js').map(f => f.src).join('\n');
+      for (const s of portal.data.PSCREENS || []) {
+        if (s.ind !== undefined) {
+          if (!Array.isArray(s.ind) || !s.ind.length || !s.ind.every(i => industryIds.has(i))) {
+            fail(`PSCREENS.${s.id}.ind の値が INDUSTRIES の id の配列ではない: ${JSON.stringify(s.ind)}`); bad17m++;
+          }
+          if (s.id === 'home' || s.id === 'ai') {
+            fail(`PSCREENS.${s.id}.ind は省略（全業種で見える）でなければならない: ${JSON.stringify(s.ind)}`); bad17m++;
+          }
+        }
+        if (!new RegExp(`V\\.${s.id}\\s*=|V\\[\\s*['"]${s.id}['"]\\s*\\]\\s*=`).test(renderSrc17m)) {
+          fail(`PSCREENS.${s.id}: V.${s.id} が js/portal/render.js に定義されていない`); bad17m++;
+        }
+        if (s.lbl) {
+          for (const [ind, key] of Object.entries(s.lbl)) {
+            if (!industryIds.has(ind)) { fail(`PSCREENS.${s.id}.lbl のキー "${ind}" が INDUSTRIES の id ではない`); bad17m++; }
+            if (!portal.data.PT || !(key in portal.data.PT)) { fail(`PSCREENS.${s.id}.lbl.${ind} = "${key}" が PT に存在しない`); bad17m++; }
+          }
+        }
+      }
+      if (!bad17m) ok(`PSCREENS[].ind/lbl が §3-1 の形を満たし、全 ${(portal.data.PSCREENS || []).length} 画面の V[id] が js/portal/render.js に定義されている`);
+      bad17 += bad17m;
     }
 
     if (portal.vmErrors.length) { for (const e of portal.vmErrors) { fail(`portal js/data/**: ${e}`); bad17++; } }
