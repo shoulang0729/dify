@@ -94,10 +94,20 @@ V.home = () => `
 </div>`;
 
 V.cust = () => {
+  /* rev4 §8（PR-C）：cust は「取引先」テンプレート。①②③⑤ は業種で中身が替わり、
+     ④（名刺 OCR の切り分けの説明）だけ 3 業種で共通。 */
+  const ind = pstate.ind;
+  const part = PPART[ind];
+  const qtr = PQTR[ind];
+  const contacts = pd(PCONTACT);
+  const hist = pd(PHIST);
+  const staleBefore = PCOMPANY[ind].staleBefore;
+  const isNum = (v) => /^-?\d+(\.\d+)?$/.test(String(v));
+
   const q = (r, i) => i < PCUR_Q ? { v: r.act[i], kind: '実績' } : { v: r.fc[i - PCUR_Q], kind: '見込' };
-  const tot = k => [0, 1, 2, 3].map(i => PQTR.reduce((t, r) => t + (k === 'plan' ? r.plan[i] : q(r, i).v), 0));
+  const tot = k => [0, 1, 2, 3].map(i => qtr.rows.reduce((t, r) => t + (k === 'plan' ? r.plan[i] : q(r, i).v), 0));
   const tp = tot('plan'), tv = tot('v');
-  const qrows = PQTR.map(r => {
+  const qrows = qtr.rows.map(r => {
     const cells = [0, 1, 2, 3].map(i => {
       const o = q(r, i), d = o.v - r.plan[i];
       const cls = d < -0.05 ? ' style="color:var(--status-danger-text);font-weight:700"' : '';
@@ -114,19 +124,48 @@ V.cust = () => {
     '<td class="num qsep">' + tp.reduce((a, b) => a + b, 0).toFixed(1) + '</td>' +
     '<td class="num"><b>' + tv.reduce((a, b) => a + b, 0).toFixed(1) + '</b></td></tr>';
 
+  /* ② 取引先テーブルの列見出しと行（it だけ計算列。§8-1） */
+  const attrHead = part.head.slice(1);
+  const numericCol = part.calc === 'deals'
+    ? attrHead.map((_, j) => j === attrHead.length - 1)
+    : attrHead.map((_, j) => part.rows.every(r => isNum(r.cells[j])));
+  const partRows = part.rows.map(row => {
+    const ai = row.ai || part.ai;
+    let cellsHtml;
+    if (part.calc === 'deals') {
+      const mine = PDEALS.filter(d => d.cu === row.id);
+      const post = mine.filter(d => !pinPre(d)), pre = mine.filter(pinPre);
+      cellsHtml = '<td class="nw">' + row.site + '</td>' +
+        '<td class="nw">' + post.length + ' 件</td><td class="nw">' + pre.length + ' 件</td>' +
+        '<td class="num">' + psum(post, d => d.amt).toFixed(1) + '</td>';
+    } else {
+      cellsHtml = row.cells.map((v, j) => '<td class="' + (numericCol[j] ? 'num' : 'nw') + '">' + v + '</td>').join('');
+    }
+    return '<tr><td><button class="culink" type="button" data-cu="' + row.id + '">' + row.full + '</button>' +
+      '<span class="m">担当者を見る</span></td>' + cellsHtml +
+      '<td>' + prowAi(ai, { scr: 'cust', id: row.id }) + pbackContainer('cust', row.id) + '</td></tr>';
+  }).join('');
+
+  /* ④ 末尾の「人物は架空世界マスタの実在レコードです」は業種ごとの出所に差し替える（§8-0） */
+  const originNote = ind === 'mfg'
+    ? '<b>人物は架空世界マスタの実在レコードです。</b>担当者 ' + contacts.length + ' 名は <code>data/world/mfg/partner_contacts.csv</code> の実在レコードです。'
+    : ind === 'fin'
+    ? '<b>人物は架空世界マスタの実在レコードです。</b>担当者 ' + contacts.length + ' 名は <code>data/world/fin/client_contacts.csv</code> の実在レコードです。'
+    : '<b>人物は架空世界マスタの実在レコードです。</b>青嶺精工 3 名は <code>data/world/mfg/people.csv</code>、碧洋銀行 3 名は <code>data/world/fin/people.csv</code>。マスタは元から <code>title_ja</code> / <code>title_zh</code> / <code>title_en</code> を持っているので、抽出先の列がそのまま用意されています。';
+
   return `
 <div class="grid">
  <section class="block">
-  <header><h2>今期の売上 — 計画・実績・見込</h2><span class="sub">FY2026（4 月〜3 月）／ 単位：百万円</span><span class="sp"></span>
+  <header><h2>今期の${qtr.metric} — 計画・実績・見込</h2><span class="sub">${qtr.fy}（4 月〜3 月）／ 単位：${qtr.unit}</span><span class="sp"></span>
    <span class="sub">いまは <b style="color:var(--action-primary)">Q2</b>（7–9 月）</span></header>
   <div class="body flush"><div class="tw"><table>
    <thead>
-    <tr><th rowspan="2" style="vertical-align:bottom">顧客</th>
+    <tr><th rowspan="2" style="vertical-align:bottom">取引先</th>
      <th class="qh qsep" colspan="2">Q1<span class="qs">4–6 月 ／ 実績</span></th>
      <th class="qh now qsep" colspan="2">Q2<span class="qs">7–9 月 ／ 実績・進行中</span></th>
      <th class="qh qsep" colspan="2">Q3<span class="qs">10–12 月 ／ 見込</span></th>
      <th class="qh qsep" colspan="2">Q4<span class="qs">1–3 月 ／ 見込</span></th>
-     <th class="qh tot qsep" colspan="2">通期<span class="qs">FY2026</span></th></tr>
+     <th class="qh tot qsep" colspan="2">通期<span class="qs">${qtr.fy}</span></th></tr>
     <tr><th class="num qsub qsep">計画</th><th class="num qsub">実績</th>
      <th class="num qsub qsep qnow2">計画</th><th class="num qsub qnow2">実績</th>
      <th class="num qsub qsep">計画</th><th class="num qsub">見込</th>
@@ -137,35 +176,27 @@ V.cust = () => {
   </table></div></div>
   <div class="body" style="border-top:1px solid var(--border-subtle)">
    <div class="note">計画を割っている四半期は<b>赤で出ます</b>。四半期は会計年度（4 月〜3 月）から機械的に決まるので、テーブルには <code>fiscal_year</code> と <code>quarter</code> を持たせ、<b>画面には絶対日付を持たせません</b>。</div>
-   <div class="pn blk">本番：計画は経営企画から、実績は会計システムから取り込む。デモは 4 顧客 × 4 四半期を直接持つ</div>
+   <div class="pn blk">本番：計画は経営企画から、実績は会計システムから取り込む。デモは ${qtr.rows.length} 先 × 4 四半期を直接持つ</div>
   </div>
  </section>
 
  <section class="block">
-  <header><h2>顧客</h2><span class="sub">4 件</span></header>
+  <header><h2>取引先</h2><span class="sub">${part.rows.length} 件</span></header>
   <div class="body flush">
-  ${ptbl([{t:'顧客'},{t:'拠点'},{t:'受注後'},{t:'受注前'},{t:'受注残',n:1},{t:'この行で使う AI'}], PCUST.map(c => {
-    const mine = PDEALS.filter(d => d.cu === c.id);
-    const post = mine.filter(d => !pinPre(d)), pre = mine.filter(pinPre);
-    return '<tr><td><button class="culink" type="button" data-cu="' + c.id + '">' + c.full + '</button>' +
-      '<span class="m">担当者を見る</span></td><td class="nw">' + c.site + '</td>' +
-      '<td class="nw">' + post.length + ' 件</td><td class="nw">' + pre.length + ' 件</td>' +
-      '<td class="num">' + psum(post, d => d.amt).toFixed(1) + '</td>' +
-      '<td>' + prowAi(['rs3', 'rs1'], { scr: 'cust', id: c.id }) + pbackContainer('cust', c.id) + '</td></tr>';
-  }).join(''))}
+  ${ptbl([{t:part.head[0]}, ...attrHead.map((h, j) => ({ t: h, n: numericCol[j] ? 1 : undefined })), {t:'この行で使う AI'}], partRows)}
   </div>
  </section>
 
  <section class="block">
-  <header><h2>担当者</h2><span class="sub" id="ctCount">名刺から取り込み ／ 6 名</span><span class="sp"></span>
+  <header><h2>担当者</h2><span class="sub" id="ctCount">名刺から取り込み ／ ${contacts.length} 名</span><span class="sp"></span>
    <span class="chips" id="cuChips">
     <button class="chip" type="button" data-cu="" aria-pressed="true">すべて</button>
-    ${PCUST.map(c => '<button class="chip" type="button" data-cu="' + c.id + '">' + c.id + '</button>').join('')}
+    ${part.rows.map(c => '<button class="chip" type="button" data-cu="' + c.id + '">' + c.id + '</button>').join('')}
    </span></header>
   <div class="body flush">
-  ${ptbl([{t:'氏名'},{t:'名刺'},{t:'役職（名刺の原文）'},{t:'役職（社内表記）'},{t:'顧客'},{t:'拠点'},{t:'最終接触'},{t:'名刺取得'},{t:'この行で使う AI'}],
-    PCONTACT.slice().sort((a, b) => a[6] < b[6] ? -1 : 1).map(c => {
-      const stale = c[6] < '2026-08-01';
+  ${ptbl([{t:'氏名'},{t:'名刺'},{t:'役職（名刺の原文）'},{t:'役職（社内表記）'},{t:'取引先'},{t:'拠点'},{t:'最終接触'},{t:'名刺取得'},{t:'この行で使う AI'}],
+    contacts.slice().sort((a, b) => a[6] < b[6] ? -1 : 1).map(c => {
+      const stale = c[6] < staleBefore;
       const same = c[2] === c[3];
       return '<tr data-cu="' + c[4] + '"><td class="nw"><b>' + c[0] + '</b></td>' +
         '<td class="nw"><span class="st ' + (c[1] === 'zh' ? 'st2' : 'st1') + '">' + (c[1] === 'zh' ? '中' : '日') + '</span></td>' +
@@ -175,17 +206,17 @@ V.cust = () => {
         '<td class="nw">' + (stale ? '<span class="due">' + c[6] + '</span>' : c[6]) + '</td>' +
         '<td class="nw">' + c[7] + '</td>' +
         '<td><button class="aibtn" type="button" data-hist="' + c[0] + '" style="--cat-accent:var(--action-primary)">' +
-          '<span class="nm">接触履歴</span><span class="how">' + PHIST.filter(h => h[0] === c[0]).length + ' 件</span></button> ' +
+          '<span class="nm">接触履歴</span><span class="how">' + hist.filter(h => h[0] === c[0]).length + ' 件</span></button> ' +
           prowAi(['gn8', 'cv2', 'lg4'], { scr: 'cust', id: c[4] }) + pbackContainer('cust', c[4]) + '</td></tr>';
     }).join(''))}
   </div>
   <div class="body" style="border-top:1px solid var(--border-subtle)">
    <div class="note"><b>氏名の右の「接触履歴」から、その人との往復が全部見られます。</b>最終接触が古い人を見つけて、そのまま何があったかを確かめる——という順で辿れるようにしています。履歴は会議・訪問・メール・To Do から自動で積まれ、人が書き足すものではありません。</div>
-   <div class="note" style="margin-top:8px"><b>顧客を選ぶと担当者が絞られます。</b>上のチップか、顧客テーブルの社名を押してみてください。顧客 1 — n 担当者 の関連で持つので、入力フォームでも「顧客を選ぶと担当者の候補がその顧客のぶんだけになる」カスケード選択になります。案件 → 顧客 → 担当者 と 3 段にもできます。</div>
-   <div class="note" style="margin-top:8px"><b>名刺管理そのものを NocoBase に持ちます。</b>外部の名刺管理システムは使いません。名刺の画像は添付フィールド（File manager・無料）に保存し、担当者・顧客は普通のテーブルです。撮る操作はモバイル画面から。</div>
+   <div class="note" style="margin-top:8px"><b>取引先を選ぶと担当者が絞られます。</b>上のチップか、取引先テーブルの社名を押してみてください。取引先 1 — n 担当者 の関連で持つので、入力フォームでも「取引先を選ぶと担当者の候補がその取引先のぶんだけになる」カスケード選択になります。案件 → 取引先 → 担当者 と 3 段にもできます。</div>
+   <div class="note" style="margin-top:8px"><b>名刺管理そのものを NocoBase に持ちます。</b>外部の名刺管理システムは使いません。名刺の画像は添付フィールド（File manager・無料）に保存し、担当者・取引先は普通のテーブルです。撮る操作はモバイル画面から。</div>
    <div class="note" style="margin-top:8px"><b>OCR と項目抽出は Dify 側です。</b>NocoBase の公式ドキュメントにある読み取りは QR・バーコードだけで、<b>OCR の記載はありません</b>。名刺を読む部分は Dify のアプリが受け持ち、Workflow の HTTP request で呼びます（無料の範囲）。</div>
    <div class="note" style="margin-top:8px"><b>言語別に抽出します。</b>中国拠点の名刺は日本語・中国語・英語が混ざり、同じ肩書きでも表記が違います（主管／主任、部长／部長、经理／General Manager）。裏表で言語が違う名刺もあります。<b>名刺の原文はそのまま残し、社内表記を別の列で持ちます</b>——上の表の 3 列目と 4 列目です。片方だけ持つと、本人に確認するときに原文が分からなくなります。</div>
-   <div class="note" style="margin-top:8px"><b>人物は架空世界マスタの実在レコードです。</b>青嶺精工 3 名は <code>data/world/mfg/people.csv</code>、碧洋銀行 3 名は <code>data/world/fin/people.csv</code>。マスタは元から <code>title_ja</code> / <code>title_zh</code> / <code>title_en</code> を持っているので、抽出先の列がそのまま用意されています。</div>
+   <div class="note" style="margin-top:8px">${originNote}</div>
    <div class="pn blk">本番：呼び先が Dify Enterprise。添付の保存先はローカルから S3 / Aliyun OSS に替わりうるが、テーブルと Workflow は同一</div>
   </div>
  </section>
@@ -218,8 +249,8 @@ V.cust = () => {
   <div class="body">
    ${paiRow(pscreenAiIds('cust'))}
    <div class="note" style="margin-top:10px"><b>「名刺の読み取りと項目抽出（日中英）」はカタログに無いので新規です。</b>名刺管理そのものは NocoBase に持ち、AI が受け持つのは読み取りと項目抽出だけ、という切り分けです。製造業カタログにも金融カタログにもありません。分類と管理番号は実装時に採番します（CLAUDE.md §2-11 は分類コード＋2 桁通番）。</div>
-   <div class="note" style="margin-top:8px"><b>ここがカタログとの接続点です。</b>顧客 = 青嶺精工・碧洋銀行にすると、自部門の顧客を見ている画面から、その顧客向けに作った AI カタログへ地続きになります（製造業 49 サービス／金融 29 サービス）。</div>
-   <div class="note" style="margin-top:8px"><b>自社は架空の日系 SIerです（PM 確定）。α 社・β 社は顧客側の仮置きです。</b>新しい名前は <code>data/world/</code> に足してから使う決まり（CLAUDE.md §2-13）なので、実装前にマスタへ登録します。</div>
+   ${ind === 'it' ? `<div class="note" style="margin-top:8px"><b>ここがカタログとの接続点です。</b>顧客 = 青嶺精工・碧洋銀行にすると、自部門の顧客を見ている画面から、その顧客向けに作った AI カタログへ地続きになります（製造業 49 サービス／金融業 29 サービス）。</div>
+   <div class="note" style="margin-top:8px"><b>自社は架空の日系 SIerです（PM 確定）。α 社・β 社は顧客側の仮置きです。</b>新しい名前は <code>data/world/</code> に足してから使う決まり（CLAUDE.md §2-13）なので、実装前にマスタへ登録します。</div>` : ''}
   </div>
  </section>
 </div>`;
@@ -258,7 +289,7 @@ V.proj = () => {
    <span style="font-size:11px;color:var(--text-muted);letter-spacing:.05em">顧客</span>
    <span class="chips" id="pipeCu">
     <button class="chip" type="button" data-pcu="" aria-pressed="true">すべて</button>
-    ${PCUST.map(c => '<button class="chip" type="button" data-pcu="' + c.id + '">' + c.id + '</button>').join('')}
+    ${PPART.it.rows.map(c => '<button class="chip" type="button" data-pcu="' + c.id + '">' + c.id + '</button>').join('')}
    </span>
    <span style="font-size:11px;color:var(--text-muted);letter-spacing:.05em">担当チーム</span>
    <span class="chips" id="pipeTeam">
@@ -1479,8 +1510,8 @@ function openKnowDrawer(k) {
   drawer.querySelector('.x').focus();
 }
 function openHistDrawer(name) {
-  const c = PCONTACT.find(x => x[0] === name); if (!c) return;
-  const rows = PHIST.filter(h => h[0] === name);
+  const c = pd(PCONTACT).find(x => x[0] === name); if (!c) return;
+  const rows = pd(PHIST).filter(h => h[0] === name);
   const drawer = openBareDrawer();
   drawer.innerHTML =
     '<header><div><div class="no">接触履歴</div><h2>' + c[0] + '</h2>' +

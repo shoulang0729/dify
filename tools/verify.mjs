@@ -87,6 +87,9 @@
  *        home と ai はすべての業種で見える／PSCREENS[].id ごとに V[id] が js/portal/render.js に
  *        定義されている／lbl の値が PT に存在するキー（17-c の値域は本節では未改訂。業種ごとの
  *        place の扱いは PR-E で改訂する。設計書 docs/handoff/2026-09-12-portal-industry-rev4.md §3-1・§14-1）
+ *        17-q（新・PR-C・rev4）PPART[ind].head.length が rows[].cells.length + 1 と一致
+ *        （calc を持つ業種は cells を持たないので skip）。PQUAL/PORDER/PCRED/PREG（PR-D で追加。
+ *        無ければ skip）は head.length と rows[i].length が一致（設計書 §8-1・§14-1）
  *   18.  （新規）portal/（NocoBase。リポジトリ直下の新設ディレクトリ ⑤ポータル）を取り込んだときに壊れうる
  *        4 点だけを見る。portal/ が無ければ節ごと skip（§16・§17 と同じ作法）：
  *        18-a .github/workflows/portal-verify.yml が実在し paths: に portal/** を含む／
@@ -1367,12 +1370,14 @@ section('17. 部門ポータル（mock/portal.html）契約');
     else ok(`portal.css の var() 参照 ${usedTokensP.size} 件すべて tokens.css で定義済み`);
 
     /* 17-e: PT と js/data/portal/** に現れる {ja:…} 形のオブジェクトがすべて 3 言語 */
-    /* rev4（docs/handoff/2026-09-12-portal-industry-rev4.md §14-1 17-e）：PCOMPANY を追加
-       （PPART/PQUAL/PORDER/PCRED/PREG は PR-C・PR-D で追加、PCUST は PR-C で PPART に改名予定）。 */
+    /* rev4（docs/handoff/2026-09-12-portal-industry-rev4.md §14-1 17-e）：PCOMPANY を追加。
+       PCUST は PR-C で PPART に改名（PQUAL/PORDER/PCRED/PREG は PR-D で追加予定。
+       PR-D は tools/verify.mjs を触らない設計のため、その 4 定数を PORTAL_ONLY_KEYS へ足すかは
+       PR-D 実装時に改めて判断する）。 */
     const PORTAL_ONLY_KEYS = [
       'PT', 'PGRP', 'PSCREENS', 'PHOW', 'PHOWLONG', 'PST',
       'PSVC', 'POUT', 'PNEW', 'PSTAGE_AI', 'PORG', 'PCOMPANY',
-      'PSTAGE', 'PDEALS', 'PCUST', 'PCONTACT', 'PHIST', 'PNEWS', 'PVENDOR',
+      'PSTAGE', 'PDEALS', 'PPART', 'PCONTACT', 'PHIST', 'PNEWS', 'PVENDOR',
       'PACT', 'PCAND', 'PMEET', 'PKNOW', 'PKNOWACT',
       'PPEOPLE', 'PATT', 'PKPI', 'PKPITOPIC', 'PSRC', 'PGOAL', 'PQTR', 'PCUR_Q',
       'PEXP', 'PREQ', 'PTRAIN', 'PMYTRAIN', 'PMYITEM', 'PTODO_STATE', 'PSURVEY', 'PMYSURVEY'
@@ -1574,6 +1579,13 @@ section('17. 部門ポータル（mock/portal.html）契約');
         return (s && s.ind) || [...industryIds];
       };
       const ROW_CONSTS_17n = [
+        /* rev4 PR-C（§8）：cust の取引先テンプレート 4 定数を追加。PPART は { head, rows, ai? }
+           の形で配列そのものではないため「配列なら長さ 1 以上」は素通りするが、
+           業種キーの存在（cust を見る業種すべてに定数があること）は他と同じく検査する。 */
+        { name: 'PPART', screen: 'cust', get: d => d.PPART },
+        { name: 'PCONTACT', screen: 'cust', get: d => d.PCONTACT },
+        { name: 'PHIST', screen: 'cust', get: d => d.PHIST },
+        { name: 'PQTR', screen: 'cust', get: d => d.PQTR },
         { name: 'PNEWS', screen: 'watch', get: d => d.PNEWS },
         { name: 'PVENDOR', screen: 'vend', get: d => d.PVENDOR },
         { name: 'PACT', screen: 'act', get: d => d.PACT },
@@ -1696,6 +1708,49 @@ section('17. 部門ポータル（mock/portal.html）契約');
       }
       if (!bad17p) ok('mock/js/data/portal/** の .mfg / .fin に他業種の社名・拠点が混ざっていない（.it は ref_world の例外につき対象外）');
       bad17 += bad17p;
+    }
+
+    /* 17-q（新・PR-C・rev4）: 取引先・新画面テンプレートの列数一致。
+       PPART[ind].head.length === rows[].cells.length + 1（calc を持つ業種は cells を持たないので skip）。
+       PQUAL / PORDER / PCRED / PREG（PR-D で追加予定。無ければ skip）は head.length === rows[i].length。
+       （設計書 docs/handoff/2026-09-12-portal-industry-rev4.md §8-1・§14-1） */
+    {
+      let bad17q = 0;
+      let checked17q = 0;
+      const ppart17q = portal.data.PPART;
+      if (ppart17q) {
+        for (const ind of Object.keys(ppart17q)) {
+          const t = ppart17q[ind];
+          if (!t || !Array.isArray(t.head) || !Array.isArray(t.rows)) { fail(`PPART.${ind}: head/rows の形が無い`); bad17q++; continue; }
+          if (t.calc) continue; // 計算列（it の calc:'deals'）は cells を持たないので skip
+          for (const row of t.rows) {
+            checked17q++;
+            const cellsLen = Array.isArray(row.cells) ? row.cells.length : -1;
+            if (t.head.length !== cellsLen + 1) {
+              fail(`PPART.${ind}.rows[${row.id}]: head.length(${t.head.length}) !== cells.length(${cellsLen}) + 1`);
+              bad17q++;
+            }
+          }
+        }
+      } else warn('PPART が無いため 17-q の PPART 検査を skip');
+
+      for (const name of ['PQUAL', 'PORDER', 'PCRED', 'PREG']) {
+        const obj = portal.data[name];
+        if (!obj) { warn(`${name} が無いため 17-q の検査を skip（PR-D で追加予定）`); continue; }
+        for (const ind of Object.keys(obj)) {
+          const t = obj[ind];
+          if (!t || !Array.isArray(t.head) || !Array.isArray(t.rows)) { fail(`${name}.${ind}: head/rows の形が無い`); bad17q++; continue; }
+          for (const row of t.rows) {
+            checked17q++;
+            if (!Array.isArray(row) || t.head.length !== row.length) {
+              fail(`${name}.${ind}: head.length(${t.head.length}) と rows[].length が一致しない`);
+              bad17q++;
+            }
+          }
+        }
+      }
+      if (!bad17q) ok(`取引先・新画面テンプレートの列数一致（${checked17q} 行を検査）`);
+      bad17 += bad17q;
     }
 
     if (portal.vmErrors.length) { for (const e of portal.vmErrors) { fail(`portal js/data/**: ${e}`); bad17++; } }
