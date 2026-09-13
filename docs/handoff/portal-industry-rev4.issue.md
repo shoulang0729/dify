@@ -105,3 +105,19 @@ PR-0 ──> PR-A ──> PR-B ──┬──> PR-C ──┐
 - **R-2** `scenarios/mfg/pt.js` の 2026 年の日付（既知の未統一）
 - **R-3** `goal` が 3 業種とも AI 0 本（カタログの穴）
 - **R-4** LG-01 / GN-05 の `industries` が `['mfg']` のため金融・IT のホームに横断 AI が 0 本
+
+---
+
+## 進捗（2026-09-13 更新）
+
+**PR-0 #299（`8227b78`）・PR-A #300（`5c48eff`）・PR-B #301（`62d619a`）マージ済み。PR-C・PR-D は未マージ。**
+PR-B の reviewer 申し送りを設計書に **§18 追補**として記録した（本文 §0〜§17 は書き換えていない）。要点 3 つ：
+① **§14-1 の「17-a 改訂不要」は誤りだった** —— §5-3 が `FEED[業種].persona` の流用を指示しているのに
+`mock/portal.html` が `js/data/home.js` を読んでいなかったため、同 html への 1 行追加（`catalog.js` の後・`style.js` の前。
+`CLAUDE.md` §2-3 の読み込み順と整合）と、verify §17-a の期待並び・`tools/lib/load.mjs` の `PORTAL_DATA_KEYS`（`FEED`）の
+追随を #301 で行った（§1-2 の「変更する範囲」に `mock/portal.html` と `tools/lib/load.mjs` を読み替えで加える）。
+② **`PORTAL_DATA_KEYS` に `PSYS`/`PSYSEV`/`PSYSST`/`PSYSNOW` が漏れていた**（#272 由来の既存バグ。§17-n の実装に必要なため #301 で修正）
+—— **PR-C・PR-D は新設定数を `PORTAL_DATA_KEYS` と `PORTAL_ONLY_KEYS` の両方に足すこと**（片方だけだと検査が静かに素通りし、
+AC-20〜AC-28 が機械で効かない）。③ **`cust` の `PQTR`/`PCUST` は PR-C まで業種化されない**ため、
+製造・金融チップで `cust` に他世界の社名が残る（**設計どおりの中間状態**。§17-p は適用範囲外で FAIL しない。
+解消の確認は PR-C の AC-20〜AC-23）。**受け入れ条件の本数は 46 件のまま変えていない。**
