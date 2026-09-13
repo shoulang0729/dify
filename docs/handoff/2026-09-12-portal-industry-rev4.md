@@ -2125,3 +2125,315 @@ if (!d) return '<div class="grid g-main"></div>';
 - **§15-1 の PR 分割と触るファイル集合**（PR-D に `app.js` を加えない）
 - **受け入れ条件の本数**（46 件）
 - **`CLAUDE.md`・`.claude/**`**（§13-4 の「改定は不要」は依然として有効）
+
+---
+
+### 18-11. 決定 5 —— AC-26 の「3 言語のラベル」は **PR-F** で満たす（`dCtxRows()` がラベルを引いていない）
+
+**事実**：`mock/js/portal/demo.js` の `dCtxRows()` は、`PCTX_ROW_BUILDERS` を持つ画面（`proj` / `cust`）以外では
+**`PCTXDEF[scr]` のキー名をそのまま左ラベルに使う**。
+
+```js
+const fields = (typeof PCTXDEF !== 'undefined' && PCTXDEF[scr]) || [];
+return fields.filter(k => row[k] !== undefined && row[k] !== '').map(k => [k, row[k]]);
+//                                                                       ^ 生キー（'no' / 'kind' / 'part' …）
+```
+
+そのため、PR-E（#306）が `pctxRow` に 4 分岐を足して**値**が入るようになっても、カードの左側は
+`no` / `kind` / `part` / `equip` / `cu` / `due` / `state` という**英数字の生キー**のまま出る。
+**`sys` 画面も同じ既存挙動**（`sys` / `name` / `client` / `criticality` / `inc` が生キーで出る。
+#272 以来そうなっており、rev4 が作った問題ではない）。§12-2 で足した `PT.ctx*` の 13 キーは
+**値としては入っているが、引く側が無い**。
+
+**PR-E は `demo.js` を触らない約束**（§15-1 の PR-E の触るファイルに `demo.js` は無い）なので、
+**#306 でこれを直すのは範囲外**である。implementer の逸脱ではない。
+
+#### 18-11a. 決定 —— ラベルは `PCTXLBL`（画面 → キー → `PT` のキー名）で引く
+
+**PR-F**（`mock/js/portal/demo.js` を触る唯一の PR）で、`dCtxRows()` が**画面ごとのラベル表**を引くようにする。
+
+- 置き場所は **`mock/js/portal/demo.js`**（`PCTX_ROW_BUILDERS` の直上）。**`mock/js/data/portal/svc.js` には置かない**
+  ——`PCTXDEF`（**何を渡すか**＝データの宣言）と `PCTXLBL`（**どう見せるか**＝描画の語彙）は層が違い、
+  かつ **PR-F の触るファイル集合を 1 つも増やさない**ため（§15-1 を変えずに済む）
+- **`PT` のキー名だけを持ち、文言そのものは持たない**（§2-1 の 3 言語一致は `PT` 側で担保される）
+- **`PCTXLBL` に無いキーは生キーにフォールバックする**（いまの挙動のまま。壊さない）
+
+```js
+/* 参考（PR-F。実装はこの形でなくてよい） */
+const PCTXLBL = {
+  proj:  { id:'ctxProject', nm:'ctxProject', cu:'ctxCustomer', ow:'ctxOwner', sg:'ctxStage', due:'ctxDue', rag:'ctxState' },
+  cust:  { cu:'ctxCustomer', own:'ctxOwner', stage:'ctxStage' },
+  sys:   { sys:'ctxSystemNo', name:'ctxSystemName', client:'ctxClient', criticality:'ctxCriticality', inc:'ctxIncidentNo' },
+  qual:  { no:'ctxRecord', kind:'ctxKind', part:'ctxPartNo', equip:'ctxEquip', cu:'ctxCustomer', due:'ctxDue', state:'ctxState' },
+  order: { no:'ctxRecord', kind:'ctxKind', part:'ctxPartNo', cu:'ctxCustomer', qty:'ctxQty', due:'ctxDue', state:'ctxState' },
+  cred:  { no:'ctxCaseNo', ringi:'ctxRingi', cu:'ctxCustomer', product:'ctxProduct', amount:'ctxAmount', stage:'ctxStage', due:'ctxDue' },
+  reg:   { no:'ctxNotice', issued:'ctxIssued', authority:'ctxAuthority', topic:'ctxTopic', dept:'ctxDept', due:'ctxDue', state:'ctxState' }
+};
+const pctxLabel = (scr, k) => { const key = (PCTXLBL[scr] || {})[k]; return key ? pt(key) : k; };
+```
+
+**`proj` / `cust` の既存ビルダーも同じ経路に揃える**：`PCTX_ROW_BUILDERS` の中の `pt('ctxProject')` などの
+**直書きを `pctxLabel('proj', 'id')` の形に置き換える**（引く先の `PT` キーは同じなので**表示は 1 文字も変わらない**）。
+値の組み立て（`id` と `nm` を `　` で連結する・`sg` を `pstageName()` に通す・`rag` を `PRAGNAME` に通す）は
+**ビルダーに残す**。**目的はラベルの出所を 1 か所にすることであって、`proj` / `cust` の見え方を変えることではない。**
+
+**配線していない画面（`act` / `vend` / `watch` / `meet` / `exp` / `req` / `ppl` / `trn` / `know` / `kpi`）は
+`PCTXLBL` に入れない。**`pctxRow()` がこれらの画面で行を返さない（＝実行時に到達しない）ため、
+いま 3 言語の語を作っても**使われないまま `PT` が太る**だけである（§11-4 と同じ「正直に空にする」方針）。
+**将来 `pctxRow()` にこれらの画面を配線するときは、`PCTXLBL` と `PT` を同じ PR で足す。**
+
+#### 18-11b. `PT` に足りないキー —— **6 つ**（`PCTXDEF` 全キーと `PT.ctx*` を突き合わせた結果）
+
+`PCTXDEF` の 18 画面・45 キー（重複除く）のうち、**到達する 7 画面**（`proj` / `cust` / `sys` / `qual` / `order` / `cred` / `reg`）が
+使うキーを `PT.ctx*`（現行 23 キー。うち `ctxGeneric` / `ctxHead` / `ctxNote` / `ctxNoRow` の 4 つは
+カード自体の文言でラベルではない）と突き合わせると、**足りないのは `sys` の 5 つと `cred` の 1 つ**である。
+**`PT` に足すのは次の 6 キーだけ**（3 言語同時。`CLAUDE.md` §2-1）。
+
+| `PT` キー | 使う画面・キー | ja | zh | en |
+|---|---|---|---|---|
+| `ctxSystemNo` | `sys.sys`（`SYS-01` 等） | システム番号 | 系统编号 | System ID |
+| `ctxSystemName` | `sys.name`（生産管理（MES）等） | システム | 系统 | System |
+| `ctxClient` | `sys.client`（青嶺精工 蘇州・自社（上海）） | 利用先 | 使用方 | Used by |
+| `ctxCriticality` | `sys.criticality`（高・中・低） | 重要度 | 重要程度 | Criticality |
+| `ctxIncidentNo` | `sys.inc`（`INC-` 番号） | 障害番号 | 故障编号 | Incident no. |
+| `ctxCaseNo` | `cred.no`（`CRD-26-0087` 等） | 審査番号 | 审查编号 | Case no. |
+
+**`cred.no` に `ctxRecord`（記録番号）を流用しない理由**：`PCRED` は**審査番号（CRD）と稟議番号（RNG）を
+両方持つ**（§9-3 の注記）。この画面で「記録番号」と「稟議番号」が並ぶと、どちらがどちらか読めない。
+**`qual.no` と `order.no` は `ctxRecord`（記録番号）を流用してよい**（`data/world/mfg/records.csv` が正本の
+1 本の台帳であり、区分は `kind` の列で出るため）。
+
+**`ctxCustomer`（顧客）は改名しない。**PR-C で `cust` 画面の見出しは「顧客 → 取引先」になったが、
+`ctxCustomer` は `proj` / `cust` の文脈カードでも使われており、**変えると AC-22（IT の見え方を回帰させない）に触れる**。
+**取引先画面の呼称と文脈カードのラベルが一致していないことは、rev4 では直さない**（§17 の残課題に近い性格。
+直すなら 3 画面ぶんまとめて別 Issue）。
+
+**`PT` のキー数の読み替え（§12-4）**：`origin/main`（`dade3b7` ＝ PR-D マージ後）で **91 キー**。
+PR-E は `PT` に触らない。**PR-F で ＋6 → 97 キー**。§12-4 の「増減の内訳のほうが正」という但し書きに、
+**＋6（本節）**を足す。
+
+#### 18-11c. 付随の訂正 —— 18-6a の「`PCTXDEF` のキー順で `rows[i]` と 1:1」は**誤り**だった
+
+18-6a は「行は `PCTXDEF[scr]` のキー順で `rows[i]`（配列）と 1:1 に対応させる」と書いたが、
+**新画面 4 枚のうち 3 枚は `head` の列数と `PCTXDEF` のキー数が一致しない。**
+
+| 画面 | `head` の列数 | `PCTXDEF` のキー数 | 素直に index で並べると |
+|---|---|---|---|
+| `qual` | 9（番号・区分・発生日・品番・設備・相手・担当課・期限・状態） | 7 | `part` に**発生日**、`cu` に**設備**が入る（総崩れ） |
+| `order` | 8（番号・区分・受付日・品番・相手・数量・納期・状態） | 7 | `part` に**受付日**が入る |
+| `cred` | 9（審査番号・稟議番号・先・商品・金額・ステージ・申請日・期限・審査担当） | 7 | `due` に**申請日**（期限ではない）が入る |
+| `reg` | 7 | 7 | たまたま一致する |
+
+**したがって、キーごとに「`head` の何列目か」を宣言する対応表が要る。**#306 が入れた `PCTXTABLES`
+（画面 → 表（`rows` / `tr` / `ship`）→ `{ キー: 列 index }`）は**この訂正に合致しており、設計逸脱ではない**。
+18-6a の当該 1 行は次のように読み替える。
+
+> 行は **`PCTXDEF[scr]` のキーごとに「その画面の `head` の何列目か」を宣言する対応表**を通して
+> `PQUAL` / `PORDER` / `PCRED` / `PREG` の行（配列）から引く。**キー順と列順の 1:1 を仮定しない。**
+
+#### 18-11d. 受け入れ条件 —— **AC-47 を新設**（PR-F）
+
+> **AC-47** 製造の `qual` / `order`、金融の `cred` / `reg`、製造・IT の `sys` の**行**から AI を開くと、
+> 「この行から渡す文脈」カードの左ラベルが**生キーではなく 3 言語のラベル**で出る。
+> **日 → 中 → 英と切り替えるとラベルも替わる**（値は架空の業務データなので替わらない。§2-5 と同じ考え方）。
+> `proj` / `cust` のカードの見え方は `origin/main` と**同一**。
+
+**`tools/verify.mjs` に 17-r を足す**（PR-F は既に verify を触る＝17-l 後半。**同じ PR で 1 ブロックにする**）：
+
+> **17-r**｜`mock/js/portal/demo.js` の `PCTXLBL` について、① 画面 id が `PCTXDEF` に実在する
+> ② キーが `PCTXDEF[画面]` の**部分集合**である ③ 値（`PT` のキー名）が `PT` に実在する。
+> **`PCTXDEF` にあって `PCTXLBL` に無いキーは warn にしない**（配線していない画面を正直に空にするため。18-11a）
+
+**AC-26 は PR-E のまま**（値が入ること＝`pctxRow` の 4 分岐）。**AC-47 は PR-F**（ラベルが 3 言語で出ること）。
+**2 つに分けた理由は、触るファイルが `app.js`（PR-E）と `demo.js`（PR-F）で別だから**である。
+
+---
+
+### 18-12. 決定 6 —— `V.home` の業種化漏れ（**設計書の見落とし**）。**PR-G を新設する**
+
+#### 18-12a. 事実
+
+`mock/js/portal/render.js` の `V.home` は、**業種に関係なく IT 世界のブロックを描く**。
+
+| ブロック | いまの中身 | 業種を替えると |
+|---|---|---|
+| 今月の数字 | `BACKLOG` / `PIPE_TOTAL` / `PIPE_W`（`js/portal/app.js` で **`PDEALS` から読み込み時に計算する定数**） | 3 業種とも IT の案件の金額 |
+| いま止まっているシステム | `pSysRows()`（`pd(PSYS)`） | 製造は `PSYS.mfg`（設備 6 件）で正しい。**金融は `PSYS` に `fin` キーが無く `pd()` が `it` にフォールバックし、IT の顧客システム 9 件（`SYS-01`…／青嶺精工・碧洋銀行）が出る** |
+| 手当てが要る案件 | `PDEALS`（IT 専用。`pd()` を通していない） | 3 業種とも IT の案件。**製造・金融のホームに「碧洋銀行」「青嶺精工 MES 更改」が出る** |
+| 横断で使う AI | `paiCrossBlock()`（PR-E で業種別になる） | **正しい**（金融・IT は 0 本＝`PT.noCrossAi`） |
+| 期限超過 To Do | `pd(PACT)` | **正しい**（PR-B で業種化済み） |
+| お知らせ | 日本語リテラル 3 行（社名・番号を含まない） | **そのままでよい** |
+| 関連ナレッジ | 日本語リテラル 2 行（**「青嶺精工 MES 更改 第2期 提案書」**＝IT 世界の文書名） | 製造・金融に IT 世界の語が出る |
+
+#### 18-12b. なぜ設計書が取りこぼしたか（**正直に書く**）
+
+1. **§7-1 の「業種化する —— 23 定数」に `PDEALS` が入っていない。**入れなかったのは正しい
+   （`proj` は IT 専用画面なので `PDEALS` を業種で分ける必要は無い）。**取りこぼしたのは
+   「`PDEALS` を `proj` 以外の画面＝ホームが読んでいる」という参照側の事実**である
+2. **§3 の画面一覧で `home` は `ind` 無し（＝全業種で見える）**としたが、
+   **「ホームに何を出すか」を業種別に定義しなかった**。§9 は新画面 4 枚の中身を定義したが、
+   ホームは「既存画面」として扱い、中身を見直していない
+3. **verify §17-p（世界の混ざり）は `{mfg,fin,it}` の形をした定数の `.mfg` / `.fin` の中だけを見る。**
+   **描画側が何を参照しているかは見ない**ので、この漏れは機械では検出されない（18-3 と同じ「適用範囲どおり」）
+4. **18-8 の観察の訂正**：18-8 に「`sys` は金融で `hidden` なので画面には出ず、現状のままでよい」と書いたが、
+   **ホームが `pSysRows()` を業種にかかわらず呼んでいる**ことを見落としていた。
+   **金融ホームには IT の顧客システムが実際に出る。**18-8 の「現状のままでよい」は、
+   **`V.sys`（画面本体）についてのみ有効**と読み替える
+
+#### 18-12c. 決定 —— ホームのブロックを業種ごとに定義する（**新しいデータは 1 行も足さない**）
+
+**既存の定数（`PQUAL` / `PORDER` / `PCRED` / `PREG` / `PSYS` / `PACT` / `PDEALS`）から描くだけ**にする。
+`js/data/**` には触らない。**IT のホームは `origin/main` と 1 ミリも変えない**（AC-22 と同じ「回帰させない」方針）。
+
+**左カラム**
+
+| # | 製造（mfg） | 金融（fin） | IT（現状維持） |
+|---|---|---|---|
+| 1 | **今月の数字**：`PQUAL.mfg.tiles[0]`（未クローズ）・`[1]`（期限超過・alarm）・`PORDER.mfg.tiles[1]`（受注残）・`[3]`（納期遵守） | **今月の数字**：`PCRED.fin.tiles[0]`（審査中）・`PREG.fin.tiles[1]`（未着手・alarm）・`PCRED.fin.tiles[2]`（稟議処理日数）・`PREG.fin.tiles[2]`（期限 30 日以内） | **今月の数字**（`BACKLOG` / `PIPE_TOTAL` / `PIPE_W` / 稼働率。**触らない**） |
+| 2 | **未クローズの不具合**：`PQUAL.mfg.rows` の `state !== '完了'`（5 件）を**期限昇順**。行 AI は `row.ai ?? PQUAL.mfg.ai`＋`pbackContainer('qual', 番号)` | **審査中の与信**：`PCRED.fin.rows` の `stage !== '承認済'`（5 件）を**期限昇順**。行 AI は `PCRED.fin.ai`＋`pbackContainer('cred', 審査番号)` | **手当てが要る案件**（`PDEALS` の Red/Yellow。**触らない**） |
+| 3 | **納期が近い受注**：`PORDER.mfg.rows` を**納期昇順で 3 件**。行 AI は `PORDER.mfg.ai`＋`pbackContainer('order', 番号)` | **期限が近い当局通達**：`PREG.fin.rows` の `state !== '完了'` を**対応期限昇順で 3 件**。行 AI は `PREG.fin.ai`＋`pbackContainer('reg', 通達番号)` | — |
+| 4 | **いま止まっている設備**：`pSysRows()`（`PSYS.mfg`）。見出しだけ製造の語にする（`PSCREENS` の `sys` 行が `lbl.mfg: 'sysMfg'` を持っているのと同じ考え方） | **出さない**（`PSYS` に `fin` が無い。`pd()` の `it` フォールバックを踏ませない＝18-8） | **いま止まっているシステム**（**触らない**） |
+| 5 | **横断で使う AI**：`paiCrossBlock()`（3 業種共通。0 本なら `PT.noCrossAi`） | 同左 | 同左（**触らない**） |
+
+**右カラム**
+
+| # | 製造 | 金融 | IT |
+|---|---|---|---|
+| 6 | **期限超過 To Do**（`pd(PACT)`。3 業種共通・現状のまま） | 同左 | 同左 |
+| 7 | **お知らせ**（リテラル 3 行。社名も番号も含まないので 3 業種共通・現状のまま） | 同左 | 同左 |
+| 8 | **出さない**（「関連ナレッジ」の 2 行は IT 世界の文書名） | **出さない** | **関連ナレッジ**（**触らない**） |
+
+- **表の列見出し・ブロックの見出しは日本語のまま**（§7-1 の v1 方針。`PT` に新しいキーを足さない）
+- **金額・件数の書式は各定数の値をそのまま出す**（`PQUAL` / `PCRED` の `tiles` は `lbl` / `num` / `unit` / `delta` / `alarm` を
+  持っており、ホームの `.tile` の形と**そのまま合う**）
+- **行 AI のボタンは PR-E の `pctxRow` に乗る**（`scr` は `qual` / `order` / `cred` / `reg`）。
+  **したがって PR-G は PR-E の後**
+
+#### 18-12d. どの PR でやるか —— **PR-G（新設・規模 M）**
+
+**PR-F には入れない。**理由：
+
+1. **PR-F の触るファイルに `mock/js/portal/render.js` が入っていない**（§15-1）。入れると PR-F は
+   `app.js` / `demo.js` / `data/portal/ui.js` / `portal.html` / `verify.mjs` に `render.js` が加わり、
+   **「S」の規模ではなくなる**（`V.home` は 1 関数で 80 行あり、業種分岐で 150 行前後になる）
+2. **PR-F（台本の世界の解決）と PR-G（ホームの構成）は受け入れ条件が独立**している。
+   1 本にすると、片方が差し戻されたときにもう片方も止まる
+3. **PR-G は `tools/verify.mjs` も `js/data/**` も触らない**（触るのは `mock/js/portal/render.js` の `V.home` だけ）。
+   **PR-F とファイル集合が重ならないので並列できる**（`CLAUDE.md` §5）
+
+| PR | 題 | 触るファイル | 大きさ | 前提 |
+|---|---|---|---|---|
+| **PR-G** | ホームを業種ごとに構成する（`V.home` の業種分岐） | `mock/js/portal/render.js`（**`V.home` のみ**） | **M** | **PR-E**（行 AI が文脈カードに乗るため）。PR-F とは**並列可** |
+
+```
+… ──> PR-E ──┬──> PR-F（app/demo/ui/portal.html/verify）
+              └──> PR-G（render.js の V.home だけ）
+```
+
+#### 18-12e. 受け入れ条件 —— **AC-48 / AC-49 / AC-50 を新設**（PR-G）
+
+> **AC-48**（製造）業種チップ＝製造でホームを開くと、**本文（`document.body.innerText`）に IT 世界の語が 0 件**
+> ——「翠雲システムズ」「碧洋銀行」「甲社〜戊社」「`SYS-0`」「`P-24`」「パイプライン」「受注残 … 百万円」。
+> ブロックは 18-12c の表のとおり（今月の数字 4 枚・未クローズの不具合 5 行・納期が近い受注 3 行・
+> 止まっている設備・横断で使う AI／To Do・お知らせ）
+>
+> **AC-49**（金融）業種チップ＝金融でホームを開くと、**碧洋銀行の世界の語だけが出る**
+> ——「青嶺精工」「翠雲システムズ」「`SK-`」「`SYS-0`」が 0 件。
+> **「いま止まっているシステム」ブロックが出ない**（`PSYS` の `it` フォールバックを踏まない）
+>
+> **AC-50**（IT）業種チップ＝IT のホームが `origin/main`（`dade3b7`）と**同じ見え方**
+> ——ブロックの数・順・見出し・数字・注記がすべて一致する。`render.js` の diff は**業種分岐の追加だけ**で、
+> IT の枝の中身に差分が無い
+
+**Playwright に 2 本足す（§14-3）**：
+
+> **P-9**｜3 業種でホームを開き、`document.body.innerText` を**他業種の社名・番号体系の正規表現**に掛けて 0 件
+> （製造 → `碧洋銀行|翠雲システムズ|SYS-0|CRD-|NTF-`、金融 → `青嶺精工|翠雲システムズ|SK-|NC-20|SO-25`、
+> IT → `NC-20|CRD-|NTF-`）
+> **P-10**｜3 業種のホームの `section.block` の数が 18-12c の表と一致する（製造 7・金融 6・IT 7）
+
+**受け入れ条件の本数：46 → 50**（AC-47 ＋ AC-48 ＋ AC-49 ＋ AC-50。18-6 の移動とは違い、**今回は増える**）。
+
+---
+
+### 18-13. 記録 —— `V.goal` に「この画面の AI」ブロックが無かった（既存欠落）。PR-E で補った
+
+**事実**：`origin/main`（`dade3b7`）の `V.goal`（目標・MBO）には、他の 19 画面が持っている
+`<section class="block blk-ai">`（「この画面の AI」）が**存在しなかった**。PR-E（#306）が
+`paiScreenBlock('goal')` を持つブロックを 1 つ足している。
+
+**判断：可**。理由は 3 つ。
+
+1. **§11-3 の 49 マスの表に `goal` の行がある**（製造 **0** / 金融 **0** / IT **0**）。
+   **ブロックが無ければ AC-31（49 マスの件数一致）と AC-32（0 本のマスで `PT.noScreenAi` が出る）を
+   `goal` について確認できない**。PR-E の受け入れ条件を満たすために必要な変更である
+2. **足したのは他の 19 画面と同じ形の定型ブロック 1 つだけ**（`pt('screenAi')` の見出し ＋ `paiScreenBlock('goal')`）で、
+   **文言も新しいデータも足していない**。機械的な追随である
+3. **`goal` が 3 業種とも 0 本であることは §11-4 で「正直に空マスを見せる」と決めた仕様**であり、
+   このブロックは **`PT.noScreenAi`（「この画面の AI はまだありません」）を出すためのもの**である。
+   Issue 本文の残課題 **R-3**（`goal` が 3 業種とも AI 0 本）は、**この空マスが見えることで初めて
+   PM の会話の材料になる**
+
+**新しい受け入れ条件は足さない**（AC-31 / AC-32 に含まれる）。**`V.goal` の他の部分は触らない。**
+
+---
+
+### 18-14. PR-F の確定範囲（**18-11 の追加分を含めた再掲**。implementer はこの節だけ読めばよい）
+
+**題**：`pworldOf` の fallback ＋ 規則 5・6 の文言 ＋ `.mockbar` の `indNote` ＋ **文脈カードのラベルの 3 言語化**
+
+**前提**：PR-E（#306）がマージ済みであること。**PR-G とは並列可**（ファイル集合が重ならない）。
+
+**触るファイル（§15-1 から増やさない）**
+
+| ファイル | 何を |
+|---|---|
+| `mock/js/portal/app.js` | `pworldOf()` の fallback を `\|\| pstate.ind`（論理和）にする（§14-5・AC-36） |
+| `mock/js/portal/demo.js` | ① 規則 5・6 の代用バナーの条件（§14-7）② **`PCTXLBL` の新設と `dCtxRows()` / `PCTX_ROW_BUILDERS` のラベル引き**（18-11a） |
+| `mock/js/data/portal/ui.js` | ① `PT.indNote`（§12-1。PR-A で投入済みなら参照のみ）② **`PT` に 6 キー追加**（18-11b の表。3 言語同時） |
+| `mock/portal.html` | `.mockbar` の業種チップの下に `PT.indNote` を 1 行（AC-40） |
+| `tools/verify.mjs` | ① 17-l 後半（`demo.js` に `pstate.ind` が無い）② **17-r（`PCTXLBL` の整合。18-11d）**。**1 ブロックにまとめる** |
+
+**触らない**：`mock/js/portal/render.js`（**`V.home` は PR-G**）・`mock/js/data/portal/svc.js`（`PCTXDEF` は変えない）・
+`mock/js/data/scenarios/**`（台本は 1 バイトも書き換えない）・`js/data/catalog.js`・`tools/regress*`・`portal/**`。
+
+**受け入れ条件**：**AC-36 / AC-37 / AC-38 / AC-39 / AC-40 / AC-40b**（§16-7 のまま）
+**＋ AC-47**（18-11d。文脈カードのラベルが 3 言語）**＋ AC-41〜AC-46**（§16-8 の全 PR 共通）。
+
+**規模**：**S → M**（`PT` に 6 キー・`PCTXLBL` 7 画面・verify 1 検査が増えたため。§15-1 の「S」を読み替える）。
+
+---
+
+### 18-15. 進捗の更新（**18-9 の表を本節で置き換える**）
+
+18-0・18-9 の本文は書き換えない（`CLAUDE.md` §4 の作法）。**進捗表の最新は本節**である。
+
+| PR | 状態 | sha | PR 番号 |
+|---|---|---|---|
+| PR-0（世界マスタ 49 行） | **マージ済み** | `8227b78` | #299 |
+| PR-A（画面台帳の業種化・新 4 画面の殻） | **マージ済み** | `5c48eff` | #300 |
+| PR-B（行データの業種化・`PCOMPANY`・`sys` の製造版） | **マージ済み** | `62d619a` | #301 |
+| §18 追補（第 1 版・18-0〜18-4） | **マージ済み** | `10ef527` | #302 |
+| §18 追補（第 2 版・18-5〜18-10） | **マージ済み** | `c43eddf` | #305 |
+| PR-C（`cust` → 取引先。18-5 の `PPART.it` 戻し・18-7 の 17-g を含む） | **マージ済み** | `1dd3240` | #304 |
+| PR-D（新画面 4 枚の中身。`PQUAL`/`PORDER`/`PCRED`/`PREG`・`PT` 13 キー） | **マージ済み** | `dade3b7` | #303 |
+| PR-E（`place` 27 件・規則 1 撤回・`V.ai`・`pctxRow` 4 分岐・**AC-26**） | **レビュー中**（本追補の 18-11c・18-13 は #306 の**追認**。ラベルは PR-F へ） | `e360fe2`（head） | **#306** |
+| PR-F（fallback・規則 5/6 の文言・`indNote`・**文脈カードのラベル**） | 未着手。範囲は **18-14** | — | — |
+| **PR-G（ホームの業種化。`V.home` のみ）** | **未着手（本追補で新設）** | — | — |
+
+**マージ順**：**#306 → PR-F / PR-G（この 2 本は並列可）**。
+本文の数字の基準は `d484ff7`（§0 冒頭）のままで変えていない。
+**受け入れ条件の本数は 46 → 50**（AC-47〜AC-50。18-11d・18-12e）。**PR は 7 本 → 8 本**（PR-G を新設）。
+
+---
+
+### 18-16. この追補（第 3 版）で変えていないもの
+
+- **§0〜§17 の本文**（`c2d7a4e` / #298 のまま）。18-11〜18-14 は §15-1・§16-6・§16-7・§14-3・§12-4 の**読み替え**として書いた
+- **既存の 18-0〜18-10**（`10ef527` / #302 ・`c43eddf` / #305 のまま。進捗表の差し替えは 18-15 に置いた）
+- **`PCTXDEF`**（キーも画面も増やさない。ラベルは別の表＝`PCTXLBL` で持つ）
+- **`SVCS[].industries`**（§11-4 のとおり広げない。R-3・R-4 は残課題のまま）
+- **`mock/js/data/scenarios/**`・`mock/css/tokens.css`・`js/data/home.js`**（読むだけ）
+- **`localStorage` のキー**（`mock.lang` / `mock.theme` の 2 つのまま）
+- **`CLAUDE.md`・`.claude/**`**（§13-4 の「改定は不要」は依然として有効。
+  ホームの業種分岐は §2-3 の「表示レイヤーは `state` を読んで描くだけ」に**従う**変更であって、契約を変えない）
