@@ -1,0 +1,20 @@
+record_id,kind,opened,due,part_no,partner_code,equip_id,owner_dept,state,title_ja,title_zh,title_en,note
+NC-2025-0912,nc,2025-09-12,2025-09-19,SK-3310-A,K 社,PX-200,hinshitsu,open,初品の寸法ばらつき,首件尺寸波动,First-article dimensional variation,台本既出（mock/js/data/scenarios/mfg/qa.js）
+NC-2024-0118,nc,2024-11-18,,SK-3310-A,K 社,D-118,hinshitsu,closed,冷間時の位置ずれによる不適合,冷态时定位偏移导致的不合格,Nonconformance from cold-start misalignment,台本既出（qa.js・kn.js）
+8D-25-0912,nc,2025-09-12,2025-09-26,SK-3310-A,K 社,PX-200,hinshitsu,open,8D 報告（寸法ばらつき）,8D 报告（尺寸波动）,8D report for dimensional variation,台本既出（qa.js）
+CL-25-0906,claim,2025-09-06,2025-09-13,SK-3310-A,K 社,,hinshitsu,open,塗装ブツのクレーム,涂装颗粒投诉,Paint-speck claim,台本既出（qa.js）
+CL-25-0906-02,claim,2025-09-06,2025-09-13,SK-2207-B,K 社,,hinshitsu,open,タップ不通のクレーム（同日 2 件目）,丝锥不通投诉（同日第 2 件）,Tapping-blockage claim (same day second case),台本既出（qa.js）
+CAR-24-01,nc,2024-10-02,,,K 社,,hinshitsu,closed,工程監査の是正処置報告,工序审核纠正措施报告,Process-audit corrective action report,docs/dify/usecases/QA-04.md
+ECR-25-0088,ecr,2025-08-20,2025-09-30,SK-3310-A,T 社,,gijutsu,review,鋼板供給先の切替（S 社 → T 社）,钢板供应商切换（S 公司 → T 公司）,Steel supplier switch from S to T,台本既出（qa.js・pt.js）
+ECR-24-0017,ecr,2024-05-14,,SK-2207-B,,,gijutsu,closed,曲げ工程の順序変更,折弯工序顺序变更,Bending sequence change,台本既出（qa.js）
+ECR-23-0041,ecr,2023-06-08,,SK-3310-A,U 社,,gijutsu,closed,代替鋼板への切替,切换至替代钢板,Switch to alternate steel supplier,台本既出（partners.csv の U 社）
+TR-2024-007,tr,2024-07-03,,SK-3310-A,,PX-200,gijutsu,closed,E-47 アラームの原因調査,E-47 报警原因调查,Root-cause study for alarm E-47,台本既出（kn.js・dc.js）
+TR-2024-102,tr,2024-12-11,,SK-3310-A,,J-3310,gijutsu,closed,塗装治具の寸法流用検討,涂装治具尺寸沿用研究,Paint-jig dimension reuse study,台本既出（en.js）
+TR-2023-041,tr,2023-04-19,,SK-1190,J 社,D-092,gijutsu,closed,生産終了品の金型保管方針,停产品的模具保管方针,Mold retention policy for discontinued part,台本既出（en.js）
+RFQ-2025-118,rfq,2025-09-01,2025-09-19,SK-3310-C,K 社,,eigyo,open,新規ブラケットの引合,新支架询价,RFQ for a new bracket,台本既出（nm.js）
+RFQ-2025-131,rfq,2025-09-05,2025-09-26,SK-3318,V 社,,eigyo,open,ステーの引合（年間上限条項つき）,支撑件询价（含年度上限条款）,RFQ for a stay with annual value cap,本設計で追加（書式は calendar.md の RFQ-YYYY-NNN）
+SO-2509-018,so,2025-09-08,2025-09-30,SK-3310-A,K 社,,seisankanri,open,9 月分の確定受注,9 月确定订单,Confirmed order for September,台本既出（gn.js GN-03）
+SO-2510-001,so,2025-09-09,2025-10-31,SK-2207-B,K 社,,seisankanri,open,10 月分（日本向け）,10 月订单（面向日本）,October order for Japan,台本既出（gn.js GN-03）
+SO-2510-003,so,2025-09-10,2025-10-31,SK-3310-A,V 社,,seisankanri,hold,10 月分（年間上限条項の確認待ち）,10 月订单（等待年度上限条款确认）,October order on hold for value-cap check,台本既出（gn.js GN-03）
+INV-2025-0906,ship,2025-09-06,,SK-3310-A,K 社,,butsuryu,closed,上海発 大阪向けの発票,上海发往大阪的发票,Invoice for the Shanghai to Osaka shipment,台本既出（dc.js DC-06）
+RT-2508-04,ship,2025-08-22,,SK-2207-B,K 社,,butsuryu,closed,タップ不通分の返品,丝锥不通品退货,Return for tapping-blockage parts,台本既出（gn.js GN-02）
