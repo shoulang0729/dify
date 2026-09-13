@@ -1342,21 +1342,66 @@ section('17. 部門ポータル（mock/portal.html）契約');
     if (/--ntt-[a-z0-9-]+\s*:/i.test(portal.html)) { fail('portal.html にトークン定義のコピー（--ntt-* の定義行）が残っている'); bad17++; }
     if (!bad17) ok('portal.html: インライン <script>/<style> 0 個・<link> 2 本（tokens → portal）・トークンのコピーなし');
 
-    /* 17-c: SVCS[].place の値域（PSCREENS の画面 id ／ '*' ／ 'out'）。キー自体が無いものは warn（未配置） */
+    /* 17-c（rev4 改訂。docs/handoff/2026-09-12-portal-industry-rev4.md §14-1・PR-E）：
+       SVCS[].place の値域は PSCREENS の画面 id ／ '*' ／ 'out'。
+       ① 文字列のときは、svc.industries のすべての業種で見える画面であること
+          （例：'qual' を industries: ['mfg','fin'] のサービスに付けたら FAIL。'*'/'out' は業種を問わず許可）
+       ② オブジェクトのときは、キー集合が svc.industries と過不足なく一致し、各値がその業種で
+          見える画面 id ／ '*' ／ 'out' のいずれかであること
+       ③ 値域外・キー不一致は FAIL、キー自体が無いものは warn（未配置。現状 0 件） */
     const screenIds17 = new Set((portal.data.PSCREENS || []).map(s => s.id));
+    const screenById17 = new Map((portal.data.PSCREENS || []).map(s => [s.id, s]));
     const managementCode17 = (id) => id.replace(/^([a-z]+)(\d+)$/, (_, a, b) => a.toUpperCase() + '-' + String(b).padStart(2, '0'));
+    /** 画面 id（'*'/'out' は常に許可）が、業種 ind から見えるかどうか（PSCREENS[].ind 省略＝全業種） */
+    const screenVisible17 = (place, ind) => {
+      if (place === '*' || place === 'out') return true;
+      const scr = screenById17.get(place);
+      if (!scr) return false;
+      return !scr.ind || scr.ind.includes(ind);
+    };
     const placeless17 = [];
     let placeBad17 = 0;
+    let placeChecked17 = 0;
     for (const s of portal.data.SVCS || []) {
       const place = s.place;
+      const industries = Array.isArray(s.industries) ? s.industries : [];
       if (place === undefined) { placeless17.push(s.id); continue; }
-      if (place === '*' || place === 'out' || screenIds17.has(place)) continue;
-      fail(`SVCS.${s.id}.place の値が値域外: "${place}"（PSCREENS の画面 id ／ '*' ／ 'out' のいずれかであること）`);
-      placeBad17++;
+      if (typeof place === 'string') {
+        if (place !== '*' && place !== 'out' && !screenIds17.has(place)) {
+          fail(`SVCS.${s.id}.place の値が値域外: "${place}"（PSCREENS の画面 id ／ '*' ／ 'out' のいずれかであること）`);
+          placeBad17++; continue;
+        }
+        const invisible = industries.filter(ind => !screenVisible17(place, ind));
+        if (invisible.length) {
+          fail(`SVCS.${s.id}.place: "${place}" は業種 ${invisible.join(',')} から見えない画面（industries: ${industries.join(',')}）`);
+          placeBad17++; continue;
+        }
+        placeChecked17++;
+      } else if (place && typeof place === 'object') {
+        const keys = Object.keys(place);
+        const missingKeys = industries.filter(i => !keys.includes(i));
+        const extraKeys = keys.filter(i => !industries.includes(i));
+        if (missingKeys.length || extraKeys.length) {
+          fail(`SVCS.${s.id}.place: キー集合が industries と不一致（キー: ${keys.join(',')} ／ industries: ${industries.join(',')}）`);
+          placeBad17++; continue;
+        }
+        let objBad = false;
+        for (const [ind, v] of Object.entries(place)) {
+          if (v !== '*' && v !== 'out' && !screenIds17.has(v)) {
+            fail(`SVCS.${s.id}.place.${ind} の値が値域外: "${v}"`); objBad = true; continue;
+          }
+          if (!screenVisible17(v, ind)) {
+            fail(`SVCS.${s.id}.place.${ind}: "${v}" は業種 ${ind} から見えない画面`); objBad = true;
+          }
+        }
+        if (objBad) { placeBad17++; continue; }
+        placeChecked17++;
+      } else {
+        fail(`SVCS.${s.id}.place の型が不正: ${JSON.stringify(place)}`); placeBad17++;
+      }
     }
     if (!placeBad17) {
-      const placedCount = (portal.data.SVCS || []).length - placeless17.length;
-      ok(`SVCS[].place ${placedCount} 件がすべて値域内（画面 id ／ '*' ／ 'out'）`);
+      ok(`SVCS[].place ${placeChecked17} 件がすべて値域内（画面 id ／ '*' ／ 'out'。業種オブジェクト形は industries と過不足なく一致）`);
     }
     bad17 += placeBad17;
     if (placeless17.length) warn(`置き場所を決めていない: ${placeless17.map(managementCode17).join(', ')}`);
@@ -1537,8 +1582,11 @@ section('17. 部門ポータル（mock/portal.html）契約');
       bad17 += bad17k;
     }
 
-    /* 17-l（PR-3・§14-9）: js/portal/demo.js に pstate.ind の参照が無い（規則 3）／
-       pscreenAiIds・pcrossAiIds の関数本体に industries の参照が無い（規則 1） */
+    /* 17-l（PR-3・rev4 改訂 PR-E/PR-F。docs/handoff/2026-09-12-portal-industry-rev4.md §14-1）:
+       ① js/portal/demo.js に pstate.ind の参照が無い（規則 3。維持）
+       ② pscreenAiIds・pcrossAiIds の関数本体に industries の参照が「ある」こと
+          （規則 1 撤回。§2-1：置き場所が一致し、かつ industries に表示中の業種を含むものだけを出す）
+       ③ pscn() の本体に pstate.ind が現れないこと（業種の解決は pworldOf() 1 か所だけ。規則 3 の担保） */
     {
       const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
       let bad17l = 0;
@@ -1563,9 +1611,14 @@ section('17. 部門ポータル（mock/portal.html）契約');
       for (const fn of ['pscreenAiIds', 'pcrossAiIds']) {
         const body = extractFnBody(appAllStripped, fn);
         if (body === null) { fail(`${fn}() が js/portal/** に見つからない`); bad17l++; continue; }
-        if (/industries/.test(body)) { fail(`${fn}() の本体が industries を参照している（設計書 §14-2 規則 1 違反）`); bad17l++; }
+        if (!/industries/.test(body)) { fail(`${fn}() の本体が industries を参照していない（設計書 §2-1 規則 1' 違反。rev4 で規則 1 は撤回された）`); bad17l++; }
       }
-      if (!bad17l) ok('js/portal/demo.js に pstate.ind の参照が無く、pscreenAiIds/pcrossAiIds に industries の参照が無い（§14 規則 1・3）');
+      const pscnBody = extractFnBody(appAllStripped, 'pscn');
+      if (pscnBody === null) { fail('pscn() が js/portal/** に見つからない'); bad17l++; }
+      else if (/pstate\s*\.\s*ind\b|pstate\s*\[\s*['"]ind['"]\s*\]/.test(pscnBody)) {
+        fail('pscn() の本体が pstate.ind を参照している（業種の解決は pworldOf() の 1 か所だけにする。規則 3 違反）'); bad17l++;
+      }
+      if (!bad17l) ok('js/portal/demo.js・pscn() に pstate.ind の参照が無く、pscreenAiIds/pcrossAiIds は industries を参照している（§14 規則 1\'・3）');
       bad17 += bad17l;
     }
 

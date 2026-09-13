@@ -126,7 +126,11 @@ for (const k of Object.keys(snapshot.counts)) {
     if (bs.industries && JSON.stringify(bs.industries) !== JSON.stringify(s.industries)) {
       diffs.push(`SVCS.${s.id} industries: [${bs.industries}] → [${s.industries}]`);
     }
-    if (bs.place !== s.place) diffs.push(`SVCS.${s.id} place: ${bs.place ?? '(なし)'} → ${s.place ?? '(なし)'}`);
+    /* rev4（docs/handoff/2026-09-12-portal-industry-rev4.md §11-1・§14-2）：place は文字列のほか
+       業種別オブジェクト（{ mfg, fin, it }）も取りうるため、厳密等価ではなく JSON 文字列で比較する */
+    if (JSON.stringify(bs.place) !== JSON.stringify(s.place)) {
+      diffs.push(`SVCS.${s.id} place: ${JSON.stringify(bs.place ?? null)} → ${JSON.stringify(s.place ?? null)}`);
+    }
   }
   if (!diffs.some(d => d.startsWith('SVCS')) && JSON.stringify(base.svcs.map(x => x.id)) !== JSON.stringify(snapshot.svcs.map(x => x.id)))
     diffs.push('SVCS の並び順が変わっている');

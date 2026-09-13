@@ -91,12 +91,22 @@ const psvcCode = (id) => {
   return m ? `${m[1].toUpperCase()}-${ppad2(m[2])}` : String(id).toUpperCase();
 };
 
+/** SVCS[].place から、いまの業種で有効な置き場所を読む（rev4 §11-1。設計書
+    docs/handoff/2026-09-12-portal-industry-rev4.md）。place が文字列ならそのまま、
+    業種別オブジェクト（DC-08・DC-11・EG-01・KN-05 の 4 件だけ）ならその業種のキーを引く。
+    キー自体が無ければ undefined（verify §17-c の warn と同じ「未配置」状態）。 */
+const placeOf = (s, ind) => {
+  const p = s && s.place;
+  if (p === undefined) return undefined;
+  return typeof p === 'string' ? p : p[ind];
+};
+
 /** why の汎用文（PSVC に個別の why が無いサービス用）。ポータル画面の解説文は v1 は日本語のみ（§7-1）だが、
     置き場所を表す画面名だけは PT から引く（SCRNAME を削除した設計に合わせる。設計書 §4-2）。
-    置き場所は SVCS[].place が正本（PR-2。設計書 §4-3）。'out' の理由は POUT、未配置（キー無し）は
-    「置き場所を決めていません」を返す（verify §17-c の warn と同じ状態）。 */
+    置き場所は SVCS[].place が正本（PR-2。設計書 §4-3）。いまの業種（pstate.ind）で解決する（placeOf）。
+    'out' の理由は POUT、未配置（キー無し）は「置き場所を決めていません」を返す（verify §17-c の warn と同じ状態）。 */
 function pWhyGeneric(svc) {
-  const place = svc && svc.place;
+  const place = placeOf(svc, pstate.ind);
   if (!place) return '置き場所を決めていません。';
   if (place === 'out') return 'ポータルには置きません。' + (POUT[svc.id] || '');
   const label = place === '*' ? pt('allScreens') : pt(place);
@@ -131,11 +141,14 @@ function psvcOf(id) {
 }
 
 /** 「この画面の AI」ブロックを SVCS[].place から作る（手書きリストを持たない。設計書 §4-4）。
-    並び順: st 昇順（提供中 → 試行版 → 構想） → 管理番号昇順。
+    rev4 §2-1（規則 1 の撤回）：置き場所が一致し、かつそのサービスの industries にいまの業種
+    （pstate.ind）を含むものだけを出す（自部門ポータルは 3 社に増えたので、他社向けのサービスは
+    出さない）。並び順: st 昇順（提供中 → 試行版 → 構想） → 管理番号昇順。
     末尾に、その画面の PSCREENS[].newai（PNEW の未採番候補）があれば付け足す。 */
 function pscreenAiIds(screenId) {
+  const ind = pstate.ind;
   const placed = (typeof SVCS !== 'undefined' ? SVCS : [])
-    .filter(s => s.place === screenId)
+    .filter(s => placeOf(s, ind) === screenId && Array.isArray(s.industries) && s.industries.includes(ind))
     .sort((a, b) => a.st - b.st || psvcCode(a.id).localeCompare(psvcCode(b.id)))
     .map(s => s.id);
   const scr = (typeof PSCREENS !== 'undefined' ? PSCREENS : []).find(x => x.id === screenId);
@@ -143,10 +156,12 @@ function pscreenAiIds(screenId) {
   return placed.concat(newai);
 }
 
-/** ホームの「横断で使う AI」（place === '*'）。並び順は pscreenAiIds と同じ規則。 */
+/** ホームの「横断で使う AI」（place === '*'）。rev4 §2-1：industries にいまの業種を含むものだけ。
+    並び順は pscreenAiIds と同じ規則。 */
 function pcrossAiIds() {
+  const ind = pstate.ind;
   return (typeof SVCS !== 'undefined' ? SVCS : [])
-    .filter(s => s.place === '*')
+    .filter(s => placeOf(s, ind) === '*' && Array.isArray(s.industries) && s.industries.includes(ind))
     .sort((a, b) => a.st - b.st || psvcCode(a.id).localeCompare(psvcCode(b.id)))
     .map(s => s.id);
 }
@@ -199,15 +214,54 @@ function pDetectLang(s) {
   return pstate.lang;
 }
 
-/** 画面 id と行 id から、文脈カードに渡す「行」を引く（設計書 §5-4）。
+/** rev4 §18-6a（PR-E）。新設 4 画面（qual/order/cred/reg）の文脈カードのもと（PQUAL/PORDER/PCRED/PREG）。
+    どれも 1 業種だけが持つ定数なので pd() は使わず直接引く（§18-8。pd() の it フォールバックは
+    3 業種共通の定数のためのもので、1 業種限定の定数に使うと他業種の行が出るか [] を返して落ちる）。 */
+const PCTXSRC = {
+  qual:  () => (typeof PQUAL  !== 'undefined' ? PQUAL  : null),
+  order: () => (typeof PORDER !== 'undefined' ? PORDER : null),
+  cred:  () => (typeof PCRED  !== 'undefined' ? PCRED  : null),
+  reg:   () => (typeof PREG   !== 'undefined' ? PREG   : null)
+};
+/** PQUAL/PORDER/PCRED/PREG は画面ごとに複数の表を持つ（qual: rows＋tr／order: rows＋ship／
+    cred・reg: rows のみ。§9-1〜§9-4）。行の id（管理番号）はどの表からでも一意なので、この並びで
+    順に探す。列は head の並びなので、PCTXDEF[scr] のキーごとに「何列目（head の何番目）か」を
+    宣言する（設計書 §9-5 の対応。tr／ship はそもそも持たない列があり、その列は省く＝文脈カードに
+    出ない。qa1・qa3・kn1 など主要テーブルの行では PCTXDEF.qual の全キーが揃う）。 */
+const PCTXTABLES = {
+  qual:  [{ arr: 'rows', cols: { no: 0, kind: 1, part: 3, equip: 4, cu: 5, due: 7, state: 8 } },
+          { arr: 'tr',   cols: { no: 0, kind: 1, part: 3, equip: 4, state: 6 } }],
+  order: [{ arr: 'rows', cols: { no: 0, kind: 1, part: 3, cu: 4, qty: 5, due: 6, state: 7 } },
+          { arr: 'ship', cols: { no: 0, kind: 1, part: 3, state: 6 } }],
+  cred:  [{ arr: 'rows', cols: { no: 0, ringi: 1, cu: 2, product: 3, amount: 4, stage: 5, due: 7 } }],
+  reg:   [{ arr: 'rows', cols: { no: 0, issued: 1, authority: 2, topic: 3, dept: 4, due: 5, state: 6 } }]
+};
+
+/** 画面 id と行 id から、文脈カードに渡す「行」を引く（設計書 §5-4・rev4 §18-6a）。
     proj は PDEALS を id で引く（id/nm/cu/ow/sg/due/rag をそのまま持つ）。
     cust は顧客 id を渡すだけの軽い行（cu のみ。担当者テーブルの行から呼ぶときに使う）。
+    qual/order/cred/reg は該当画面の定数から、PCTXDEF[scr] のキー順で行の値を組み立てる（rev4 新設）。
     対応していない画面／行が見つからなければ null（ブロックから呼んだときと同じ「行なし」扱いに落ちる）。 */
 function pctxRow(scr, id) {
   if (!id) return null;
   if (scr === 'proj') return (typeof PDEALS !== 'undefined' ? PDEALS.find(d => d.id === id) : null) || null;
   if (scr === 'cust') return { cu: id };
   if (scr === 'sys') return pSysCtxRow(id);
+  const tables = PCTXTABLES[scr];
+  if (tables) {
+    const srcObj = PCTXSRC[scr] && PCTXSRC[scr]();
+    const d = srcObj && srcObj[pstate.ind];           // 業種限定。it フォールバックを掛けない（§18-8）
+    if (!d) return null;
+    const keys = (typeof PCTXDEF !== 'undefined' && PCTXDEF[scr]) || [];
+    for (const t of tables) {
+      const arr = d[t.arr];
+      if (!Array.isArray(arr)) continue;
+      const row = arr.find(r => r[0] === id);
+      if (!row) continue;
+      return keys.reduce((o, k) => { const i = t.cols[k]; if (i != null && row[i] !== undefined) o[k] = row[i]; return o; }, {});
+    }
+    return null;
+  }
   return null;
 }
 
@@ -233,6 +287,20 @@ function psvcBtn(id, opt) {
     '</button>';
 }
 function paiRow(list, opt) { return '<div class="ai">' + list.map(n => psvcBtn(n, opt)).join('') + '</div>'; }
+/** 「この画面の AI」ブロックの本体。rev4 §2-1：0 件なら空マスとして PT.noScreenAi を 1 行出す
+    （ブロックそのものは消さない。「これから作ります」の会話の材料にする。設計書 §11-4）。
+    既存クラスの組み合わせだけで作る（新しいクラスは足さない。CLAUDE.md §2-2・設計書 §1-3）。 */
+function paiScreenBlock(screenId) {
+  const ids = pscreenAiIds(screenId);
+  if (!ids.length) return '<div class="ai"><span style="color:var(--text-muted)">' + pesc(pt('noScreenAi')) + '</span></div>';
+  return paiRow(ids);
+}
+/** ホームの「横断で使う AI」ブロックの本体。0 件なら PT.noCrossAi（rev4 §2-1・§11-4）。 */
+function paiCrossBlock() {
+  const ids = pcrossAiIds();
+  if (!ids.length) return '<div class="ai"><span style="color:var(--text-muted)">' + pesc(pt('noCrossAi')) + '</span></div>';
+  return paiRow(ids);
+}
 /** rowCtx: 呼び出し元の行の文脈。{ scr: 'proj'|'cust', id: 行の id } を渡すと行から渡す文脈が有効になる。
     省略すると（画面の他の場所と同じく）ブロックから呼んだ扱いになる。 */
 function prowAi(list, rowCtx) {
