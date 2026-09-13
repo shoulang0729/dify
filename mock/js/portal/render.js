@@ -176,7 +176,7 @@ V.cust = () => {
   </table></div></div>
   <div class="body" style="border-top:1px solid var(--border-subtle)">
    <div class="note">計画を割っている四半期は<b>赤で出ます</b>。四半期は会計年度（4 月〜3 月）から機械的に決まるので、テーブルには <code>fiscal_year</code> と <code>quarter</code> を持たせ、<b>画面には絶対日付を持たせません</b>。</div>
-   <div class="pn blk">本番：計画は経営企画から、実績は会計システムから取り込む。デモは ${qtr.rows.length} 先 × 4 四半期を直接持つ</div>
+   <div class="pn blk">本番：計画は経営企画から、実績は会計システムから取り込む。デモは ${qtr.rows.length} 取引先 × 4 四半期を直接持つ</div>
   </div>
  </section>
 
@@ -249,7 +249,7 @@ V.cust = () => {
   <div class="body">
    ${paiRow(pscreenAiIds('cust'))}
    <div class="note" style="margin-top:10px"><b>「名刺の読み取りと項目抽出（日中英）」はカタログに無いので新規です。</b>名刺管理そのものは NocoBase に持ち、AI が受け持つのは読み取りと項目抽出だけ、という切り分けです。製造業カタログにも金融カタログにもありません。分類と管理番号は実装時に採番します（CLAUDE.md §2-11 は分類コード＋2 桁通番）。</div>
-   ${ind === 'it' ? `<div class="note" style="margin-top:8px"><b>ここがカタログとの接続点です。</b>顧客 = 青嶺精工・碧洋銀行にすると、自部門の顧客を見ている画面から、その顧客向けに作った AI カタログへ地続きになります（製造業 49 サービス／金融業 29 サービス）。</div>
+   ${ind === 'it' ? `<div class="note" style="margin-top:8px"><b>ここがカタログとの接続点です。</b>顧客 = 青嶺精工・碧洋銀行にすると、自部門の顧客を見ている画面から、その顧客向けに作った AI カタログへ地続きになります（製造業 49 サービス／金融 29 サービス）。</div>
    <div class="note" style="margin-top:8px"><b>自社は架空の日系 SIerです（PM 確定）。α 社・β 社は顧客側の仮置きです。</b>新しい名前は <code>data/world/</code> に足してから使う決まり（CLAUDE.md §2-13）なので、実装前にマスタへ登録します。</div>` : ''}
   </div>
  </section>
