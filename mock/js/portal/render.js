@@ -10,34 +10,118 @@
 
 const V = {};
 
-V.home = () => `
-<div class="grid g-main">
- <div class="grid">
-  <section class="block">
-   <header><h2>今月の数字</h2><span class="sub">FY2026 上期 ／ 2026-09-11 時点</span></header>
-   <div class="body"><div class="tiles">
+/* rev4 §18-12（PR-G）：ホームは業種ごとにブロック構成が違う（決定 6。設計書
+   docs/handoff/2026-09-12-portal-industry-rev4.md §18-12c）。新しいデータは 1 行も足さず、
+   既存の PQUAL/PORDER/PCRED/PREG/PSYS/PACT/PDEALS から描くだけにする。
+   製造＝未クローズの不具合＋納期が近い受注＋設備の稼働状況＋To Do（お知らせ含む）。
+   金融＝審査中の与信＋期限が近い当局通達＋To Do（お知らせ含む。sys は出さない）。
+   IT＝現状維持（origin/main dade3b7 と 1 ミリも変えない。AC-50）。 */
+V.home = () => {
+  const ind = pstate.ind;
+
+  /* ---- #1 今月の数字（4 枚）。mfg/fin は業種限定定数から直接引く（pd() は使わない＝§18-8） ---- */
+  const homeTiles = ind === 'mfg'
+    ? [PQUAL.mfg.tiles[0], PQUAL.mfg.tiles[1], PORDER.mfg.tiles[1], PORDER.mfg.tiles[3]]
+    : ind === 'fin'
+    ? [PCRED.fin.tiles[0], PREG.fin.tiles[1], PCRED.fin.tiles[2], PREG.fin.tiles[2]]
+    : null; // IT は既存の直書きタイルのまま（触らない）
+  const tilesBody = homeTiles ? homeTiles.map(pTile).join('') : `
     <div class="tile"><div class="lbl">受注残</div><div class="num">${BACKLOG.toFixed(1)}<small>百万円</small></div><div class="delta">受注後の 5 件</div></div>
     <div class="tile"><div class="lbl">パイプライン</div><div class="num">${PIPE_TOTAL.toFixed(1)}<small>百万円</small></div><div class="delta">受注前 5 件 ／ 確度加重 ${PIPE_W.toFixed(1)}</div></div>
     <div class="tile alarm"><div class="lbl">期限超過 To Do</div><div class="num">2<small>件</small></div><div class="delta">最長 13 日</div></div>
-    <div class="tile"><div class="lbl">要員稼働率</div><div class="num">94.4<small>%</small></div><div class="delta">目標 90.0</div></div>
-   </div>
-   <div class="pn blk">本番：数字の元は実データ。テーブルの形（スキーマ）はデモと同一で、中身だけが入れ替わる</div>
-   </div>
-  </section>
+    <div class="tile"><div class="lbl">要員稼働率</div><div class="num">94.4<small>%</small></div><div class="delta">目標 90.0</div></div>`;
 
+  /* ---- #2 左：製造＝未クローズの不具合（PQUAL.mfg.rows の未完了・期限昇順） ---- */
+  const qualOpenHtml = ind !== 'mfg' ? '' : (() => {
+    const rows = PQUAL.mfg.rows.filter(r => r[8] !== '完了').slice().sort((a, b) => a[7].localeCompare(b[7]));
+    return `
   <section class="block">
-   <header><h2>いま止まっているシステム</h2><span class="sub">障害・縮退・閉塞のみ</span></header>
-   <div class="body">
-   ${(() => {
-     const stopped = pSysRows().filter(r => r.state === 'incident' || r.state === 'degraded' || r.state === 'blocked');
-     if (!stopped.length) return '<div class="note">すべて定常運転中です</div>';
-     return '<ul class="list">' + stopped.map(r =>
-       '<li><div><b>' + pesc(r.name) + '</b> ' + pSysChip(r.state) +
-       '<span class="m">' + pesc(r.client) + ' ／ ' + r.id + '</span></div></li>').join('') + '</ul>';
-   })()}
+   <header><h2>未クローズの不具合</h2><span class="sub">${rows.length} 件</span></header>
+   <div class="body flush">
+   ${ptbl(PQUAL.mfg.head.map(h => ({ t: h })).concat([{ t: 'この行で使う AI' }]),
+     rows.map(r => '<tr><td class="nw"><span class="no">' + pesc(r[0]) + '</span></td>' +
+       '<td class="nw">' + pesc(r[1]) + '</td><td class="nw">' + pesc(r[2]) + '</td>' +
+       '<td class="nw">' + pesc(r[3]) + '</td><td class="nw">' + pQDash(r[4]) + '</td>' +
+       '<td class="nw">' + pQDash(r[5]) + '</td><td class="nw">' + pesc(r[6]) + '</td>' +
+       '<td class="nw">' + pQDash(r[7]) + '</td><td class="nw">' + pQState(r[8]) + '</td>' +
+       '<td>' + prowAi(r.ai ?? PQUAL.mfg.ai, { scr: 'qual', id: r[0] }) + pbackContainer('qual', r[0]) + '</td></tr>').join(''))}
    </div>
-  </section>
+  </section>`;
+  })();
 
+  /* ---- #3 左：製造＝納期が近い受注（PORDER.mfg.rows を納期昇順で 3 件） ---- */
+  const orderNearHtml = ind !== 'mfg' ? '' : (() => {
+    const rows = PORDER.mfg.rows.slice().sort((a, b) => a[6].localeCompare(b[6])).slice(0, 3);
+    return `
+  <section class="block">
+   <header><h2>納期が近い受注</h2><span class="sub">${rows.length} 件</span></header>
+   <div class="body flush">
+   ${ptbl(PORDER.mfg.head.map(h => ({ t: h })).concat([{ t: 'この行で使う AI' }]),
+     rows.map(r => '<tr><td class="nw"><span class="no">' + pesc(r[0]) + '</span></td>' +
+       '<td class="nw">' + pesc(r[1]) + '</td><td class="nw">' + pesc(r[2]) + '</td>' +
+       '<td class="nw">' + pesc(r[3]) + '</td><td class="nw">' + pesc(r[4]) + '</td>' +
+       '<td class="nw">' + pesc(r[5]) + '</td><td class="nw">' + pesc(r[6]) + '</td>' +
+       '<td class="nw">' + pQState(r[7]) + '</td>' +
+       '<td>' + prowAi(PORDER.mfg.ai, { scr: 'order', id: r[0] }) + pbackContainer('order', r[0]) + '</td></tr>').join(''))}
+   </div>
+  </section>`;
+  })();
+
+  /* ---- #2 左：金融＝審査中の与信（PCRED.fin.rows の未承認・期限昇順） ---- */
+  const credOpenHtml = ind !== 'fin' ? '' : (() => {
+    const rows = PCRED.fin.rows.filter(r => r[5] !== '承認済').slice().sort((a, b) => a[7].localeCompare(b[7]));
+    return `
+  <section class="block">
+   <header><h2>審査中の与信</h2><span class="sub">${rows.length} 件</span></header>
+   <div class="body flush">
+   ${ptbl(PCRED.fin.head.map((h, i) => (i === 4 ? { t: h, n: 1 } : { t: h })).concat([{ t: 'この行で使う AI' }]),
+     rows.map(r => '<tr><td class="nw"><span class="no">' + pesc(r[0]) + '</span></td>' +
+       '<td class="nw">' + pesc(r[1]) + '</td><td class="nw">' + pesc(r[2]) + '</td>' +
+       '<td class="nw">' + pesc(r[3]) + '</td><td class="num">' + pesc(r[4]) + '</td>' +
+       '<td class="nw">' + pQState(r[5]) + '</td><td class="nw">' + pesc(r[6]) + '</td>' +
+       '<td class="nw">' + pesc(r[7]) + '</td><td class="nw">' + pesc(r[8]) + '</td>' +
+       '<td>' + prowAi(PCRED.fin.ai, { scr: 'cred', id: r[0] }) + pbackContainer('cred', r[0]) + '</td></tr>').join(''))}
+   </div>
+  </section>`;
+  })();
+
+  /* ---- #3 左：金融＝期限が近い当局通達（PREG.fin.rows の未完了を対応期限昇順で 3 件） ---- */
+  const regNearHtml = ind !== 'fin' ? '' : (() => {
+    const rows = PREG.fin.rows.filter(r => r[6] !== '完了').slice().sort((a, b) => a[5].localeCompare(b[5])).slice(0, 3);
+    return `
+  <section class="block">
+   <header><h2>期限が近い当局通達</h2><span class="sub">${rows.length} 件</span></header>
+   <div class="body flush">
+   ${ptbl(PREG.fin.head.map(h => ({ t: h })).concat([{ t: 'この行で使う AI' }]),
+     rows.map(r => '<tr><td class="nw"><span class="no">' + pesc(r[0]) + '</span></td>' +
+       '<td class="nw">' + pesc(r[1]) + '</td><td class="nw">' + pesc(r[2]) + '</td>' +
+       '<td>' + pesc(r[3]) + '</td><td class="nw">' + pesc(r[4]) + '</td>' +
+       '<td class="nw">' + pesc(r[5]) + '</td><td class="nw">' + pQState(r[6]) + '</td>' +
+       '<td>' + prowAi(PREG.fin.ai, { scr: 'reg', id: r[0] }) + pbackContainer('reg', r[0]) + '</td></tr>').join(''))}
+   </div>
+  </section>`;
+  })();
+
+  /* ---- #4 左：いま止まっている設備／システム。金融は出さない（PSYS に fin が無く、
+     pd() の it フォールバックを踏ませないため＝§18-8）。見出しだけ製造の語にする
+     （PSCREENS.sys の lbl.mfg: 'sysMfg' と同じ考え方）。IT は現状維持。 ---- */
+  const sysHtml = ind === 'fin' ? '' : (() => {
+    const stopped = pSysRows().filter(r => r.state === 'incident' || r.state === 'degraded' || r.state === 'blocked');
+    const heading = ind === 'mfg' ? 'いま止まっている設備' : 'いま止まっているシステム';
+    return `
+  <section class="block">
+   <header><h2>${heading}</h2><span class="sub">障害・縮退・閉塞のみ</span></header>
+   <div class="body">
+   ${!stopped.length ? '<div class="note">すべて定常運転中です</div>' :
+     '<ul class="list">' + stopped.map(r =>
+       '<li><div><b>' + pesc(r.name) + '</b> ' + pSysChip(r.state) +
+       '<span class="m">' + pesc(r.client) + ' ／ ' + r.id + '</span></div></li>').join('') + '</ul>'}
+   </div>
+  </section>`;
+  })();
+
+  /* ---- #2 左：IT＝手当てが要る案件（PDEALS。触らない） ---- */
+  const dealsHtml = ind !== 'it' ? '' : `
   <section class="block">
    <header><h2>手当てが要る案件</h2><span class="sub">Red / Yellow</span><span class="sp"></span>
     <span class="sub">行から直接 AI を呼べる →</span></header>
@@ -49,8 +133,34 @@ V.home = () => `
        '<td>' + d.nx + '</td>' +
        '<td>' + prowAi(PSTAGE_AI[d.sg], { scr: 'proj', id: d.id }) + pbackContainer('proj', d.id) + '</td></tr>').join(''))}
    </div>
-  </section>
+  </section>`;
 
+  /* ---- #8 右：IT＝関連ナレッジ（他業種には IT 世界の文書名しか無いので出さない） ---- */
+  const knowledgeHtml = ind !== 'it' ? '' : `
+  <section class="block">
+   <header><h2>関連ナレッジ</h2><span class="sub">文書は Outline 側</span></header>
+   <div class="body">
+    <ul class="list">
+     <li><span class="k">議事録</span><div>部門月次 2026-09-08</div></li>
+     <li><span class="k">提案</span><div>青嶺精工 MES 更改 第2期 提案書</div></li>
+    </ul>
+    <div class="note" style="margin-top:10px"><b>デモには Outline がありません。</b>リンク先は同じ画面内のダミーです。ポータルが持つのは「どの案件がどの文書に紐づくか」だけで、文書の中身は持ちません。</div>
+    <div class="pn blk">本番：Outline Self-Hosted へのリンクになる。紐づけ（document_links）の形はデモと同一</div>
+   </div>
+  </section>`;
+
+  return `
+<div class="grid g-main">
+ <div class="grid">
+  <section class="block">
+   <header><h2>今月の数字</h2><span class="sub">FY2026 上期 ／ 2026-09-11 時点</span></header>
+   <div class="body"><div class="tiles">
+    ${tilesBody}
+   </div>
+   <div class="pn blk">本番：数字の元は実データ。テーブルの形（スキーマ）はデモと同一で、中身だけが入れ替わる</div>
+   </div>
+  </section>
+${qualOpenHtml}${orderNearHtml}${credOpenHtml}${regNearHtml}${sysHtml}${dealsHtml}
   <section class="block blk-ai">
    <header><h2>${pesc(pt('crossAi'))}</h2><span class="sub">どの画面からでも開く</span></header>
    <div class="body">
@@ -78,20 +188,10 @@ V.home = () => `
    <div class="pn blk">本番：社内の掲示と接続。デモは架空のお知らせ 3 件をテーブルに直接持つ</div>
    </div>
   </section>
-
-  <section class="block">
-   <header><h2>関連ナレッジ</h2><span class="sub">文書は Outline 側</span></header>
-   <div class="body">
-    <ul class="list">
-     <li><span class="k">議事録</span><div>部門月次 2026-09-08</div></li>
-     <li><span class="k">提案</span><div>青嶺精工 MES 更改 第2期 提案書</div></li>
-    </ul>
-    <div class="note" style="margin-top:10px"><b>デモには Outline がありません。</b>リンク先は同じ画面内のダミーです。ポータルが持つのは「どの案件がどの文書に紐づくか」だけで、文書の中身は持ちません。</div>
-    <div class="pn blk">本番：Outline Self-Hosted へのリンクになる。紐づけ（document_links）の形はデモと同一</div>
-   </div>
-  </section>
+${knowledgeHtml}
  </div>
 </div>`;
+};
 
 V.cust = () => {
   /* rev4 §8（PR-C）：cust は「取引先」テンプレート。①②③⑤ は業種で中身が替わり、
