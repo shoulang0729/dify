@@ -45,13 +45,13 @@ const PT = {
 
   /* ---- ブランド ---- */
   brand: { ja: '部門ポータル', zh: '部门门户', en: 'Department Portal' },
-  org:   { ja: '翠雲システムズ ソリューション本部', zh: '翠云系统 解决方案本部', en: 'Suiun Systems, Solutions Division' },
-  site:  { ja: '上海 ／ FY2026 上期', zh: '上海 ／ FY2026 上半年', en: 'Shanghai / FY2026 H1' },
+  /* rev4 §5-2：org / site / role の 3 キーは削除。会社名・部門名・拠点・ロールは
+     PCOMPANY（mock/js/data/portal/org.js）と INDUSTRIES（mock/js/data/ui.js）から組み立てる
+     （renderIdentity()。二重に持たない） */
 
   /* ---- 環境チップ・ロール・本番との違い・テーマ ---- */
   env:   { ja: 'デモ環境・架空データ', zh: '演示环境・虚构数据', en: 'Demo environment, fictional data' },
   envOn: { ja: 'デモ環境・架空データ（本番の違いを表示中）', zh: '演示环境・虚构数据（显示与生产环境的差异）', en: 'Demo environment (showing differences from production)' },
-  role:  { ja: 'PMO ／ 全案件 閲覧', zh: 'PMO ／ 可查看全部项目', en: 'PMO / all projects' },
   prod:  { ja: '本番との違いを表示', zh: '显示与生产环境的差异', en: 'Show production differences' },
   theme: { ja: 'テーマ', zh: '主题', en: 'Theme' },
 
