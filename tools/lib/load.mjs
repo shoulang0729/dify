@@ -98,10 +98,11 @@ const PORTAL_DATA_KEYS = [
   // ポータル固有データ層（js/data/portal/**）
   // PCOMPANY は rev4 §5-2（org.js）で新設。PSYS/PSYSEV/PSYSST/PSYSNOW は sysops-usecase（sys.js）で
   // 既に存在していたが、この読み出しリストに漏れていたため rev4 で合わせて足す。
+  // PPART は rev4 §8-1（PR-C）で PCUST を「取引先」テンプレートへ改名したもの。
   'PT', 'PGRP', 'PSCREENS', 'PHOW', 'PHOWLONG', 'PST',
   'PSVC', 'POUT', 'PNEW', 'PSTAGE_AI', 'PCTXDEF',
   'PORG', 'PCOMPANY', 'PWORLD',
-  'PSTAGE', 'PDEALS', 'PCUST', 'PCONTACT', 'PHIST', 'PNEWS', 'PVENDOR',
+  'PSTAGE', 'PDEALS', 'PPART', 'PCONTACT', 'PHIST', 'PNEWS', 'PVENDOR',
   'PACT', 'PCAND', 'PMEET', 'PKNOW', 'PKNOWACT',
   'PPEOPLE', 'PATT', 'PKPI', 'PKPITOPIC', 'PSRC', 'PGOAL', 'PQTR', 'PCUR_Q',
   'PEXP', 'PREQ', 'PTRAIN', 'PMYTRAIN', 'PMYITEM', 'PTODO_STATE', 'PSURVEY', 'PMYSURVEY',
