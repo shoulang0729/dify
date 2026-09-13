@@ -372,7 +372,7 @@
       "tags": [
         "search"
       ],
-      "place": "out"
+      "place": "qual"
     },
     {
       "id": "kn2",
@@ -386,7 +386,7 @@
         "equipment",
         "search"
       ],
-      "place": "out"
+      "place": "sys"
     },
     {
       "id": "kn3",
@@ -432,7 +432,11 @@
         "authority",
         "regulation"
       ],
-      "place": "out"
+      "place": {
+        "mfg": "know",
+        "fin": "reg",
+        "it": "know"
+      }
     },
     {
       "id": "qa1",
@@ -447,7 +451,7 @@
         "rootcause",
         "report8d"
       ],
-      "place": "out"
+      "place": "qual"
     },
     {
       "id": "qa2",
@@ -460,7 +464,7 @@
       "tags": [
         "change4m"
       ],
-      "place": "out"
+      "place": "qual"
     },
     {
       "id": "qa3",
@@ -473,7 +477,7 @@
       "tags": [
         "claim"
       ],
-      "place": "out"
+      "place": "qual"
     },
     {
       "id": "qa4",
@@ -487,7 +491,7 @@
         "audit",
         "report"
       ],
-      "place": "out"
+      "place": "qual"
     },
     {
       "id": "dc1",
@@ -500,7 +504,7 @@
       "tags": [
         "report"
       ],
-      "place": "proj"
+      "place": "kpi"
     },
     {
       "id": "dc2",
@@ -544,7 +548,7 @@
         "safety",
         "translate"
       ],
-      "place": "out"
+      "place": "trn"
     },
     {
       "id": "dc5",
@@ -570,7 +574,7 @@
       "tags": [
         "trade"
       ],
-      "place": "out"
+      "place": "order"
     },
     {
       "id": "dc7",
@@ -600,7 +604,11 @@
         "report",
         "kpi"
       ],
-      "place": "proj"
+      "place": {
+        "mfg": "kpi",
+        "fin": "reg",
+        "it": "proj"
+      }
     },
     {
       "id": "lg1",
@@ -667,7 +675,7 @@
       "tags": [
         "costing"
       ],
-      "place": "proj"
+      "place": "order"
     },
     {
       "id": "nm2",
@@ -709,7 +717,7 @@
         "inventory",
         "faq"
       ],
-      "place": "out"
+      "place": "order"
     },
     {
       "id": "nm5",
@@ -737,7 +745,7 @@
         "spec",
         "glossary"
       ],
-      "place": "out"
+      "place": "qual"
     },
     {
       "id": "en2",
@@ -750,7 +758,7 @@
       "tags": [
         "bom"
       ],
-      "place": "out"
+      "place": "order"
     },
     {
       "id": "en3",
@@ -764,7 +772,7 @@
         "drawing",
         "search"
       ],
-      "place": "out"
+      "place": "qual"
     },
     {
       "id": "gn1",
@@ -803,7 +811,7 @@
       "tags": [
         "order"
       ],
-      "place": "vend"
+      "place": "order"
     },
     {
       "id": "gn4",
@@ -890,7 +898,7 @@
         "partner_infovendor",
         "credit"
       ],
-      "place": "vend"
+      "place": "cust"
     },
     {
       "id": "pt2",
@@ -1002,7 +1010,7 @@
         "procedure",
         "faq"
       ],
-      "place": "out"
+      "place": "know"
     },
     {
       "id": "kn7",
@@ -1016,7 +1024,7 @@
         "search",
         "client"
       ],
-      "place": "out"
+      "place": "cust"
     },
     {
       "id": "kn8",
@@ -1030,7 +1038,7 @@
         "authority",
         "search"
       ],
-      "place": "out"
+      "place": "reg"
     },
     {
       "id": "kn9",
@@ -1072,7 +1080,7 @@
         "report",
         "approval"
       ],
-      "place": "proj"
+      "place": "reg"
     },
     {
       "id": "dc10",
@@ -1102,7 +1110,11 @@
         "contract",
         "legal"
       ],
-      "place": "proj"
+      "place": {
+        "mfg": "req",
+        "fin": "cred",
+        "it": "proj"
+      }
     },
     {
       "id": "rs1",
@@ -1186,7 +1198,7 @@
         "proposal",
         "client"
       ],
-      "place": "proj"
+      "place": "cred"
     },
     {
       "id": "cv2",
@@ -1214,7 +1226,7 @@
         "credit",
         "report"
       ],
-      "place": "out"
+      "place": "cred"
     },
     {
       "id": "cv4",
@@ -1228,7 +1240,7 @@
         "screening",
         "audit"
       ],
-      "place": "out"
+      "place": "cred"
     },
     {
       "id": "fa1",
@@ -1420,7 +1432,11 @@
         "spec",
         "faq"
       ],
-      "place": "proj"
+      "place": {
+        "mfg": "qual",
+        "fin": "know",
+        "it": "proj"
+      }
     },
     {
       "id": "sl1",
