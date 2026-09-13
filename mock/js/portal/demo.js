@@ -1,43 +1,66 @@
 'use strict';
 /* mock/js/portal/demo.js — 台本（SCENARIOS）の実行ドロワー（PR-3）。
    設計書 docs/handoff/2026-09-11-portal-mock-pages.md §5・§14（rev2：業種フィルタの矛盾の解消と、
-   台本の業種の規則）。
+   台本の業種の規則）。**規則 1・規則 2 は
+   docs/handoff/2026-09-12-portal-industry-rev4.md §2 で撤回済み**（規則 1 は js/portal/app.js の
+   pscreenAiIds/pcrossAiIds が業種込みで絞る側に変わった。このファイルには関係しない）。
+   文脈カードのラベル（PCTXLBL）は同書 §18-11・PR-F で新設。
 
    共有するのはデータ（SCENARIOS / TEMPLATES）だけで、描画はこのファイルが持つ（§5-2）。
    台本は 1 バイトも書き換えない（mock/js/data/scenarios/** は読むだけ。AC-22）。
    カタログの state / js/app.js / js/render.js は一切触らない。ポータルは別の pstate（js/portal/app.js）
    と、この描画層を持つ。
 
-   §14 の 3 つの規則をこのファイルで守る（verify §17-l が機械的に検査する）：
-     規則 1：「この画面の AI」は業種で絞らない（js/portal/app.js の pscreenAiIds/pcrossAiIds の話。
-              ここでは何もしない）
-     規則 3：台本の業種は「行の世界」（pworldOf/pscn。js/portal/app.js）が決める。
-              このファイルは pstate.ind を一切参照しない。 */
+   §14 の規則 3（維持）をこのファイルで守る（verify §17-l が機械的に検査する）：
+     台本の業種は「行の世界」（pworldOf/pscn。js/portal/app.js）が決める。
+     このファイルは pstate.ind を一切参照しない。 */
 
 /* ============================================================
    ドロワーの実行時状態（pstate とは別。閉じるたびに捨てる一時状態）
    ============================================================ */
 let dCtx = null;
 
+/** 文脈カードの左ラベル（画面 id → キー → PT のキー名。rev4 PR-F・§18-11a）。
+    PT のキー名だけを持ち、文言そのものは持たない（3 言語一致は PT 側で担保。CLAUDE.md §2-1）。
+    配線していない画面（act/vend/watch/meet/exp/req/ppl/trn/know/kpi）は入れない
+    （pctxRow() がこれらの画面で行を返さないため。§18-11a）。
+    PCTXDEF にあって PCTXLBL に無いキーは生キーへフォールバックする（壊さない。verify §17-r）。 */
+const PCTXLBL = {
+  proj:  { id: 'ctxProject', nm: 'ctxProject', cu: 'ctxCustomer', ow: 'ctxOwner', sg: 'ctxStage', due: 'ctxDue', rag: 'ctxState' },
+  cust:  { cu: 'ctxCustomer', own: 'ctxOwner', stage: 'ctxStage' },
+  sys:   { sys: 'ctxSystemNo', name: 'ctxSystemName', client: 'ctxClient', criticality: 'ctxCriticality', inc: 'ctxIncidentNo' },
+  qual:  { no: 'ctxRecord', kind: 'ctxKind', part: 'ctxPartNo', equip: 'ctxEquip', cu: 'ctxCustomer', due: 'ctxDue', state: 'ctxState' },
+  order: { no: 'ctxRecord', kind: 'ctxKind', part: 'ctxPartNo', cu: 'ctxCustomer', qty: 'ctxQty', due: 'ctxDue', state: 'ctxState' },
+  cred:  { no: 'ctxCaseNo', ringi: 'ctxRingi', cu: 'ctxCustomer', product: 'ctxProduct', amount: 'ctxAmount', stage: 'ctxStage', due: 'ctxDue' },
+  reg:   { no: 'ctxNotice', issued: 'ctxIssued', authority: 'ctxAuthority', topic: 'ctxTopic', dept: 'ctxDept', due: 'ctxDue', state: 'ctxState' }
+};
+/** 画面 id とキーからラベル文言を引く。PCTXLBL に無ければ生キーをそのまま返す（フォールバック）。 */
+function pctxLabel(scr, k) {
+  const key = (PCTXLBL[scr] || {})[k];
+  return key ? pt(key) : k;
+}
+
 /** 行から呼んだときの文脈カード（設計書 §5-4）。proj / cust は具体的な行の組み立て方を持ち、
     それ以外の画面は PCTXDEF の宣言（フィールド名リスト）から汎用に組み立てる（配線していない画面では
-    実行時に到達しないが、壊れずに動くようにしておく）。戻り値は [ラベル, 値] の配列。 */
+    実行時に到達しないが、壊れずに動くようにしておく）。戻り値は [ラベル, 値] の配列。
+    ラベルはすべて pctxLabel() 経由で PCTXLBL から引く（rev4 PR-F・§18-11a。proj/cust の見え方は
+    origin/main と同一のまま——引く先の PT キーが変わっていないため）。 */
 const PCTX_ROW_BUILDERS = {
   proj: (row) => {
     const rows = [];
-    if (row.id || row.nm) rows.push([pt('ctxProject'), [row.id, row.nm].filter(Boolean).join('　')]);
-    if (row.cu) rows.push([pt('ctxCustomer'), row.cu]);
-    if (row.ow) rows.push([pt('ctxOwner'), row.ow]);
-    if (row.sg) rows.push([pt('ctxStage'), pstageName(row.sg) + (row.due ? ' ／ ' + pt('ctxDue') + ' ' + row.due : '')]);
-    else if (row.due) rows.push([pt('ctxDue'), row.due]);
-    if (row.rag) rows.push([pt('ctxState'), PRAGNAME[row.rag] || row.rag]);
+    if (row.id || row.nm) rows.push([pctxLabel('proj', 'id'), [row.id, row.nm].filter(Boolean).join('　')]);
+    if (row.cu) rows.push([pctxLabel('proj', 'cu'), row.cu]);
+    if (row.ow) rows.push([pctxLabel('proj', 'ow'), row.ow]);
+    if (row.sg) rows.push([pctxLabel('proj', 'sg'), pstageName(row.sg) + (row.due ? ' ／ ' + pctxLabel('proj', 'due') + ' ' + row.due : '')]);
+    else if (row.due) rows.push([pctxLabel('proj', 'due'), row.due]);
+    if (row.rag) rows.push([pctxLabel('proj', 'rag'), PRAGNAME[row.rag] || row.rag]);
     return rows;
   },
   cust: (row) => {
     const rows = [];
-    if (row.cu) rows.push([pt('ctxCustomer'), row.cu]);
-    if (row.own) rows.push([pt('ctxOwner'), row.own]);
-    if (row.stage) rows.push([pt('ctxStage'), row.stage]);
+    if (row.cu) rows.push([pctxLabel('cust', 'cu'), row.cu]);
+    if (row.own) rows.push([pctxLabel('cust', 'own'), row.own]);
+    if (row.stage) rows.push([pctxLabel('cust', 'stage'), row.stage]);
     return rows;
   }
 };
@@ -46,7 +69,7 @@ function dCtxRows(scr, row) {
   const builder = PCTX_ROW_BUILDERS[scr];
   if (builder) return builder(row);
   const fields = (typeof PCTXDEF !== 'undefined' && PCTXDEF[scr]) || [];
-  return fields.filter(k => row[k] !== undefined && row[k] !== '').map(k => [k, row[k]]);
+  return fields.filter(k => row[k] !== undefined && row[k] !== '').map(k => [pctxLabel(scr, k), row[k]]);
 }
 function dFldHTML(label, val) {
   return '<div class="fld auto"><label>' + pesc(label) + '</label>' +

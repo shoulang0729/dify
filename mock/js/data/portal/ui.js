@@ -146,7 +146,18 @@ const PT = {
   ctxIssued:    { ja: '発出日', zh: '发布日期', en: 'Issued' },
   ctxAuthority: { ja: '区分（当局）', zh: '类别（监管）', en: 'Authority' },
   ctxTopic:     { ja: '論点', zh: '要点', en: 'Topic' },
-  ctxDept:      { ja: '担当部署', zh: '负责部门', en: 'Owning dept.' }
+  ctxDept:      { ja: '担当部署', zh: '负责部门', en: 'Owning dept.' },
+
+  /* ---- 文脈カードのラベル（PCTXLBL。mock/js/portal/demo.js。rev4 PR-F・§18-11b）。
+     dCtxRows() が生キー（'sys' / 'client' 等）のまま出していたのを直すために足す 6 キー。
+     sys（PCTXDEF.sys）と cred.no（PCRD-… の審査番号。ctxRecord は qual/order の記録番号と
+     紛れるため流用しない。§18-11b） ---- */
+  ctxSystemNo:    { ja: 'システム番号', zh: '系统编号', en: 'System ID' },
+  ctxSystemName:  { ja: 'システム', zh: '系统', en: 'System' },
+  ctxClient:      { ja: '利用先', zh: '使用方', en: 'Used by' },
+  ctxCriticality: { ja: '重要度', zh: '重要程度', en: 'Criticality' },
+  ctxIncidentNo:  { ja: '障害番号', zh: '故障编号', en: 'Incident no.' },
+  ctxCaseNo:      { ja: '審査番号', zh: '审查编号', en: 'Case no.' }
 };
 
 /* ============================================================
