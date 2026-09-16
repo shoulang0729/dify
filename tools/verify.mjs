@@ -121,6 +121,23 @@
  *        19-f どのフィールドにも ASCII の `,` `"` が無い
  *        （設計書 docs/handoff/2026-09-12-portal-indicators-i18n.md §8-1。Issue #289 PR-1。
  *        mock/js/data/portal/** の読み出しは tools/lib/load.mjs の loadPortal() を使う）
+ *   20.  （新規）ダミー資産（mock/assets/demo/**）と SCENARIOS[].input.assets の契約。
+ *        mock/assets/ が無ければ節ごと skip（§16〜§19 と同じ作法）：
+ *        20-a mock/assets/** に先頭が "_" のディレクトリが無い（§2-8）／
+ *        20-b mock/assets/demo/ の各ファイルの拡張子が jpg/png/wav/pdf/txt/md のいずれか／
+ *        20-c サイズ上限：jpg/png ≤ 300KB、wav ≤ 2MB（設計書は 1MB としているが、PM 決定
+ *        〔2026-09-16、Issue #311〕でオフライン TTS の実音声に切り替えたため 2MB に読み替える。
+ *        README.md に理由を明記）、pdf ≤ 200KB／
+ *        20-d *.wav ごとに同名の .txt が実在し、空でない（文字起こしの併置）／
+ *        20-e SCENARIOS[業種][id].input[lang].assets それぞれについて、assets.length が
+ *        files.length と一致・file が mock/ 配下に実在・先頭が "/" でなく ".." を含まない・
+ *        kind が image/audio/doc のいずれか（PR-0 時点ではまだ assets を持つ SCENARIOS が
+ *        無いため 0 件チェックで PASS。PR-4/PR-5 で効いてくる）／
+ *        20-f mock/**（.js/.html）に fetch( が現れない（file:// で壊れる作りを入れない）／
+ *        20-g mock/assets/demo/README.md が実在し「読み取りを行いません」相当の注記を含む（warn）／
+ *        20-h tools/gen-demo-assets.mjs・tools/gen-demo-audio.py が実在し、ルート package.json の
+ *        scripts のどのコマンド文字列にも現れない（CI で走らせない）
+ *        （設計書 docs/handoff/2026-09-16-showcase-demo.md §9・§11。Issue #311 PR-0）
  *
  * 節番号の採番規則（設計書 docs/handoff/2026-09-11-repo-layout-v3.md §8-4・R-P3。
  * docs/handoff/README.md にも明記）：設計書は節番号を予約しない。実装時に「実装済みの最大 ＋ 1」を
@@ -2127,6 +2144,133 @@ section('19. ポータル指標名の 3 言語対訳（data/world/it/*.csv）');
     }
 
     if (!bad19) ok('§19 すべて PASS（19-a〜19-f）');
+  }
+}
+
+/* ---------- 20. ダミー資産（mock/assets/demo/**）と SCENARIOS[].input.assets の契約 ---------- */
+section('20. ダミー資産（mock/assets/demo/**）の契約');
+{
+  const ASSETS_ROOT = resolve(MOCK, 'assets');
+  if (!existsSync(ASSETS_ROOT)) {
+    ok('mock/assets/ が無いため §20 は skip');
+  } else {
+    let bad20 = 0;
+
+    // 20-a: mock/assets/** に先頭が "_" のディレクトリが無い
+    const underscoreAssetDirs = [];
+    const walkAssets = (dir, rel) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const childRel = rel ? `${rel}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) {
+          if (entry.name.startsWith('_')) underscoreAssetDirs.push(childRel);
+          walkAssets(resolve(dir, entry.name), childRel);
+        }
+      }
+    };
+    walkAssets(ASSETS_ROOT, '');
+    if (underscoreAssetDirs.length) { fail(`20-a mock/assets/ 配下に _ 始まりのディレクトリ: ${underscoreAssetDirs.join(', ')}`); bad20++; }
+    else ok('20-a mock/assets/ 配下に _ 始まりのディレクトリなし');
+
+    const DEMO_DIR = resolve(MOCK, 'assets/demo');
+    if (!existsSync(DEMO_DIR)) {
+      warn('mock/assets/demo/ が無いため 20-b〜20-h を skip');
+    } else {
+      const demoFiles = readdirSync(DEMO_DIR, { withFileTypes: true }).filter(e => e.isFile()).map(e => e.name);
+      const ALLOWED_EXT = new Set(['jpg', 'png', 'wav', 'pdf', 'txt', 'md']);
+      const SIZE_LIMIT = { jpg: 300 * 1024, png: 300 * 1024, wav: 2 * 1024 * 1024, pdf: 200 * 1024 };
+
+      // 20-b / 20-c
+      let extBad = 0, sizeBad = 0;
+      for (const f of demoFiles) {
+        const ext = f.includes('.') ? f.slice(f.lastIndexOf('.') + 1).toLowerCase() : '';
+        if (!ALLOWED_EXT.has(ext)) { fail(`20-b mock/assets/demo/${f}: 拡張子 "${ext}" が許可外`); extBad++; continue; }
+        if (SIZE_LIMIT[ext]) {
+          const size = readFileSync(resolve(DEMO_DIR, f)).length;
+          if (size > SIZE_LIMIT[ext]) { fail(`20-c mock/assets/demo/${f}: サイズ ${size} bytes が上限 ${SIZE_LIMIT[ext]} bytes を超える`); sizeBad++; }
+        }
+      }
+      if (!extBad) ok(`20-b mock/assets/demo/ の ${demoFiles.length} ファイルすべて拡張子が許可集合内`);
+      if (!sizeBad) ok('20-c mock/assets/demo/ の全ファイルがサイズ上限内（jpg/png≤300KB, wav≤2MB, pdf≤200KB）');
+      bad20 += extBad + sizeBad;
+
+      // 20-d: *.wav ごとに同名の .txt が実在し、空でない
+      let txtBad = 0;
+      const wavFiles = demoFiles.filter(f => f.toLowerCase().endsWith('.wav'));
+      for (const wav of wavFiles) {
+        const txtName = wav.replace(/\.wav$/i, '.txt');
+        const txtPath = resolve(DEMO_DIR, txtName);
+        if (!existsSync(txtPath)) { fail(`20-d ${wav}: 同名の ${txtName} が無い`); txtBad++; }
+        else if (!readFileSync(txtPath, 'utf8').trim()) { fail(`20-d ${txtName}: 空`); txtBad++; }
+      }
+      if (!txtBad) ok(`20-d *.wav ${wavFiles.length} 件すべてに同名の非空 .txt がある`);
+      bad20 += txtBad;
+
+      // 20-g: README.md（warn）
+      const readmePath = resolve(DEMO_DIR, 'README.md');
+      if (!existsSync(readmePath)) warn('20-g mock/assets/demo/README.md が無い');
+      else if (!/読み取り.{0,6}(を)?行い?ません|行っていません/.test(readFileSync(readmePath, 'utf8'))) {
+        warn('20-g mock/assets/demo/README.md に「読み取りを行いません」相当の注記が見当たらない');
+      } else ok('20-g mock/assets/demo/README.md が実在し、読み取りを行わない旨の注記がある');
+    }
+
+    // 20-e: SCENARIOS[業種][id].input[lang].assets の整合（PR-0 時点では 0 件になりうる）
+    let assetsBad = 0, assetsChecked = 0;
+    if (SCENARIOS) {
+      for (const indId in SCENARIOS) {
+        for (const id in SCENARIOS[indId]) {
+          const scn = SCENARIOS[indId][id];
+          if (!scn.input) continue;
+          for (const l of LANGS) {
+            const inp = scn.input[l];
+            if (!inp || !Array.isArray(inp.assets)) continue;
+            assetsChecked++;
+            const label = `SCENARIOS.${indId}.${id}.input.${l}`;
+            const filesLen = Array.isArray(inp.files) ? inp.files.length : -1;
+            if (inp.assets.length !== filesLen) { fail(`20-e ${label}.assets: 長さ ${inp.assets.length} が files の長さ ${filesLen} と不一致`); assetsBad++; }
+            inp.assets.forEach((a, i) => {
+              if (!a || typeof a.file !== 'string') { fail(`20-e ${label}.assets[${i}]: file が文字列でない`); assetsBad++; return; }
+              if (a.file.startsWith('/') || a.file.includes('..')) { fail(`20-e ${label}.assets[${i}].file: "${a.file}" が絶対パスまたは .. を含む`); assetsBad++; }
+              if (!['image', 'audio', 'doc'].includes(a.kind)) { fail(`20-e ${label}.assets[${i}].kind: "${a.kind}" が image/audio/doc 以外`); assetsBad++; }
+              const assetAbs = resolve(MOCK, a.file);
+              if (!existsSync(assetAbs)) { fail(`20-e ${label}.assets[${i}].file: "mock/${a.file}" が実在しない`); assetsBad++; }
+            });
+          }
+        }
+      }
+    }
+    if (!assetsBad) ok(`20-e SCENARIOS[].input.assets ${assetsChecked} 件（0 件でも PASS）すべて整合`);
+    bad20 += assetsBad;
+
+    // 20-f: mock/**（.js/.html）に fetch( が現れない
+    const mockJsHtmlFiles = [];
+    const walkMockJsHtml = (dir, rel) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const childRel = rel ? `${rel}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) { walkMockJsHtml(resolve(dir, entry.name), childRel); continue; }
+        if (/\.(js|html)$/.test(entry.name)) mockJsHtmlFiles.push({ abs: resolve(dir, entry.name), rel: `mock/${childRel}` });
+      }
+    };
+    walkMockJsHtml(MOCK, '');
+    const fetchOffenders = mockJsHtmlFiles.filter(f => /fetch\(/.test(readFileSync(f.abs, 'utf8'))).map(f => f.rel);
+    if (fetchOffenders.length) { fail(`20-f mock/**（.js/.html）に fetch( が現れる: ${fetchOffenders.join(', ')}`); bad20++; }
+    else ok('20-f mock/**（.js/.html）に fetch( が現れない');
+
+    // 20-h: tools/gen-demo-assets.mjs・tools/gen-demo-audio.py が package.json の scripts から呼ばれていない
+    const genToolsPath = { assets: resolve(ROOT, 'tools/gen-demo-assets.mjs'), audio: resolve(ROOT, 'tools/gen-demo-audio.py') };
+    let genToolsBad = 0;
+    for (const [label, p] of Object.entries(genToolsPath)) {
+      if (!existsSync(p)) { fail(`20-h tools/${label === 'assets' ? 'gen-demo-assets.mjs' : 'gen-demo-audio.py'} が無い`); genToolsBad++; }
+    }
+    const rootPkg20 = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8'));
+    const scriptValues20 = Object.values(rootPkg20.scripts || {}).join('\n');
+    if (/gen-demo-assets\.mjs|gen-demo-audio\.py/.test(scriptValues20)) {
+      fail('20-h package.json の scripts が gen-demo-assets.mjs / gen-demo-audio.py を呼んでいる（CI で走らせない）');
+      genToolsBad++;
+    }
+    if (!genToolsBad) ok('20-h gen-demo-assets.mjs・gen-demo-audio.py が実在し、package.json の scripts から呼ばれていない');
+    bad20 += genToolsBad;
+
+    if (!bad20) ok('§20 すべて PASS（20-a〜20-h）');
   }
 }
 
