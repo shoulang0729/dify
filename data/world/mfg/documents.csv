@@ -9,3 +9,4 @@ PDB-0001,record_id,取引先データベース：現行取引先（蘇州）,供
 PDB-0417,record_id,取引先データベース：国内大手（購買代行推奨）,供应商数据库：国内大型企业（推荐采购代理）,Partner Database: Domestic Major Account (Recommended Procurement Agent),koubai,,docs/dify/usecases/PT-06.md・PT-07.md
 SUP-001,record_id,サプライヤー匿名 ID 対応表（例）,供应商匿名ID对照表（示例）,Supplier Anonymized ID Mapping (Example),koubai,,docs/dify/usecases/PT-06.md
 SH-OSA-01,record_id,出荷ルール：上海→大阪,出货规则：上海→大阪,Shipping Rule: Shanghai to Osaka,butsuryu,,docs/dify/usecases/NM-04.md
+WS-L3-04,rule,段取り作業標準書（ライン3 金型D-118）,换型作业标准书（3号线 模具D-118）,Setup Work Standard (Line 3 die D-118),hozen,Rev.A（2019-06-01）／Rev.C（2024-11-25）,本設計で追加（docs/handoff/2026-09-16-showcase-demo.md §5-2）。Rev.C は NC-2024-0118（2024-11-18 冷間時の位置ずれ）の是正として金型予熱 40℃ 以上を追加（equipment.csv の D-118 行の「金型予熱基準（設備保全課、2024-11）」と同一の規定）。ダミー PDF を mock/assets/demo/ に置く（§9-3）。書式は calendar.md の WS-LN-NN（既存 WS-L2-07 と同体系）

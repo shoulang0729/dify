@@ -23,13 +23,13 @@ IT（在中日系 SIer）の第 3 世界は `docs/handoff/2026-09-11-it-industry
 |---|---|
 | `company.md` | 社名（ja/zh/en）・現地法人・拠点・事業内容 |
 | `org.csv` | 部署（`SCENARIOS[].persona.role` から抽出） |
-| `people.csv` | 人物 20 名（`SCENARIOS[].persona` ＋ `FEED.persona`）。主務 `title_*` に加え兼務 `alt_title_ja/zh/en`（`;` 区切り、3 列とも同じ順序）を持つ（Issue #153 PR-3 で追加） |
+| `people.csv` | 人物 21 名（`SCENARIOS[].persona` ＋ `FEED.persona`）。主務 `title_*` に加え兼務 `alt_title_ja/zh/en`（`;` 区切り、3 列とも同じ順序）を持つ（Issue #153 PR-3 で追加） |
 | `products.csv` | 品番（台本の `SK-…`／`ASSY-…` など） |
 | `equipment.csv` | 設備・金型・治具（`PX-200`・`D-118` など） |
 | `partners.csv` | 取引先記号（`K 社` など。**社名は付けない**）とパートナー連携 6 サービスの役割名、および GN-07（幹部来訪・出張アテンド）が使う旅行会社記号 `R 社` |
 | `kpi.csv` | 不良率・稼働率・生産数など（基準値。改善事例など別文脈の値は note で区別） |
 | `calendar.md` | 会計年度・文書番号の体系・世界の「今日」 |
-| `documents.csv` | 規程・マニュアル・社内システムのレコード ID の台帳（`kind`＝`rule`/`record_id`。発番されない ID。Issue #153 PR-2 で新設） |
+| `documents.csv` | 規程・マニュアル・社内システムのレコード ID の台帳（`kind`＝`rule`/`record_id`。発番されない ID。Issue #153 PR-2 で新設）（KN-11 で作業標準書 1 件を追加） |
 | `records.csv` | 品質・受注出荷の案件台帳 19 件（不具合・クレーム・変更要求・技術報告・引合・受注・出荷/通関。`docs/handoff/2026-09-12-portal-industry-rev4.md` §6-2 で新設） |
 | `partner_contacts.csv` | 取引先（顧客・仕入先・物流事業者）側の担当者 6 名（青嶺精工の社員ではない。同設計書 §6-3 で新設） |
 | `hotels.csv` | 会社契約ホテル（GN-07。3 言語の名称・住所） |
