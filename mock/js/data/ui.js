@@ -137,7 +137,17 @@ const T = {
                    en: 'Opens the live app on Dify in a new tab (verified working as of {updated})' },
   liveNote:      { ja: '※ 本番アプリは架空データのデモ環境です',
                    zh: '※ 正式应用运行在使用虚构数据的演示环境上',
-                   en: '* The live app runs on a demo environment that contains fictional data only.' }
+                   en: '* The live app runs on a demo environment that contains fictional data only.' },
+
+  /* ---- アップロード部品（設計書 2026-09-16-showcase-demo.md §10-4。4 キー） ---- */
+  upDrop:        { ja: 'ファイルをここにドラッグ、またはクリックして選択',
+                   zh: '把文件拖到这里，或点击选择',
+                   en: 'Drag files here, or click to choose' },
+  upSample:      { ja: 'サンプルを使う', zh: '使用示例文件', en: 'Use the sample files' },
+  upClear:       { ja: 'クリア', zh: '清空', en: 'Clear' },
+  upNote:        { ja: 'このモックは読み取りを行いません。選んだファイルはブラウザの中だけで表示され、どこにも送信・保存されません。読み取り結果は台本から出しています。',
+                   zh: '本模拟不执行识别。所选文件仅在浏览器内显示，不会发送或保存到任何位置。识别结果来自演示脚本。',
+                   en: 'This mock does not read the files. What you choose is shown in the browser only, and is never uploaded or stored; the extraction result comes from the script.' }
 };
 
 /* ============================================================

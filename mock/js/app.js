@@ -185,6 +185,58 @@ function consume(lang, qOverride) {
   return true;
 }
 
+/* ---- アップロード部品（設計書 2026-09-16-showcase-demo.md §10）----
+   載っているファイルの表示用メタ。state には入れない（§2-3：state の必須キー一覧を動かさないため）。
+   言語切替の再描画では作り直されないので、会話ログ（state.log）と同じくそのまま復元される。
+   読み取り（OCR/STT）はしない。実行結果は台本（SCENARIOS[].result）から出す。 */
+let upFiles = [];
+/** ファイル名の拡張子から表示用の種別を推定する（image / audio / doc）。未知の拡張子は doc 扱い */
+function upKindOf(name) {
+  const n = String(name).toLowerCase();
+  if (/\.(jpe?g|png|gif|webp)$/.test(n)) return 'image';
+  if (/\.(wav|mp3|m4a|ogg)$/.test(n)) return 'audio';
+  return 'doc';
+}
+/** 載せたファイルを全部外す。作成済みの objectURL は破棄する（§10-1） */
+function upClear() {
+  upFiles.forEach((f) => { if (f.objectUrl) URL.revokeObjectURL(f.objectUrl); });
+  upFiles = [];
+}
+/** ユーザーが選んだ FileList を upFiles に積む。画像は FileReader で DataURL、音声は
+    URL.createObjectURL、それ以外は名前だけのチップにする（fetch() は使わない＝§2-8。送らない・保存しない＝§2-6）。
+    非同期の読み込みがすべて終わったら done() を呼ぶ（呼び出し側の events.js が再描画する） */
+function upAddFiles(fileList, done) {
+  const files = Array.from(fileList || []);
+  if (!files.length) { done(); return; }
+  let remaining = files.length;
+  const settle = () => { remaining -= 1; if (remaining === 0) done(); };
+  files.forEach((file) => {
+    const kind = upKindOf(file.name);
+    if (kind === 'image') {
+      const reader = new FileReader();
+      reader.onload = () => { upFiles.push({ name: file.name, kind, src: String(reader.result) }); settle(); };
+      reader.onerror = () => { upFiles.push({ name: file.name, kind: 'doc', src: '' }); settle(); };
+      reader.readAsDataURL(file);
+    } else if (kind === 'audio') {
+      const url = URL.createObjectURL(file);
+      upFiles.push({ name: file.name, kind, src: url, objectUrl: url });
+      settle();
+    } else {
+      upFiles.push({ name: file.name, kind: 'doc', src: '' });
+      settle();
+    }
+  });
+}
+/** 「サンプルを使う」：台本の input[lang].assets のパスをそのまま upFiles に積む（相対パスのまま。fetch() は使わない） */
+function upUseSample(scn, lang) {
+  const inp = scn && scn.input && scn.input[lang];
+  if (!inp || !Array.isArray(inp.assets)) return;
+  upClear();
+  inp.assets.forEach((a, i) => {
+    upFiles.push({ name: (inp.files && inp.files[i]) || a.file.split('/').pop(), kind: a.kind, src: a.file });
+  });
+}
+
 /* ============================================================
    5. 設定の永続化（言語 / テーマ）
    ============================================================ */
