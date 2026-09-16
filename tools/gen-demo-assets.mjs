@@ -160,26 +160,6 @@ function rewriteSmudge(rng, x, y, w, h) {
   return parts.join('');
 }
 
-// 行末の丸で囲んだメモ（矢印つき）。内容は台本と矛盾しない短い語。
-function circledNote(rng, x, y, text, opts = {}) {
-  const fontSize = opts.fontSize || 17;
-  const color = opts.color || '#7a1f1f';
-  const { svg: noteSvg, endX } = handwritten(rng, text, x + 20, y, { fontSize, color });
-  const textW = Math.max(24, endX - (x + 20));
-  const cx = x + 20 + textW / 2;
-  const cy = y - fontSize * 0.35;
-  const rx = textW / 2 + 8, ry = fontSize * 0.85;
-  const wobble = (rng() * 2 - 1) * 4;
-  const arrowTipX = x + 12, arrowTipY = y - 2;
-  const arrowTailX = x - 10, arrowTailY = y - 12;
-  return `<g transform="rotate(${wobble.toFixed(1)} ${cx.toFixed(1)} ${cy.toFixed(1)})">
-      <ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}" fill="none" stroke="${color}" stroke-width="1.6" opacity="0.75"/>
-    </g>
-    <path d="M ${arrowTailX.toFixed(1)} ${arrowTailY.toFixed(1)} L ${arrowTipX.toFixed(1)} ${arrowTipY.toFixed(1)}" stroke="${color}" stroke-width="1.3" opacity="0.7"/>
-    <path d="M ${arrowTipX.toFixed(1)} ${arrowTipY.toFixed(1)} l -6 -1.5 l 2.5 5.5 z" fill="${color}" opacity="0.7"/>
-    ${noteSvg}`;
-}
-
 // 紙そのものの汚れ（折り目・指跡/油じみ）。決定的（rng 消費）。
 function paperDefects(rng, w, h) {
   const parts = [];
@@ -234,10 +214,8 @@ function buildInspectionSheetHtml(rng, { date, lot, inspector, remarkIllegible }
   ];
   const top = 210, rowH = 84, labelX = 40, valX = 280;
   let body = '';
-  let judgeRowY = 0;
   rows.forEach((r, i) => {
     const y = top + i * rowH;
-    if (r.ja === '判定') judgeRowY = y;
     body += `<line x1="30" y1="${y + 20}" x2="${W - 30}" y2="${y + 20}" stroke="#b9ad8f" stroke-width="1"/>`;
     body += `<text x="${labelX}" y="${y}" font-family="IPAGothic, sans-serif" font-size="17" fill="#333">${escXml(r.ja)}</text>`;
     body += `<text x="${labelX}" y="${y + 22}" font-family="WenQuanYi Zen Hei, sans-serif" font-size="14" fill="#666">${escXml(r.zh)}</text>`;
@@ -246,11 +224,6 @@ function buildInspectionSheetHtml(rng, { date, lot, inspector, remarkIllegible }
     const { svg } = handwritten(rng, r.val, valX, y + 8, { fontSize: 26, overflow });
     body += svg;
   });
-  // 判定欄の右に「再確認」の丸メモ（9/5 分だけ。値は変えず、後日の確認が要るという演出）
-  let judgeNote = '';
-  if (!remarkIllegible && judgeRowY) {
-    judgeNote = circledNote(rng, valX + 96, judgeRowY + 8, '再確認');
-  }
   // 備考欄（9/6 分だけ判読不能にする。9/5 分は「特になし」を書き直した跡つきで書く）
   const remY = top + rows.length * rowH + 20;
   body += `<line x1="30" y1="${remY + 20}" x2="${W - 30}" y2="${remY + 20}" stroke="#b9ad8f" stroke-width="1"/>`;
@@ -271,7 +244,6 @@ function buildInspectionSheetHtml(rng, { date, lot, inspector, remarkIllegible }
     <text x="${W / 2}" y="102" text-anchor="middle" font-family="WenQuanYi Zen Hei, sans-serif" font-size="20" fill="#444">外观检验记录</text>
     <line x1="30" y1="130" x2="${W - 30}" y2="130" stroke="#333" stroke-width="2"/>
     ${body}
-    ${judgeNote}
     ${noise}
     ${defects}
   `);
