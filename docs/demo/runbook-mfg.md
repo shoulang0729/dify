@@ -17,6 +17,9 @@ Dify Cloud（`cloud-master`）で動く実機 12 本を、担当者が読み上�
 | 置き場 | ③（`mock/` 配下＝コード） | ③（`docs/demo/`） |
 | 依存 | `TEMPLATES`・`state` | `dify/samples/`・`LIVE`（`mock/js/data/live.js`）・`dify/KNOWN_ISSUES.md` |
 
+> **モックを使う短いデモ（5〜7 分）は別の台本にあります**：`runbook-showcase-mfg.md`。
+> 手書き・音声の入力と「データを見極める」見せ方を扱うもので、**実機ではなく Pages のモックを動かします**。混ぜて使わないでください。
+
 **この台本が動かす画面は、モックの catalog.html ではありません。** Dify Cloud の実アプリ（Studio のプレビュー／チャット枠）を直接操作します。
 
 ### 0-2. 所要時間・参加者・環境
