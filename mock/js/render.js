@@ -547,6 +547,38 @@ function resultHTML(r) {
   return titleHTML + r.items.map(it => `<div class="kv"><div class="k">${esc(it.k)}</div><div class="v">${esc(it.v)}</div></div>`).join('');
 }
 
+/** 載せた 1 ファイルぶんの表示。種類ごとにプレビューを出し分ける（設計書 §10-1）。
+    ユーザーが選んだ doc（src が空）はチップのみ、サンプルの doc（src が実パス）は開けるリンクにする */
+function upItemHTML(f) {
+  if (f.kind === 'image') {
+    return `<div class="upitem"><span class="file">🖼 ${esc(f.name)}</span><img class="upthumb" src="${esc(f.src)}" alt=""></div>`;
+  }
+  if (f.kind === 'audio') {
+    return `<div class="upitem"><span class="file">🔊 ${esc(f.name)}</span><audio class="upaudio" controls src="${esc(f.src)}"></audio></div>`;
+  }
+  return f.src
+    ? `<div class="upitem"><a class="file" href="${esc(f.src)}" target="_blank" rel="noopener">📄 ${esc(f.name)} ${esc(t('feedOpen'))}</a></div>`
+    : `<div class="upitem"><span class="file">📄 ${esc(f.name)}</span></div>`;
+}
+
+/** upload テンプレートの入力パネル（ドロップゾーン／ファイル選択／サンプル／プレビュー。設計書 §10）。
+    upFiles が空のときは従来どおり台本の files をチップで出す（assets を持たない台本の後方互換＝§10-5）。
+    「サンプルを使う」は inp.assets が files と同じ長さのときだけ出す */
+function uploadPanelHTML(scn, inp) {
+  const hasSample = Array.isArray(inp.assets) && inp.assets.length === inp.files.length;
+  const filesHTML = upFiles.length
+    ? upFiles.map(upItemHTML).join('')
+    : inp.files.map(f => `<span class="file">📄 ${esc(f)}</span>`).join('');
+  const actions = (hasSample ? `<button type="button" class="upbtn" data-up="sample">${esc(t('upSample'))}</button>` : '') +
+    (upFiles.length ? `<button type="button" class="upbtn" data-up="clear">${esc(t('upClear'))}</button>` : '');
+  return `
+    <div class="drop upzone" data-up="pick" tabindex="0" role="button" aria-label="${esc(t('upDrop'))}">${esc(t('upDrop'))}</div>
+    <input type="file" class="upinput" data-up="input" multiple hidden>
+    ${actions ? `<div class="upactions">${actions}</div>` : ''}
+    <div class="upfiles">${filesHTML}</div>
+    <div class="upnote">${esc(t('upNote'))}</div>`;
+}
+
 /** work-pane の中身（入力パネル＋結果パネル）。テンプレートごとに入力 UI だけ分岐する */
 function panelHTML(scn) {
   const done = state.log.length > 0;
@@ -554,8 +586,7 @@ function panelHTML(scn) {
   const inp = scn.input[lang0];
   let inputInner = '';
   if (scn.template === 'upload') {
-    inputInner = `<div class="drop">${esc(t('dropHint'))}</div>` +
-      inp.files.map(f => `<span class="file">📄 ${esc(f)}</span>`).join('');
+    inputInner = uploadPanelHTML(scn, inp);
   } else if (scn.template === 'form') {
     inputInner = inp.fields.map(f => `
       <div class="field"><label>${esc(f.label)}</label><div class="val">${esc(f.value)}</div></div>`).join('');

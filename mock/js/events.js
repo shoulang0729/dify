@@ -38,7 +38,7 @@ document.addEventListener('click', (e) => {
     state.favOnly = false;
     renderAll();
   }
-  else if (act === 'svc') { state.selSvc = arg; state.view = 'detail'; state.log = []; renderMain(); }
+  else if (act === 'svc') { state.selSvc = arg; state.view = 'detail'; state.log = []; upClear(); renderMain(); }
   else if (act === 'fav') {
     toggleFav(arg);
     savePrefs();
@@ -86,6 +86,59 @@ document.addEventListener('click', (e) => {
   }
   else if (act === 'restart') { state.log = []; demoPending = false; demoPendingFreeform = false; renderMain(); }
   else if (act === 'send') { sendChat(); }
+});
+
+/* ---------- アップロード部品（data-act とは別属性。§10-3。設計書 2026-09-16-showcase-demo.md） ---------- */
+document.addEventListener('click', (e) => {
+  const upEl = e.target.closest('[data-up]');
+  if (!upEl) return;
+  const kindU = upEl.dataset.up;
+  const panel = upEl.closest('.panel');
+  const fileInput = panel && panel.querySelector('.upinput');
+  if (kindU === 'pick') { if (fileInput) fileInput.click(); }
+  else if (kindU === 'sample') {
+    const scn = scnOf(state.selSvc); if (!scn) return;
+    upUseSample(scn, scriptLang(state.lang));
+    renderMain();
+  } else if (kindU === 'clear') { upClear(); renderMain(); }
+});
+
+/** ドロップゾーンを Enter / Space でも開けるようにする（role="button" tabindex="0"） */
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const zone = e.target.closest && e.target.closest('.upzone');
+  if (!zone) return;
+  e.preventDefault();
+  const panel = zone.closest('.panel');
+  const fileInput = panel && panel.querySelector('.upinput');
+  if (fileInput) fileInput.click();
+});
+
+document.addEventListener('change', (e) => {
+  const upInput = e.target.closest('[data-up="input"]');
+  if (!upInput) return;
+  upAddFiles(upInput.files, () => renderMain());
+  upInput.value = '';
+});
+
+document.addEventListener('dragover', (e) => {
+  const zone = e.target.closest && e.target.closest('.upzone');
+  if (!zone) return;
+  e.preventDefault();
+  zone.classList.add('dragover');
+});
+document.addEventListener('dragleave', (e) => {
+  const zone = e.target.closest && e.target.closest('.upzone');
+  if (!zone) return;
+  zone.classList.remove('dragover');
+});
+document.addEventListener('drop', (e) => {
+  const zone = e.target.closest && e.target.closest('.upzone');
+  if (!zone) return;
+  e.preventDefault();
+  zone.classList.remove('dragover');
+  const files = e.dataTransfer && e.dataTransfer.files;
+  if (files && files.length) upAddFiles(files, () => renderMain());
 });
 
 document.getElementById('lang-select').addEventListener('change', (e) => {

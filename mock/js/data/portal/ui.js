@@ -159,7 +159,17 @@ const PT = {
   ctxClient:      { ja: '利用先', zh: '使用方', en: 'Used by' },
   ctxCriticality: { ja: '重要度', zh: '重要程度', en: 'Criticality' },
   ctxIncidentNo:  { ja: '障害番号', zh: '故障编号', en: 'Incident no.' },
-  ctxCaseNo:      { ja: '審査番号', zh: '审查编号', en: 'Case no.' }
+  ctxCaseNo:      { ja: '審査番号', zh: '审查编号', en: 'Case no.' },
+
+  /* ---- アップロード部品（設計書 2026-09-16-showcase-demo.md §10-4。T と同じ 4 キー） ---- */
+  upDrop:         { ja: 'ファイルをここにドラッグ、またはクリックして選択',
+                    zh: '把文件拖到这里，或点击选择',
+                    en: 'Drag files here, or click to choose' },
+  upSample:       { ja: 'サンプルを使う', zh: '使用示例文件', en: 'Use the sample files' },
+  upClear:        { ja: 'クリア', zh: '清空', en: 'Clear' },
+  upNote:         { ja: 'このモックは読み取りを行いません。選んだファイルはブラウザの中だけで表示され、どこにも送信・保存されません。読み取り結果は台本から出しています。',
+                    zh: '本模拟不执行识别。所选文件仅在浏览器内显示，不会发送或保存到任何位置。识别结果来自演示脚本。',
+                    en: 'This mock does not read the files. What you choose is shown in the browser only, and is never uploaded or stored; the extraction result comes from the script.' }
 };
 
 /* ============================================================

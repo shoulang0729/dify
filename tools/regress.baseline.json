@@ -1663,7 +1663,6 @@
     "dashRecoNote",
     "dashWelcome",
     "demoDone",
-    "dropHint",
     "favAdd",
     "favAddAria",
     "favEmpty",
@@ -1727,6 +1726,10 @@
     "todoEyebrow",
     "todoTitle",
     "tplBadge",
+    "upClear",
+    "upDrop",
+    "upNote",
+    "upSample",
     "usesUnit"
   ],
   "counts": {
@@ -1734,7 +1737,7 @@
     "subs": 35,
     "svcs": 83,
     "tags": 67,
-    "ui": 91,
+    "ui": 94,
     "byIndustry": {
       "mfg": {
         "svcs": 51,

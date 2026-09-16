@@ -395,6 +395,20 @@ tr[hidden] { display: none; }
   border-radius: var(--radius-sm); padding: 4px 10px; font-size: 12px; margin: 0 6px 6px 0; background: var(--surface-card); }
 .diffrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
+/* アップロード部品（ドロップゾーン／サンプル／プレビュー。設計書 2026-09-16-showcase-demo.md §10） */
+.updrop { border: 1px dashed var(--border-default); border-radius: var(--radius-sm); padding: 14px;
+  text-align: center; color: var(--text-muted); font-size: 12px; margin-bottom: 8px; cursor: pointer; }
+.updrop.dragover { border-color: var(--action-primary); background: var(--surface-selected); color: var(--text-body); }
+.upinput { display: none; }
+.upactions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.upbtn { border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-body);
+  border-radius: var(--radius-pill); padding: 4px 12px; font-family: inherit; font-size: 11.5px; cursor: pointer; }
+.upbtn:hover { background: var(--surface-hover); }
+.upfiles { display: flex; flex-direction: column; gap: 8px; }
+.upitem { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.upthumb { width: 96px; height: 96px; object-fit: cover; border: 1px solid var(--border-card); border-radius: var(--radius-sm); }
+.upaudio { width: 100%; max-width: 280px; }
+
 /* ③ 結果パネル（catalog の resultHTML と同じ形の kv / 表） */
 .kv { padding: 6px 0; border-top: 1px solid var(--border-subtle); }
 .kv:first-child { border-top: none; }

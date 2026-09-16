@@ -460,6 +460,21 @@
     padding: 2px var(--space-2); background: var(--surface-canvas);
     display: inline-flex; margin: 4px 4px 0 0;
   }
+  /* ===== アップロード部品（ドロップゾーン／サンプル／プレビュー。設計書 2026-09-16-showcase-demo.md §10） ===== */
+  .upzone { cursor: pointer; }
+  .upzone.dragover { border-color: var(--action-primary); background: var(--surface-selected); color: var(--text-body); }
+  .upinput { display: none; }
+  .upactions { display: flex; gap: var(--space-2); flex-wrap: wrap; margin: 0 0 var(--space-2); }
+  .upbtn {
+    border: 1px solid var(--border-brand); background: var(--surface-card); color: var(--text-link);
+    border-radius: var(--radius-pill); padding: 5px 14px; font-size: 12.5px; font-family: inherit; cursor: pointer;
+  }
+  .upbtn:hover { background: var(--surface-selected); }
+  .upfiles { display: flex; flex-direction: column; gap: var(--space-2); }
+  .upitem { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .upthumb { width: 120px; height: 120px; object-fit: cover; border: 1px solid var(--border-card); border-radius: var(--radius-sm); }
+  .upaudio { width: 100%; max-width: 320px; }
+  .upnote { font-size: var(--text-overline); color: var(--text-muted); margin-top: var(--space-3); }
   .field { margin-bottom: var(--space-3); }
   .field label {
     display: block; font-size: var(--text-overline); letter-spacing: 0.06em;
