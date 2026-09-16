@@ -133,7 +133,10 @@
  *        files.length と一致・file が mock/ 配下に実在・先頭が "/" でなく ".." を含まない・
  *        kind が image/audio/doc のいずれか（PR-0 時点ではまだ assets を持つ SCENARIOS が
  *        無いため 0 件チェックで PASS。PR-4/PR-5 で効いてくる）／
- *        20-f mock/**（.js/.html）に fetch( が現れない（file:// で壊れる作りを入れない）／
+ *        20-f mock/**（.js/.html）に fetch(／XMLHttpRequest が現れない（file:// で壊れる作りを
+ *        入れない）。ブロックコメント・行コメント・HTML コメントを取り除いたコードだけを対象に
+ *        する（「fetch() は使わない」のような注記コメントを誤検出しないため。#315 統合時、
+ *        #314（PR-3 アップロード部品）のコメントを素朴な部分文字列一致で誤検出した反省）／
  *        20-g mock/assets/demo/README.md が実在し「読み取りを行いません」相当の注記を含む（warn）／
  *        20-h tools/gen-demo-assets.mjs・tools/gen-demo-audio.py が実在し、ルート package.json の
  *        scripts のどのコマンド文字列にも現れない（CI で走らせない）
@@ -2241,19 +2244,30 @@ section('20. ダミー資産（mock/assets/demo/**）の契約');
     if (!assetsBad) ok(`20-e SCENARIOS[].input.assets ${assetsChecked} 件（0 件でも PASS）すべて整合`);
     bad20 += assetsBad;
 
-    // 20-f: mock/**（.js/.html）に fetch( が現れない
+    // 20-f: mock/**（.js/.html）に fetch(／XMLHttpRequest が現れない（file:// で壊れる作りを
+    // 入れない）。コメント（「fetch() は使わない」のような注記）を誤検出しないよう、
+    // ブロックコメント・行コメント・HTML コメントを取り除いたコードだけを対象にする。
+    const stripCodeComments = (src, isHtml) => {
+      let s = src.replace(/\/\*[\s\S]*?\*\//g, ''); // ブロックコメント /* ... */
+      // 行コメント（直前が : や引用符でないものだけ＝ URL の // を誤って消さない）
+      s = s.replace(/(^|[^:'"])\/\/.*$/gm, '$1');
+      if (isHtml) s = s.replace(/<!--[\s\S]*?-->/g, ''); // HTML コメント
+      return s;
+    };
     const mockJsHtmlFiles = [];
     const walkMockJsHtml = (dir, rel) => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const childRel = rel ? `${rel}/${entry.name}` : entry.name;
         if (entry.isDirectory()) { walkMockJsHtml(resolve(dir, entry.name), childRel); continue; }
-        if (/\.(js|html)$/.test(entry.name)) mockJsHtmlFiles.push({ abs: resolve(dir, entry.name), rel: `mock/${childRel}` });
+        if (/\.(js|html)$/.test(entry.name)) mockJsHtmlFiles.push({ abs: resolve(dir, entry.name), rel: `mock/${childRel}`, isHtml: entry.name.endsWith('.html') });
       }
     };
     walkMockJsHtml(MOCK, '');
-    const fetchOffenders = mockJsHtmlFiles.filter(f => /fetch\(/.test(readFileSync(f.abs, 'utf8'))).map(f => f.rel);
-    if (fetchOffenders.length) { fail(`20-f mock/**（.js/.html）に fetch( が現れる: ${fetchOffenders.join(', ')}`); bad20++; }
-    else ok('20-f mock/**（.js/.html）に fetch( が現れない');
+    const fetchOffenders = mockJsHtmlFiles
+      .filter(f => /fetch\(|XMLHttpRequest/.test(stripCodeComments(readFileSync(f.abs, 'utf8'), f.isHtml)))
+      .map(f => f.rel);
+    if (fetchOffenders.length) { fail(`20-f mock/**（.js/.html）に fetch(／XMLHttpRequest が現れる（コメント除く）: ${fetchOffenders.join(', ')}`); bad20++; }
+    else ok('20-f mock/**（.js/.html）に fetch(／XMLHttpRequest が現れない（コメントを除いたコードで検査）');
 
     // 20-h: tools/gen-demo-assets.mjs・tools/gen-demo-audio.py が package.json の scripts から呼ばれていない
     const genToolsPath = { assets: resolve(ROOT, 'tools/gen-demo-assets.mjs'), audio: resolve(ROOT, 'tools/gen-demo-audio.py') };
