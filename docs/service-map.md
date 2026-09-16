@@ -12,7 +12,7 @@
 | KN-03 | 社内規程・就業規則QA | KN/rule | 製造 | 提供中 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | — | — | [KN-03-internal-rules-qa.yml](../dify/apps/KN-03-internal-rules-qa.yml) | [KN-03.md](./dify/usecases/KN-03.md) | [6 件](../dify/kb/KN-03/) | [4 件](../dify/tests/KN-03.json) |
 | KN-04 | 社内問い合わせ受付とFAQ蓄積 | KN/rule | 製造・金融・IT | 試行版 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | — | [KN-04.md](./dify/usecases/KN-04.md) | — | — |
 | KN-05 | 当局通達の影響分析・マニュアル反映 | KN/rule | 製造・金融・IT | 試行版 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) upload | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | — | [KN-05.md](./dify/usecases/KN-05.md) | — | — |
-| KN-11 | ベテランのノウハウ聞き取りと記録化 | KN/tech | 製造 | 構想 | — | — | — | — | — | — | — |
+| KN-11 | ベテランのノウハウ聞き取りと記録化 | KN/tech | 製造 | 構想 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) upload | — | — | — | — | — | — |
 | QA-01 | 不具合原因分析・報告書（8D）作成 | QA/defect | 製造 | 試行版 | [mfg/qa.js](../mock/js/data/scenarios/mfg/qa.js) upload | — | — | — | [QA-01.md](./dify/usecases/QA-01.md) | — | — |
 | QA-02 | 変更点影響予測（4M変更管理） | QA/change | 製造 | 構想 | [mfg/qa.js](../mock/js/data/scenarios/mfg/qa.js) diff | — | — | — | [QA-02.md](./dify/usecases/QA-02.md) | — | — |
 | QA-03 | 顧客クレーム一次回答・分類 | QA/change | 製造 | 試行版 | [mfg/qa.js](../mock/js/data/scenarios/mfg/qa.js) form | — | — | — | [QA-03.md](./dify/usecases/QA-03.md) | — | — |
@@ -90,4 +90,4 @@
 | SO-02 | 稼働状況の自然言語照会 | SO/avail | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) lookup | — | — | — | — |
 | SO-03 | 障害・稼働の定期報告（稼働率・障害件数・MTTR） | SO/avail | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) form | — | — | — | — |
 | SO-04 | 障害報告・再発防止策のドラフト | SO/incident | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) form | — | — | — | — |
-| 集計 | — | — | — | — | ①製造 50 | ①金融 30 | ①IT 15 | ②12 | ③68 | ④KB 4 | ④テスト 12 |
+| 集計 | — | — | — | — | ①製造 51 | ①金融 30 | ①IT 15 | ②12 | ③68 | ④KB 4 | ④テスト 12 |
