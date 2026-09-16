@@ -15,6 +15,7 @@
 | A | 入力サンプル | [`dify/samples/`](../../dify/samples/) | KN-01 の 4 本を投入済み（PR-2〜PR-4 で製造・金融の残りを追加） |
 | B | KB 文書 | [`dify/kb/`](../../dify/kb/) | 既存 11 本（PR-5・PR-6 で +20 本の予定） |
 | C | 実機デモ進行台本 | `runbook-mfg.md`（製造）・`runbook-fin.md`（金融） | 未作成（PR-7 で追加予定） |
+| C' | モックを動かす短いデモ台本（5〜7 分・製造） | `runbook-showcase-mfg.md` | 追加済み（`docs/handoff/2026-09-16-showcase-demo.md` PR-6） |
 | D | 顧客提示資料 | `briefing-catalog.md`・`briefing-coverage.md`・`faq.md` | 未作成（PR-8 で追加予定） |
 
 ## 3. モックの `SCENARIOS` との違い
@@ -25,7 +26,7 @@ C（実機デモ進行台本）は、モックの `mock/js/data/scenarios/**`（
 |---|---|---|
 | 何 | **画面に表示される会話データ**（コード） | **人が読み上げる司会進行の手順書**（文書） |
 | 誰が読む | ブラウザ（`renderDemo`） | デモの司会者 |
-| 対象 | 73 サービス（LLM 未接続のダミー応答） | 実機 12 本（Dify Cloud の本物の応答） |
+| 対象 | カタログ全件（件数の正は `docs/service-map.md`。LLM 未接続のダミー応答） | 実機 12 本（Dify Cloud の本物の応答） |
 | 言語 | `script` は ja/zh（`steps` は ja/zh/en） | 読み上げ文を ja/zh 併記 |
 | 置き場 | ③（`mock/` 配下＝コード） | ③（`docs/demo/`） |
 | 依存 | `TEMPLATES`・`state` | `dify/samples/`・`LIVE`（`mock/js/data/live.js`）・`dify/KNOWN_ISSUES.md` |
