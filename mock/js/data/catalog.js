@@ -170,6 +170,14 @@ const SVCS = [
     desc: { ja: '所管当局（外貨管理・税関・税務・地方政府など。業種により金融当局を含む）の通達を読み込み、自社への影響（対象業務・期限・必要な対応）を整理します。さらに影響を受ける社内マニュアル・規定の該当箇所を特定し、改訂案のドラフトまで作成します。',
             zh: '读取主管部门（外汇管理、海关、税务、地方政府等，视行业亦含金融主管部门）的通知文件，整理对本公司的影响（涉及业务、期限、应对事项），并定位受影响的内部手册与规定条款，生成修订草案。',
             en: 'Reads notices from the authorities that oversee your operations (foreign exchange, customs, tax, local government and, depending on the industry, the financial regulator), summarizes the impact on your company (affected operations, deadlines, required actions), then locates the affected internal manuals and drafts the revisions.' } },
+  /* KN-11: 聞き取り音声からベテランの手順・勘所を起こす（設計書 docs/handoff/2026-09-16-showcase-demo.md §6-1）。
+     入力手段（音声）はタグにしない＝親設計書 §4-3 の判断を踏襲し、desc に書いて検索に当てる。 */
+  { id: 'kn11', cat: 'kn', sub: 'tech', st: 3, industries: ['mfg'], tags: ['procedure', 'education'], added: '2026-09-16',
+    place: 'know',
+    name: { ja: 'ベテランのノウハウ聞き取りと記録化', zh: '资深员工经验的访谈与记录化', en: 'Veteran Know-how Interview & Capture' },
+    desc: { ja: '文書に残っていないベテランの手順・勘所・判断基準を、聞き取りの音声から文字起こしして構造化し、手順書のドラフトに起こします。同じ作業について現行の標準・旧版の標準・本人の発言の 3 つを日付つきで並べ、改訂の経緯からどれを正とするかを人が決められる形で示します。発言が現行の標準と食い違う場合は、勝手に上書きせず改訂の候補として残します。聞き取れなかった箇所は推測で埋めず、位置を残したまま聞き直しの対象として返します。出力はナレッジへの登録提案（新規作成、または既存文書への修正依頼）まで作ります。',
+            zh: '将尚未形成文档的资深员工的操作步骤、要领与判断标准，通过访谈录音转写并结构化，生成作业指导书草案。针对同一项作业，把现行标准、旧版标准与本人口述三者按日期并列呈现，依据修订经过让人来判断以哪一个为准。若口述与现行标准不一致，不擅自覆盖，而是作为修订候选保留。未能听清的部分不做推测填补，保留其位置并作为需要回访确认的对象返回。输出可一直做到知识库的登记提案（新建，或对既有文档提出修改申请）。',
+            en: 'Turns a veteran\'s undocumented steps, knacks and judgment criteria into a draft work instruction by transcribing and structuring a recorded interview. For the same task it lines up the current standard, the superseded standard and the veteran\'s own words with their dates, so that a person can decide which one governs from the revision history. Where the veteran contradicts the current standard, it is kept as a candidate revision rather than silently overwriting it. Passages that could not be heard are left in place for a follow-up question instead of being guessed at. The output goes as far as a proposal to register the result in the knowledge base — either a new entry or a change request against the existing standard.' } },
 
   /* ---- qa: 品質・不具合対応 ---- */
   { id: 'qa1', cat: 'qa', sub: 'defect', st: 2, industries: ['mfg'], tags: ['defect', 'rootcause', 'report8d'],
