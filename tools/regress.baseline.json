@@ -1663,7 +1663,6 @@
     "dashRecoNote",
     "dashWelcome",
     "demoDone",
-    "dropHint",
     "favAdd",
     "favAddAria",
     "favEmpty",
@@ -1738,7 +1737,7 @@
     "subs": 35,
     "svcs": 83,
     "tags": 67,
-    "ui": 95,
+    "ui": 94,
     "byIndustry": {
       "mfg": {
         "svcs": 51,

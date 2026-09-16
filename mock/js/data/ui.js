@@ -50,7 +50,6 @@ const T = {
   run:          { ja: '実行', zh: '执行', en: 'Run' },
   runDone:      { ja: '実行済み', zh: '已执行', en: 'Done' },
   restart:      { ja: '最初から', zh: '重新开始', en: 'Restart' },
-  dropHint:     { ja: 'ファイルをここにドロップ（モックのため操作不要）', zh: '将文件拖到此处（演示无需操作）', en: 'Drop files here (no action needed in this mock)' },
   beforeLabel:  { ja: '旧', zh: '旧版', en: 'Before' },
   afterLabel:   { ja: '新', zh: '新版', en: 'After' },
   chipsLabel:   { ja: '次の質問例', zh: '接下来可以问', en: 'Try asking' },
