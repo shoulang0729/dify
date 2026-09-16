@@ -111,6 +111,6 @@
 ## 5. うまくいかなかったときの逃げ道
 
 - 「サンプルを使う」で画像が出ない：ページを再読み込み。それでも出なければ
-  `assets/demo/` の画像をブラウザで直接開いて見せる（URL は 1 つ上の階層の `assets/demo/…`）
+  `assets/demo/` の画像をブラウザで直接開いて見せる（URL は `catalog.html` と同じ階層の `assets/demo/…`。Pages では `https://shoulang0729.github.io/dify/assets/demo/…`）
 - 台本ドロワーが開かない：`catalog.html` の該当サービスの「このデモを見る」から同じ台本が出る
 - 業種が金融/IT になっている：`.mockbar` の業種チップを「製造」に戻す
