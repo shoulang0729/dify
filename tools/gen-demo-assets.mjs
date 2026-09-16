@@ -75,29 +75,38 @@ function isWide(ch) {
 }
 
 // rng: mulberry32 の関数。text: 書く文字列。x/y: 開始位置（ベースライン）。
-// opts: fontFamily / fontSize / color / weight
+// opts: fontFamily / fontSize / color / overflow（末尾に向けて罫線の下へはみ出させる量 px）
 function handwritten(rng, text, x, y, opts = {}) {
   const fontFamily = opts.fontFamily || 'IPAGothic, sans-serif';
   const fontSize = opts.fontSize || 26;
   const color = opts.color || '#22345c';
+  const overflow = opts.overflow || 0;
+  const chars = [...text];
+  const phase = rng() * Math.PI * 2; // 基線のうねり（緩い波）の位相。文字ごとに毎回変えない
   let cx = x;
   const spans = [];
-  for (const ch of text) {
-    const w = isWide(ch) ? fontSize * 1.05 : fontSize * 0.62;
-    const rot = (rng() * 2 - 1) * 6; // ±6°
-    const dx = (rng() * 2 - 1) * 1.2;
-    const dy = (rng() * 2 - 1) * 1.6;
-    const fs = fontSize * (1 + (rng() * 2 - 1) * 0.08);
-    const sw = 0.6 + rng() * 0.5;
+  chars.forEach((ch, i) => {
+    const wBase = isWide(ch) ? fontSize * 1.05 : fontSize * 0.62;
+    const w = wBase * (1 + (rng() * 2 - 1) * 0.16); // 字間のばらつき
+    const mag = 4 + rng() * 3; // 回転 ±4〜7°
+    const rot = (rng() < 0.5 ? -1 : 1) * mag;
+    const wave = Math.sin(i * 0.85 + phase) * 2.6; // 基線の緩いうねり（手の震え・筆圧の波）
+    const jitter = (rng() * 2 - 1) * 1.9; // 1 文字ごとの上下ずれ
+    const overflowDy = overflow * (i / Math.max(1, chars.length - 1));
+    const dx = (rng() * 2 - 1) * 1.4;
+    const dy = wave + jitter + overflowDy;
+    const fs = fontSize * (1 + (rng() * 2 - 1) * 0.11);
+    const sw = 0.5 + rng() * 1.2; // 線の太さのばらつきを大きく
     const midX = cx + w / 2;
+    const midY = y + dy;
     spans.push(
-      `<text x="${(cx + dx).toFixed(2)}" y="${(y + dy).toFixed(2)}" ` +
+      `<text x="${(cx + dx).toFixed(2)}" y="${midY.toFixed(2)}" ` +
       `font-family="${fontFamily}" font-size="${fs.toFixed(2)}" fill="${color}" ` +
       `stroke="${color}" stroke-width="${sw.toFixed(2)}" ` +
-      `transform="rotate(${rot.toFixed(2)} ${midX.toFixed(2)} ${y.toFixed(2)})">${escXml(ch)}</text>`
+      `transform="rotate(${rot.toFixed(2)} ${midX.toFixed(2)} ${midY.toFixed(2)})">${escXml(ch)}</text>`
     );
     cx += w;
-  }
+  });
   return { svg: spans.join(''), endX: cx };
 }
 
@@ -105,27 +114,86 @@ function escXml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// 判読不能な走り書き（斜線＋重ね書き）を表す乱雑な曲線群。テキストではなく線で表現する。
-function illegibleScribble(rng, x, y, w, h) {
-  const paths = [];
-  const strokeCount = 5 + Math.floor(rng() * 3);
-  for (let i = 0; i < strokeCount; i++) {
-    const y0 = y + rng() * h;
-    const y1 = y + rng() * h;
-    const cx1 = x + w * (0.2 + rng() * 0.3);
-    const cy1 = y + rng() * h;
-    const cx2 = x + w * (0.6 + rng() * 0.3);
-    const cy2 = y + rng() * h;
-    paths.push(
-      `<path d="M ${x.toFixed(1)} ${y0.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ` +
-      `${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${(x + w).toFixed(1)} ${y1.toFixed(1)}" ` +
-      `fill="none" stroke="#22345c" stroke-width="${(1 + rng()).toFixed(2)}" stroke-linecap="round" opacity="${(0.55 + rng() * 0.3).toFixed(2)}"/>`
+// 判読不能な箇所を「ペンで塗りつぶした・こすれた」見た目にする（線の束ではなく、にじみ＋
+// 塗りの束）。ぼかしフィルタでインクのにじみを、その上に太いペンの往復で塗りつぶしを重ねる。
+function inkBlotIllegible(rng, x, y, w, h, filterId) {
+  const parts = [];
+  parts.push(`<filter id="${filterId}" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="1.15"/></filter>`);
+  // 下地のにじみ（不定形の塗り、ぼかし済み）
+  const blotCount = 3 + Math.floor(rng() * 2);
+  for (let i = 0; i < blotCount; i++) {
+    const bw = w * (0.32 + rng() * 0.28), bh = h * (0.6 + rng() * 0.35);
+    const bx = x + rng() * (w - bw);
+    const by = y + rng() * (h - bh) * 0.4;
+    parts.push(`<ellipse cx="${(bx + bw / 2).toFixed(1)}" cy="${(by + bh / 2).toFixed(1)}" rx="${(bw / 2).toFixed(1)}" ry="${(bh / 2).toFixed(1)}" fill="#182540" opacity="${(0.45 + rng() * 0.25).toFixed(2)}" filter="url(#${filterId})"/>`);
+  }
+  // 上から重ねる、太いペンの往復（塗りつぶし・こすれ）
+  const passCount = 9 + Math.floor(rng() * 4);
+  for (let i = 0; i < passCount; i++) {
+    const t = i / (passCount - 1);
+    const yy = y + h * (0.15 + t * 0.7) + (rng() * 2 - 1) * 3;
+    const midY = yy + (rng() * 2 - 1) * 7;
+    const endY = yy + (rng() * 2 - 1) * 5;
+    parts.push(
+      `<path d="M ${x.toFixed(1)} ${yy.toFixed(1)} Q ${(x + w * 0.5).toFixed(1)} ${midY.toFixed(1)}, ${(x + w).toFixed(1)} ${endY.toFixed(1)}" ` +
+      `fill="none" stroke="#101a2c" stroke-width="${(2.1 + rng() * 1.6).toFixed(2)}" stroke-linecap="round" opacity="${(0.72 + rng() * 0.22).toFixed(2)}"/>`
     );
   }
-  // 斜線（二重取り消し線）
-  paths.push(`<line x1="${x}" y1="${y + h}" x2="${x + w}" y2="${y}" stroke="#22345c" stroke-width="1.6" opacity="0.7"/>`);
-  paths.push(`<line x1="${x}" y1="${y + h * 0.3}" x2="${x + w}" y2="${y + h * 0.9}" stroke="#22345c" stroke-width="1.4" opacity="0.6"/>`);
-  return paths.join('');
+  return `<g>${parts.join('')}</g>`;
+}
+
+// 取り消した跡に書き直した見た目（値そのものは変えない）。薄い消し跡（用紙に近い色の不定形の
+// 塗り）とうっすら残る前の筆跡を重ねてから、本来の値を handwritten() で上書きする。
+function rewriteSmudge(rng, x, y, w, h) {
+  const parts = [];
+  const smudgeCount = 2 + Math.floor(rng() * 2);
+  for (let i = 0; i < smudgeCount; i++) {
+    const ew = w * (0.55 + rng() * 0.3), eh = h * (0.55 + rng() * 0.3);
+    const ex = x + rng() * (w - ew), ey = y + rng() * (h - eh);
+    parts.push(`<ellipse cx="${(ex + ew / 2).toFixed(1)}" cy="${(ey + eh / 2).toFixed(1)}" rx="${(ew / 2).toFixed(1)}" ry="${(eh / 2).toFixed(1)}" fill="#f7f0e1" opacity="${(0.5 + rng() * 0.3).toFixed(2)}"/>`);
+  }
+  const ghostCount = 2 + Math.floor(rng() * 2);
+  for (let i = 0; i < ghostCount; i++) {
+    const x1 = x + rng() * w, y1 = y + rng() * h, x2 = x + rng() * w, y2 = y + rng() * h;
+    parts.push(`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#9c8f70" stroke-width="1" opacity="${(0.14 + rng() * 0.14).toFixed(2)}"/>`);
+  }
+  return parts.join('');
+}
+
+// 行末の丸で囲んだメモ（矢印つき）。内容は台本と矛盾しない短い語。
+function circledNote(rng, x, y, text, opts = {}) {
+  const fontSize = opts.fontSize || 17;
+  const color = opts.color || '#7a1f1f';
+  const { svg: noteSvg, endX } = handwritten(rng, text, x + 20, y, { fontSize, color });
+  const textW = Math.max(24, endX - (x + 20));
+  const cx = x + 20 + textW / 2;
+  const cy = y - fontSize * 0.35;
+  const rx = textW / 2 + 8, ry = fontSize * 0.85;
+  const wobble = (rng() * 2 - 1) * 4;
+  const arrowTipX = x + 12, arrowTipY = y - 2;
+  const arrowTailX = x - 10, arrowTailY = y - 12;
+  return `<g transform="rotate(${wobble.toFixed(1)} ${cx.toFixed(1)} ${cy.toFixed(1)})">
+      <ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}" fill="none" stroke="${color}" stroke-width="1.6" opacity="0.75"/>
+    </g>
+    <path d="M ${arrowTailX.toFixed(1)} ${arrowTailY.toFixed(1)} L ${arrowTipX.toFixed(1)} ${arrowTipY.toFixed(1)}" stroke="${color}" stroke-width="1.3" opacity="0.7"/>
+    <path d="M ${arrowTipX.toFixed(1)} ${arrowTipY.toFixed(1)} l -6 -1.5 l 2.5 5.5 z" fill="${color}" opacity="0.7"/>
+    ${noteSvg}`;
+}
+
+// 紙そのものの汚れ（折り目・指跡/油じみ）。決定的（rng 消費）。
+function paperDefects(rng, w, h) {
+  const parts = [];
+  const x1 = rng() * w * 0.3, y1 = h * (0.55 + rng() * 0.3);
+  const x2 = w * (0.7 + rng() * 0.25), y2 = y1 - (rng() * 40 - 20);
+  parts.push(`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#ffffff" stroke-width="2.4" opacity="0.22"/>`);
+  parts.push(`<line x1="${x1.toFixed(1)}" y1="${(y1 + 2.2).toFixed(1)}" x2="${x2.toFixed(1)}" y2="${(y2 + 2.2).toFixed(1)}" stroke="#5b4c33" stroke-width="1.6" opacity="0.18"/>`);
+  const stainCount = 1 + Math.floor(rng() * 2);
+  for (let i = 0; i < stainCount; i++) {
+    const sx = w * (0.1 + rng() * 0.8), sy = h * (0.1 + rng() * 0.8);
+    const sr = 16 + rng() * 24;
+    parts.push(`<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="${sr.toFixed(1)}" fill="#8a6d3b" opacity="${(0.05 + rng() * 0.05).toFixed(3)}"/>`);
+  }
+  return parts.join('');
 }
 
 // 取り消し線での訂正（元の値の上に線を引き、近くに読みにくい書き直しを重ねる）。
@@ -166,34 +234,46 @@ function buildInspectionSheetHtml(rng, { date, lot, inspector, remarkIllegible }
   ];
   const top = 210, rowH = 84, labelX = 40, valX = 280;
   let body = '';
+  let judgeRowY = 0;
   rows.forEach((r, i) => {
     const y = top + i * rowH;
+    if (r.ja === '判定') judgeRowY = y;
     body += `<line x1="30" y1="${y + 20}" x2="${W - 30}" y2="${y + 20}" stroke="#b9ad8f" stroke-width="1"/>`;
     body += `<text x="${labelX}" y="${y}" font-family="IPAGothic, sans-serif" font-size="17" fill="#333">${escXml(r.ja)}</text>`;
     body += `<text x="${labelX}" y="${y + 22}" font-family="WenQuanYi Zen Hei, sans-serif" font-size="14" fill="#666">${escXml(r.zh)}</text>`;
-    if (r.ja === '備考' ) { /* not used here */ }
-    const { svg } = handwritten(rng, r.val, valX, y + 8, { fontSize: 26 });
+    // ロット欄は罫線の下へわずかにはみ出させる（9/6 分。手が滑った跡の演出。値は変えない）
+    const overflow = (r.ja === 'ロット' && remarkIllegible) ? 14 : 0;
+    const { svg } = handwritten(rng, r.val, valX, y + 8, { fontSize: 26, overflow });
     body += svg;
   });
-  // 備考欄（9/6 分だけ判読不能にする）
+  // 判定欄の右に「再確認」の丸メモ（9/5 分だけ。値は変えず、後日の確認が要るという演出）
+  let judgeNote = '';
+  if (!remarkIllegible && judgeRowY) {
+    judgeNote = circledNote(rng, valX + 96, judgeRowY + 8, '再確認');
+  }
+  // 備考欄（9/6 分だけ判読不能にする。9/5 分は「特になし」を書き直した跡つきで書く）
   const remY = top + rows.length * rowH + 20;
   body += `<line x1="30" y1="${remY + 20}" x2="${W - 30}" y2="${remY + 20}" stroke="#b9ad8f" stroke-width="1"/>`;
   body += `<text x="${labelX}" y="${remY}" font-family="IPAGothic, sans-serif" font-size="17" fill="#333">備考</text>`;
   body += `<text x="${labelX}" y="${remY + 22}" font-family="WenQuanYi Zen Hei, sans-serif" font-size="14" fill="#666">备注</text>`;
   if (remarkIllegible) {
-    body += illegibleScribble(rng, valX, remY - 24, 360, 46);
+    body += inkBlotIllegible(rng, valX, remY - 24, 360, 46, 'inkblur0906');
   } else {
+    body += rewriteSmudge(rng, valX - 6, remY - 24, 150, 40);
     const { svg } = handwritten(rng, '特になし', valX, remY + 8, { fontSize: 24 });
     body += svg;
   }
 
   const noise = paperNoise(rng, W, H, 900);
+  const defects = paperDefects(rng, W, H);
   return paperGroup(W, H, `
     <text x="${W / 2}" y="70" text-anchor="middle" font-family="IPAGothic, sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">外観検査記録</text>
     <text x="${W / 2}" y="102" text-anchor="middle" font-family="WenQuanYi Zen Hei, sans-serif" font-size="20" fill="#444">外观检验记录</text>
     <line x1="30" y1="130" x2="${W - 30}" y2="130" stroke="#333" stroke-width="2"/>
     ${body}
+    ${judgeNote}
     ${noise}
+    ${defects}
   `);
 }
 
@@ -254,12 +334,14 @@ function buildPaintConditionHtml(rng) {
   { const { svg } = handwritten(rng, '王磊', valX, y + 8, { fontSize: 26 }); body += svg; }
 
   const noise = paperNoise(rng, W, H, 900);
+  const defects = paperDefects(rng, W, H);
   return paperGroup(W, H, `
     <text x="${W / 2}" y="70" text-anchor="middle" font-family="IPAGothic, sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">塗装条件記録</text>
     <text x="${W / 2}" y="102" text-anchor="middle" font-family="WenQuanYi Zen Hei, sans-serif" font-size="20" fill="#444">涂装条件记录</text>
     <line x1="30" y1="130" x2="${W - 30}" y2="130" stroke="#333" stroke-width="2"/>
     ${body}
     ${noise}
+    ${defects}
   `);
 }
 
@@ -272,21 +354,61 @@ function paperGroup(w, h, inner) {
     <rect x="0" y="0" width="${w}" height="${h}" fill="none" stroke="#c9bd9e" stroke-width="6"/>`;
 }
 
-// 紙を「撮影したふう」の 1 枚の SVG に仕上げる。決定的な小さい回転角のみ（rng 消費）。
-// ページ全体を page.screenshot() でそのまま撮る（clip 計算に頼らないので再現性が安定する）。
-function renderPhoto(paper, w, h, rng) {
-  const pad = 60;
+// 紙を「スマホで斜めから撮った写真ふう」に仕上げる。CSS の 3D transform（perspective）で
+// 台形の歪みを、明るさムラ・蛍光灯の反射・軽いボケ・四隅の影・作業台の背景を重ねて出す。
+// 決定的（rng 消費。ファイルごとの固定シードから）。
+// 要素スクリーンショット（el.screenshot）は使わない。CSS 3D transform を掛けた要素の
+// バウンディングボックス計算が Chromium で不安定になるため、ページ全体を
+// page.screenshot() でそのまま撮る（clip 計算に頼らないので再現性が安定する）。
+function renderPhoto(paperSvgInner, w, h, rng) {
+  const pad = 130;
   const outerW = w + pad * 2, outerH = h + pad * 2;
-  const angle = (rng() * 2 - 1) * 1.4; // ±1.4°
-  const cx = outerW / 2, cy = outerH / 2;
-  const html = `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="${outerW}" height="${outerH}" viewBox="0 0 ${outerW} ${outerH}">
-      <rect x="0" y="0" width="${outerW}" height="${outerH}" fill="#20242c"/>
-      <g transform="translate(${cx} ${cy}) rotate(${angle.toFixed(2)}) translate(${-w / 2} ${-h / 2})">
-        <rect x="6" y="10" width="${w}" height="${h}" fill="#000000" opacity="0.45"/>
-        ${paper}
-      </g>
-    </svg>
+  // 傾き・台形歪み（スマホで斜めから撮った見た目）。ファイルごとに rng で変える
+  const rotZ = (rng() * 2 - 1) * 2.4;
+  const rotX = 3 + rng() * 5.5;
+  const rotY = (rng() * 2 - 1) * 4.5;
+  const persp = 1050 + rng() * 350;
+  // 照明のムラ（斜めのグラデーション。角度・濃さをファイルごとに変える）
+  const lightAngle = Math.floor(rng() * 360);
+  const lightOpacity = (0.22 + rng() * 0.16).toFixed(2);
+  // 蛍光灯の反射（白いにじみ）の位置
+  const glareX = 10 + rng() * 45, glareY = 5 + rng() * 35;
+  // 全体のわずかなボケ・明るさ
+  const blurPx = (0.35 + rng() * 0.35).toFixed(2);
+  const brightness = (0.9 + rng() * 0.12).toFixed(2);
+
+  const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+    html,body{margin:0;padding:0;}
+    .desk{width:${outerW}px;height:${outerH}px;position:relative;overflow:hidden;
+      background:#22262f;
+      background-image:
+        repeating-linear-gradient(115deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 2px, transparent 2px, transparent 11px),
+        radial-gradient(ellipse at 28% 18%, rgba(255,255,255,0.05), transparent 60%);
+    }
+    .stage{position:absolute;left:${pad}px;top:${pad}px;width:${w}px;height:${h}px;perspective:${persp.toFixed(0)}px;}
+    .tilt{position:relative;width:100%;height:100%;transform-style:preserve-3d;
+      transform:rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) rotateZ(${rotZ.toFixed(2)}deg);
+      box-shadow:0 30px 58px rgba(0,0,0,0.55);
+      filter:blur(${blurPx}px) brightness(${brightness});
+    }
+    .light{position:absolute;inset:0;
+      background:linear-gradient(${lightAngle}deg, rgba(0,0,0,${lightOpacity}), transparent 45%, transparent 60%, rgba(255,255,255,0.10));
+      mix-blend-mode:multiply;pointer-events:none;}
+    .glare{position:absolute;left:${glareX.toFixed(1)}%;top:${glareY.toFixed(1)}%;width:46%;height:30%;
+      background:radial-gradient(circle, rgba(255,255,255,0.20), transparent 70%);
+      mix-blend-mode:screen;pointer-events:none;}
+    .vignette{position:absolute;inset:0;
+      background:radial-gradient(ellipse at center, transparent 52%, rgba(0,0,0,0.4) 100%);
+      pointer-events:none;}
+  </style></head><body>
+    <div class="desk">
+      <div class="stage"><div class="tilt">
+        <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${paperSvgInner}</svg>
+        <div class="light"></div>
+        <div class="glare"></div>
+      </div></div>
+      <div class="vignette"></div>
+    </div>
   </body></html>`;
   return { html, outerW, outerH };
 }
