@@ -1280,6 +1280,21 @@
       }
     },
     {
+      "code": "KN-11",
+      "id": "kn11",
+      "cat": "kn",
+      "sub": "tech",
+      "st": 3,
+      "industries": [
+        "mfg"
+      ],
+      "name": {
+        "ja": "ベテランのノウハウ聞き取りと記録化",
+        "zh": "资深员工经验的访谈与记录化",
+        "en": "Veteran Know-how Interview & Capture"
+      }
+    },
+    {
       "code": "LG-01",
       "id": "lg1",
       "cat": "lg",

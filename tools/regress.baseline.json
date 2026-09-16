@@ -439,6 +439,20 @@
       }
     },
     {
+      "id": "kn11",
+      "cat": "kn",
+      "sub": "tech",
+      "st": 3,
+      "industries": [
+        "mfg"
+      ],
+      "tags": [
+        "procedure",
+        "education"
+      ],
+      "place": "know"
+    },
+    {
       "id": "qa1",
       "cat": "qa",
       "sub": "defect",
@@ -1718,12 +1732,12 @@
   "counts": {
     "cats": 15,
     "subs": 35,
-    "svcs": 82,
+    "svcs": 83,
     "tags": 67,
     "ui": 91,
     "byIndustry": {
       "mfg": {
-        "svcs": 50,
+        "svcs": 51,
         "cats": 10
       },
       "fin": {
