@@ -395,7 +395,7 @@ const SVCS = [
     desc: { ja: '参加者の空き状況と時差・両国の祝日を踏まえて候補日時を提示し、日中 2 言語の招集メールまで作成します。社内の予定は「空き／埋まり」だけを見て中身は参照せず、予定を参照できない社外の参加者（サプライヤー・監査員など）は「先方に確認」として分けて示すため、確認済みの範囲と未確認の範囲がひと目で分かります。定例会議の振替や、来訪・監査に伴う打合せの日程調整にも使えます。',
             zh: '结合参会者的空闲情况、时差与两国节假日提出候选时间，并生成中日双语的会议邀请。内部人员的日程只查看「空闲／占用」而不查看内容；无法查看日程的外部参会者（供应商、审核员等）单独标注为「需向对方确认」，因此已确认与未确认的范围一目了然。也可用于例会改期，以及来访、审核相关会议的日程协调。',
             en: 'Proposes meeting times from participants\' availability, the time difference and both countries\' holidays, and drafts the bilingual invitation. Internal calendars are read as free/busy only, never their contents, and external participants whose calendars cannot be seen (suppliers, auditors) are listed separately as "to confirm with them", so it is clear what has been checked and what has not. Also covers rescheduling regular meetings and arranging meetings around visits and audits.' } },
-  { id: 'gn5', cat: 'gn', sub: 'daily', st: 1, industries: ['mfg'], tags: ['summary'],
+  { id: 'gn5', cat: 'gn', sub: 'daily', st: 1, industries: ['mfg', 'fin', 'it'], tags: ['summary'],
     place: '*',
     name: { ja: '文書要約', zh: '文档摘要', en: 'Document Summarizer' },
     desc: { ja: '長文の報告書・仕様書・通達・メールスレッドを、目的に応じた粒度の要点サマリーに変換します。中国語の長文を日本語 1 枚に要約する、日本語の本社資料を中国語の箇条書きにするなど、言語をまたいだ要約に対応します。',

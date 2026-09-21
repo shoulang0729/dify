@@ -45,7 +45,7 @@
 | GN-02 | 請求書（発票）処理 | GN/office | 製造 | 提供中 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) upload | — | — | [GN-02-invoice-fapiao.yml](../dify/apps/GN-02-invoice-fapiao.yml) | [GN-02.md](./dify/usecases/GN-02.md) | — | [4 件](../dify/tests/GN-02.json) |
 | GN-03 | 受注・発注書の読み取りと登録支援 | GN/office | 製造 | 試行版 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) upload | — | — | — | [GN-03.md](./dify/usecases/GN-03.md) | — | — |
 | GN-04 | スケジュール調整 | GN/daily | 製造 | 試行版 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) qa | — | — | — | [GN-04.md](./dify/usecases/GN-04.md) | — | — |
-| GN-05 | 文書要約 | GN/daily | 製造 | 提供中 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) upload | — | — | [GN-05-document-summary.yml](../dify/apps/GN-05-document-summary.yml) | [GN-05.md](./dify/usecases/GN-05.md) | — | [4 件](../dify/tests/GN-05.json) |
+| GN-05 | 文書要約 | GN/daily | 製造・金融・IT | 提供中 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) upload | [fin/gn.js](../mock/js/data/scenarios/fin/gn.js) upload | [it/gn.js](../mock/js/data/scenarios/it/gn.js) upload | [GN-05-document-summary.yml](../dify/apps/GN-05-document-summary.yml) | [GN-05.md](./dify/usecases/GN-05.md) | — | [4 件](../dify/tests/GN-05.json) |
 | GN-06 | 頼まれ事・放置業務の追跡 | GN/daily | 製造・金融・IT | 試行版 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) form | [fin/gn.js](../mock/js/data/scenarios/fin/gn.js) form | — | — | [GN-06.md](./dify/usecases/GN-06.md) | — | — |
 | GN-07 | 幹部来訪・出張のアテンド段取り | GN/daily | 製造・金融・IT | 構想 | [mfg/gn.js](../mock/js/data/scenarios/mfg/gn.js) form | [fin/gn.js](../mock/js/data/scenarios/fin/gn.js) form | — | — | [GN-07.md](./dify/usecases/GN-07.md) | — | — |
 | GN-08 | 名刺の読み取りと項目抽出 | GN/daily | IT | 構想 | — | — | [it/gn.js](../mock/js/data/scenarios/it/gn.js) upload | — | — | — | — |
@@ -94,4 +94,4 @@
 | SO-02 | 稼働状況の自然言語照会 | SO/avail | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) lookup | — | — | — | — |
 | SO-03 | 障害・稼働の定期報告（稼働率・障害件数・MTTR） | SO/avail | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) form | — | — | — | — |
 | SO-04 | 障害報告・再発防止策のドラフト | SO/incident | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) form | — | — | — | — |
-| 集計 | — | — | — | — | ①製造 55 | ①金融 30 | ①IT 15 | ②12 | ③72 | ④KB 4 | ④テスト 12 |
+| 集計 | — | — | — | — | ①製造 55 | ①金融 31 | ①IT 16 | ②12 | ③72 | ④KB 4 | ④テスト 12 |

@@ -909,7 +909,9 @@
       "sub": "daily",
       "st": 1,
       "industries": [
-        "mfg"
+        "mfg",
+        "fin",
+        "it"
       ],
       "tags": [
         "summary"
@@ -1806,14 +1808,14 @@
         "cats": 10
       },
       "fin": {
-        "svcs": 30,
+        "svcs": 31,
         "cats": 8
       },
       "it": {
-        "svcs": 26,
+        "svcs": 27,
         "cats": 7
       }
     },
-    "svcsMulti": 12
+    "svcsMulti": 13
   }
 }

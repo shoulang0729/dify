@@ -1094,7 +1094,9 @@
       "sub": "daily",
       "st": 1,
       "industries": [
-        "mfg"
+        "mfg",
+        "fin",
+        "it"
       ],
       "name": {
         "ja": "文書要約",
