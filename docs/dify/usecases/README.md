@@ -1,4 +1,4 @@
-# docs/dify/usecases — サービス別 Dify 実装リファレンス（68 件）
+# docs/dify/usecases — サービス別 Dify 実装リファレンス（72 件）
 
 **1 サービス 1 ファイル。ファイル名＝管理番号**（`KN-02.md`）。雛形は [`_TEMPLATE.md`](./_TEMPLATE.md)、全体方針は [`../implementation-guide.md`](../implementation-guide.md)、共通部品は [`../platform-components.md`](../platform-components.md)、Outline は [`../outline-wiki-usecases.md`](../outline-wiki-usecases.md)。
 一覧の元：`docs/handoff/service-index.md`（管理番号・成熟度・デモ画面タイプ）、`../feasibility-33-services.md` §2（実現性 ◎○△）、`docs/handoff/2026-09-06-partner-usecases.md` §5（PT 系の実現性）。
@@ -29,6 +29,7 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 | [KN-06](./KN-06.md) | 事務手続の照会 | KN/rule | 試行版 | qa | ◎ | PC-03 PC-05 | 読 |
 | [KN-07](./KN-07.md) | 行内営業情報の検索（日誌・接触履歴） | KN/bizlog | 構想 | qa | ○ | PC-03 PC-05 | 読 |
 | [KN-08](./KN-08.md) | 当局通達・ガイドラインDB（照会・過去比較） | KN/rule | 試行版 | diff | ○ | PC-03 PC-05 PC-12 | 読・書 |
+| [KN-12](./KN-12.md) | 修理依頼のトリアージ（設備台帳・修理履歴・点検表の突き合わせ） | KN/tech | 構想 | form | ○ | PC-01 PC-03 PC-04 PC-05 PC-14 | 読 |
 | [RS-01](./RS-01.md) | 企業・業界ニュースの自動収集と配信 | RS/news | 試行版 | form | ○ | PC-11 PC-13 PC-14 | 使わない |
 | [RS-02](./RS-02.md) | セクター・発行体のモニタリング | RS/news | 構想 | form | ○ | PC-05 PC-13 | 読・書 |
 | [RS-03](./RS-03.md) | 顧客IR・決算の収集と日本語要約・比較 | RS/disc | 試行版 | upload | ◎ | PC-03 PC-06 PC-13 | 使わない |
@@ -47,6 +48,7 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 | [QA-02](./QA-02.md) | 変更点影響予測（4M変更管理） | QA/change | 構想 | diff | ○ | PC-01 PC-03 PC-04 PC-05 PC-12 PC-13 | 読 |
 | [QA-03](./QA-03.md) | 顧客クレーム一次回答・分類 | QA/change | 試行版 | form | ○ | PC-01 PC-03 PC-04（Webhook／メール） PC-05 PC-11 PC-13 PC-14 | 読 |
 | [QA-04](./QA-04.md) | 完成車メーカー工程監査への対応資料 | QA/change | 試行版 | upload | ○ | PC-01 PC-03 PC-04 PC-05 PC-13 PC-14 | 読・書（任意） |
+| [QA-05](./QA-05.md) | ヒヤリハット・5S巡回記録の要約と傾向分析 | QA/safety | 構想 | upload | ○ | PC-01 PC-03 PC-13 PC-14 | 読・書 |
 | [DC-01](./DC-01.md) | 日本本社への報告資料作成 | DC/report | 提供中 | form | ◎ | PC-05 PC-13 | 読・書 |
 | [DC-02](./DC-02.md) | 議事録作成と次回論点整理 | DC/report | 提供中 | upload | ◎ | PC-03 PC-05 PC-13 PC-14 | 読・書 |
 | [DC-03](./DC-03.md) | 教育・OJT資料作成 | DC/site | 試行版 | upload | ◎ | PC-03 PC-05 PC-06 PC-13 | 読・書 |
@@ -57,6 +59,7 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 | [DC-08](./DC-08.md) | 報告レビュー（提出前チェック／受領後の論点整理） | DC/report | 試行版 | form | ○ | PC-01（`due` 併載） PC-03 PC-05 PC-06 PC-11 PC-13 PC-14 PC-17 | 読・書 |
 | [DC-09](./DC-09.md) | 議案・報告書・提案書のドラフト作成（テンプレート選択） | DC/report | 試行版 | form | ○ | PC-01（`due`） PC-05 PC-13 | 読・書 |
 | [DC-11](./DC-11.md) | 契約書レビュー（逸脱条項の検出と修正案） | DC/apply | 構想 | upload | ○ | PC-03（MinerU） PC-05 PC-06 PC-12 PC-13 | 読・書 |
+| [DC-12](./DC-12.md) | 承認者向けの申請要約と類似案件・規程照合 | DC/apply | 構想 | form | ○ | PC-01 PC-03 PC-04 PC-05 | 読 |
 | [LG-01](./LG-01.md) | 日中翻訳（社内の言い方に揃える） | LG/trans | 提供中 | form | ◎ | PC-05 PC-06 | 読（用語集）・書（登録候補） |
 | [LG-02](./LG-02.md) | 社内用語・呼称の統一（用語集） | LG/trans | 試行版 | upload | ○ | PC-03 PC-05 PC-06 PC-13 | 読・書 |
 | [LG-03](./LG-03.md) | 現地スタッフとの認識合わせ（手順の中国語書き下し） | LG/align | 試行版 | form | ◎ | PC-01 PC-05 PC-06 PC-11 PC-13 | 読・書 |
@@ -66,6 +69,7 @@ Outline：読＝KB ソース、書＝下書きを残す、（任意）＝各フ�
 | [NM-03](./NM-03.md) | 日報・実績の集計と要約 | NM/actual | 提供中 | upload | ◎ | PC-03 PC-06 PC-11 PC-13 PC-14 | 読・書（候補） |
 | [NM-04](./NM-04.md) | 在庫・納期の問い合わせ回答 | NM/actual | 試行版 | lookup | △ | PC-04（ERP/WMS） PC-05 PC-14 | 読 |
 | [NM-05](./NM-05.md) | データ分析アシスタント | NM/actual | 試行版 | lookup | △ | PC-04（DB） PC-05 PC-13 | 読 |
+| [NM-06](./NM-06.md) | 棚卸差異の原因候補と処理案 | NM/actual | 構想 | upload | ○ | PC-03 PC-04 PC-13 | 使わない |
 | [EN-01](./EN-01.md) | 仕様改訂の差分検出・取引先用語対応 | EN/spec | 試行版 | diff | ○ | PC-03（MinerU） PC-05 PC-06 PC-12 PC-13 | 読・書（候補） |
 | [EN-02](./EN-02.md) | BOM逆引き | EN/bom | 試行版 | lookup | △ | PC-04（ERP/MES） PC-05 PC-13 PC-14 | 読 |
 | [EN-03](./EN-03.md) | 図面の類似検索 | EN/bom | 構想 | upload | △ | PC-03（図面 OCR） PC-04 | 読 |
