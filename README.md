@@ -19,6 +19,7 @@ GitHub Pages で公開しています。
 
 **管理番号（`KN-02` など）から ①②③④ を横断する索引** → [`docs/service-map.md`](./docs/service-map.md)（生成物。`npm run index` で更新）
 **マスタ → 社内・顧客環境へのリリース** → [`dify/env/README.md`](./dify/env/README.md) と [`dify/DEPLOY.md`](./dify/DEPLOY.md)
+**Cowork で触るときは** [`COWORK.md`](./COWORK.md) **から**（調査・画面案・台本ドラフト用。実装はしない）
 
 ## 収録モック
 

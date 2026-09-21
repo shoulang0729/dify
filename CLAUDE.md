@@ -5,6 +5,7 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 （SwingTrainer アプリ本体は別リポ `shoulang0729/Dify.SwingTrainer`。）
 
 作業は **architect → implementer → reviewer** の3エージェント分業で進める（`/feature <お題>`）。
+Cowork（Claude Desktop）でこのリポジトリを触るときは、エージェントではなく **PM の作業台**として扱う（ネット調査 → 画面案 → 台本ドラフトまで。実装はしない）。入口は `COWORK.md`、運用は `docs/handoff/2026-09-21-cowork-workflow.md`、取り込みは `/cowork-intake`。
 このファイルは3エージェント全員が読む。**特に「§2 load-bearing」が本体。**
 
 ---
@@ -142,6 +143,7 @@ npm run portal:test       # portal/ の検証（= npm --prefix portal test）。
 | **architect** | 設計書（`docs/handoff/`）・Issue・S 判定 | アプリコードを書く／設計後に設計書を黙って変える／`.claude/` を触る |
 | **implementer** | feature ブランチで設計通りに実装・verify/regress・PR | `docs/handoff/` を変える／設計判断／main 直 commit |
 | **reviewer** | verify/regress・diff 監査・load-bearing 照合・squash マージ・Pages 確認 | 検証 FAIL のまま承認／PR の主張を信じて diff を見ない／自分で直す |
+| **Cowork（PM の作業台）** | ネット調査・画面案（`docs/artifacts/`＋設計ドラフト）・既存サービスの台本（`scenarios/**`）・`docs/**`・`data/world/**`・手渡しメモ `docs/handoff/cowork/` | git 操作／新サービスの追加（`catalog.js`・`ui.js`。採番は `/usecase`）／`render.js`・`css/**`・`app/events.js`・`tools/**`・`CLAUDE.md`・`.claude/**`・`.github/**`／設計判断の確定／`main` への直接反映 |
 
 ---
 
@@ -153,6 +155,7 @@ npm run portal:test       # portal/ の検証（= npm --prefix portal test）。
 - **`portal/**` とそれ以外はファイル集合が重ならないので並列可**（ただし `CLAUDE.md`・`README.md`・`tools/verify.mjs` を触る PR は常に直列）
 - **リリースは `release/<env>/<YYYYMMDD>` タグ**（同日 2 回目は `-2`）。環境ごとの記録は `dify/CHANGELOG.md`。**顧客ごとにブランチを切らない**（差分は `dify/env/` で吸収）
 - 設計書は機能ごとに `docs/handoff/YYYY-MM-DD-<slug>.md`
+- **Cowork の成果**は `cowork/YYYYMMDD-<slug>` ブランチで push し、クラウドの `/cowork-intake` が `intake/<slug>` に取り込んで PR を出す（ラベルは `run:cloud`）。`cowork/` ブランチから直接 PR を出さない。手渡しメモ（`docs/handoff/cowork/`）の無い `cowork/` ブランチは取り込まない。画面案は architect の設計書を経る
 
 ---
 
@@ -178,6 +181,7 @@ npm run portal:test       # portal/ の検証（= npm --prefix portal test）。
 | `run:cloud` | クラウド（Claude Code on the web） | 設計・実装・レビュー・デモ・文書。ネットワークを使わない検証すべて |
 | `run:runner` | GitHub ホストランナー（`workflow_dispatch` → `dify-ops.yml`） | KB 投入（`kb_upload.py`）・テスト実行（`run_tests.py`）・疎通確認（`probe`）・下書きの読み取り（`inspect`）・DSL の上書きインポートと公開（`deploy`。KB を持たないアプリに限る。2026-09-10、run #16 で確認）・リフレッシュトークンの自己診断／更新／失効（`token_selftest`／`token_refresh`／`token_revoke`）。Environment `dify-cloud-master` を宣言するが、Required reviewers は外してあるため承認は発生しない（PR #199） |
 | `run:mac` | PM の Mac（**PM の手元でしか動かせないもの**：ブラウザのログイン済みセッション／ローカル docker） | KB 付きアプリの KB 紐づけと公開（`dataset_ids` の CI 側解決＝#209 が未実装のため `op: deploy` の歯止めで止まる）・DSL の新規作成（未実証。run #16 の 8 本もすべて既存アプリへの上書きだった）・API キー発行・DSL エクスポート・モデル設定の確認。**DSL の上書きインポートと、KB を持たないアプリの公開は `run:runner` に移った**（2026-09-10、run #16、成功 8／失敗 0） |
+| （ラベル無し。文書上は `run:cowork`） | PM の Mac の Cowork（ローカル clone をアタッチ） | ネット調査（クラウドの Claude Code は外部サイトに出られないため、調査はここだけ）・画面案（`docs/artifacts/`）・既存サービスの台本・`docs/**`・`data/world/**`。成果は手渡しメモ＋`cowork/` ブランチで `run:cloud` へ渡す。git 操作・実装・実機操作はしない |
 
 - 判定基準は `docs/handoff/2026-09-08-execution-split-and-runner.md` §1-1 の操作表（O1〜O10）
 - **`run:*` は 1 つだけ。2 つ付くのは Issue を分割する合図**
