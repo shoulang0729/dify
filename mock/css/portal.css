@@ -101,11 +101,14 @@ a { color: var(--text-link); }
 
 .canvas { padding: 18px 20px 40px; }
 .screen[hidden] { display: none; }
-.grid { display: grid; gap: 14px; }
+.grid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
 .g-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
 .g-3 { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
 .g-main { grid-template-columns: minmax(0, 2.05fr) minmax(0, 1fr); }
-@media (max-width: 900px) { .g-main { grid-template-columns: 1fr; } }
+/* 狭い画面向けの 1 列化。minmax(0, 1fr) にしないと、幅の大きい表を含む
+   セクションがグリッドの自動最小サイズ（min-content）ぶん確保されてページごと横に
+   はみ出す（表側の overflow-x: auto が効かなくなる）。Issue: mobile-table-scroll */
+@media (max-width: 900px) { .g-main { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- block（NocoBase のブロック相当） ---------- */
 .block { background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); }
@@ -130,7 +133,7 @@ a { color: var(--text-link); }
 
 /* ---------- table ---------- */
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.tw { overflow-x: auto; }
+.tw { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
 th { text-align: left; font-weight: 700; color: var(--text-secondary); font-size: 10.5px;
   letter-spacing: .05em; padding: 8px 10px; border-bottom: 1px solid var(--border-default); white-space: nowrap; }
 td { padding: 9px 10px; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
