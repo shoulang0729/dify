@@ -10,7 +10,8 @@
       "mode": "workflow",
       "inputs": {
         "invoice_text": "增值税专用发票 发票号码：0250812…33 购买方：青岭精工（苏州）有限公司 销售方（供应商）：S公司 金额（不含税）：RMB 165,000.00 税率：13% 税额：RMB 21,450.00 价税合计：RMB 186,450.00 开票日期：2025-08-19",
-        "invoice_file": null
+        "invoice_file": null,
+        "invoice_image": null
       },
       "query": "",
       "expect": [
@@ -30,7 +31,8 @@
       "mode": "workflow",
       "inputs": {
         "invoice_text": "発票1：発票番号 0250815…07、販売元 S工具、税抜金額 RMB 19,752.21、税率 13%、税額 RMB 2,567.79、税込金額 RMB 22,320.00、日付 2025-08-15。\n発票2：発票番号 0250826…52、販売元 T公司（样材）、税抜金額 RMB 3,716.81、税率 13%、税額 RMB 483.19、税込金額 RMB 4,200.00、日付 2025-08-26。",
-        "invoice_file": null
+        "invoice_file": null,
+        "invoice_image": null
       },
       "query": "",
       "expect": [
@@ -50,7 +52,8 @@
       "mode": "workflow",
       "inputs": {
         "invoice_text": "発票の一部が破損しており、発票番号が読み取れません。金額欄のみ RMB 3,560.00 と読めます。",
-        "invoice_file": null
+        "invoice_file": null,
+        "invoice_image": null
       },
       "query": "",
       "expect": [
@@ -76,7 +79,8 @@
       "mode": "workflow",
       "inputs": {
         "invoice_text": "发票号码：0250830…21 购买方：青岭精工（苏州）有限公司 销售方：个人 张三 银行账号：6222021234567890123 金额（不含税）：RMB 7,876.11 税率：13% 税额：RMB 1,023.89 价税合计：RMB 8,900.00 开票日期：2025-08-30",
-        "invoice_file": null
+        "invoice_file": null,
+        "invoice_image": null
       },
       "query": "",
       "expect": [
@@ -89,6 +93,30 @@
       "expect_lang": "ja",
       "lang_allow": [],
       "lang_note": ""
+    },
+    {
+      "id": "GN-02 T09",
+      "kind": "正常 zh（発票の写真 1 枚・画像経路）",
+      "mode": "workflow",
+      "inputs": {
+        "invoice_text": "",
+        "invoice_file": null,
+        "invoice_image": {
+          "@file": "dify/samples/GN-02/assets/GN-02-S05-fapiao-photo.png",
+          "type": "image"
+        }
+      },
+      "query": "",
+      "expect": [
+        "invoice_no",
+        "0250903",
+        "amount_incl_tax",
+        "13899"
+      ],
+      "expect_not": [],
+      "expect_lang": "ja",
+      "lang_allow": [],
+      "lang_note": "warnings は日本語。書き起こし自体は中国語のままでよい（DSL の vision ノードは翻訳しない）"
     }
   ]
 }

@@ -12,6 +12,7 @@ world:
 inputs:
   invoice_text: "@body"
   invoice_file: null
+  invoice_image: null
 points:
   - 中文发票也能正确提取发票号码、供应商、金额等项目
   - 购买方名称与本公司一致会被确认
