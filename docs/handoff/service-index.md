@@ -93,7 +93,7 @@ CLAUDE.md §2-11 の採番ルールに基づく台帳。**番号は永久欠番*
 | **GN-02** | `gn2` | gn/office | 請求書（発票）処理 | 提供中 | 製造 | upload |
 | **GN-03** | `gn3` | gn/office | 受注・発注書の読み取りと登録支援 | 試行版 | 製造 | upload |
 | **GN-04** | `gn4` | gn/daily | スケジュール調整 | 試行版 | 製造 | qa |
-| **GN-05** | `gn5` | gn/daily | 文書要約 | 提供中 | 製造 | upload |
+| **GN-05** | `gn5` | gn/daily | 文書要約 | 提供中 | 製造・金融・IT | upload |
 | **GN-06** | `gn6` | gn/daily | 頼まれ事・放置業務の追跡 | 試行版 | 製造・金融・IT | form |
 | **GN-07** | `gn7` | gn/daily | 幹部来訪・出張のアテンド段取り | 構想 | 製造・金融・IT | form |
 | **GN-08** | `gn8` | gn/daily | 名刺の読み取りと項目抽出 | 構想 | IT | upload |
