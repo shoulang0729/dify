@@ -108,7 +108,14 @@ a { color: var(--text-link); }
 /* 狭い画面向けの 1 列化。minmax(0, 1fr) にしないと、幅の大きい表を含む
    セクションがグリッドの自動最小サイズ（min-content）ぶん確保されてページごと横に
    はみ出す（表側の overflow-x: auto が効かなくなる）。Issue: mobile-table-scroll */
-@media (max-width: 900px) { .g-main { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 900px) {
+  .g-main { grid-template-columns: minmax(0, 1fr); }
+  /* .mockbar（足場）のトグル群。.grp は flex-shrink:0 のボタン 4 個を横並びに
+     持つため、900px 以下では折り返さないと .grp 自体の幅でページが横に
+     はみ出す（表とは無関係の別要因。Issue: mobile-table-scroll）。900px 超では
+     元の 1 行のまま＝見た目を変えない。 */
+  .mockbar .grp { flex: 1 1 auto; flex-wrap: wrap; min-width: 0; max-width: 100%; }
+}
 
 /* ---------- block（NocoBase のブロック相当） ---------- */
 .block { background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); }
