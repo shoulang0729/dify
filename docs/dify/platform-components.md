@@ -18,7 +18,7 @@ Dify のアプリ（Chatflow／Workflow）だけでは成立しない部分を�
 | 書き込む側 | `due`：QMS 不具合票 → Webhook Trigger → Workflow → POST（QA-01）／BPMS 差し戻し → 同（DC-05）。`routine`：Schedule Trigger（PC-11）が実行前に POST（NM-03 LG-03）。`notify`：KN-05 の通達巡回・EN-01 の仕様更新検知（PC-12）が POST |
 | 代替案 | **BPMS の通知・タスク一覧をそのままフィード源にする**（Dify は BPMS に書くだけ、PC-16 が BPMS API を読む）。BPMS が全拠点で使われているならこちらが正。二重通知を避けられる |
 | 依存する外部システム | QMS（不具合票）、BPMS／稟議 WF（差し戻し・期限）、SSO（担当者 id） |
-| 使うサービス | QA-01 DC-05 QA-02 NM-03 LG-03 KN-05 EN-01（モックの 7 件）＋ QA-03 GN-02 PT-01 PT-07。**GN-06 頼まれ事・放置業務の追跡＝主要な書き手**（`source = task`。`due`＝期限つきの票〔表示開始は期限の 6 営業日前〕／`routine`＝繰り返し票の次回分〔PC-11 から自動起票〕／`notify`＝放置日数が **14 日で担当者本人・30 日で依頼者**、WIP 上限超過、週次のまとめ、**票の状態が「相談中」になったら上長へ**。冪等キーは `task_id + threshold`。詳細は `usecases/GN-06.md` §4・§8） |
+| 使うサービス | QA-01 DC-05 QA-02 NM-03 LG-03 KN-05 EN-01（モックの 7 件）＋ QA-03 GN-02 PT-01 PT-07。**GN-06 頼まれ事・放置業務の追跡＝主要な書き手**（`source = task`。`due`＝期限つきの票〔表示開始は期限の 6 営業日前〕／`routine`＝繰り返し票の次回分〔PC-11 から自動起票〕／`notify`＝放置日数が **14 日で担当者本人・30 日で依頼者**、WIP 上限超過、週次のまとめ、**票の状態が「相談中」になったら上長へ**。冪等キーは `task_id + threshold`。詳細は `usecases/GN-06.md` §4・§8）＋ **QA-05**（是正期限の `due`〔規程 `RULE-09` の重大 7 日・一般 14 日〕と週次とりまとめの `routine`）**KN-12**（修理依頼の `due`）**DC-12**（承認待ちの `due`） |
 | 段階導入 | 無くても ①② は動く。第 1 段：手動登録＋Schedule 由来の `routine` のみ。第 2 段：QMS/BPMS Webhook。第 3 段：BPMS 統合（代替案） |
 | 工数感 | M |
 | リスク | BPMS と二重通知／担当者マッピング（部署→人）の保守／絶対日付とタイムゾーン（蘇州 UTC+8・日本 UTC+9）／管理番号をフィード項目に出さない（D-14） |
@@ -45,7 +45,7 @@ Dify のアプリ（Chatflow／Workflow）だけでは成立しない部分を�
 | 実現案 | Knowledge Pipeline（v1.9.0〜）：データソース（`datasources/sharepoint_datasource`／`onedrive`／`tencent_cos_storage`／`aws_s3_storage`）→ 抽出（`tools/dify_extractor`。スキャン・複雑レイアウトは `tools/mineru`（自前デプロイ推奨）、中国語帳票・図面は `tools/paddleocr`）→ チャンク（`tools/general_chunk`／`parent_child_chunk`／FAQ は `qa_chunk`）→ メタデータ（`svc`・`lang`・`version_date`・`doc_type`・`site`・`confidentiality`・`source_url`）→ KB。Outline はデータソース無し → PC-05 が Markdown を export して Knowledge API（`create-by-text`/`update-by-text`）で投入 |
 | 更新経路 | 定期再取込（PC-11）＋差分検知（PC-12）。「ページ単位レコード」を保つ（引用に必要） |
 | 依存する外部システム | ファイルサーバ／M365／COS、Outline、（OCR を API で使うなら Baidu・MinerU API＝越境確認） |
-| 使うサービス | KN-01〜05 QA-01 QA-04 DC-06 DC-07 LG-02 EN-01 EN-03 GN-01 GN-02 GN-03 PT-03 PT-05 PT-06 |
+| 使うサービス | KN-01〜05 QA-01 QA-04 DC-06 DC-07 LG-02 EN-01 EN-03 GN-01 GN-02 GN-03 PT-03 PT-05 PT-06 ＋ QA-05（手書きの巡回票・ヒヤリハット票）KN-12（取扱説明書・作業標準書）NM-06（棚卸差異の表）DC-12（規程・申請の添付） |
 | 段階導入 | 無い場合：手動アップロード（W1 はこれで動く）。OCR 無しはテキスト PDF のみ対応 |
 | 工数感 | M（OCR 自前デプロイを含めると L） |
 | リスク | OCR の中国語・日本語混在精度／表の崩れ／メタデータ付与の運用（誰が `version_date` を入れるか）／KB 再構築時の引用 id 変化 |
@@ -58,7 +58,7 @@ Dify のアプリ（Chatflow／Workflow）だけでは成立しない部分を�
 | なぜ Dify 単体では足りないか | `http-request` ノードと Webhook Trigger は汎用であり、認証・冪等・レート制限・スキーマ差分の吸収は**外側**に要る。顧客システムに REST が無い場合は薄い API 層が必要（`templates/06` と同じ構成） |
 | 実現案 | (1) 受け口：Webhook Trigger（1.10.0〜）の URL を公開せず、**アダプタ**（社内 API ゲートウェイ）経由で受ける。署名検証・`event_id` で冪等（PC-01 の `source_ref` と同じ）。(2) 照会：`http-request` → アダプタ → ERP/WMS/MES。読み取り専用アカウント。(3) 出力：CSV／JSON の「取込形式」をファイルで返す（PC-13）。(4) 認証：API キーは Dify の環境変数（Secret 型）、アダプタ側は mTLS か IP 制限。(5) システム別データ契約表（項目・型・更新頻度・主キー） |
 | 依存する外部システム | QMS（不具合票・クレーム）、BPMS／稟議 WF（申請・差し戻し・承認ルート）、ERP（在庫・受発注・原価）、MES（ロット・工程）、WMS、加工貿易手冊台帳、カレンダー（M365）、金融情報端末・契約データベース（読み取り専用。RS-04）、工数・案件管理システム（PO-04） |
-| 使うサービス | NM-04 EN-02 NM-05（lookup 3 件）DC-06 QA-01 QA-02 QA-03 DC-05 GN-01 GN-02 GN-03 GN-04 NM-01 NM-03 PT-07 ＋ RS-04 PO-04 GN-06（人事マスタ）GN-07（M365 メール・カレンダー） |
+| 使うサービス | NM-04 EN-02 NM-05（lookup 3 件）DC-06 QA-01 QA-02 QA-03 DC-05 GN-01 GN-02 GN-03 GN-04 NM-01 NM-03 PT-07 ＋ RS-04 PO-04 GN-06（人事マスタ）GN-07（M365 メール・カレンダー）＋ **QA-05**（巡回・ヒヤリハットの台帳）**KN-12**（設備台帳・修理履歴・点検表）**NM-06**（在庫・入出庫履歴・前回棚卸）**DC-12**（申請台帳・承認ワークフロー）。この 4 件は**ノーコード業務 DB（kintone 等）で作られた台帳を読み取り先にできる**（設計書 `../handoff/2026-09-21-kintone-derived-usecases.md` §11-1） |
 | 段階導入 | 無い場合：lookup 型は「アップロード → 抽出」に落とす（`feasibility` §3）。書き込み系は CSV 出力まで |
 | 工数感 | L（システム数に比例。1 システム M） |
 | リスク | 顧客システムの API 有無／ベンダ保守契約／読み取り権限の申請に時間がかかる／MES のリアルタイム性と KB のずれ |
@@ -178,7 +178,7 @@ Dify のアプリ（Chatflow／Workflow）だけでは成立しない部分を�
 | なぜ Dify 単体では足りないか | LLM の出力はテキスト／Markdown。帳票テンプレートへの流し込みと Office ファイル生成は外部処理が要る |
 | 実現案 | 自前 **レンダラ API**（python-docx／openpyxl／PDF 生成）：`POST /render` に `{ template_id, data(JSON) }` → ファイル URL（期限付き）。Dify からは `http-request` で呼び、`files` 出力を Answer／End で返す（ファイル受け取りの詳細は顧客版で実装時に確認）。テンプレート台帳：`template_id`／様式名／言語（ja/zh/両）／版／所管。Excel は `tools/microsoft_excel_365`（M365 なら）、pptx は `tools/slidespeak`（SaaS。越境確認）も選択肢。LLM の出力 JSON スキーマ＝テンプレートの差し込み項目にする（§6-8）。ICS（iCalendar）：template_id: itinerary_ics。VTIMEZONE（Asia/Shanghai・Asia/Tokyo）を必ず入れ、METHOD:PUBLISH（共有。出席依頼にしない）、UID は {case_id}-{item_id}@{domain} で固定し版が上がったら SEQUENCE を +1 する（前の版を上書きできる）。**LLM に生成させない**（改行・エスケープ・タイムゾーンで壊れる）。GN-07 用 |
 | 依存する外部システム | 社内様式（Word/Excel テンプレート）の提供、M365 |
-| 使うサービス | QA-01（8D）DC-01（報告書）DC-03（教材）DC-05（稟議書）DC-07（契約ドラフト）NM-01 NM-02（見積表）NM-03（集計表）GN-01 GN-02 GN-03（CSV・照合表）LG-04（メール文）PT-02 PT-07（RFQ）GN-07（予定表 PDF/XLSX・ICS・CSV） |
+| 使うサービス | QA-01（8D）DC-01（報告書）DC-03（教材）DC-05（稟議書）DC-07（契約ドラフト）NM-01 NM-02（見積表）NM-03（集計表）GN-01 GN-02 GN-03（CSV・照合表）LG-04（メール文）PT-02 PT-07（RFQ）GN-07（予定表 PDF/XLSX・ICS・CSV）QA-05（週次まとめ・是正依頼）NM-06（課長承認用の整理・財務課あて連絡文） |
 | 段階導入 | 無い場合：Markdown／CSV テキストをそのまま表示（W1）。DOCX は W2 以降 |
 | 工数感 | M |
 | リスク | 様式の版違い／中国語フォント埋め込み／ファイル URL の権限（PC-02） |
@@ -191,7 +191,7 @@ Dify のアプリ（Chatflow／Workflow）だけでは成立しない部分を�
 | なぜ Dify 単体では足りないか | 送信ツールはあるが「誰に・どのチャネルで・どの言語で・何を含めてよいか」のルーティングと文面テンプレは共通化が要る |
 | 実現案 | **Workflow as Tool** `notify`：入力 `{ to(部署 or 担当者 id), svc_id, kind, title, body, link }` → ルーティング表（拠点／部門 → チャネル：中国側 `tools/wecom`（群 bot）または `tools/dingtalk`、日本側 `tools/teams`／`tools/outlook`／`tools/email`）→ 文面テンプレ（ja/zh）→ 送信。本文に個人情報・単価を入れない（PC-10）。リンクは本番 UI（PC-16）の該当サービスへ（管理番号付き）。受信：`extensions/wecom_bot` で KN-02 KN-04 をスマホから |
 | 依存する外部システム | WeCom 管理者権限（bot 登録・公開 URL）、M365 Graph 権限、SMTP |
-| 使うサービス | QA-03（エスカレーション）NM-03（配信）KN-05（新着）KN-04 GN-04（招集）GN-02 PT-01 PC-11 の失敗通知 |
+| 使うサービス | QA-03（エスカレーション）NM-03（配信）KN-05（新着）KN-04 GN-04（招集）GN-02 PT-01 PC-11 の失敗通知 ＋ QA-05（是正期限の督促）KN-12（依頼者への一次回答） |
 | 段階導入 | 無い場合：結果は UI で見るだけ。WeCom 群 bot（送信のみ）が最小構成 |
 | 工数感 | S（送信）／M（bot 受信込み） |
 | リスク | WeCom bot は Dify が公開 URL を持つ必要／通知の氾濫（PC-01 との重複） |
