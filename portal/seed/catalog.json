@@ -247,6 +247,17 @@
             "zh": "变更・客诉・审核",
             "en": "Change, Claims & Audits"
           }
+        },
+        {
+          "id": "safety",
+          "industries": [
+            "mfg"
+          ],
+          "name": {
+            "ja": "安全・5S",
+            "zh": "安全・5S",
+            "en": "Safety & 5S"
+          }
         }
       ]
     },
@@ -865,6 +876,21 @@
       }
     },
     {
+      "code": "DC-12",
+      "id": "dc12",
+      "cat": "dc",
+      "sub": "apply",
+      "st": 3,
+      "industries": [
+        "mfg"
+      ],
+      "name": {
+        "ja": "承認者向けの申請要約と類似案件・規程照合",
+        "zh": "面向审批人的申请摘要与类似案件・规定比对",
+        "en": "Approver-side Request Summary with Similar Cases and Policy Check"
+      }
+    },
+    {
       "code": "EG-01",
       "id": "eg1",
       "cat": "eg",
@@ -1295,6 +1321,21 @@
       }
     },
     {
+      "code": "KN-12",
+      "id": "kn12",
+      "cat": "kn",
+      "sub": "tech",
+      "st": 3,
+      "industries": [
+        "mfg"
+      ],
+      "name": {
+        "ja": "修理依頼のトリアージ（設備台帳・修理履歴・点検表の突き合わせ）",
+        "zh": "维修申请的分诊（设备台账・维修履历・点检表比对）",
+        "en": "Repair Request Triage across Equipment Register, Repair History and Check Sheets"
+      }
+    },
+    {
       "code": "LG-01",
       "id": "lg1",
       "cat": "lg",
@@ -1427,6 +1468,21 @@
         "ja": "データ分析アシスタント",
         "zh": "数据分析助手",
         "en": "Data Analysis Assistant"
+      }
+    },
+    {
+      "code": "NM-06",
+      "id": "nm6",
+      "cat": "nm",
+      "sub": "actual",
+      "st": 3,
+      "industries": [
+        "mfg"
+      ],
+      "name": {
+        "ja": "棚卸差異の原因候補と処理案",
+        "zh": "盘点差异的原因假设与处理方案",
+        "en": "Stocktake Variance Cause Hypotheses and Disposition Options"
       }
     },
     {
@@ -1720,6 +1776,21 @@
         "ja": "完成車メーカー工程監査への対応資料",
         "zh": "整车厂工艺审核应对资料",
         "en": "OEM Process Audit Response Pack"
+      }
+    },
+    {
+      "code": "QA-05",
+      "id": "qa5",
+      "cat": "qa",
+      "sub": "safety",
+      "st": 3,
+      "industries": [
+        "mfg"
+      ],
+      "name": {
+        "ja": "ヒヤリハット・5S巡回記録の要約と傾向分析",
+        "zh": "未遂事件与5S巡回记录的摘要与趋势分析",
+        "en": "Near-miss and 5S Patrol Record Summary and Trend Analysis"
       }
     },
     {
