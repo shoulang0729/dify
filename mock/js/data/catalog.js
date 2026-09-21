@@ -180,7 +180,7 @@ const SVCS = [
             zh: '将尚未形成文档的资深员工的操作步骤、要领与判断标准，通过访谈录音转写并结构化，生成作业指导书草案。针对同一项作业，把现行标准、旧版标准与本人口述三者按日期并列呈现，依据修订经过让人来判断以哪一个为准。若口述与现行标准不一致，不擅自覆盖，而是作为修订候选保留。未能听清的部分不做推测填补，保留其位置并作为需要回访确认的对象返回。输出可一直做到知识库的登记提案（新建，或对既有文档提出修改申请）。',
             en: 'Turns a veteran\'s undocumented steps, knacks and judgment criteria into a draft work instruction by transcribing and structuring a recorded interview. For the same task it lines up the current standard, the superseded standard and the veteran\'s own words with their dates, so that a person can decide which one governs from the revision history. Where the veteran contradicts the current standard, it is kept as a candidate revision rather than silently overwriting it. Passages that could not be heard are left in place for a follow-up question instead of being guessed at. The output goes as far as a proposal to register the result in the knowledge base — either a new entry or a change request against the existing standard.' } },
 
-  /* KN-12: 修理依頼のトリアージ（設計書 docs/handoff/2026-09-21-kintone-derived-usecases.md §6）。
+  /* KN-12: 修理依頼のトリアージ（Issue #320 設計書 §6）。
      設備台帳・修理履歴・点検表の 3 つを突き合わせる。止めるかどうかの判断は人が持つ。 */
   { id: 'kn12', cat: 'kn', sub: 'tech', st: 3, industries: ['mfg'], tags: ['equipment', 'procedure'], added: '2026-09-21',
     place: 'sys',
@@ -215,7 +215,7 @@ const SVCS = [
             zh: '读取整车厂的工艺审核检查表，将每一项与内部管理文件、记录和实绩数据关联，生成回答草案与提交资料清单。也可起草针对指出事项的纠正计划书。',
             en: 'Reads an OEM process-audit checklist, maps each item to your control documents, records and performance data, and produces draft answers plus a submission list. Also drafts corrective-action plans for findings.' } },
 
-  /* QA-05: ヒヤリハット・5S 巡回記録の要約と傾向分析（設計書 docs/handoff/2026-09-21-kintone-derived-usecases.md §5）。
+  /* QA-05: ヒヤリハット・5S 巡回記録の要約と傾向分析（Issue #320 設計書 §5）。
      新中分類 qa/safety に置く最初のサービス。 */
   { id: 'qa5', cat: 'qa', sub: 'safety', st: 3, industries: ['mfg'], tags: ['safety', 'summary'], added: '2026-09-21',
     place: 'qual',
@@ -274,7 +274,7 @@ const SVCS = [
             zh: '按汇报种类（担当周报、组织长周报、月度报告、人事要员报告、故障报告等）、读者与目的（提交前自查／收到后的要点梳理）选择模式。提交前对照规定整理条目，把模糊表述与缺失项目变成面向撰写者的建议；收到后返回要点摘要、需确认的议题3〜5条、数字桥接与改进后的汇报稿，并与台账核对未回答、超期与再发。',
             en: 'Pick the report type (staff weekly, manager weekly, monthly, headcount, incident and more), the reader, and the purpose — a self-check before submitting, or framing the discussion after receiving. Before submitting it tidies lines against the reporting rules and flags vague wording and missing items for the writer. After receiving it returns a summary, three to five points to clarify, a numeric bridge to the target and a rewritten report, checked against the log of past exchanges.' } },
 
-  /* DC-12: 承認者向けの申請要約と類似案件・規程照合（設計書 docs/handoff/2026-09-21-kintone-derived-usecases.md §8）。
+  /* DC-12: 承認者向けの申請要約と類似案件・規程照合（Issue #320 設計書 §8）。
      DC-05（申請者向けの記載漏れ検出）と表裏。読み手が承認者である点が違う。 */
   { id: 'dc12', cat: 'dc', sub: 'apply', st: 3, industries: ['mfg'], tags: ['approval', 'purchase'], added: '2026-09-21',
     place: 'req',
@@ -341,7 +341,7 @@ const SVCS = [
             zh: '通过自然语言提问，对生产、质量、成本数据进行汇总与可视化，并附带分析洞察。例如"看一下各线不良率趋势""加班时间与不良是否相关"，无需SQL或BI工具知识。',
             en: 'Aggregates and charts production, quality and cost data from plain-language questions — "show defect-rate trends by line", "is overtime correlated with defects?" — with written insights. No SQL or BI skills required.' } },
 
-  /* NM-06: 棚卸差異の原因候補と処理案（設計書 docs/handoff/2026-09-21-kintone-derived-usecases.md §7）。
+  /* NM-06: 棚卸差異の原因候補と処理案（Issue #320 設計書 §7）。
      台本は部品・製品の棚卸 1 本。固定資産の棚卸は desc で触れるだけ（モード化しない）。 */
   { id: 'nm6', cat: 'nm', sub: 'actual', st: 3, industries: ['mfg'], tags: ['inventory', 'analysis'], added: '2026-09-21',
     place: 'order',
