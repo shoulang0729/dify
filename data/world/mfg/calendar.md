@@ -60,6 +60,12 @@
 | `CL-YY-MMDD-NN` | クレーム対応番号（**同日 2 件目以降の枝番**） | `CL-25-0906-02`（`qa.js` QA-03）。**1 件目は枝番なし**（`CL-25-0906` ＝ 塗装ブツの別クレーム）。同日に 2 件発生したときだけ `-02` 以降を付ける |
 | `WS-LN-NN` | ライン別の作業標準書 | `WS-L2-07`（`en.js` EN-01）。機能別の `WS-XX-NNN`（`WS-QC-031`）とは通番桁が異なる。`L` は `PC-LN-YYYY-NNN` と同じライン記号 |
 | `QS-NNNN` | 検査基準書 | `QS-3310`（`en.js` EN-01・`docs/dify/usecases/EN-01.md` の `doc_no`）。対象品番の数字部をそのまま番号に使う。**品番ではない**（§5-3） |
+| `HH-YY-MMDD` | ヒヤリハット報告番号 | `HH-25-0826` `HH-25-0903` `HH-25-0908`（QA-05。`records.csv` の `kind: nearmiss`） |
+| `5S-YY-MMDD` | 5S・安全巡回の実施番号（巡回日で採番） | `5S-25-0908`（QA-05。`kind: patrol`）。**接頭辞が数字で始まるため `tools/check-world.mjs` の候補抽出（`[A-Z]{1,4}` 始まり）には掛からない**。人が読む正本としてここに登録する |
+| `MR-YY-NNNN` | 修理依頼・修理履歴番号（Maintenance Request） | `MR-25-0117` `MR-25-0204` `MR-25-0311` `MR-25-0331`（KN-12。`kind: repair`） |
+| `CK-YY-MMDD` | 点検表（日常・週次点検の記録。対象設備は本文に書き番号には入れない） | `CK-25-0908`（KN-12。`kind: patrol`） |
+| `ST-YY-QN` | 棚卸番号（四半期棚卸） | `ST-25-Q2` `ST-25-Q3`（NM-06。`kind: stock`）。`Q` は四半期の頭文字でリテラル |
+| `PR-YY-NNNN` | 購買申請番号（Purchase Requisition） | `PR-25-0208` `PR-25-0362` `PR-25-0417`（DC-12。`kind: pr`）。稟議 `RG-YY-NNNN` とは別（`PR` は購買課への発注依頼、`RG` は社内決裁） |
 
 出典：`docs/handoff/2026-09-07-repo-layout-v2.md` §2-2・§2-3 の実測、および `mock/js/data/scenarios/*.js`・
 `dify/kb/KN-01/*.md` からの本 PR での再確認（grep 実測値。件数は概数）。
