@@ -13,10 +13,12 @@
 | KN-04 | 社内問い合わせ受付とFAQ蓄積 | KN/rule | 製造・金融・IT | 試行版 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) qa | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | — | [KN-04.md](./dify/usecases/KN-04.md) | — | — |
 | KN-05 | 当局通達の影響分析・マニュアル反映 | KN/rule | 製造・金融・IT | 試行版 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) upload | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | — | [KN-05.md](./dify/usecases/KN-05.md) | — | — |
 | KN-11 | ベテランのノウハウ聞き取りと記録化 | KN/tech | 製造 | 構想 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) upload | — | — | — | — | — | — |
+| KN-12 | 修理依頼のトリアージ（設備台帳・修理履歴・点検表の突き合わせ） | KN/tech | 製造 | 構想 | [mfg/kn.js](../mock/js/data/scenarios/mfg/kn.js) form | — | — | — | [KN-12.md](./dify/usecases/KN-12.md) | — | — |
 | QA-01 | 不具合原因分析・報告書（8D）作成 | QA/defect | 製造 | 試行版 | [mfg/qa.js](../mock/js/data/scenarios/mfg/qa.js) upload | — | — | — | [QA-01.md](./dify/usecases/QA-01.md) | — | — |
 | QA-02 | 変更点影響予測（4M変更管理） | QA/change | 製造 | 構想 | [mfg/qa.js](../mock/js/data/scenarios/mfg/qa.js) diff | — | — | — | [QA-02.md](./dify/usecases/QA-02.md) | — | — |
 | QA-03 | 顧客クレーム一次回答・分類 | QA/change | 製造 | 試行版 | [mfg/qa.js](../mock/js/data/scenarios/mfg/qa.js) form | — | — | — | [QA-03.md](./dify/usecases/QA-03.md) | — | — |
 | QA-04 | 完成車メーカー工程監査への対応資料 | QA/change | 製造 | 試行版 | [mfg/qa.js](../mock/js/data/scenarios/mfg/qa.js) upload | — | — | — | [QA-04.md](./dify/usecases/QA-04.md) | — | — |
+| QA-05 | ヒヤリハット・5S巡回記録の要約と傾向分析 | QA/safety | 製造 | 構想 | [mfg/qa.js](../mock/js/data/scenarios/mfg/qa.js) upload | — | — | — | [QA-05.md](./dify/usecases/QA-05.md) | — | — |
 | DC-01 | 日本本社への報告資料作成 | DC/report | 製造 | 提供中 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) form | — | — | [DC-01-hq-report-draft.yml](../dify/apps/DC-01-hq-report-draft.yml) | [DC-01.md](./dify/usecases/DC-01.md) | — | [4 件](../dify/tests/DC-01.json) |
 | DC-02 | 議事録作成と次回論点整理 | DC/report | 製造・金融・IT | 提供中 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) upload | [fin/dc.js](../mock/js/data/scenarios/fin/dc.js) upload | — | [DC-02-meeting-minutes.yml](../dify/apps/DC-02-meeting-minutes.yml) | [DC-02.md](./dify/usecases/DC-02.md) | — | [4 件](../dify/tests/DC-02.json) |
 | DC-03 | 教育・OJT資料作成 | DC/site | 製造 | 試行版 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) upload | — | — | — | [DC-03.md](./dify/usecases/DC-03.md) | — | — |
@@ -25,6 +27,7 @@
 | DC-06 | 輸出入・通関書類の確認 | DC/apply | 製造 | 試行版 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) upload | — | — | — | [DC-06.md](./dify/usecases/DC-06.md) | — | — |
 | DC-07 | サプライヤー契約書ドラフト支援 | DC/apply | 製造 | 試行版 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) form | — | — | — | [DC-07.md](./dify/usecases/DC-07.md) | — | — |
 | DC-08 | 報告レビュー（提出前チェック／受領後の論点整理） | DC/report | 製造・金融・IT | 試行版 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) form | [fin/dc.js](../mock/js/data/scenarios/fin/dc.js) form | — | — | [DC-08.md](./dify/usecases/DC-08.md) | — | — |
+| DC-12 | 承認者向けの申請要約と類似案件・規程照合 | DC/apply | 製造 | 構想 | [mfg/dc.js](../mock/js/data/scenarios/mfg/dc.js) form | — | — | — | [DC-12.md](./dify/usecases/DC-12.md) | — | — |
 | LG-01 | 日中翻訳（社内の言い方に揃える） | LG/trans | 製造 | 提供中 | [mfg/lg.js](../mock/js/data/scenarios/mfg/lg.js) upload | — | — | [LG-01-ja-zh-translation.yml](../dify/apps/LG-01-ja-zh-translation.yml) | [LG-01.md](./dify/usecases/LG-01.md) | — | [4 件](../dify/tests/LG-01.json) |
 | LG-02 | 社内用語・呼称の統一（用語集） | LG/trans | 製造 | 試行版 | [mfg/lg.js](../mock/js/data/scenarios/mfg/lg.js) upload | — | — | — | [LG-02.md](./dify/usecases/LG-02.md) | — | — |
 | LG-03 | 現地スタッフとの認識合わせ（手順の中国語書き下し） | LG/align | 製造 | 試行版 | [mfg/lg.js](../mock/js/data/scenarios/mfg/lg.js) form | — | — | — | [LG-03.md](./dify/usecases/LG-03.md) | — | — |
@@ -34,6 +37,7 @@
 | NM-03 | 日報・実績の集計と要約 | NM/actual | 製造 | 提供中 | [mfg/nm.js](../mock/js/data/scenarios/mfg/nm.js) upload | — | — | [NM-03-daily-report-summary.yml](../dify/apps/NM-03-daily-report-summary.yml) | [NM-03.md](./dify/usecases/NM-03.md) | — | [4 件](../dify/tests/NM-03.json) |
 | NM-04 | 在庫・納期の問い合わせ回答 | NM/actual | 製造 | 試行版 | [mfg/nm.js](../mock/js/data/scenarios/mfg/nm.js) lookup | — | — | — | [NM-04.md](./dify/usecases/NM-04.md) | — | — |
 | NM-05 | データ分析アシスタント | NM/actual | 製造 | 試行版 | [mfg/nm.js](../mock/js/data/scenarios/mfg/nm.js) lookup | — | — | — | [NM-05.md](./dify/usecases/NM-05.md) | — | — |
+| NM-06 | 棚卸差異の原因候補と処理案 | NM/actual | 製造 | 構想 | [mfg/nm.js](../mock/js/data/scenarios/mfg/nm.js) upload | — | — | — | [NM-06.md](./dify/usecases/NM-06.md) | — | — |
 | EN-01 | 仕様改訂の差分検出・取引先用語対応 | EN/spec | 製造 | 試行版 | [mfg/en.js](../mock/js/data/scenarios/mfg/en.js) diff | — | — | — | [EN-01.md](./dify/usecases/EN-01.md) | — | — |
 | EN-02 | BOM逆引き | EN/bom | 製造 | 試行版 | [mfg/en.js](../mock/js/data/scenarios/mfg/en.js) lookup | — | — | — | [EN-02.md](./dify/usecases/EN-02.md) | — | — |
 | EN-03 | 図面の類似検索 | EN/bom | 製造 | 構想 | [mfg/en.js](../mock/js/data/scenarios/mfg/en.js) upload | — | — | — | [EN-03.md](./dify/usecases/EN-03.md) | — | — |
@@ -90,4 +94,4 @@
 | SO-02 | 稼働状況の自然言語照会 | SO/avail | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) lookup | — | — | — | — |
 | SO-03 | 障害・稼働の定期報告（稼働率・障害件数・MTTR） | SO/avail | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) form | — | — | — | — |
 | SO-04 | 障害報告・再発防止策のドラフト | SO/incident | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) form | — | — | — | — |
-| 集計 | — | — | — | — | ①製造 51 | ①金融 30 | ①IT 15 | ②12 | ③68 | ④KB 4 | ④テスト 12 |
+| 集計 | — | — | — | — | ①製造 55 | ①金融 30 | ①IT 15 | ②12 | ③72 | ④KB 4 | ④テスト 12 |

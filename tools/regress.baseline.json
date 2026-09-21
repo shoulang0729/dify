@@ -130,6 +130,12 @@
           "industries": [
             "mfg"
           ]
+        },
+        {
+          "id": "safety",
+          "industries": [
+            "mfg"
+          ]
         }
       ]
     },
@@ -453,6 +459,20 @@
       "place": "know"
     },
     {
+      "id": "kn12",
+      "cat": "kn",
+      "sub": "tech",
+      "st": 3,
+      "industries": [
+        "mfg"
+      ],
+      "tags": [
+        "equipment",
+        "procedure"
+      ],
+      "place": "sys"
+    },
+    {
       "id": "qa1",
       "cat": "qa",
       "sub": "defect",
@@ -504,6 +524,20 @@
       "tags": [
         "audit",
         "report"
+      ],
+      "place": "qual"
+    },
+    {
+      "id": "qa5",
+      "cat": "qa",
+      "sub": "safety",
+      "st": 3,
+      "industries": [
+        "mfg"
+      ],
+      "tags": [
+        "safety",
+        "summary"
       ],
       "place": "qual"
     },
@@ -623,6 +657,20 @@
         "fin": "reg",
         "it": "proj"
       }
+    },
+    {
+      "id": "dc12",
+      "cat": "dc",
+      "sub": "apply",
+      "st": 3,
+      "industries": [
+        "mfg"
+      ],
+      "tags": [
+        "approval",
+        "purchase"
+      ],
+      "place": "req"
     },
     {
       "id": "lg1",
@@ -746,6 +794,20 @@
         "kpi"
       ],
       "place": "kpi"
+    },
+    {
+      "id": "nm6",
+      "cat": "nm",
+      "sub": "actual",
+      "st": 3,
+      "industries": [
+        "mfg"
+      ],
+      "tags": [
+        "inventory",
+        "analysis"
+      ],
+      "place": "order"
     },
     {
       "id": "en1",
@@ -1734,13 +1796,13 @@
   ],
   "counts": {
     "cats": 15,
-    "subs": 35,
-    "svcs": 83,
+    "subs": 36,
+    "svcs": 87,
     "tags": 67,
     "ui": 94,
     "byIndustry": {
       "mfg": {
-        "svcs": 51,
+        "svcs": 55,
         "cats": 10
       },
       "fin": {
