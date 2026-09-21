@@ -660,7 +660,7 @@ reviewer はこの文字列と一致することを確認する。
 | AC-09 | `git diff --stat` が **`mock/js/data/portal/front.js` 1 本＋新規 `data/world/it/client_contacts.csv`＋`data/world/README.md`** だけ（`portal/**` に差分なし） | `mock/js/data/portal/front.js ｜ 40 ++++++++++++++++++++--------------------` |
 | AC-10 | `mock/portal.html` を IT 業種で開き `cust`（取引先）を見ると、担当者が **6 名**で、**王 磊・佐藤 美咲・劉 洋・森下 隆一・高梨 直人・陳 慧 が 1 人も出ない** | 目視（Pages） |
 | AC-11 | 6 名それぞれの行を押すと接触履歴ドロワーが開き、**往復件数が 3 / 2 / 1 / 2 / 2 / 2 件**（合計 12 件、`main` と同じ） | 目視 |
-| AC-12 | `grep -n "王 磊\|佐藤 美咲\|劉 洋\|森下 隆一\|高梨 直人\|陳 慧" mock/js/data/portal/` が**ヒット 0** | コマンド |
+| AC-12 | `PCONTACT.it`／`PHIST.it` の行範囲（差し替え後の `front.js` で `PCONTACT.it` の開始行から `PHIST.it` の終了行まで。変更前の 101〜148 行に相当）を `sed -n '<開始>,<終了>p' mock/js/data/portal/front.js \| grep -c "王 磊\\|佐藤 美咲\\|劉 洋\\|森下 隆一\\|高梨 直人\\|陳 慧"` で数えて **0**。**`mock/js/data/portal/` 全体や `front.js` 全体を対象にしない**（`sys.js`・`back.js`・`common.js`・`mgmt.js` と `front.js` の `PCRED` には、製造・金融本来の業務データとして王 磊・劉 洋・高梨 直人が正しく残る。reviewer 実測：ディレクトリ全体で 29 件、`front.js` 全体で 3 件＝いずれも正当） | `0`（行範囲限定） |
 
 ### 6-2. PR-2（R-4）を当てた直後
 
