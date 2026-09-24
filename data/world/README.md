@@ -26,10 +26,10 @@ IT（在中日系 SIer）の第 3 世界は `docs/handoff/2026-09-11-it-industry
 | `people.csv` | 人物 21 名（`SCENARIOS[].persona` ＋ `FEED.persona`）。主務 `title_*` に加え兼務 `alt_title_ja/zh/en`（`;` 区切り、3 列とも同じ順序）を持つ（Issue #153 PR-3 で追加） |
 | `products.csv` | 品番（台本の `SK-…`／`ASSY-…` など） |
 | `equipment.csv` | 設備・金型・治具（`PX-200`・`D-118` など） |
-| `partners.csv` | 取引先記号（`K 社` など。**社名は付けない**）とパートナー連携 6 サービスの役割名、および GN-07（幹部来訪・出張アテンド）が使う旅行会社記号 `R 社` |
+| `partners.csv` | 取引先記号（`K 社` など。**社名は付けない**）とパートナー連携 6 サービスの役割名、および GN-07（幹部来訪・出張アテンド）が使う旅行会社記号 `R 社`。PT-09 の応募者の職歴に出る `P 社`・`Q 社`・`Y 社`（`kind: other`。取引関係なし） |
 | `kpi.csv` | 不良率・稼働率・生産数など（基準値。改善事例など別文脈の値は note で区別） |
 | `calendar.md` | 会計年度・文書番号の体系・世界の「今日」 |
-| `documents.csv` | 規程・マニュアル・社内システムのレコード ID の台帳（`kind`＝`rule`/`record_id`。発番されない ID。Issue #153 PR-2 で新設）（KN-11 で作業標準書 1 件を追加） |
+| `documents.csv` | 規程・マニュアル・社内システムのレコード ID の台帳（`kind`＝`rule`/`record_id`。発番されない ID。Issue #153 PR-2 で新設）（KN-11 で作業標準書 1 件を追加）（PT-09 で採用書類規程 `RULE-11` を追加） |
 | `records.csv` | 品質・受注出荷の案件台帳 19 件（不具合・クレーム・変更要求・技術報告・引合・受注・出荷/通関。`docs/handoff/2026-09-12-portal-industry-rev4.md` §6-2 で新設） |
 | `partner_contacts.csv` | 取引先（顧客・仕入先・物流事業者）側の担当者 6 名（青嶺精工の社員ではない。同設計書 §6-3 で新設） |
 | `hotels.csv` | 会社契約ホテル（GN-07。3 言語の名称・住所） |
@@ -37,6 +37,8 @@ IT（在中日系 SIer）の第 3 世界は `docs/handoff/2026-09-11-it-industry
 | `airports.csv` | 空港（GN-07。IATA コードは実在。§4-5） |
 | `routes.csv` | 区間所要時間（GN-07。空港・ホテル・拠点を横断で参照） |
 | `contacts.csv` | 緊急連絡先（GN-07。電話番号はすべて架空） |
+| `postings.csv` | オープンポスト（社内の採用枠）3 件。番号 `JP-YY-NNN`。必須・歓迎条件（ja/zh）・給与レンジ・役職の段階（`tier`）・面接官（`people.csv` の id）。PT-09（`docs/handoff/2026-09-23-resume-review.md` §4-1）で新設 |
+| `candidates.csv` | 架空の応募者 2 名。**氏名・連絡先・生年月日・性別・写真の列を持たない**（匿名 ID `C-YY-NNN` だけ）。職歴は記号会社（`P 社`・`Q 社`・`Y 社`）。PT-09（同 §4-2）で新設 |
 
 ## 何がここにあるか（金融／`data/world/fin/`）
 

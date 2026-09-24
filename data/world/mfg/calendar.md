@@ -66,6 +66,8 @@
 | `CK-YY-MMDD` | 点検表（日常・週次点検の記録。対象設備は本文に書き番号には入れない） | `CK-25-0908`（KN-12。`kind: patrol`） |
 | `ST-YY-QN` | 棚卸番号（四半期棚卸） | `ST-25-Q2` `ST-25-Q3`（NM-06。`kind: stock`）。`Q` は四半期の頭文字でリテラル |
 | `PR-YY-NNNN` | 購買申請番号（Purchase Requisition） | `PR-25-0208` `PR-25-0362` `PR-25-0417`（DC-12。`kind: pr`）。稟議 `RG-YY-NNNN` とは別（`PR` は購買課への発注依頼、`RG` は社内決裁） |
+| `JP-YY-NNN` | 求人ポスト番号（社内でオープンになっている採用枠。Job Posting） | `JP-25-011` `JP-25-012` `JP-25-013`（PT-09。`postings.csv`） |
+| `C-YY-NNN` | 応募者の匿名 ID（当社の採用台帳の通番。氏名・連絡先は採用台帳の外に置き、台本・KB・テストには出さない） | `C-25-031` `C-25-032`（PT-09。`candidates.csv`）。採用エージェント側の匿名 ID `C-26NN-X`（PT-05）・相手方出席者の `C-<4 桁>-<A〜Z>`（GN-07）・顧客案件番号 `C-YYYY-NNN` とは別の体系。年が 2 桁・通番が 3 桁で見分ける |
 
 出典：`docs/handoff/2026-09-07-repo-layout-v2.md` §2-2・§2-3 の実測、および `mock/js/data/scenarios/*.js`・
 `dify/kb/KN-01/*.md` からの本 PR での再確認（grep 実測値。件数は概数）。

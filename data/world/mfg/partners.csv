@@ -16,3 +16,6 @@ procure,service,購買代行（戦略購買・RFQ 引き継ぎ）,采购代理�
 training,service,研修ベンダ（研修プログラム化・実施代行）,培训厂商（培训项目化・实施代办）,Training vendor (program design & delivery),,pt8 で使用
 R 社,service,旅行会社（ハイヤー手配・出張手配）,旅行社（包车与差旅安排）,Travel agency (chartered cars & trip arrangements),,GN-07（出張アテンド）の `charter` 車両で使用（設計書 §4-4）。社名は付けない（PM 決定 PT-8）
 X 社,supplier,工具商社（切削工具・消耗工具の調達先）,工具商社（切削刀具・消耗刀具采购方）,Tooling distributor (cutting and consumable tools),CN,本設計で追加（docs/handoff/2026-09-21-kintone-derived-usecases.md §4-4）。DC-12 の購買申請 PR-25-0208／0362／0417 の相手先。PT-06／PT-07 の購買代行（procure）とは別で、こちらは直接取引の商社
+P 社,other,応募者の前職の記号（取引関係なし。自動車部品のプレス加工）,应聘者前雇主的代号（无交易关系。汽车零部件冲压加工）,Applicant former employer (no business relationship; automotive press work),CN,本設計で追加（docs/handoff/2026-09-23-resume-review.md §4-4）。PT-09 の履歴書の職歴でだけ使う。取引先ではない
+Q 社,other,応募者の現職の記号（取引関係なし。家電部品のプレス加工）,应聘者现雇主的代号（无交易关系。家电零部件冲压加工）,Applicant current employer (no business relationship; appliance parts press work),CN,本設計で追加（同 §4-4）。PT-09 の履歴書の職歴でだけ使う。取引先ではない
+Y 社,other,応募者の現職の記号（取引関係なし。電子部品メーカー）,应聘者现雇主的代号（无交易关系。电子零部件厂商）,Applicant current employer (no business relationship; electronic components maker),CN,本設計で追加（同 §4-4）。PT-09 の履歴書の職歴でだけ使う。取引先ではない
