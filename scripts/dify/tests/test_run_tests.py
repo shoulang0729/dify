@@ -28,6 +28,8 @@ MOCK_SERVER = os.path.join(TESTS_DIR, "mock_server.py")
 
 sys.path.insert(0, TESTS_DIR)
 import mock_server  # noqa: E402  split_n() を直接検証するため
+sys.path.insert(0, SCRIPTS_DIR)
+import run_tests  # noqa: E402  @file 指示子のヘルパーを直接検証するため
 
 RESULTS = []
 
@@ -166,6 +168,26 @@ def main():
                   "| 応答言語 |" in text3
                   and bool(re.search(r"\|\s*OK\s*\|\s*[\d.]+\s*\|\s*\d+\s*\|\s*(PASS|FAIL)\s*\|\s*$", row3)),
                   row3)
+        # ---- T9: @file 指示子（#330 GN-02 の画像入力経路）。ネットワークを呼ばない dry-run ----
+        check("T9-precondition: missing_file_refs は実在するパスを空リストで返す",
+              run_tests.missing_file_refs({"invoice_image": {"@file": "dify/tests/GN-02.json", "type": "image"}}) == [])
+        check("T9-precondition: missing_file_refs は実在しないパスを検出する",
+              run_tests.missing_file_refs({"invoice_image": {"@file": "dify/tests/__no_such_file__.json", "type": "image"}})
+              == ["dify/tests/__no_such_file__.json"])
+        check("T9-precondition: display_inputs は @file をファイル名だけにする（upload_file_id を出さない）",
+              run_tests.display_inputs({"invoice_image": {"@file": "dify/samples/GN-02/assets/x.png", "type": "image"}})
+              == '{"invoice_image": "x.png"}')
+
+        with tempfile.TemporaryDirectory(prefix="run_tests_test_file_") as tmpdir9:
+            r9 = run_cli(["--dry-run", "--out", tmpdir9, "--env", "dryenv", "GN-02"])
+            check("T9: --dry-run の GN-02 が exit 0（@file の実在確認を含み、ネットワークを呼ばない）",
+                  r9.returncode == 0, f"stdout={r9.stdout} stderr={r9.stderr}")
+            md9 = find_result_md(tmpdir9, "dryenv", "GN-02")
+            check("T9: 結果ファイルができている", md9 is not None)
+            if md9:
+                text9 = open(md9, encoding="utf-8").read()
+                check("T9: GN-02 T09（画像経路）の行が OK で出る",
+                      bool(re.search(r"\|\s*GN-02 T09\s*\|.*\|\s*OK\s*\|\s*$", text9, re.M)), text9)
     finally:
         proc.terminate()
         try:

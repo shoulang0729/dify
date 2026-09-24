@@ -31,6 +31,11 @@
    "expect_not": ["含まれてはいけない語"]}
 chat は POST /chat-messages、workflow は POST /workflows/run。
 失敗しても全件実行し、最後に合否を集計する。終了コード: 全件合格 0 / 不合格あり 1 / 設定不備 2
+
+inputs の値が {"@file": "<リポジトリ相対パス>", "type": "image"} の形のときだけ、送信前に
+POST /files/upload でアップロードして {"transfer_method": "local_file", "upload_file_id": "...",
+"type": "image"} に差し替える（設計書 docs/handoff/2026-09-21-gn02-ocr-input.md §5-4）。
+--dry-run はネットワークを呼ばず、@file のパスが実在するかだけを検査する。
 """
 import argparse
 import datetime as dt
@@ -41,6 +46,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import uuid
 
 from lang_check import judge_lang  # 同ディレクトリ。sys.path はスクリプト自身の場所で解決される
 
@@ -99,6 +105,87 @@ def call(base, key, path, body, timeout):
         return 0, {"error": f"接続失敗: {e.reason}"}
     except (TimeoutError, OSError) as e:
         return 0, {"error": f"タイムアウト/通信エラー: {e}"}
+
+
+def is_file_ref(v):
+    """inputs の値が @file 指示子（{"@file": "...", "type": "..."}）かどうか。"""
+    return isinstance(v, dict) and "@file" in v
+
+
+def guess_mime(path):
+    ext = os.path.splitext(path)[1].lower()
+    return {
+        ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+        ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml",
+    }.get(ext, "application/octet-stream")
+
+
+def upload_file(base, key, rel_path, timeout):
+    """@file 指示子が指すファイル（リポジトリ相対パス）を POST /files/upload でアップロードし、
+    upload_file_id を返す。エンドポイントの形（パス／応答の id フィールド名）は実機未確認
+    （設計書 §6 C-4）。違っていたら直す箇所はこの関数だけに閉じる。"""
+    full = os.path.join(ROOT, rel_path)
+    with open(full, "rb") as fh:
+        content = fh.read()
+    boundary = "----DifyUpload" + uuid.uuid4().hex
+    fname = os.path.basename(rel_path)
+    ctype = guess_mime(rel_path)
+    parts = [
+        f"--{boundary}\r\nContent-Disposition: form-data; name=\"user\"\r\n\r\ndify-tests\r\n".encode("utf-8"),
+        (
+            f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{fname}\"\r\n"
+            f"Content-Type: {ctype}\r\n\r\n"
+        ).encode("utf-8") + content + b"\r\n",
+        f"--{boundary}--\r\n".encode("utf-8"),
+    ]
+    body = b"".join(parts)
+    req = urllib.request.Request(
+        base.rstrip("/") + "/files/upload",
+        data=body,
+        method="POST",
+        headers={
+            "Authorization": "Bearer " + key,
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "User-Agent": USER_AGENT,
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            res = json.loads(r.read() or b"{}")
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"HTTP {e.code}: {e.read().decode('utf-8', 'replace')[:400]}") from None
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"接続失敗: {e.reason}") from None
+    fid = res.get("id")
+    if not fid:
+        raise RuntimeError(f"応答に id が無い: {json.dumps(res, ensure_ascii=False)[:200]}")
+    return fid
+
+
+def resolve_inputs(inputs, base, key, timeout):
+    """inputs 内の @file 指示子をすべてアップロード済みの参照に差し替えた新しい dict を返す。
+    失敗したら例外を送出する（呼び出し側でそのケースを ERROR 行にする）。"""
+    out = {}
+    for k, v in (inputs or {}).items():
+        if is_file_ref(v):
+            fid = upload_file(base, key, v["@file"], timeout)
+            out[k] = {"transfer_method": "local_file", "upload_file_id": fid, "type": v.get("type", "image")}
+        else:
+            out[k] = v
+    return out
+
+
+def display_inputs(inputs):
+    """結果表の「入力」欄用。@file 指示子はファイル名だけを出す（upload_file_id を出さない）。"""
+    if not isinstance(inputs, dict):
+        return json.dumps(inputs, ensure_ascii=False)
+    masked = {k: (os.path.basename(v["@file"]) if is_file_ref(v) else v) for k, v in inputs.items()}
+    return json.dumps(masked, ensure_ascii=False)
+
+
+def missing_file_refs(inputs):
+    """--dry-run 用：@file が指すパスのうち実在しないものの一覧。"""
+    return [v["@file"] for v in (inputs or {}).values() if is_file_ref(v) and not os.path.isfile(os.path.join(ROOT, v["@file"]))]
 
 
 def extract_output(mode, res):
@@ -255,25 +342,39 @@ def run_suite(code, base, timeout, dry, blocking, results_dir):
     for c in cases:
         mode = c.get("mode", default_mode)
         cid = c.get("id", "?")
+        input_cell = c.get("query") or display_inputs(c.get("inputs", {}))
         if dry:
             lang_schema_ok, lang_schema_detail = check_lang_schema(c)
-            ok = mode in ("chat", "workflow") and isinstance(c.get("expect", []), list) and lang_schema_ok
-            lang_cell = "(dry-run)" if lang_schema_ok else f"NG: {lang_schema_detail}"
-            rows.append((cid, c.get("kind", ""), c.get("query") or json.dumps(c.get("inputs", {}), ensure_ascii=False),
+            missing_files = missing_file_refs(c.get("inputs", {}))
+            ok = mode in ("chat", "workflow") and isinstance(c.get("expect", []), list) and lang_schema_ok and not missing_files
+            if missing_files:
+                lang_cell = f"NG: @file が実在しない: {', '.join(missing_files)}"
+            else:
+                lang_cell = "(dry-run)" if lang_schema_ok else f"NG: {lang_schema_detail}"
+            rows.append((cid, c.get("kind", ""), input_cell,
                          "(dry-run)", f"{len(c.get('expect', []))} 語", "", lang_cell, 0.0, "—", "OK" if ok else "NG"))
             passed += 1 if ok else 0
             continue
 
         t0 = time.time()
         tokens = None
+        raw_inputs = c.get("inputs") or {}
+        try:
+            call_inputs = resolve_inputs(raw_inputs, base, key, timeout) if any(is_file_ref(v) for v in raw_inputs.values()) else raw_inputs
+        except Exception as e:  # アップロード失敗はこのケースだけ ERROR にして続行する
+            sec = time.time() - t0
+            err = f"ファイルアップロード失敗: {e}"
+            rows.append((cid, c.get("kind", ""), input_cell, err, "—", "—", "—", sec, "—", "ERROR"))
+            print(f"  {cid}: ERROR {err[:120]}")
+            continue
         if blocking:
             if mode == "chat":
                 status, res = call(base, key, "/chat-messages",
-                                   {"inputs": c.get("inputs") or {}, "query": c.get("query", ""),
+                                   {"inputs": call_inputs, "query": c.get("query", ""),
                                     "response_mode": "blocking", "user": "dify-tests"}, timeout)
             else:
                 status, res = call(base, key, "/workflows/run",
-                                   {"inputs": c.get("inputs") or {}, "response_mode": "blocking", "user": "dify-tests"}, timeout)
+                                   {"inputs": call_inputs, "response_mode": "blocking", "user": "dify-tests"}, timeout)
             sec = time.time() - t0
             if status != 200:
                 err = res.get("error") or json.dumps(res, ensure_ascii=False)[:800]
@@ -284,17 +385,16 @@ def run_suite(code, base, timeout, dry, blocking, results_dir):
             if mode == "chat":
                 status, out, tokens, error = call_streaming(
                     base, key, "/chat-messages",
-                    {"inputs": c.get("inputs") or {}, "query": c.get("query", ""), "user": "dify-tests"},
+                    {"inputs": call_inputs, "query": c.get("query", ""), "user": "dify-tests"},
                     timeout, mode, t0)
             else:
                 status, out, tokens, error = call_streaming(
                     base, key, "/workflows/run",
-                    {"inputs": c.get("inputs") or {}, "user": "dify-tests"},
+                    {"inputs": call_inputs, "user": "dify-tests"},
                     timeout, mode, t0)
             sec = time.time() - t0
 
         tokens_cell = str(tokens) if tokens is not None else "—"
-        input_cell = c.get("query") or json.dumps(c.get("inputs", {}), ensure_ascii=False)
         if error:
             row_out = error
             rows.append((cid, c.get("kind", ""), input_cell, row_out, "—", "—", "—", sec, tokens_cell, "ERROR"))

@@ -12,6 +12,7 @@ world:
 inputs:
   invoice_text: "@body"
   invoice_file: null
+  invoice_image: null
 points:
   - 発票番号・販売元・税抜/税込金額が構造化されて抽出される
   - 税率・税額の計算が整合していることが分かる
