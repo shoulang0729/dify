@@ -471,6 +471,14 @@ const SVCS = [
     desc: { ja: '社内で作成した教育・OJT 資料や作業標準書を研修ベンダに引き継ぎ、研修プログラム（回数・到達目標・確認テスト）へ組み立てて中国語での実施を代行してもらいます。受講状況・テスト結果・修了を受け取り、研修前後の不良率や作業時間で効果を測定して本社へ報告できる形にまとめます。',
             zh: '将公司内部编制的培训・OJT 资料与作业标准书交接给培训服务商，组建为培训项目（次数、达成目标、确认测试）并由其以中文代为实施。接收出勤、测试成绩与结业情况，用培训前后的不良率与作业时间衡量效果，整理成可向总部汇报的形式。',
             en: 'Hands your in-house training and OJT materials and work standards to a training vendor, who builds them into a program (sessions, learning goals, quizzes) and delivers it in Chinese on your behalf. Receives attendance, test scores and completion, measures impact through defect rate and cycle time before and after, and packages the result for headquarters.' } },
+  /* PT-09: 履歴書のレビュー（設計書 docs/handoff/2026-09-23-resume-review.md §5-1）。PT-05 の前段で、当社が履歴書を受け取る経路を扱う。
+     面接後の記録整理（有名ユースケース③）は別採番せず mode=debrief として本サービスに含める（同 §2-2）。 */
+  { id: 'pt9', cat: 'pt', sub: 'service', st: 3, industries: ['mfg'], tags: ['partner_recruit', 'hr'], added: '2026-09-23',
+    place: 'ppl',
+    name: { ja: '履歴書のレビュー（ポスト照合・書類の漏れ・面接で確かめる項目）', zh: '简历审阅（岗位匹配・材料缺漏・面试需确认的项目）', en: 'Resume Review (Posting Fit, Missing Documents, Interview Checkpoints)' },
+    desc: { ja: '採用エージェント経由や直接応募で届いた履歴書・職務経歴書を、社内でいまオープンになっているポストの必須・歓迎条件と突き合わせ、応募したポスト以外も含めて適合を示します。職歴の期間の重なりや記載の食い違いといった違和感と、採用書類規程に照らした書類の漏れを拾い、エージェントや応募者本人に書面で送る深掘り質問の下書きを作ります。面接で人が確かめるべき項目は役職の段階（作業者・班長・担当と主任・課長）に合わせて洗い出し、面接後は面接官のメモを同じ項目に沿って整理して次の面接官に引き継ぎます。氏名・連絡先・写真と、性別・年齢・婚姻・出身地などの属性は読む前に伏せ、評価に使いません。合否は人が決めます。',
+            zh: '把经招聘代理或直接应聘收到的简历与工作经历书，与公司内部当前开放的各岗位的必备条件与优先条件进行比对，连同应聘者未申请的岗位一并给出匹配情况。找出工作期间重叠、记载前后不一致等违和之处，并对照招聘材料管理规定检查材料缺漏，生成以书面形式发给招聘代理或应聘者本人的深入提问草案。按岗位层级（作业员・班长・担当与主管・科长）列出面试时必须由人确认的项目，面试后再按同一清单整理面试官的记录，交接给下一位面试官。姓名、联系方式、照片以及性别、年龄、婚姻、籍贯等属性在读取前即被遮蔽，不用于评价。录用与否由人决定。',
+            en: 'Takes resumes and career histories received through a recruiting agent or by direct application and matches them against the required and preferred conditions of every posting currently open in the company, including postings the applicant did not apply for. It flags inconsistencies such as overlapping employment periods or conflicting figures, checks the submitted papers against the recruitment documents regulations, and drafts written follow-up questions for the agent or the applicant. It lists what interviewers must confirm in person for each level of role (operator, line leader, specialist and supervisor, manager), and after the interview it organizes the notes taken by interviewers along the same checklist for the next interviewer. Names, contact details and photos, as well as attributes such as gender, age, marital status and place of origin, are hidden before reading and never used for evaluation. The hiring decision stays with people.' } },
 
   /* ---- 金融（碧洋銀行）新規 23 件。設計書 docs/handoff/2026-09-08-finance-catalog.md §2-2・§2-4-1・§3-6・§3-7。
      台本（SCENARIOS）は未投入（PR-4）。start は既存の chat フォールバックで動く（§1-4） ---- */

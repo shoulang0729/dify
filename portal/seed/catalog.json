@@ -1721,6 +1721,21 @@
       }
     },
     {
+      "code": "PT-09",
+      "id": "pt9",
+      "cat": "pt",
+      "sub": "service",
+      "st": 3,
+      "industries": [
+        "mfg"
+      ],
+      "name": {
+        "ja": "履歴書のレビュー（ポスト照合・書類の漏れ・面接で確かめる項目）",
+        "zh": "简历审阅（岗位匹配・材料缺漏・面试需确认的项目）",
+        "en": "Resume Review (Posting Fit, Missing Documents, Interview Checkpoints)"
+      }
+    },
+    {
       "code": "QA-01",
       "id": "qa1",
       "cat": "qa",
