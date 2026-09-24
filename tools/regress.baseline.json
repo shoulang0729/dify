@@ -1077,6 +1077,20 @@
       "place": "trn"
     },
     {
+      "id": "pt9",
+      "cat": "pt",
+      "sub": "service",
+      "st": 3,
+      "industries": [
+        "mfg"
+      ],
+      "tags": [
+        "partner_recruit",
+        "hr"
+      ],
+      "place": "ppl"
+    },
+    {
       "id": "kn6",
       "cat": "kn",
       "sub": "rule",
@@ -1799,12 +1813,12 @@
   "counts": {
     "cats": 15,
     "subs": 36,
-    "svcs": 87,
+    "svcs": 88,
     "tags": 67,
     "ui": 94,
     "byIndustry": {
       "mfg": {
-        "svcs": 55,
+        "svcs": 56,
         "cats": 10
       },
       "fin": {
