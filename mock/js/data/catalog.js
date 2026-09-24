@@ -176,9 +176,9 @@ const SVCS = [
   { id: 'kn11', cat: 'kn', sub: 'tech', st: 3, industries: ['mfg'], tags: ['procedure', 'education'], added: '2026-09-16',
     place: 'know',
     name: { ja: 'ベテランのノウハウ聞き取りと記録化', zh: '资深员工经验的访谈与记录化', en: 'Veteran Know-how Interview & Capture' },
-    desc: { ja: '文書に残っていないベテランの手順・勘所・判断基準を、聞き取りの音声から文字起こしして構造化し、手順書のドラフトに起こします。同じ作業について現行の標準・旧版の標準・本人の発言の 3 つを日付つきで並べ、改訂の経緯からどれを正とするかを人が決められる形で示します。発言が現行の標準と食い違う場合は、勝手に上書きせず改訂の候補として残します。聞き取れなかった箇所は推測で埋めず、位置を残したまま聞き直しの対象として返します。出力はナレッジへの登録提案（新規作成、または既存文書への修正依頼）まで作ります。',
-            zh: '将尚未形成文档的资深员工的操作步骤、要领与判断标准，通过访谈录音转写并结构化，生成作业指导书草案。针对同一项作业，把现行标准、旧版标准与本人口述三者按日期并列呈现，依据修订经过让人来判断以哪一个为准。若口述与现行标准不一致，不擅自覆盖，而是作为修订候选保留。未能听清的部分不做推测填补，保留其位置并作为需要回访确认的对象返回。输出可一直做到知识库的登记提案（新建，或对既有文档提出修改申请）。',
-            en: 'Turns a veteran\'s undocumented steps, knacks and judgment criteria into a draft work instruction by transcribing and structuring a recorded interview. For the same task it lines up the current standard, the superseded standard and the veteran\'s own words with their dates, so that a person can decide which one governs from the revision history. Where the veteran contradicts the current standard, it is kept as a candidate revision rather than silently overwriting it. Passages that could not be heard are left in place for a follow-up question instead of being guessed at. The output goes as far as a proposal to register the result in the knowledge base — either a new entry or a change request against the existing standard.' } },
+    desc: { ja: '文書に残っていないベテランの手順・勘所・判断基準を、聞き取りの音声から文字起こしして構造化し、手順書のドラフトに起こします。同じ作業について現行の標準・旧版の標準・本人の発言の 3 つを日付つきで並べ、改訂の経緯からどれを正とするかを人が決められる形で示します。発言が現行の標準と食い違う場合は、勝手に上書きせず改訂の候補として残します。聞き取れなかった箇所は推測で埋めず、位置を残したまま聞き直しの対象として返します。判断の手がかりが聞けていない所は「次の聞き取りで聞くこと」として返し、登録は本人の確認を経てから行います。出力はナレッジへの登録提案（新規作成、または既存文書への修正依頼）まで作ります。',
+            zh: '将尚未形成文档的资深员工的操作步骤、要领与判断标准，通过访谈录音转写并结构化，生成作业指导书草案。针对同一项作业，把现行标准、旧版标准与本人口述三者按日期并列呈现，依据修订经过让人来判断以哪一个为准。若口述与现行标准不一致，不擅自覆盖，而是作为修订候选保留。未能听清的部分不做推测填补，保留其位置并作为需要回访确认的对象返回。尚未问到判断依据的部分作为「下次访谈要问的问题」返回，登记须经本人确认后再进行。输出可一直做到知识库的登记提案（新建，或对既有文档提出修改申请）。',
+            en: 'Turns a veteran\'s undocumented steps, knacks and judgment criteria into a draft work instruction by transcribing and structuring a recorded interview. For the same task it lines up the current standard, the superseded standard and the veteran\'s own words with their dates, so that a person can decide which one governs from the revision history. Where the veteran contradicts the current standard, it is kept as a candidate revision rather than silently overwriting it. Passages that could not be heard are left in place for a follow-up question instead of being guessed at. Where the cues behind a judgment were not captured, they come back as questions for the next interview, and nothing is registered until the veteran has checked it. The output goes as far as a proposal to register the result in the knowledge base — either a new entry or a change request against the existing standard.' } },
 
   /* KN-12: 修理依頼のトリアージ（Issue #320 設計書 §6）。
      設備台帳・修理履歴・点検表の 3 つを突き合わせる。止めるかどうかの判断は人が持つ。 */
@@ -240,9 +240,9 @@ const SVCS = [
   { id: 'dc3', cat: 'dc', sub: 'site', st: 2, industries: ['mfg'], tags: ['education', 'procedure'],
     place: 'trn',
     name: { ja: '教育・OJT資料作成', zh: '培训与OJT资料制作', en: 'Training & OJT Material Builder' },
-    desc: { ja: '作業標準書・過去の不具合事例・安全ルールから、新人・異動者向けの教育資料（スライド・確認テスト・OJT チェックリスト）を作成します。作業者の母語に合わせて中国語版を主にし、監督者向けに日本語版を添えるといった出し分けができます。文書として残っていないベテランの手順や勘所は、聞き取りの音声を取り込んで教材と手順書のドラフトに起こすことを想定しています。',
-            zh: '基于作业标准书、历史不良案例与安全规则，生成面向新人与调岗人员的培训资料（课件、确认测试、OJT检查表）。可按对象区分输出：作业者用中文版，监督者附日文版。对于尚未形成文档的资深员工的操作要领与经验，设想通过导入访谈录音，生成教材与作业指导书草案。',
-            en: 'Creates training decks, quizzes and OJT checklists for new and transferred staff from work standards, past defects and safety rules. Outputs Chinese for operators and Japanese for supervisors as needed. Where a veteran\'s know-how exists only in their head, recorded interviews are expected to be taken in and turned into draft training material and work instructions.' } },
+    desc: { ja: '作業標準書・過去の不具合事例・安全ルールから、新人・異動者向けの教育資料（スライド・確認テスト・OJT チェックリスト）を作成します。作業者の母語に合わせて中国語版を主にし、監督者向けに日本語版を添えるといった出し分けができます。文書として残っていないベテランの手順や勘所は、聞き取りから記録化するサービス（KN-11）で本人の確認を経た技術メモを取り込んで、教材に反映します。',
+            zh: '基于作业标准书、历史不良案例与安全规则，生成面向新人与调岗人员的培训资料（课件、确认测试、OJT检查表）。可按对象区分输出：作业者用中文版，监督者附日文版。对于尚未形成文档的资深员工的操作要领与经验，导入经访谈记录化服务（KN-11）整理并经本人确认的技术备忘，反映到教材中。',
+            en: 'Creates training decks, quizzes and OJT checklists for new and transferred staff from work standards, past defects and safety rules. Outputs Chinese for operators and Japanese for supervisors as needed. Know-how that veterans have never written down comes in as technical memos from the interview capture service (KN-11), already checked by the veteran, and is reflected in the training material.' } },
   { id: 'dc4', cat: 'dc', sub: 'site', st: 1, industries: ['mfg'], tags: ['safety', 'translate'],
     place: 'trn',
     name: { ja: '安全衛生・5S掲示物・改善提案の中国語化', zh: '安全卫生・5S看板・改善提案的中文化', en: 'Chinese Versions of Safety, 5S Posters & Kaizen Sheets' },
@@ -366,9 +366,9 @@ const SVCS = [
   { id: 'en3', cat: 'en', sub: 'bom', st: 3, industries: ['mfg'], tags: ['drawing', 'search'],
     place: 'qual',
     name: { ja: '図面の類似検索', zh: '图纸相似检索', en: 'Similar Drawing Search' },
-    desc: { ja: '新規引合の図面を入力すると、形状・寸法・材質・加工要件が近い過去の図面を検索し、その製品の工程・原価・不具合履歴を提示します。見積の初期検討や、既存治具・金型の流用可否判断に使います。入力は CAD から出力した図面ファイルに限らず、紙図面のスキャンや現場で撮影した写真からの読み取りも想定しています。',
-            zh: '输入新询价的图纸后，检索形状、尺寸、材质、加工要求相近的历史图纸，并给出该产品的工艺、成本与不良履历。用于报价初期评估以及既有治具、模具能否沿用的判断。输入不限于从CAD导出的图纸文件，也设想支持纸质图纸扫描件与现场拍摄照片的读取。',
-            en: 'Given a drawing from a new inquiry, finds past drawings with similar geometry, dimensions, material and machining requirements and shows their process, cost and defect history. Supports early quoting and jig/mold reuse decisions. Inputs are not limited to CAD drawing files: scanned paper drawings and photos taken on site are also in scope.' } },
+    desc: { ja: '新規引合の図面を入力すると、形状・寸法・材質・加工要件が近い過去の図面を検索し、その製品の工程・原価・不具合履歴を提示します。見積の初期検討や、既存治具・金型の流用可否判断に使います。入力は CAD から出力した図面ファイルに限らず、紙図面のスキャンや現場で撮影した写真、手書きの朱書きがある図面からの読み取りも想定しています。',
+            zh: '输入新询价的图纸后，检索形状、尺寸、材质、加工要求相近的历史图纸，并给出该产品的工艺、成本与不良履历。用于报价初期评估以及既有治具、模具能否沿用的判断。输入不限于从CAD导出的图纸文件，也设想支持纸质图纸扫描件、现场拍摄照片以及带有手写红笔批注的图纸的读取。',
+            en: 'Given a drawing from a new inquiry, finds past drawings with similar geometry, dimensions, material and machining requirements and shows their process, cost and defect history. Supports early quoting and jig/mold reuse decisions. Inputs are not limited to CAD drawing files: scanned paper drawings, photos taken on site and drawings with handwritten red-pen markups are also in scope.' } },
 
   /* ---- gn: 汎用業務支援 ---- */
   { id: 'gn1', cat: 'gn', sub: 'office', st: 1, industries: ['mfg'], tags: ['finance'],
