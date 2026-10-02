@@ -40,43 +40,67 @@
   --ntt-orange-100:       #E42600;
   --ntt-orange-150:       #B22000;
 
+
+  /* --- Dify 寄せのプリミティブ（既定の見た目）------------------------
+     PM 判断（2026-10-02）：Dify の売り出しに合わせ、既定の見た目を Dify 寄せにする。
+     NTT DATA ブランドパレット（--ntt-*）は定義を残したまま一切触らない（§2-2）。
+     切り替えはセマンティック層の「向き先」だけ。顧客版で戻すときは向き先を --ntt-* に戻す。
+     グレーは Dify が採っているニュートラルランプに合わせた中性色。 */
+  --dfy-primary:      #155EEF;
+  --dfy-primary-600:  #004EEB;
+  --dfy-primary-700:  #0040C1;
+  --dfy-primary-50:   #EFF4FF;
+  --dfy-primary-100:  #D1E0FF;
+  --dfy-gray-25:      #FCFCFD;
+  --dfy-gray-50:      #F9FAFB;
+  --dfy-gray-100:     #F2F4F7;
+  --dfy-gray-200:     #EAECF0;
+  --dfy-gray-300:     #D0D5DD;
+  --dfy-gray-400:     #98A2B3;
+  --dfy-gray-500:     #667085;
+  --dfy-gray-600:     #475467;
+  --dfy-gray-700:     #344054;
+  --dfy-gray-800:     #1D2939;
+  --dfy-gray-900:     #101828;
+  --dfy-white:        #FFFFFF;
+
   /* ============================================================
      SEMANTIC ALIASES — reference these in product UI
      ダークモードはここだけを上書きする
      ============================================================ */
 
   /* Surfaces */
-  --surface-canvas:       var(--ntt-grey-50);
-  --surface-card:         var(--ntt-white);
-  --surface-sunken:       var(--ntt-grey-100-bg);
-  --surface-inverse:      var(--ntt-smart-navy);
-  --surface-brand:        var(--ntt-future-blue);
-  --surface-header:       var(--ntt-white);
-  --surface-hover:        #F2F6F9;
-  --surface-selected:     #EAF3FA;
-  --surface-rail:         var(--ntt-smart-navy);
+  --surface-canvas:       var(--dfy-gray-50);
+  --surface-card:         var(--dfy-white);
+  --surface-sunken:       var(--dfy-gray-100);
+  --surface-inverse:      var(--dfy-gray-900);
+  --surface-brand:        var(--dfy-primary);
+  --surface-header:       var(--dfy-white);
+  --surface-hover:        var(--dfy-gray-100);
+  --surface-selected:     var(--dfy-primary-50);
+  --surface-rail:         var(--dfy-gray-25);
 
   /* Text */
-  --text-heading:         var(--ntt-smart-navy);
-  --text-body:            var(--ntt-text-grey);
-  --text-secondary:       #5A6B78;
-  --text-muted:           #8A98A4;
-  --text-on-brand:        var(--ntt-white);
-  --text-on-inverse:      var(--ntt-white);
-  --text-link:            var(--ntt-future-blue);
-  --text-link-hover:      var(--ntt-future-blue-150);
+  --text-heading:         var(--dfy-gray-900);
+  --text-body:            var(--dfy-gray-700);
+  --text-secondary:       var(--dfy-gray-600);
+  --text-muted:           var(--dfy-gray-500);
+  --text-on-brand:        var(--dfy-white);
+  --text-on-inverse:      var(--dfy-white);
+  --text-link:            var(--dfy-primary);
+  --text-link-hover:      var(--dfy-primary-700);
 
   /* Borders */
-  --border-subtle:        #E3E8EC;
-  --border-default:       #C9D2D9;
-  --border-card:          #D9DFE5;
-  --border-strong:        var(--ntt-text-grey);
-  --border-brand:         var(--ntt-future-blue);
+  --border-subtle:        var(--dfy-gray-200);
+  --border-default:       var(--dfy-gray-300);
+  --border-card:          var(--dfy-gray-200);
+  --border-strong:        var(--dfy-gray-400);
+  --border-brand:         var(--dfy-primary);
 
   /* Interactive (primary) */
-  --action-primary:       var(--ntt-future-blue);
-  --action-primary-hover: var(--ntt-future-blue-150);
-  --action-primary-active:#004B7A;
+  --action-primary:       var(--dfy-primary);
+  --action-primary-hover: var(--dfy-primary-600);
+  --action-primary-active:var(--dfy-primary-700);
 
   /* Status / feedback */
   --status-success:       var(--ntt-green);
@@ -145,11 +169,11 @@
   --cat-accent-bg: var(--surface-selected);
 
   /* --- ② ヒーロー帯（ライト/ダークとも常に暗い面。文字は白で固定） --- */
-  --surface-hero:        var(--ntt-smart-navy); /* A案：フラットな深紺（design-pass-2） */
+  --surface-hero:        var(--dfy-gray-900); /* Dify 寄せ：深紺 → ニュートラルの濃灰 */
   --surface-hero-chip:   rgba(255, 255, 255, 0.10);
   --border-hero:         rgba(255, 255, 255, 0.16);
-  --border-hero-accent:  var(--ntt-turquoise);   /* 帯の下端 3px */
-  --text-on-hero:        var(--ntt-white);
+  --border-hero-accent:  var(--dfy-primary);     /* 帯の下端 3px */
+  --text-on-hero:        var(--dfy-white);
   --text-on-hero-soft:   rgba(255, 255, 255, 0.82);
 
   /* --- 大きな数字用の成熟度色 ---
@@ -164,7 +188,7 @@
   --status-concept-hero:   #C3CDD6;
 
   /* Focus ring */
-  --focus-ring:           var(--ntt-future-blue-50);
+  --focus-ring:           var(--dfy-primary);
 
   /* --- 部門ポータル（mock/portal.html）専用の 22 トークン ---
      設計書 docs/handoff/2026-09-11-portal-mock-pages.md §6。値はポータルの現物をそのまま移植。
@@ -187,10 +211,10 @@
   --ai-fg:                #00707C;
   --ai-bg:                rgba(0, 223, 237, 0.06);
   --ai-bd:                rgba(0, 112, 124, 0.32);
-  --text-on-rail:         #C3CDD6;
-  --text-on-rail-strong:  var(--ntt-white);
-  --surface-rail-hover:   rgba(255, 255, 255, 0.06);
-  --surface-rail-selected:rgba(46, 144, 255, 0.16);
+  --text-on-rail:         var(--dfy-gray-600);
+  --text-on-rail-strong:  var(--dfy-gray-900);
+  --surface-rail-hover:   var(--dfy-gray-100);
+  --surface-rail-selected:var(--dfy-primary-50);
   /* パイプラインのステージ帯色（.col の border-top）。--cat-accent と同じ、
      インライン style で上書きする前提のフォールバック既定値（§2-9 と同じ考え方） */
   --stage:                var(--border-default);
@@ -202,28 +226,28 @@
    下地は Smart Navy から起こしたニュートラルランプ。
    ============================================================ */
 :root[data-theme="dark"] {
-  --surface-canvas:       #0A1220;
-  --surface-card:         #111C30;
-  --surface-sunken:       #070F26;
-  --surface-header:       #0D1728;
-  --surface-hover:        #16233A;
-  --surface-selected:     #17304C;
-  --surface-rail:         #050B1A;
+  --surface-canvas:       #0C111D;
+  --surface-card:         #161B26;
+  --surface-sunken:       #0C111D;
+  --surface-header:       #161B26;
+  --surface-hover:        #1F242F;
+  --surface-selected:     #1A2537;
+  --surface-rail:         #0C111D;
 
-  --text-heading:         var(--ntt-white);
-  --text-body:            #DDE1E5;
-  --text-secondary:       #A4B0BA;
-  --text-muted:           #7A8794;
-  --text-link:            var(--ntt-future-blue-50); /* on-dark 用として定義済み */
-  --text-link-hover:      #6BB2FF;
+  --text-heading:         #F5F6F7;
+  --text-body:            #CECFD2;
+  --text-secondary:       #94969C;
+  --text-muted:           #85888E;
+  --text-link:            #84ADFF;
+  --text-link-hover:      #B2CCFF;
 
-  --border-subtle:        #1E2B41;
-  --border-default:       #2A3A52;
-  --border-card:          #223148;
+  --border-subtle:        #1F242F;
+  --border-default:       #333741;
+  --border-card:          #1F242F;
 
-  --action-primary:       var(--ntt-future-blue);
-  --action-primary-hover: var(--ntt-future-blue-50);
-  --action-primary-active:#1A6FB5;
+  --action-primary:       #528BFF;
+  --action-primary-hover: #84ADFF;
+  --action-primary-active:#2970FF;
 
   /* ダーク背景でのコントラスト確保のため明度を上げる */
   --status-success:       #2BE07E;
@@ -295,10 +319,10 @@
   --ai-fg:                #5FD3DE;
   --ai-bg:                rgba(0, 223, 237, 0.07);
   --ai-bd:                rgba(95, 211, 222, 0.30);
-  --text-on-rail:         #C3CDD6;
-  --text-on-rail-strong:  var(--ntt-white);
+  --text-on-rail:         #94969C;
+  --text-on-rail-strong:  #F5F6F7;
   --surface-rail-hover:   rgba(255, 255, 255, 0.06);
-  --surface-rail-selected:rgba(46, 144, 255, 0.16);
+  --surface-rail-selected:rgba(82, 139, 255, 0.18);
   /* パイプラインのステージ帯色（.col の border-top）。--cat-accent と同じ、
      インライン style で上書きする前提のフォールバック既定値（§2-9 と同じ考え方） */
   --stage:                var(--border-default);
@@ -312,11 +336,11 @@
    ============================================================ */
 
 :root {
-  --font-display: Georgia, "Times New Roman", "Yu Mincho", "Hiragino Mincho ProN", "Songti SC", SimSun, serif;
-  --font-sans: Arial, "Helvetica Neue", Helvetica, "Yu Gothic", "Hiragino Kaku Gothic ProN", "Meiryo", system-ui, sans-serif;
-  --font-jp: "Meiryo UI", Meiryo, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
-  --font-zh: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", sans-serif;
-  --font-en: Arial, "Helvetica Neue", Helvetica, system-ui, sans-serif;
+  --font-display: Inter, "Segoe UI", Arial, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", "Meiryo UI", system-ui, sans-serif;
+  --font-sans: Inter, "Segoe UI", Arial, "Helvetica Neue", Helvetica, "Yu Gothic", "Hiragino Kaku Gothic ProN", "Meiryo", system-ui, sans-serif;
+  --font-jp: Inter, "Segoe UI", "Meiryo UI", Meiryo, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-zh: Inter, "Segoe UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", sans-serif;
+  --font-en: Inter, "Segoe UI", Arial, "Helvetica Neue", Helvetica, system-ui, sans-serif;
   --font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", Menlo, monospace;
 
   --weight-regular: 400;
@@ -361,18 +385,18 @@
   --space-12:  48px;
 
   --radius-none: 0;
-  --radius-xs:   2px;
-  --radius-sm:   4px;
-  --radius-md:   6px;
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
   --radius-pill: 999px;
 
   --border-hairline: 1px;
   --border-thick:    2px;
   --border-accent:   3px;
 
-  --shadow-sm:  0 1px 3px rgba(7, 15, 38, 0.08), 0 1px 2px rgba(7, 15, 38, 0.06);
-  --shadow-md:  0 4px 12px rgba(7, 15, 38, 0.10);
-  --shadow-focus: 0 0 0 3px rgba(46, 144, 255, 0.35);
+  --shadow-sm:  0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.10);
+  --shadow-md:  0 4px 8px -2px rgba(16, 24, 40, 0.10), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --shadow-focus: 0 0 0 4px rgba(21, 94, 239, 0.18);
 
   --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
   --duration-fast: 120ms;
