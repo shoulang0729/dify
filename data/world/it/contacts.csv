@@ -1,0 +1,6 @@
+contact_id,scope,label_ja,label_zh,label_en,person_id,phone_note,hours,escalate_to,note
+cnt_kanri,internal,管理部 代表,管理部 代表,Administration Department Line,,+86-21-XXXX-9001（架空）,平日 9:00-18:00,cnt_pmo,来訪・出張の一次連絡先。車両と宿泊の手配窓口
+cnt_pmo,internal,PMO室 主任（岸本 奈津）,PMO室 主管（岸本奈津）,PMO Office Lead (Natsu Kishimoto),kishimoto-natsu,+86-21-XXXX-9002（架空）,24時間,,受入担当。person_id は people.csv の岸本奈津
+cnt_hotel_front,external,契約ホテル フロント（雲泉大酒店）,签约酒店前台（云泉大酒店）,Contracted Hotel Front Desk (Unsen Hotel),,+86-21-XXXX-2101（架空）,24時間,cnt_kanri,hotels.csv の htl_unsen に対応
+cnt_golf,external,白沙ゴルフ倶楽部 予約デスク,白沙高尔夫俱乐部 预订台,Hakusa Golf Club Reservations,,+86-512-XXXX-3102（架空）,8:00-18:00,cnt_kanri,venues.csv の ven_golf_hakusa に対応
+cnt_emergency,medical,中国の緊急通報,中国紧急电话,Emergency Numbers (China),,警察 110 ／ 救急 120 ／ 消防 119,24時間,cnt_pmo,中国全土共通の番号（実在の公的番号）

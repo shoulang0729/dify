@@ -1,0 +1,4 @@
+hotel_id,name_ja,name_zh,name_en,addr_ja,addr_zh,addr_en,tel,contract_note,site_id,note
+htl_unsen,雲泉大酒店（上海）,云泉大酒店（上海）,Unsen Hotel Shanghai,上海市長寧区雲泉路318号,上海市长宁区云泉路318号,"No.318 Yunquan Rd, Changning District, Shanghai",+86-21-XXXX-2101（架空）,年間契約・シングル RMB 780/泊（朝食込み）,shanghai,架空のホテル。上海拠点の至近。台本で使う本命。実在名との衝突が後から分かったらこの 1 ファイルと台本の語を差し替える
+htl_hakuro,白鷺ホテル上海虹橋,白鹭酒店上海虹桥,Hakuro Hotel Shanghai Hongqiao,上海市閔行区白鷺路77号,上海市闵行区白鹭路77号,"No.77 Bailu Rd, Minhang District, Shanghai",+86-21-XXXX-2202（架空）,年間契約・シングル RMB 620/泊（朝食込み）,shanghai,架空のホテル。虹橋寄り。前泊・乗継用
+htl_konan,江南賓館（昆山）,江南宾馆（昆山）,Konan Hotel Kunshan,江蘇省昆山市江南大道205号,江苏省昆山市江南大道205号,"No.205 Jiangnan Ave, Kunshan, Jiangsu",+86-512-XXXX-2303（架空）,都度予約・シングル RMB 480/泊（朝食込み）,shanghai,架空のホテル。昆山の会場に近い。日帰りで足りる想定だが選択肢として持つ
