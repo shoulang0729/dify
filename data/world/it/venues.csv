@@ -1,4 +1,3 @@
 venue_id,kind,name_ja,name_zh,name_en,addr_ja,addr_zh,addr_en,tel,site_id,note
 ven_office_sh,office,翠雲系統（上海）有限公司 上海拠点,翠云系统（上海）有限公司 上海办公室,Suiun Systems (Shanghai) — Shanghai Office,上海市長寧区雲泉路500号 12階,上海市长宁区云泉路500号 12层,"12F, No.500 Yunquan Rd, Changning District, Shanghai",+86-21-XXXX-3001（架空）,shanghai,自社拠点。社名の正本は company.md
-ven_golf_hakusa,golf,白沙ゴルフ倶楽部,白沙高尔夫俱乐部,Hakusa Golf Club,江蘇省昆山市白沙鎮環鎮路128号,江苏省昆山市白沙镇环镇路128号,"No.128 Huanzhen Rd, Baisha Town, Kunshan, Jiangsu",+86-512-XXXX-3102（架空）,shanghai,架空のゴルフ場。昆山（上海と蘇州の中間）という地理は実在の市名を使用。18ホール・貸クラブあり
 ven_dinner_sh,restaurant,雲泉大酒店 3階 個室,云泉大酒店 3楼 包间,Private Room, 3F Unsen Hotel Shanghai,上海市長寧区雲泉路318号 3階,上海市长宁区云泉路318号 3层,"3F, No.318 Yunquan Rd, Changning District, Shanghai",+86-21-XXXX-2101（架空）,shanghai,会食の既定会場。hotels.csv の htl_unsen 内
