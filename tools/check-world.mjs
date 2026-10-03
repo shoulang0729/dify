@@ -82,6 +82,9 @@
  *      KPI_LABEL_CONFUSABLES）と隣接の崩し（括弧・コロン・助詞を挟む。KPI_ADJACENCY_RE）
  *      を両方吸収したうえで判定する（tools/check-world.mjs の W8 ヘルパーのコメント参照）
  *   W9 カバレッジ：people.csv にあるがどこにも出てこない人物
+ *   W10 記録番号の件名：records.csv の件名と record_terms.csv の固定語を正として、台本・ポータル・KB・テストで
+ *      番号の近傍に別の番号の語だけが出ていないか（緩い照合。docs/handoff/2026-09-24-script-kb-consistency.md §2-7）。
+ *      records.csv と record_terms.csv の両方がある業種だけ。docs/** は対象外
  */
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve, dirname, extname } from 'node:path';
@@ -803,6 +806,82 @@ function runIndustryChecks(ind) {
       report(`どこにも出てこない人物 ${unused.length} 名: ${unused.map(p => p.name_ja).join('、')}`);
     } else {
       ok('people.csv の全員が走査対象に出現');
+    }
+  }
+
+  /* ---------------------------------------------------------- */
+  // W10（docs/handoff/2026-09-24-script-kb-consistency.md §2-7）：同じ記録番号が台本・KB・テスト・
+  // ポータルで別の件名を指していないか。records.csv（件名の正本）と record_terms.csv（件名の固定語）が
+  // 両方ある業種だけ検査する（業種・語彙をこのファイルにハードコードしない）。
+  // 照合は緩い：番号の近傍（前 30 字・後 60 字。改行・「\n」・「。」・別の記録番号で打ち切る）に
+  // 語彙（record_terms.csv の全語の和集合）のどれかが出ていて、そのどれもが当の番号の語
+  // （record_terms.csv の語 ＋ 件名 title_* に含まれる語）でないときだけ warn にする（W10-b）。
+  {
+    const records = readCSV(dir, 'records.csv');
+    const termsRows = readCSV(dir, 'record_terms.csv');
+    if (!records.length || !termsRows.length) {
+      section(`[${ind}] W10. 記録番号の件名：records.csv / record_terms.csv が無いため skip`);
+      skip('records.csv と record_terms.csv の両方がある業種だけ検査する');
+    } else {
+      section(`[${ind}] W10. 記録番号の件名：台本・KB・テスト・ポータルで同じ番号が別の件名を指していないか`);
+      const recById = new Map(records.map(r => [r.record_id, r]));
+      const termsById = new Map();
+      const unknownIds = [];
+      for (const t of termsRows) {
+        if (!recById.has(t.record_id)) { unknownIds.push(t.record_id); continue; }
+        const words = [t.terms_ja, t.terms_zh].join(';').split(';').map(s => s.trim()).filter(Boolean);
+        termsById.set(t.record_id, words);
+      }
+      if (unknownIds.length) report(`record_terms.csv に records.csv に無い番号: ${unknownIds.join('、')}`);
+      const vocab = [...new Set([...termsById.values()].flat())];
+      // 当の番号の語＝record_terms.csv の語 ＋ 件名（title_*）に含まれる語彙。note は含めない
+      // （訂正の経緯として旧件名を note に書くと、その語が「自分の語」になり食い違いを隠すため）
+      const ownOf = (id) => {
+        const r = recById.get(id);
+        const hay = [r.title_ja, r.title_zh, r.title_en].join(' ');
+        return new Set([...(termsById.get(id) || []), ...vocab.filter(w => hay.includes(w))]);
+      };
+      // W10-a：record_terms.csv の語が 1 つも件名に出てこない番号（件名と語のどちらかが誤っている）
+      const titleMiss = [...termsById.entries()]
+        .filter(([id, words]) => { const r = recById.get(id); const t = [r.title_ja, r.title_zh].join(' '); return !words.some(w => t.includes(w)); })
+        .map(([id, words]) => `${id}: 件名「${recById.get(id).title_ja}」に record_terms.csv の語（${words.join('／')}）が 1 つも無い`);
+      reportMany('W10-a 件名と record_terms.csv の語が合わない', titleMiss);
+      const idAlt = [...recById.keys()].sort((a, b) => b.length - a.length).map(escLit).join('|');
+      const idRe = new RegExp(`(?<![A-Za-z0-9-])(${idAlt})(?![A-Za-z0-9-])`, 'g');
+      const anyIdRe = /(?<![A-Za-z0-9])[A-Z0-9]{1,4}-\d{2,4}(?:-[A-Z0-9]{1,4})?(?![A-Za-z0-9])/g;
+      const cut = (s, fromEnd) => {
+        // 改行・「\n」（JS 文字列内のエスケープ）・「。」・別の番号で打ち切る
+        const parts = s.split(/\n|\\n|。/);
+        let w = fromEnd ? parts[parts.length - 1] : parts[0];
+        const ids = [...w.matchAll(anyIdRe)];
+        if (ids.length) w = fromEnd ? w.slice(ids[ids.length - 1].index + ids[ids.length - 1][0].length) : w.slice(0, ids[0].index);
+        return w;
+      };
+      const portalFiles = walkFiles(resolve(ROOT, 'mock/js/data/portal'), ['.js'])
+        .map(p => ({ src: p.replace(ROOT + '/', ''), text: readFileSync(p, 'utf8') }));
+      const w10Texts = [
+        ...mock.dataSources.filter(f => f.path.includes(`/scenarios/${ind}/`)).map(f => ({ src: 'mock/' + f.path, text: f.src })),
+        ...portalFiles, ...kbFiles, ...testFiles,
+      ].map(f => ({ src: f.src, text: f.src.endsWith('.js') ? f.text.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' ')) : f.text }));
+      const hits = [];
+      for (const f of w10Texts) {
+        for (const m of f.text.matchAll(idRe)) {
+          const id = m[1];
+          if (!termsById.has(id)) continue;
+          const before = cut(f.text.slice(Math.max(0, m.index - 30), m.index), true);
+          const after = cut(f.text.slice(m.index + id.length, m.index + id.length + 60), false);
+          const win = before + ' ' + after;
+          const found = vocab.filter(w => win.includes(w));
+          if (!found.length) continue;
+          const own = ownOf(id);
+          if (found.some(w => own.has(w))) continue;
+          const line = f.text.slice(0, m.index).split('\n').length;
+          hits.push(`${id} @ ${f.src}:${line} 近傍に「${found.join('／')}」— records.csv の件名は「${recById.get(id).title_ja}」`);
+        }
+      }
+      const uniq = [...new Set(hits)];
+      reportMany('W10-b 番号の近傍の語が records.csv の件名・record_terms.csv の語と合わない', uniq);
+      if (!uniq.length) ok(`記録番号 ${termsById.size} 件の近傍の語はすべて records.csv の件名と一致（該当なしを含む）`);
     }
   }
 
