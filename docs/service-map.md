@@ -57,6 +57,7 @@
 | PT-06 | 戦略購買の立案（集約・複数年・代替サプライヤー） | PT/service | 製造 | 構想 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) upload | — | — | — | [PT-06.md](./dify/usecases/PT-06.md) | — | — |
 | PT-07 | RFQ 起草と購買代行への引き継ぎ | PT/service | 製造 | 構想 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) form | — | — | — | [PT-07.md](./dify/usecases/PT-07.md) | — | — |
 | PT-08 | 研修プログラム化と実施代行・受講管理 | PT/service | 製造 | 構想 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) form | — | — | — | [PT-08.md](./dify/usecases/PT-08.md) | — | — |
+| PT-09 | 履歴書のレビュー（ポスト照合・書類の漏れ・面接で確かめる項目） | PT/service | 製造 | 構想 | [mfg/pt.js](../mock/js/data/scenarios/mfg/pt.js) upload | — | — | — | [PT-09.md](./dify/usecases/PT-09.md) | — | — |
 | KN-06 | 事務手続の照会 | KN/rule | 金融 | 試行版 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | — | [KN-06.md](./dify/usecases/KN-06.md) | — | — |
 | KN-07 | 行内営業情報の検索（日誌・接触履歴） | KN/bizlog | 金融 | 構想 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) qa | — | — | [KN-07.md](./dify/usecases/KN-07.md) | — | — |
 | KN-08 | 当局通達・ガイドラインDB（照会・過去比較） | KN/rule | 金融 | 試行版 | — | [fin/kn.js](../mock/js/data/scenarios/fin/kn.js) diff | — | — | [KN-08.md](./dify/usecases/KN-08.md) | — | — |
@@ -94,4 +95,4 @@
 | SO-02 | 稼働状況の自然言語照会 | SO/avail | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) lookup | — | — | — | — |
 | SO-03 | 障害・稼働の定期報告（稼働率・障害件数・MTTR） | SO/avail | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) form | — | — | — | — |
 | SO-04 | 障害報告・再発防止策のドラフト | SO/incident | IT | 構想 | — | — | [it/so.js](../mock/js/data/scenarios/it/so.js) form | — | — | — | — |
-| 集計 | — | — | — | — | ①製造 55 | ①金融 31 | ①IT 16 | ②12 | ③72 | ④KB 4 | ④テスト 12 |
+| 集計 | — | — | — | — | ①製造 56 | ①金融 31 | ①IT 16 | ②12 | ③73 | ④KB 4 | ④テスト 12 |
