@@ -94,7 +94,10 @@ Object.assign(window.SCENARIOS.mfg, {
     steps: { ja: ['K 社から新規引合の図面が来た。似た部品を過去に作っていた気がするが、誰も正確に覚えていない', '引合図面（PDF。K 社の手書きの朱書きあり）をアップロード', '形状・寸法・材質・加工要件が近い過去図面と、その工程・原価・不具合履歴が返る', '流用できる治具・金型を確認し、見積の初期検討に使う'],
              zh: ['K公司发来新询价图纸。感觉以前做过类似零件，但没人记得准确', '上传询价图纸（PDF，带K公司的手写红笔批注）', '返回形状、尺寸、材质、加工要求相近的历史图纸及其工艺、成本、不良履历', '确认可沿用的治具、模具，用于报价初期评估'],
              en: ['A new inquiry drawing arrives from K; someone recalls a similar part but nobody is sure', 'Upload the inquiry drawing (PDF, with the customer handwritten red-pen notes)', 'Get past drawings with similar geometry, size, material and machining, plus their process, cost and defects', 'Check reusable jigs and molds and use it for early quoting'] },
-    input: { ja: { files: ['引合図面_K社_RFQ-2025-118_朱書きあり.pdf'] }, zh: { files: ['询价图纸_K公司_RFQ-2025-118_带红笔批注.pdf'] } },
+    input: { ja: { files: ['引合図面_K社_RFQ-2025-118_朱書きあり.pdf'],
+                   assets: [{ file: 'assets/demo/en3-rfq-2025-118.pdf', kind: 'doc' }] },
+             zh: { files: ['询价图纸_K公司_RFQ-2025-118_带红笔批注.pdf'],
+                   assets: [{ file: 'assets/demo/en3-rfq-2025-118.pdf', kind: 'doc' }] } },
     result: {
       ja: { title: '類似図面検索：RFQ-2025-118（L 型ブラケット、SPCC t1.5、曲げ 2 か所、M6 タップ ×2、塗装）',
             columns: ['順位', '過去図面', '類似度', '一致した要素', '相違点', '工程・原価・不具合履歴'],
