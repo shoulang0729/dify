@@ -1,16 +1,16 @@
 record_id,kind,opened,due,part_no,partner_code,equip_id,owner_dept,state,title_ja,title_zh,title_en,note
-NC-2025-0912,nc,2025-09-12,2025-09-19,SK-3310-A,K 社,PX-200,hinshitsu,open,初品の寸法ばらつき,首件尺寸波动,First-article dimensional variation,台本既出（mock/js/data/scenarios/mfg/qa.js）
+NC-2025-0912,nc,2025-09-12,2025-09-19,SK-3310-A,K 社,,hinshitsu,open,塗装ブツによる不適合,涂装颗粒导致的不合格,Nonconformance from paint specks,台本既出（qa.js QA-01・nm.js NM-06）。K 社の受入検査で見つかった塗装ブツ（クレーム CL-25-0906）の不適合。2026-09-24 に件名と設備を訂正し旧件名の不具合は NC-2025-0904 に分離（docs/handoff/2026-09-24-script-kb-consistency.md §2-3）
 NC-2024-0118,nc,2024-11-18,,SK-3310-A,K 社,D-118,hinshitsu,closed,冷間時の位置ずれによる不適合,冷态时定位偏移导致的不合格,Nonconformance from cold-start misalignment,台本既出（qa.js・kn.js）
-8D-25-0912,nc,2025-09-12,2025-09-26,SK-3310-A,K 社,PX-200,hinshitsu,open,8D 報告（寸法ばらつき）,8D 报告（尺寸波动）,8D report for dimensional variation,台本既出（qa.js）
+8D-25-0912,nc,2025-09-12,2025-09-26,SK-3310-A,K 社,,hinshitsu,open,8D 報告（塗装ブツ）,8D 报告（涂装颗粒）,8D report for paint specks,台本既出（qa.js QA-01・en.js）。NC-2025-0912 の 8D。2026-09-24 に件名と設備を訂正（同 §2-3）
 CL-25-0906,claim,2025-09-06,2025-09-13,SK-3310-A,K 社,,hinshitsu,open,塗装ブツのクレーム,涂装颗粒投诉,Paint-speck claim,台本既出（qa.js）
 CL-25-0906-02,claim,2025-09-06,2025-09-13,SK-2207-B,K 社,,hinshitsu,open,タップ不通のクレーム（同日 2 件目）,丝锥不通投诉（同日第 2 件）,Tapping-blockage claim (same day second case),台本既出（qa.js）
 CAR-24-01,nc,2024-10-02,,,K 社,,hinshitsu,closed,工程監査の是正処置報告,工序审核纠正措施报告,Process-audit corrective action report,docs/dify/usecases/QA-04.md
 ECR-25-0088,ecr,2025-08-20,2025-09-30,SK-3310-A,T 社,,gijutsu,review,鋼板供給先の切替（S 社 → T 社）,钢板供应商切换（S 公司 → T 公司）,Steel supplier switch from S to T,台本既出（qa.js・pt.js）
 ECR-24-0017,ecr,2024-05-14,,SK-2207-B,,,gijutsu,closed,曲げ工程の順序変更,折弯工序顺序变更,Bending sequence change,台本既出（qa.js）
 ECR-23-0041,ecr,2023-06-08,,SK-3310-A,U 社,,gijutsu,closed,代替鋼板への切替,切换至替代钢板,Switch to alternate steel supplier,台本既出（partners.csv の U 社）
-TR-2024-007,tr,2024-07-03,,SK-3310-A,,PX-200,gijutsu,closed,E-47 アラームの原因調査,E-47 报警原因调查,Root-cause study for alarm E-47,台本既出（kn.js・dc.js）
-TR-2024-102,tr,2024-12-11,,SK-3310-A,,J-3310,gijutsu,closed,塗装治具の寸法流用検討,涂装治具尺寸沿用研究,Paint-jig dimension reuse study,台本既出（en.js）
-TR-2023-041,tr,2023-04-19,,SK-1190,J 社,D-092,gijutsu,closed,生産終了品の金型保管方針,停产品的模具保管方针,Mold retention policy for discontinued part,台本既出（en.js）
+TR-2024-007,tr,2024-07-03,,,,,gijutsu,closed,SUS304 Φ8 深穴 60 mm 切削速度・クーラント条件の最適化,SUS304 Φ8 深孔 60 mm 切削速度与冷却液条件优化,Cutting speed and coolant optimization for SUS304 Φ8 60 mm deep holes,台本既出（kn.js KN-01・pt.js・eg.js）・dify/kb/KN-01/**・dify/tests/KN-01.json。社外秘。蘇州工場 ライン 2 の実績。2026-09-24 に件名を KB に合わせて訂正（同 §2-2）
+TR-2024-102,tr,2024-12-11,,SK-3310-A,,J-3310,gijutsu,closed,塗装治具の寸法流用検討,涂装治具尺寸沿用研究,Paint-jig dimension reuse study,ポータル既出（mock/js/data/portal/front.js の技術報告表・取引履歴）。深穴ドリルの工具交換基準は別番号 TR-2024-064（2026-09-24 に分離。同 §2-1）
+TR-2023-041,tr,2023-04-19,,SK-1190,J 社,D-092,gijutsu,closed,生産終了品の金型保管方針,停产品的模具保管方针,Mold retention policy for discontinued part,ポータル既出（mock/js/data/portal/front.js の技術報告表・取引先 J 社）。深穴ドリルの条件検討は別番号 TR-2023-063（2026-09-24 に分離。同 §2-1）
 RFQ-2025-118,rfq,2025-09-01,2025-09-19,SK-3310-C,K 社,,eigyo,open,新規ブラケットの引合,新支架询价,RFQ for a new bracket,台本既出（nm.js）
 RFQ-2025-131,rfq,2025-09-05,2025-09-26,SK-3318,V 社,,eigyo,open,ステーの引合（年間上限条項つき）,支撑件询价（含年度上限条款）,RFQ for a stay with annual value cap,本設計で追加（書式は calendar.md の RFQ-YYYY-NNN）
 SO-2509-018,so,2025-09-08,2025-09-30,SK-3310-A,K 社,,seisankanri,open,9 月分の確定受注,9 月确定订单,Confirmed order for September,台本既出（gn.js GN-03）
@@ -34,3 +34,7 @@ ST-25-Q3,stock,2025-09-19,2025-09-26,,,,butsuryu,open,第 3 四半期 部品・�
 PR-25-0208,pr,2025-04-22,,SK-T-0812,X 社,,seizo2,closed,超硬コーティングドリルの購入申請（前々回）,硬质合金涂层钻头采购申请（上上次）,Earlier purchase requisition for carbide-coated drills,本設計で追加（同 §4-4）。60 本・単価 RMB 78・合計 RMB 4,680。課長決裁
 PR-25-0362,pr,2025-07-08,,SK-T-0812,X 社,,seizo2,closed,超硬コーティングドリルの購入申請（前回）,硬质合金涂层钻头采购申请（上次）,Previous purchase requisition for carbide-coated drills,本設計で追加（同 §4-4）。80 本・単価 RMB 78・合計 RMB 6,240。課長決裁
 PR-25-0417,pr,2025-09-16,2025-09-24,SK-T-0812,X 社,,seizo2,open,超硬コーティングドリルの追加購入申請,硬质合金涂层钻头追加采购申请,Purchase requisition for additional carbide-coated drills,本設計で追加（同 §4-4）。DC-12 の題材。120 本・単価 RMB 86・合計 RMB 10,320。相見積は 1 社のみ・承認ルートは課長決裁のまま
+NC-2024-0321,nc,2024-03-21,,,,,hinshitsu,closed,深穴加工 工具折損（ライン 2）,深孔加工断刀（2号线）,Drill breakage in deep-hole drilling (Line 2),SUS304 Φ8 深穴 60 mm。ステップ送りなし・クーラント 1.5 MPa で 210 本目に折損。対策（3D ごとのステップ送り・クーラント 2.0 MPa）後 6 か月再発なし。台本（kn.js KN-01・dc.js DC-03・pt.js PT-03／PT-08）と dify/kb/KN-01/** が使用。2026-09-24 に NC-2024-0118 から番号を分離（docs/handoff/2026-09-24-script-kb-consistency.md §2-1）
+TR-2023-063,tr,2023-09-14,,,,,gijutsu,closed,SUS304 深穴ドリル加工 条件検討（Φ6〜Φ8）,SUS304 深孔钻削条件研究（Φ6〜Φ8）,Drilling condition study for SUS304 deep holes (Φ6 to Φ8),蘇州工場 ライン 2。Vc 18〜22 m/min・f 0.06 mm/rev で安定。Φ6 は f 0.05。dify/kb/KN-01/**・kn.js KN-01・eg.js EG-01 が使用。2026-09-24 に TR-2023-041 から番号を分離（同 §2-1）
+TR-2024-064,tr,2024-09-20,,,,,gijutsu,closed,深穴ドリルの工具交換基準の設定,深孔钻头换刀基准的设定,Tool-change criteria for deep-hole drills,蘇州工場 ライン 2。超硬コーティングドリル Φ8（L/D = 8）で 200 本または摩耗幅 0.2 mm のいずれか早い方。NC-2024-0321 の効果確認（2024 年 4〜9 月）の実績から設定。dify/kb/KN-01/**・kn.js KN-01 が使用。2026-09-24 に TR-2024-102 から番号を分離（同 §2-1）
+NC-2025-0904,nc,2025-09-04,,SK-3310-A,,PX-200,hinshitsu,closed,初品の寸法ばらつき,首件尺寸波动,First-article dimensional variation,PX-200 の E-47 停止（9/4 昼勤）後の初品。全数確認で流出なし。原因調査メモで金型 D-118 の予熱確認の抜けを指摘（ポータル PCAND の C-01 の出所）。2026-09-24 に NC-2025-0912 から分離（同 §2-3）

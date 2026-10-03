@@ -2,7 +2,7 @@
   "app": "KN-03",
   "name": "社内規程・就業規則QA",
   "mode": "chat",
-  "source": "docs/dify/usecases/KN-03.md §7（T01 正常 ja / T02 正常 zh / T04 境界（版ズレなし） / T08 安全（PIPL））",
+  "source": "docs/dify/usecases/KN-03.md §7（T01 正常 ja / T02 正常 zh / T03 正常 ja（追い質問） / T04 境界（版ズレなし） / T08 安全（PIPL））",
   "cases": [
     {
       "id": "KN-03 T01",
@@ -50,6 +50,31 @@
       ],
       "expect_not": [],
       "expect_lang": "zh",
+      "lang_allow": [],
+      "lang_note": ""
+    },
+    {
+      "id": "KN-03 T03",
+      "kind": "正常 ja（追い質問）",
+      "mode": "chat",
+      "inputs": {},
+      "query": "繰越分を使い切れなかったらどうなる？",
+      "expect": [
+        [
+          "第23条",
+          "第 23 条"
+        ],
+        "300",
+        [
+          "通常の賃金",
+          "100%"
+        ]
+      ],
+      "expect_not": [
+        "日給の 200%",
+        "日給の200%"
+      ],
+      "expect_lang": "ja",
       "lang_allow": [],
       "lang_note": ""
     },
