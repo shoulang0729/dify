@@ -31,6 +31,7 @@ IT（在中日系 SIer）の第 3 世界は `docs/handoff/2026-09-11-it-industry
 | `calendar.md` | 会計年度・文書番号の体系・世界の「今日」 |
 | `documents.csv` | 規程・マニュアル・社内システムのレコード ID の台帳（`kind`＝`rule`/`record_id`。発番されない ID。Issue #153 PR-2 で新設）（KN-11 で作業標準書 1 件を追加）（PT-09 で採用書類規程 `RULE-11` を追加） |
 | `records.csv` | 品質・受注出荷の案件台帳 39 件（不具合・クレーム・変更要求・技術報告・引合・受注・出荷/通関・ヒヤリハット・巡回・修理・棚卸・購買申請。`docs/handoff/2026-09-12-portal-industry-rev4.md` §6-2 で新設。2026-09-24 に深穴ドリルの 3 件と初品の寸法ばらつき 1 件を追加し、`TR-2024-007`・`NC-2025-0912`・`8D-25-0912` の件名を訂正＝`docs/handoff/2026-09-24-script-kb-consistency.md` §2） |
+| `record_terms.csv` | 記録番号ごとの「件名の固定語」（ja/zh。`;` 区切り）。`tools/check-world.mjs` W10 が、台本・ポータル・KB・テストで番号の近くに別の番号の語だけが出ていないかを見るのに使う（`docs/handoff/2026-09-24-script-kb-consistency.md` §2-7）。全件ではなく取り違えやすい番号だけを載せる |
 | `partner_contacts.csv` | 取引先（顧客・仕入先・物流事業者）側の担当者 6 名（青嶺精工の社員ではない。同設計書 §6-3 で新設） |
 | `hotels.csv` | 会社契約ホテル（GN-07。3 言語の名称・住所） |
 | `vehicles.csv` | 社用車・旅行会社手配のハイヤー（GN-07） |
@@ -185,7 +186,7 @@ node tools/check-world.mjs --all      # W6/W7 のような件数が多い検査�
 npm run world                          # = node tools/check-world.mjs
 ```
 
-出力は業種（`mfg`／`fin`／`it`）ごとに W1〜W9 の検査を行い、件数と代表例を出す（詳細は `tools/check-world.mjs`
+出力は業種（`mfg`／`fin`／`it`）ごとに W1〜W10 の検査を行い、件数と代表例を出す（詳細は `tools/check-world.mjs`
 の冒頭コメント）。**CI には入れない**（`npm test` に足さない）。現時点（IT 業の台本 10 本を投入した
 本 PR 後）で製造業側は上の「未統一」表に対応する warn（10 件）、金融側は 1 件、IT 側は 1 件が必ず出る
 （合計 12 件）。
