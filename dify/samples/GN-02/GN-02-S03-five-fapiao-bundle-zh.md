@@ -12,6 +12,7 @@ world:
 inputs:
   invoice_text: "@body"
   invoice_file: null
+  invoice_image: null
 points:
   - 5 枚まとめて崩れず一覧化される
   - 税率の違い（9% 運輸 / 13%）が区別して抽出される
