@@ -1,0 +1,4 @@
+vehicle_id,label_ja,label_zh,label_en,kind,seats,luggage,vendor_code,driver_person_id,site_id,booking_rule,note
+veh_mpv1,社用車 商務車1号,公务车 商务车1号,Company MPV No.1,company,6,3,,,shanghai,管理部に前日 17:00 までに申請,6 人乗りの商務車。上海拠点の標準車両
+veh_mpv2,社用車 商務車2号,公务车 商务车2号,Company MPV No.2,company,6,3,,,shanghai,管理部に前日 17:00 までに申請,6 人乗りの商務車。人数や荷物が多い日は 1 号と組み合わせて 2 台で出す
+veh_charter,γ社ハイヤー,γ社包车,Chartered Car (Vendor γ),charter,7,4,γ 社,,shanghai,γ 社に前日までに電話で手配（架空）,7 人乗り。社用車が足りないときの外部手配。取引先記号はギリシャ文字（clients.csv の規則）

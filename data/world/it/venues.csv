@@ -1,0 +1,3 @@
+venue_id,kind,name_ja,name_zh,name_en,addr_ja,addr_zh,addr_en,tel,site_id,note
+ven_office_sh,office,翠雲系統（上海）有限公司 上海拠点,翠云系统（上海）有限公司 上海办公室,Suiun Systems (Shanghai) — Shanghai Office,上海市長寧区雲泉路500号 12階,上海市长宁区云泉路500号 12层,"12F, No.500 Yunquan Rd, Changning District, Shanghai",+86-21-XXXX-3001（架空）,shanghai,自社拠点。社名の正本は company.md
+ven_dinner_sh,restaurant,雲泉大酒店 3階 個室,云泉大酒店 3楼 包间,Private Room, 3F Unsen Hotel Shanghai,上海市長寧区雲泉路318号 3階,上海市长宁区云泉路318号 3层,"3F, No.318 Yunquan Rd, Changning District, Shanghai",+86-21-XXXX-2101（架空）,shanghai,会食の既定会場。hotels.csv の htl_unsen 内

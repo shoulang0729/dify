@@ -35,6 +35,7 @@ Cowork（Claude Desktop）でこのリポジトリを触るときは、エージ
 
 ### 2-2. 色はセマンティックトークンのみ。ブランドパレットは不変
 - 対象：**`mock/css/components.css`** に **`#RRGGBB` の直値を書かない**。必ず `var(--surface-*|--text-*|--border-*|--action-*|--status-*|--badge-*)`
+- **既定の見た目は Dify 寄せ**（PM 判断 2026-10-02。Dify の売り出しに合わせ、NTT データ風より優先する）。実装は `tokens.css` の `--dfy-*` プリミティブ層で、**セマンティック層の向き先を差し替えるだけ**。`components.css` は 1 行も触らない（セマンティックしか参照していない）。顧客版で戻すときは向き先を `--ntt-*` に戻す
 - **`mock/css/tokens.css`** の `--ntt-*`（NTT DATA ブランドパレット）は**変更禁止**。ダーク対応は同ファイルの `:root[data-theme="dark"]` で**セマンティック層だけ**上書き（**dark ブロックは 1 つだけ**）。**`mock/index.html` は同じ `tokens.css` を `<link>` で参照する。トークンをコピーしない**
 - なぜ：直値が1つ入ると、その箇所だけダークで浮く／ブランド色がズレる
 - 検出：`tools/verify.mjs`（直値検出・`var()` 未定義検出・dark ブロック存在）

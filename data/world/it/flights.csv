@@ -1,0 +1,4 @@
+flight_id,carrier_ja,carrier_zh,carrier_en,number,from_id,to_id,dep_local,arr_local,duration_min,terminal_dep,terminal_arr,note
+flt_hnd_pvg_0812,暁星航空,晓星航空,Gyosei Airlines,0812,apt_hnd,apt_pvg,17:35,20:40,185,T3,T2,架空の航空会社・便名（空港名と IATA コードのみ実在）。往路の当初便
+flt_hnd_sha_0208,暁星航空,晓星航空,Gyosei Airlines,0208,apt_hnd,apt_sha,05:55,08:20,205,T3,T2,架空の航空会社・便名。往路の変更後の便（朝着）。台本で便が差し替わる想定
+flt_pvg_hnd_0815,暁星航空,晓星航空,Gyosei Airlines,0815,apt_pvg,apt_hnd,19:30,23:05,175,T2,T3,架空の航空会社・便名。復路。時差 ＋1 時間
