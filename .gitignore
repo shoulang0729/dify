@@ -26,3 +26,7 @@ __pycache__/
 
 # ---- portal/（⑤ポータル。独立 npm プロジェクト。CLAUDE.md §2-14・S-2） ----
 portal/node_modules/
+
+# ---- tools/gen-demo-audio.py の作業用キャッシュ（TTS モデル・venv。コミットしない） ----
+tools/.cache/
+.venv-tts/

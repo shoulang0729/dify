@@ -114,6 +114,19 @@ document.addEventListener('click', (e) => {
   const dkeep = e.target.closest('[data-dkeep]');
   if (dkeep) { dKeepResult(); return; }
 
+  /* ---------- アップロード部品（台本ドロワーの upload 入力。§10-3。設計書 2026-09-16-showcase-demo.md） ---------- */
+  const pupEl = e.target.closest('[data-pup]');
+  if (pupEl) {
+    const kindP = pupEl.dataset.pup;
+    const sec = pupEl.closest('.sec');
+    const fileInput = sec && sec.querySelector('.upinput');
+    if (kindP === 'pick') { if (fileInput) fileInput.click(); }
+    else if (kindP === 'sample') {
+      if (dCtx && dCtx.pr) { pupUseSample(dCtx.pr.scn, dCtx.log.length ? dCtx.log[0].lang : pscriptLang(pstate.lang)); dRenderBody(); }
+    } else if (kindP === 'clear') { pupClear(); dRenderBody(); }
+    return;
+  }
+
   /* ---------- .mockbar の折りたたみ（足場を隠す/戻す。PM 指示。§2-4） ---------- */
   const mockbarFold = e.target.closest('[data-act="mockbarfold"]');
   if (mockbarFold) { pstate.mockbar = !pstate.mockbar; renderMockbarFold(); return; }
@@ -129,6 +142,41 @@ document.addEventListener('change', (e) => {
     if (sf.dataset.key === 'cu') pstate.sysCu = sf.value; else pstate.sysSt = sf.value;
     renderAll();
   }
+
+  /* ---------- アップロード部品：ファイル選択（§10） ---------- */
+  const pupInput = e.target.closest('[data-pup="input"]');
+  if (pupInput) { pupAddFiles(pupInput.files, () => dRenderBody()); pupInput.value = ''; }
+});
+
+/** アップロードのドロップゾーンを Enter / Space でも開けるようにする（role="button" tabindex="0"） */
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const zone = e.target.closest && e.target.closest('.updrop');
+  if (!zone) return;
+  e.preventDefault();
+  const sec = zone.closest('.sec');
+  const fileInput = sec && sec.querySelector('.upinput');
+  if (fileInput) fileInput.click();
+});
+
+document.addEventListener('dragover', (e) => {
+  const zone = e.target.closest && e.target.closest('.updrop');
+  if (!zone) return;
+  e.preventDefault();
+  zone.classList.add('dragover');
+});
+document.addEventListener('dragleave', (e) => {
+  const zone = e.target.closest && e.target.closest('.updrop');
+  if (!zone) return;
+  zone.classList.remove('dragover');
+});
+document.addEventListener('drop', (e) => {
+  const zone = e.target.closest && e.target.closest('.updrop');
+  if (!zone) return;
+  e.preventDefault();
+  zone.classList.remove('dragover');
+  const files = e.dataTransfer && e.dataTransfer.files;
+  if (files && files.length) pupAddFiles(files, () => dRenderBody());
 });
 
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });

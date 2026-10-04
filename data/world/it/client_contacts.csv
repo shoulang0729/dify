@@ -1,0 +1,7 @@
+contact_id,name_ja,name_zh,name_en,client_code,title_ja,title_zh,title_en,site,native,note
+seirei-wan-qin,万 沁,万沁,Wan Qin,青嶺精工,情報システム 主任,信息系统 主管,Information Systems Lead,蘇州工場,zh,顧客側の担当者。翠雲システムズの社員ではない。社名・拠点名だけ clients.csv の ref_world で参照し 人物は IT 世界の固有名（data/world/README.md「跨ぎ」）
+seirei-seto-yohei,瀬戸 陽平,濑户阳平,Yohei Seto,青嶺精工,生産システム 駐在担当,生产系统 驻在担当,Production Systems Liaison (Expatriate),蘇州工場,ja,同上
+seirei-cen-rui,岑 睿,岑睿,Cen Rui,青嶺精工,工場 IT 運用 担当,工厂IT运维 担当,Plant IT Operations Staff,蘇州工場,zh,同上
+hekiyo-bian-hao,卞 昊,卞昊,Bian Hao,碧洋銀行,勘定系システム 主管,核心系统 主管,Core Banking Systems Supervisor,上海本部,zh,同上
+hekiyo-shibata-ritsu,柴田 律,柴田律,Ritsu Shibata,碧洋銀行,事務システム 受入担当,事务系统 验收担当,Back-office Systems Acceptance Lead,上海本部,ja,同上
+hekiyo-pang-wen,龐 雯,庞雯,Pang Wen,碧洋銀行,帳票基盤 担当,报表平台 担当,Reporting Platform Staff,上海本部,zh,同上

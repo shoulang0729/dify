@@ -20,6 +20,82 @@
    ============================================================ */
 let dCtx = null;
 
+/* ---- アップロード部品（設計書 2026-09-16-showcase-demo.md §10）----
+   載っているファイルの表示用メタ。pstate には入れない（§2-3：state 相当の必須キー一覧を動かさないため）。
+   読み取り（OCR/STT）はしない。実行結果は台本（SCENARIOS[].result）から出す。 */
+let pupFiles = [];
+/** ファイル名の拡張子から表示用の種別を推定する（image / audio / doc）。未知の拡張子は doc 扱い */
+function pupKindOf(name) {
+  const n = String(name).toLowerCase();
+  if (/\.(jpe?g|png|gif|webp)$/.test(n)) return 'image';
+  if (/\.(wav|mp3|m4a|ogg)$/.test(n)) return 'audio';
+  return 'doc';
+}
+/** 載せたファイルを全部外す。作成済みの objectURL は破棄する */
+function pupClear() {
+  pupFiles.forEach((f) => { if (f.objectUrl) URL.revokeObjectURL(f.objectUrl); });
+  pupFiles = [];
+}
+/** ユーザーが選んだ FileList を pupFiles に積む（fetch() は使わない・送らない・保存しない＝§2-6・§2-8） */
+function pupAddFiles(fileList, done) {
+  const files = Array.from(fileList || []);
+  if (!files.length) { done(); return; }
+  let remaining = files.length;
+  const settle = () => { remaining -= 1; if (remaining === 0) done(); };
+  files.forEach((file) => {
+    const kind = pupKindOf(file.name);
+    if (kind === 'image') {
+      const reader = new FileReader();
+      reader.onload = () => { pupFiles.push({ name: file.name, kind, src: String(reader.result) }); settle(); };
+      reader.onerror = () => { pupFiles.push({ name: file.name, kind: 'doc', src: '' }); settle(); };
+      reader.readAsDataURL(file);
+    } else if (kind === 'audio') {
+      const url = URL.createObjectURL(file);
+      pupFiles.push({ name: file.name, kind, src: url, objectUrl: url });
+      settle();
+    } else {
+      pupFiles.push({ name: file.name, kind: 'doc', src: '' });
+      settle();
+    }
+  });
+}
+/** 「サンプルを使う」：台本の input[lang].assets のパスをそのまま pupFiles に積む */
+function pupUseSample(scn, lang) {
+  const inp = scn && scn.input && scn.input[lang];
+  if (!inp || !Array.isArray(inp.assets)) return;
+  pupClear();
+  inp.assets.forEach((a, i) => {
+    pupFiles.push({ name: (inp.files && inp.files[i]) || a.file.split('/').pop(), kind: a.kind, src: a.file });
+  });
+}
+/** 載せた 1 ファイルぶんの表示。種類ごとにプレビューを出し分ける */
+function pupItemHTML(f) {
+  if (f.kind === 'image') {
+    return '<div class="upitem"><span class="dfile">🖼 ' + pesc(f.name) + '</span><img class="upthumb" src="' + pesc(f.src) + '" alt=""></div>';
+  }
+  if (f.kind === 'audio') {
+    return '<div class="upitem"><span class="dfile">🔊 ' + pesc(f.name) + '</span><audio class="upaudio" controls src="' + pesc(f.src) + '"></audio></div>';
+  }
+  return f.src
+    ? '<div class="upitem"><a class="dfile" href="' + pesc(f.src) + '" target="_blank" rel="noopener">📄 ' + pesc(f.name) + ' ' + pesc(pt('feedOpen')) + '</a></div>'
+    : '<div class="upitem"><span class="dfile">📄 ' + pesc(f.name) + '</span></div>';
+}
+/** upload テンプレートの入力パネル（ドロップゾーン／ファイル選択／サンプル／プレビュー。設計書 §10）。
+    pupFiles が空のときは従来どおり台本の files をチップで出す（assets を持たない台本の後方互換＝§10-5） */
+function pupPanelHTML(scn, inp) {
+  const hasSample = Array.isArray(inp.assets) && inp.assets.length === inp.files.length;
+  const filesHTML = pupFiles.length
+    ? pupFiles.map(pupItemHTML).join('')
+    : inp.files.map(f => '<span class="dfile">📄 ' + pesc(f) + '</span>').join('');
+  const actions = (hasSample ? '<button type="button" class="upbtn" data-pup="sample">' + pesc(pt('upSample')) + '</button>' : '') +
+    (pupFiles.length ? '<button type="button" class="upbtn" data-pup="clear">' + pesc(pt('upClear')) + '</button>' : '');
+  return '<div class="updrop" data-pup="pick" tabindex="0" role="button">' + pesc(pt('upDrop')) + '</div>' +
+    '<input type="file" class="upinput" data-pup="input" multiple hidden>' +
+    (actions ? '<div class="upactions">' + actions + '</div>' : '') +
+    '<div class="upfiles">' + filesHTML + '</div>' +
+    '<div class="note" style="margin-top:8px">' + pesc(pt('upNote')) + '</div>';
+}
+
 /** 文脈カードの左ラベル（画面 id → キー → PT のキー名。rev4 PR-F・§18-11a）。
     PT のキー名だけを持ち、文言そのものは持たない（3 言語一致は PT 側で担保。CLAUDE.md §2-1）。
     配線していない画面（act/vend/watch/meet/exp/req/ppl/trn/know/kpi）は入れない
@@ -158,7 +234,7 @@ function dInputSectionHTML() {
   if (scn.template === 'form' && inp) {
     tplInner = inp.fields.map(f => '<div class="fld"><label>' + pesc(f.label) + '</label><div class="val">' + pesc(f.value) + '</div></div>').join('');
   } else if (scn.template === 'upload' && inp) {
-    tplInner = inp.files.map(f => '<span class="dfile">📄 ' + pesc(f) + '</span>').join('') +
+    tplInner = pupPanelHTML(scn, inp) +
       '<div class="note" style="margin-top:8px">' + pesc(pt('uploadNote')) + '</div>';
   } else if (scn.template === 'diff' && inp) {
     tplInner = '<div class="diffrow"><span class="dfile">📄 ' + pesc(inp.left) + '</span><span>⇄</span>' +
@@ -301,6 +377,7 @@ function openSvcDrawer(svcId, scr, row, opts) {
   const s = psvcOf(svcId); if (!s) return;
   const pr = pscn(svcId, row || null);
   if (!pr) { openDrawer(svcId); return; }   // 台本なし（§5-6）。render.js の情報ドロワーに委ねる
+  pupClear();   // 別のサービスのドロワーを開くたび、載せたファイルを外す（§10。前回の表示を持ち越さない）
   dCtx = { svcId, s, pr, scr: scr || null, row: row || null,
     code: s.isnew ? pt('unnumbered') : psvcCode(svcId), log: [] };
   if (opts && opts.showResult && pr.scn.result) {

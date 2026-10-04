@@ -49,7 +49,8 @@ const CATS = [
     abbr: { ja: '品質', zh: '质量', en: 'Quality' },
     subs: [
       { id: 'defect', industries: ['mfg'], name: { ja: '不具合分析・報告', zh: '不良分析与报告', en: 'Defect Analysis & Reporting' } },
-      { id: 'change', industries: ['mfg'], name: { ja: '変更・クレーム・監査', zh: '变更・客诉・审核', en: 'Change, Claims & Audits' } }
+      { id: 'change', industries: ['mfg'], name: { ja: '変更・クレーム・監査', zh: '变更・客诉・审核', en: 'Change, Claims & Audits' } },
+      { id: 'safety', industries: ['mfg'], name: { ja: '安全・5S', zh: '安全・5S', en: 'Safety & 5S' } }
     ]},
   { id: 'dc',
     industries: ['mfg', 'fin', 'it'],
@@ -170,6 +171,23 @@ const SVCS = [
     desc: { ja: '所管当局（外貨管理・税関・税務・地方政府など。業種により金融当局を含む）の通達を読み込み、自社への影響（対象業務・期限・必要な対応）を整理します。さらに影響を受ける社内マニュアル・規定の該当箇所を特定し、改訂案のドラフトまで作成します。',
             zh: '读取主管部门（外汇管理、海关、税务、地方政府等，视行业亦含金融主管部门）的通知文件，整理对本公司的影响（涉及业务、期限、应对事项），并定位受影响的内部手册与规定条款，生成修订草案。',
             en: 'Reads notices from the authorities that oversee your operations (foreign exchange, customs, tax, local government and, depending on the industry, the financial regulator), summarizes the impact on your company (affected operations, deadlines, required actions), then locates the affected internal manuals and drafts the revisions.' } },
+  /* KN-11: 聞き取り音声からベテランの手順・勘所を起こす（設計書 docs/handoff/2026-09-16-showcase-demo.md §6-1）。
+     入力手段（音声）はタグにしない＝親設計書 §4-3 の判断を踏襲し、desc に書いて検索に当てる。 */
+  { id: 'kn11', cat: 'kn', sub: 'tech', st: 3, industries: ['mfg'], tags: ['procedure', 'education'], added: '2026-09-16',
+    place: 'know',
+    name: { ja: 'ベテランのノウハウ聞き取りと記録化', zh: '资深员工经验的访谈与记录化', en: 'Veteran Know-how Interview & Capture' },
+    desc: { ja: '文書に残っていないベテランの手順・勘所・判断基準を、聞き取りの音声から文字起こしして構造化し、手順書のドラフトに起こします。同じ作業について現行の標準・旧版の標準・本人の発言の 3 つを日付つきで並べ、改訂の経緯からどれを正とするかを人が決められる形で示します。発言が現行の標準と食い違う場合は、勝手に上書きせず改訂の候補として残します。聞き取れなかった箇所は推測で埋めず、位置を残したまま聞き直しの対象として返します。判断の手がかりが聞けていない所は「次の聞き取りで聞くこと」として返し、登録は本人の確認を経てから行います。出力はナレッジへの登録提案（新規作成、または既存文書への修正依頼）まで作ります。',
+            zh: '将尚未形成文档的资深员工的操作步骤、要领与判断标准，通过访谈录音转写并结构化，生成作业指导书草案。针对同一项作业，把现行标准、旧版标准与本人口述三者按日期并列呈现，依据修订经过让人来判断以哪一个为准。若口述与现行标准不一致，不擅自覆盖，而是作为修订候选保留。未能听清的部分不做推测填补，保留其位置并作为需要回访确认的对象返回。尚未问到判断依据的部分作为「下次访谈要问的问题」返回，登记须经本人确认后再进行。输出可一直做到知识库的登记提案（新建，或对既有文档提出修改申请）。',
+            en: 'Turns a veteran\'s undocumented steps, knacks and judgment criteria into a draft work instruction by transcribing and structuring a recorded interview. For the same task it lines up the current standard, the superseded standard and the veteran\'s own words with their dates, so that a person can decide which one governs from the revision history. Where the veteran contradicts the current standard, it is kept as a candidate revision rather than silently overwriting it. Passages that could not be heard are left in place for a follow-up question instead of being guessed at. Where the cues behind a judgment were not captured, they come back as questions for the next interview, and nothing is registered until the veteran has checked it. The output goes as far as a proposal to register the result in the knowledge base — either a new entry or a change request against the existing standard.' } },
+
+  /* KN-12: 修理依頼のトリアージ（Issue #320 設計書 §6）。
+     設備台帳・修理履歴・点検表の 3 つを突き合わせる。止めるかどうかの判断は人が持つ。 */
+  { id: 'kn12', cat: 'kn', sub: 'tech', st: 3, industries: ['mfg'], tags: ['equipment', 'procedure'], added: '2026-09-21',
+    place: 'sys',
+    name: { ja: '修理依頼のトリアージ（設備台帳・修理履歴・点検表の突き合わせ）', zh: '维修申请的分诊（设备台账・维修履历・点检表比对）', en: 'Repair Request Triage across Equipment Register, Repair History and Check Sheets' },
+    desc: { ja: '現場から届く修理依頼（現象・設備・写真）を、設備台帳のアラーム定義・同じ設備の修理履歴・直近の点検表と突き合わせ、原因候補を過去の同種事象つきで並べます。発生の偏り（立ち上げ直後に多いなど）が過去のどの事象と同じ形かを示し、否定できた候補と、まだ確かめていない候補を分けて返します。緊急度は「止める／続ける」それぞれで何が起きるかを材料として示すだけで、**止めるかどうかは人が決めます**。出力は保全課への引き継ぎ文と、依頼者への暫定対処・一次回答の下書きまで作ります。点検表が未提出のように材料が欠けている場合は、推測せず未確認として示します。',
+            zh: '把现场送来的维修申请（现象、设备、照片）与设备台账的报警定义、同一设备的维修履历、最近的点检表进行比对，列出原因假设并附上历史同类事象。指出发生的偏向（例如集中在启动后）与过去哪一次的形态相同，并把已经可以排除的候选与尚未确认的候选分开返回。紧急度只作为判断材料呈现「停机」与「继续」各自会发生什么，**是否停机由人决定**。输出可一直做到给设备保全科的交接文，以及给申请人的临时处置与初步回复草案。当点检表尚未提交等材料缺失时，不做推测，标注为未确认。',
+            en: 'Takes a repair request from the floor (symptom, equipment, photo) and matches it against the alarm definitions in the equipment register, the repair history for that machine and the latest check sheet, then lists cause hypotheses with the comparable past events. It points out which earlier event has the same pattern of occurrence (for example clustered right after start-up) and separates the candidates already ruled out from those not yet verified. Urgency is presented only as material for the decision, showing what happens if the line is stopped and what happens if it keeps running; the decision to stop stays with a person. The output goes as far as a handover note for maintenance and a draft interim measure and first reply for the requester. When material is missing, such as a check sheet not yet submitted, it is marked unverified rather than guessed.' } },
 
   /* ---- qa: 品質・不具合対応 ---- */
   { id: 'qa1', cat: 'qa', sub: 'defect', st: 2, industries: ['mfg'], tags: ['defect', 'rootcause', 'report8d'],
@@ -197,6 +215,15 @@ const SVCS = [
             zh: '读取整车厂的工艺审核检查表，将每一项与内部管理文件、记录和实绩数据关联，生成回答草案与提交资料清单。也可起草针对指出事项的纠正计划书。',
             en: 'Reads an OEM process-audit checklist, maps each item to your control documents, records and performance data, and produces draft answers plus a submission list. Also drafts corrective-action plans for findings.' } },
 
+  /* QA-05: ヒヤリハット・5S 巡回記録の要約と傾向分析（Issue #320 設計書 §5）。
+     新中分類 qa/safety に置く最初のサービス。 */
+  { id: 'qa5', cat: 'qa', sub: 'safety', st: 3, industries: ['mfg'], tags: ['safety', 'summary'], added: '2026-09-21',
+    place: 'qual',
+    name: { ja: 'ヒヤリハット・5S巡回記録の要約と傾向分析', zh: '未遂事件与5S巡回记录的摘要与趋势分析', en: 'Near-miss and 5S Patrol Record Summary and Trend Analysis' },
+    desc: { ja: '現場から上がるヒヤリハット報告と 5S・安全巡回の記録（写真・場所・型・担当・日付）をまとめて読み、週次の傾向を返します。同じ場所・同じ型の再発を過去の巡回記録と突き合わせて拾い、前回どう是正したかを添えます。是正案は過去に効かなかった手を繰り返していないか確かめたうえで下書きにし、是正期限を過ぎた未完了の指摘を一覧にします。写真から読み取れなかった項目は推測で埋めず、確信度が低い項目は要確認として残します。是正を実行するか、誰にいつまで求めるかは人が決めます。出力は指摘された部署への是正依頼の下書きと、工場長向けの週次報告 1 段落まで作ります。',
+            zh: '汇总阅读现场提交的未遂事件报告与5S・安全巡回记录（照片、场所、类型、负责人、日期），返回每周的趋势。通过与历史巡回记录比对，找出同一场所、同一类型的再发，并附上上一次是如何纠正的。纠正方案在确认没有重复过去无效的做法之后再生成草案，并列出超过整改期限尚未完成的指摘。照片中无法读取的项目不做推测填补，把握度较低的项目标注为待确认保留。是否执行纠正、要求谁在何时之前完成，由人来决定。输出可一直做到面向被指摘部门的纠正委托草案，以及面向厂长的周报1个段落。',
+            en: 'Reads the week of near-miss reports and 5S and safety patrol records together (photos, place, type, owner, date) and returns the trend. It matches repeats of the same place and the same type against earlier patrol records and attaches how each was corrected last time. Proposed corrections are drafted only after checking that they do not repeat a measure that already failed, and findings past their correction deadline are listed. Items that cannot be read from a photo are left blank rather than guessed, and low-confidence items are kept flagged for checking. Whether to act, who is asked and by when stays with a person. The output goes as far as draft correction requests for the departments named and a one-paragraph note for the plant manager.' } },
+
   /* ---- dc: 文書・資料作成 ---- */
   { id: 'dc1', cat: 'dc', sub: 'report', st: 1, industries: ['mfg'], tags: ['report'],
     place: 'kpi',
@@ -213,9 +240,9 @@ const SVCS = [
   { id: 'dc3', cat: 'dc', sub: 'site', st: 2, industries: ['mfg'], tags: ['education', 'procedure'],
     place: 'trn',
     name: { ja: '教育・OJT資料作成', zh: '培训与OJT资料制作', en: 'Training & OJT Material Builder' },
-    desc: { ja: '作業標準書・過去の不具合事例・安全ルールから、新人・異動者向けの教育資料（スライド・確認テスト・OJT チェックリスト）を作成します。作業者の母語に合わせて中国語版を主にし、監督者向けに日本語版を添えるといった出し分けができます。文書として残っていないベテランの手順や勘所は、聞き取りの音声を取り込んで教材と手順書のドラフトに起こすことを想定しています。',
-            zh: '基于作业标准书、历史不良案例与安全规则，生成面向新人与调岗人员的培训资料（课件、确认测试、OJT检查表）。可按对象区分输出：作业者用中文版，监督者附日文版。对于尚未形成文档的资深员工的操作要领与经验，设想通过导入访谈录音，生成教材与作业指导书草案。',
-            en: 'Creates training decks, quizzes and OJT checklists for new and transferred staff from work standards, past defects and safety rules. Outputs Chinese for operators and Japanese for supervisors as needed. Where a veteran\'s know-how exists only in their head, recorded interviews are expected to be taken in and turned into draft training material and work instructions.' } },
+    desc: { ja: '作業標準書・過去の不具合事例・安全ルールから、新人・異動者向けの教育資料（スライド・確認テスト・OJT チェックリスト）を作成します。作業者の母語に合わせて中国語版を主にし、監督者向けに日本語版を添えるといった出し分けができます。文書として残っていないベテランの手順や勘所は、聞き取りから記録化するサービス（KN-11）で本人の確認を経た技術メモを取り込んで、教材に反映します。',
+            zh: '基于作业标准书、历史不良案例与安全规则，生成面向新人与调岗人员的培训资料（课件、确认测试、OJT检查表）。可按对象区分输出：作业者用中文版，监督者附日文版。对于尚未形成文档的资深员工的操作要领与经验，导入经访谈记录化服务（KN-11）整理并经本人确认的技术备忘，反映到教材中。',
+            en: 'Creates training decks, quizzes and OJT checklists for new and transferred staff from work standards, past defects and safety rules. Outputs Chinese for operators and Japanese for supervisors as needed. Know-how that veterans have never written down comes in as technical memos from the interview capture service (KN-11), already checked by the veteran, and is reflected in the training material.' } },
   { id: 'dc4', cat: 'dc', sub: 'site', st: 1, industries: ['mfg'], tags: ['safety', 'translate'],
     place: 'trn',
     name: { ja: '安全衛生・5S掲示物・改善提案の中国語化', zh: '安全卫生・5S看板・改善提案的中文化', en: 'Chinese Versions of Safety, 5S Posters & Kaizen Sheets' },
@@ -246,6 +273,15 @@ const SVCS = [
     desc: { ja: '報告種別（担当週報・組織長週報・月次報告・人事要員報告・障害報告ほか）と読み手、目的（提出前のセルフチェック／受領後の論点整理）を選ぶと、その組み合わせに合う観点で読みます。提出前は規定と照らして行を整理し、曖昧な表現や不足項目を書き手向けの助言に。受領後は要旨・確認したい論点 3〜5 件・数字のブリッジ・改善後の報告案を返し、台帳と照合して未回答・期限超過・同じ論点の再発を示します。',
             zh: '按汇报种类（担当周报、组织长周报、月度报告、人事要员报告、故障报告等）、读者与目的（提交前自查／收到后的要点梳理）选择模式。提交前对照规定整理条目，把模糊表述与缺失项目变成面向撰写者的建议；收到后返回要点摘要、需确认的议题3〜5条、数字桥接与改进后的汇报稿，并与台账核对未回答、超期与再发。',
             en: 'Pick the report type (staff weekly, manager weekly, monthly, headcount, incident and more), the reader, and the purpose — a self-check before submitting, or framing the discussion after receiving. Before submitting it tidies lines against the reporting rules and flags vague wording and missing items for the writer. After receiving it returns a summary, three to five points to clarify, a numeric bridge to the target and a rewritten report, checked against the log of past exchanges.' } },
+
+  /* DC-12: 承認者向けの申請要約と類似案件・規程照合（Issue #320 設計書 §8）。
+     DC-05（申請者向けの記載漏れ検出）と表裏。読み手が承認者である点が違う。 */
+  { id: 'dc12', cat: 'dc', sub: 'apply', st: 3, industries: ['mfg'], tags: ['approval', 'purchase'], added: '2026-09-21',
+    place: 'req',
+    name: { ja: '承認者向けの申請要約と類似案件・規程照合', zh: '面向审批人的申请摘要与类似案件・规定比对', en: 'Approver-side Request Summary with Similar Cases and Policy Check' },
+    desc: { ja: '自分のところへ回ってきた申請（購買・稟議・経費・出張ほか）を承認者の側から読み、要点 3 行に落とします。過去の同種申請を引いて金額・相手先・頻度の違いを並べ、該当する社内規程の条文と、その申請が境目（金額区分・相見積の要否・単価契約の対象）のどちら側にあるかを示します。差し戻すなら理由の下書きも作ります。DC-05 が申請を書く人の記載漏れを潰すのに対し、こちらは**読む人が短時間で判断できる材料をそろえる**ためのものです。**承認も差し戻しも人が押します。** 判断材料が社内に無いもの（市況・相場など）は、推測せず未確認として示します。',
+            zh: '从审批人的角度阅读流转到自己这里的申请（采购、审批、费用、出差等），归纳为3行要点。调出历史同类申请，并列出金额、对方、频度的差别，指出对应的公司规定条款，以及该申请处在分界线（金额区分、是否需要比价、是否适用单价合同）的哪一侧。若要退回，也生成退回理由草案。DC-05 面向撰写申请的人消除填写缺漏，本服务则是**为阅读的人在短时间内备齐判断材料**。**批准与退回都由人来按。** 公司内部没有判断依据的内容（行情、市价等）不做推测，标注为未确认。',
+            en: 'Reads a request that has landed in your approval queue (purchasing, capex, expenses, travel and so on) from the approver side and reduces it to three lines. It pulls up comparable past requests and lays out the differences in amount, counterparty and frequency, cites the governing internal rule and shows which side of a threshold the request falls on, such as the amount band, whether competing quotes are required, or whether a unit-price contract applies. If it should be sent back, the reason is drafted too. Where DC-05 removes omissions for the person writing the request, this one assembles what the reader needs to decide quickly. Approving and sending back are both done by a person. Anything the company has no basis for, such as market prices, is marked unverified rather than guessed.' } },
 
   /* ---- lg: 日中コミュニケーション ---- */
   { id: 'lg1', cat: 'lg', sub: 'trans', st: 1, industries: ['mfg'], tags: ['translate', 'glossary'],
@@ -305,6 +341,15 @@ const SVCS = [
             zh: '通过自然语言提问，对生产、质量、成本数据进行汇总与可视化，并附带分析洞察。例如"看一下各线不良率趋势""加班时间与不良是否相关"，无需SQL或BI工具知识。',
             en: 'Aggregates and charts production, quality and cost data from plain-language questions — "show defect-rate trends by line", "is overtime correlated with defects?" — with written insights. No SQL or BI skills required.' } },
 
+  /* NM-06: 棚卸差異の原因候補と処理案（Issue #320 設計書 §7）。
+     台本は部品・製品の棚卸 1 本。固定資産の棚卸は desc で触れるだけ（モード化しない）。 */
+  { id: 'nm6', cat: 'nm', sub: 'actual', st: 3, industries: ['mfg'], tags: ['inventory', 'analysis'], added: '2026-09-21',
+    place: 'order',
+    name: { ja: '棚卸差異の原因候補と処理案', zh: '盘点差异的原因假设与处理方案', en: 'Stocktake Variance Cause Hypotheses and Disposition Options' },
+    desc: { ja: '棚卸の差異行（帳簿数と実数のずれ）を入出庫履歴・前回の棚卸差異と突き合わせ、行ごとに「どこで消えたか・どこで増えたか」の原因仮説を、根拠になる伝票番号つきで返します。前回と同じ品番・同じ向き（プラス／マイナス）の差異が続いていれば、単発のミスではなく計上の型として示します。次に何を当たれば確定するかの確認手順を出し、処理案は再調査・帳簿修正・廃棄処理のどれに当たるかを分けて示します。**帳簿修正の伝票は起票せず、承認は人が行います。** 出力は課長承認に添える整理と、財務課への連絡文の下書きまで作ります。部品・製品の棚卸を主に想定し、固定資産の棚卸にも同じ形で使えます。',
+            zh: '把盘点的差异行（账面数与实物数的偏差）与出入库履历、上次盘点差异进行比对，逐行返回「在哪里少了、在哪里多了」的原因假设，并附上作为依据的单据号。若同一品号、同一方向（正／负）的差异连续出现，则作为记账的固定形态而非偶发失误来呈现。给出接下来核对什么才能确定的确认步骤，处理方案分别标明属于再调查、账面修正还是报废处理。**不代为起草账面修正单据，审批由人完成。** 输出可一直做到附在科长审批上的整理，以及给财务科的联络文草案。主要面向零部件与成品盘点，固定资产盘点也可用同样的形式。',
+            en: 'Matches each stocktake variance line (book quantity against counted quantity) with the goods movement history and the previous stocktake variances, and returns a cause hypothesis per line for where the stock went or where it came from, with the document numbers that support it. When the same part keeps producing a variance in the same direction, it is presented as a pattern in how movements are booked rather than a one-off mistake. It gives the steps to verify each hypothesis and separates the disposition options into re-investigation, book adjustment and scrapping. It does not raise the adjustment voucher; approval stays with a person. The output goes as far as the packet for the section manager and a draft note to Finance. It is aimed at parts and finished goods, and works the same way for fixed-asset counts.' } },
+
   /* ---- en: 図面・BOM・技術文書 ---- */
   { id: 'en1', cat: 'en', sub: 'spec', st: 2, industries: ['mfg'], tags: ['spec', 'glossary'],
     place: 'qual',
@@ -321,9 +366,9 @@ const SVCS = [
   { id: 'en3', cat: 'en', sub: 'bom', st: 3, industries: ['mfg'], tags: ['drawing', 'search'],
     place: 'qual',
     name: { ja: '図面の類似検索', zh: '图纸相似检索', en: 'Similar Drawing Search' },
-    desc: { ja: '新規引合の図面を入力すると、形状・寸法・材質・加工要件が近い過去の図面を検索し、その製品の工程・原価・不具合履歴を提示します。見積の初期検討や、既存治具・金型の流用可否判断に使います。入力は CAD から出力した図面ファイルに限らず、紙図面のスキャンや現場で撮影した写真からの読み取りも想定しています。',
-            zh: '输入新询价的图纸后，检索形状、尺寸、材质、加工要求相近的历史图纸，并给出该产品的工艺、成本与不良履历。用于报价初期评估以及既有治具、模具能否沿用的判断。输入不限于从CAD导出的图纸文件，也设想支持纸质图纸扫描件与现场拍摄照片的读取。',
-            en: 'Given a drawing from a new inquiry, finds past drawings with similar geometry, dimensions, material and machining requirements and shows their process, cost and defect history. Supports early quoting and jig/mold reuse decisions. Inputs are not limited to CAD drawing files: scanned paper drawings and photos taken on site are also in scope.' } },
+    desc: { ja: '新規引合の図面を入力すると、形状・寸法・材質・加工要件が近い過去の図面を検索し、その製品の工程・原価・不具合履歴を提示します。見積の初期検討や、既存治具・金型の流用可否判断に使います。入力は CAD から出力した図面ファイルに限らず、紙図面のスキャンや現場で撮影した写真、手書きの朱書きがある図面からの読み取りも想定しています。',
+            zh: '输入新询价的图纸后，检索形状、尺寸、材质、加工要求相近的历史图纸，并给出该产品的工艺、成本与不良履历。用于报价初期评估以及既有治具、模具能否沿用的判断。输入不限于从CAD导出的图纸文件，也设想支持纸质图纸扫描件、现场拍摄照片以及带有手写红笔批注的图纸的读取。',
+            en: 'Given a drawing from a new inquiry, finds past drawings with similar geometry, dimensions, material and machining requirements and shows their process, cost and defect history. Supports early quoting and jig/mold reuse decisions. Inputs are not limited to CAD drawing files: scanned paper drawings, photos taken on site and drawings with handwritten red-pen markups are also in scope.' } },
 
   /* ---- gn: 汎用業務支援 ---- */
   { id: 'gn1', cat: 'gn', sub: 'office', st: 1, industries: ['mfg'], tags: ['finance'],
@@ -350,7 +395,7 @@ const SVCS = [
     desc: { ja: '参加者の空き状況と時差・両国の祝日を踏まえて候補日時を提示し、日中 2 言語の招集メールまで作成します。社内の予定は「空き／埋まり」だけを見て中身は参照せず、予定を参照できない社外の参加者（サプライヤー・監査員など）は「先方に確認」として分けて示すため、確認済みの範囲と未確認の範囲がひと目で分かります。定例会議の振替や、来訪・監査に伴う打合せの日程調整にも使えます。',
             zh: '结合参会者的空闲情况、时差与两国节假日提出候选时间，并生成中日双语的会议邀请。内部人员的日程只查看「空闲／占用」而不查看内容；无法查看日程的外部参会者（供应商、审核员等）单独标注为「需向对方确认」，因此已确认与未确认的范围一目了然。也可用于例会改期，以及来访、审核相关会议的日程协调。',
             en: 'Proposes meeting times from participants\' availability, the time difference and both countries\' holidays, and drafts the bilingual invitation. Internal calendars are read as free/busy only, never their contents, and external participants whose calendars cannot be seen (suppliers, auditors) are listed separately as "to confirm with them", so it is clear what has been checked and what has not. Also covers rescheduling regular meetings and arranging meetings around visits and audits.' } },
-  { id: 'gn5', cat: 'gn', sub: 'daily', st: 1, industries: ['mfg'], tags: ['summary'],
+  { id: 'gn5', cat: 'gn', sub: 'daily', st: 1, industries: ['mfg', 'fin', 'it'], tags: ['summary'],
     place: '*',
     name: { ja: '文書要約', zh: '文档摘要', en: 'Document Summarizer' },
     desc: { ja: '長文の報告書・仕様書・通達・メールスレッドを、目的に応じた粒度の要点サマリーに変換します。中国語の長文を日本語 1 枚に要約する、日本語の本社資料を中国語の箇条書きにするなど、言語をまたいだ要約に対応します。',
@@ -426,6 +471,14 @@ const SVCS = [
     desc: { ja: '社内で作成した教育・OJT 資料や作業標準書を研修ベンダに引き継ぎ、研修プログラム（回数・到達目標・確認テスト）へ組み立てて中国語での実施を代行してもらいます。受講状況・テスト結果・修了を受け取り、研修前後の不良率や作業時間で効果を測定して本社へ報告できる形にまとめます。',
             zh: '将公司内部编制的培训・OJT 资料与作业标准书交接给培训服务商，组建为培训项目（次数、达成目标、确认测试）并由其以中文代为实施。接收出勤、测试成绩与结业情况，用培训前后的不良率与作业时间衡量效果，整理成可向总部汇报的形式。',
             en: 'Hands your in-house training and OJT materials and work standards to a training vendor, who builds them into a program (sessions, learning goals, quizzes) and delivers it in Chinese on your behalf. Receives attendance, test scores and completion, measures impact through defect rate and cycle time before and after, and packages the result for headquarters.' } },
+  /* PT-09: 履歴書のレビュー（設計書 docs/handoff/2026-09-23-resume-review.md §5-1）。PT-05 の前段で、当社が履歴書を受け取る経路を扱う。
+     面接後の記録整理（有名ユースケース③）は別採番せず mode=debrief として本サービスに含める（同 §2-2）。 */
+  { id: 'pt9', cat: 'pt', sub: 'service', st: 3, industries: ['mfg'], tags: ['partner_recruit', 'hr'], added: '2026-09-23',
+    place: 'ppl',
+    name: { ja: '履歴書のレビュー（ポスト照合・書類の漏れ・面接で確かめる項目）', zh: '简历审阅（岗位匹配・材料缺漏・面试需确认的项目）', en: 'Resume Review (Posting Fit, Missing Documents, Interview Checkpoints)' },
+    desc: { ja: '採用エージェント経由や直接応募で届いた履歴書・職務経歴書を、社内でいまオープンになっているポストの必須・歓迎条件と突き合わせ、応募したポスト以外も含めて適合を示します。職歴の期間の重なりや記載の食い違いといった違和感と、採用書類規程に照らした書類の漏れを拾い、エージェントや応募者本人に書面で送る深掘り質問の下書きを作ります。面接で人が確かめるべき項目は役職の段階（作業者・班長・担当と主任・課長）に合わせて洗い出し、面接後は面接官のメモを同じ項目に沿って整理して次の面接官に引き継ぎます。氏名・連絡先・写真と、性別・年齢・婚姻・出身地などの属性は読む前に伏せ、評価に使いません。合否は人が決めます。',
+            zh: '把经招聘代理或直接应聘收到的简历与工作经历书，与公司内部当前开放的各岗位的必备条件与优先条件进行比对，连同应聘者未申请的岗位一并给出匹配情况。找出工作期间重叠、记载前后不一致等违和之处，并对照招聘材料管理规定检查材料缺漏，生成以书面形式发给招聘代理或应聘者本人的深入提问草案。按岗位层级（作业员・班长・担当与主管・科长）列出面试时必须由人确认的项目，面试后再按同一清单整理面试官的记录，交接给下一位面试官。姓名、联系方式、照片以及性别、年龄、婚姻、籍贯等属性在读取前即被遮蔽，不用于评价。录用与否由人决定。',
+            en: 'Takes resumes and career histories received through a recruiting agent or by direct application and matches them against the required and preferred conditions of every posting currently open in the company, including postings the applicant did not apply for. It flags inconsistencies such as overlapping employment periods or conflicting figures, checks the submitted papers against the recruitment documents regulations, and drafts written follow-up questions for the agent or the applicant. It lists what interviewers must confirm in person for each level of role (operator, line leader, specialist and supervisor, manager), and after the interview it organizes the notes taken by interviewers along the same checklist for the next interviewer. Names, contact details and photos, as well as attributes such as gender, age, marital status and place of origin, are hidden before reading and never used for evaluation. The hiring decision stays with people.' } },
 
   /* ---- 金融（碧洋銀行）新規 23 件。設計書 docs/handoff/2026-09-08-finance-catalog.md §2-2・§2-4-1・§3-6・§3-7。
      台本（SCENARIOS）は未投入（PR-4）。start は既存の chat フォールバックで動く（§1-4） ---- */

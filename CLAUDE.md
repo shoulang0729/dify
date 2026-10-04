@@ -5,6 +5,7 @@ Dify Cloud で確定したマスタを、社内・顧客 A・顧客 B… の環�
 （SwingTrainer アプリ本体は別リポ `shoulang0729/Dify.SwingTrainer`。）
 
 作業は **architect → implementer → reviewer** の3エージェント分業で進める（`/feature <お題>`）。
+Cowork（Claude Desktop）でこのリポジトリを触るときは、エージェントではなく **PM の作業台**として扱う（ネット調査 → 画面案 → 台本ドラフトまで。実装はしない）。入口は `COWORK.md`、運用は `docs/handoff/2026-09-21-cowork-workflow.md`、取り込みは `/cowork-intake`。
 このファイルは3エージェント全員が読む。**特に「§2 load-bearing」が本体。**
 
 ---
@@ -143,6 +144,7 @@ npm run portal:test       # portal/ の検証（= npm --prefix portal test）。
 | **architect** | 設計書（`docs/handoff/`）・Issue・S 判定 | アプリコードを書く／設計後に設計書を黙って変える／`.claude/` を触る |
 | **implementer** | feature ブランチで設計通りに実装・verify/regress・PR | `docs/handoff/` を変える／設計判断／main 直 commit |
 | **reviewer** | verify/regress・diff 監査・load-bearing 照合・squash マージ・Pages 確認 | 検証 FAIL のまま承認／PR の主張を信じて diff を見ない／自分で直す |
+| **Cowork（PM の作業台）** | ネット調査・画面案（`docs/artifacts/`＋設計ドラフト）・既存サービスの台本（`scenarios/**`）・`docs/**`・`data/world/**`・手渡しメモ `docs/handoff/cowork/` | git 操作／新サービスの追加（`catalog.js`・`ui.js`。採番は `/usecase`）／`render.js`・`css/**`・`app/events.js`・`tools/**`・`CLAUDE.md`・`.claude/**`・`.github/**`／設計判断の確定／`main` への直接反映 |
 
 ---
 
@@ -154,6 +156,7 @@ npm run portal:test       # portal/ の検証（= npm --prefix portal test）。
 - **`portal/**` とそれ以外はファイル集合が重ならないので並列可**（ただし `CLAUDE.md`・`README.md`・`tools/verify.mjs` を触る PR は常に直列）
 - **リリースは `release/<env>/<YYYYMMDD>` タグ**（同日 2 回目は `-2`）。環境ごとの記録は `dify/CHANGELOG.md`。**顧客ごとにブランチを切らない**（差分は `dify/env/` で吸収）
 - 設計書は機能ごとに `docs/handoff/YYYY-MM-DD-<slug>.md`
+- **Cowork の成果**は `cowork/YYYYMMDD-<slug>` ブランチで push し、クラウドの `/cowork-intake` が `intake/<slug>` に取り込んで PR を出す（ラベルは `run:cloud`）。`cowork/` ブランチから直接 PR を出さない。手渡しメモ（`docs/handoff/cowork/`）の無い `cowork/` ブランチは取り込まない。画面案は architect の設計書を経る
 
 ---
 
@@ -163,7 +166,7 @@ npm run portal:test       # portal/ の検証（= npm --prefix portal test）。
 - **リポジトリ構成 v2（#84）**：4 区分・`data/world`・`dify/env`・リリースモデル。設計書 `docs/handoff/2026-09-07-repo-layout-v2.md`。PR-1（地図・索引・world）済み、PR-2（env＋render）・PR-3（release＋CHANGELOG）進行中
 - **Dify Cloud 実装（#82）**：第 1 弾 KN-01・DC-01 を `dify/apps/` に置き、Mac の Claude Code（`/dify-deploy`）で投入・テスト。結果は `dify/results/`
 - **モック ②ダッシュボード / ③業務フィード**：§2-3 の共通レイヤー上に実装。**直列**（`T` 末尾・`renderMain` ホーム分岐・`PATTERNS`・verify §10・`regress.baseline.json` が重なる）。設計書 `docs/handoff/2026-09-06-patterns-dash-feed.md`。①②③ すべて実装済み（#42：PR-1 #47・デザインパス #51・PR-2 #52）。見え方の改善は Claude Design に引き渡す予定（トークン名は変えず値だけ触る／レイアウトは 2 つ目の `<style>` と `render*`）
-- **顧客版カタログ（製造業・日中2拠点）**：シナリオ粒度で **7 分類 33 サービス**に再編し、A-1（#30）でデータ層を差し替え済み（§2-9）。A-2 パートナー連携 8 件・B-1 デモ遷移テンプレート・B-2 台本は投入済み。2026-09-07 に **DC-08 報告レビュー（提出前チェック／受領後の論点整理）** と **GN-06 頼まれ事・放置業務の追跡** を追加し 8 分類 17 中分類 43 サービス（提供中 12／試行版 23／構想 8）。金融版カタログ（#120、架空の碧洋銀行、業種切替は `.mockbar`）で RS・CV・FA・PO・EG の 5 分類と金融向けサービスが加わり、**GN-07 幹部来訪・出張アテンド段取り**（#132）も追加された結果、現在は **15 分類 35 中分類 82 サービス**（製造 50／金融 30／IT 26、複数業種 12、提供中 12／試行版 29／構想 41。**最新は `docs/service-map.md`（生成物）と `node tools/regress.mjs` の出力が正**）。設計書は `docs/handoff/2026-09-06-*.md`、実現性は `docs/dify/`
+- **顧客版カタログ（製造業・日中2拠点）**：シナリオ粒度で **7 分類 33 サービス**に再編し、A-1（#30）でデータ層を差し替え済み（§2-9）。A-2 パートナー連携 8 件・B-1 デモ遷移テンプレート・B-2 台本は投入済み。2026-09-07 に **DC-08 報告レビュー（提出前チェック／受領後の論点整理）** と **GN-06 頼まれ事・放置業務の追跡** を追加し 8 分類 17 中分類 43 サービス（提供中 12／試行版 23／構想 8）。金融版カタログ（#120、架空の碧洋銀行、業種切替は `.mockbar`）で RS・CV・FA・PO・EG の 5 分類と金融向けサービスが加わり、**GN-07 幹部来訪・出張アテンド段取り**（#132）も追加された。2026-09-21 に #320 で QA-05／KN-12／NM-06／DC-12 と中分類 `qa/safety` が加わり、現在は **15 分類 36 中分類 87 サービス**（製造 55／金融 30／IT 26、複数業種 12、提供中 12／試行版 29／構想 46。**最新は `docs/service-map.md`（生成物）と `node tools/regress.mjs` の出力が正**）。設計書は `docs/handoff/2026-09-06-*.md`、実現性は `docs/dify/`
 - **ユースケース化の段取り**：`/usecase`（`.claude/commands/usecase.md`）。Notion DB「ユースケース候補」の状態 `候補` → `確認中` → `設計中` → `実装中` → `公開済み`。統廃合は 5 軸（分類・タグ・ペルソナ・入出力・出口）の一致数で判定。Notion 原文はコミットしない（§2-10）
 - **リファクタリング P2（#77）**で `catalog.html` を層ごとに分割済み（`css/tokens.css`・`components.css`・`js/data/**`・`js/app.js`・`render.js`・`events.js`）。P3 候補は棚卸し済み（設計書 `docs/handoff/2026-09-11-repo-layout-v3.md` §8-1 L-1・L-2）：**`?v=` キャッシュスタンプは 1 つも存在しないので機械検証の対象が無い**／**`tools/bundle.mjs`（単一ファイル生成）は `top.html` 廃止で目的が消えた**／**`scenarios/` の 1 サービス 1 ファイル化は当面やらない**（閾値：1 ファイル 600 行を超えたら再検討。現状の最大は `mfg/dc.js` 373 行）。構成 v2（#84）は `docs/handoff/2026-09-07-repo-layout-v2.md`
 - **`top.html` の扱い**：バンドル済みで手編集不可。②③ が `catalog.html` に入ったので **削除済み**（`mock/` に存在しない）。トップ `index.html` はデモガイド（#45）
@@ -179,6 +182,7 @@ npm run portal:test       # portal/ の検証（= npm --prefix portal test）。
 | `run:cloud` | クラウド（Claude Code on the web） | 設計・実装・レビュー・デモ・文書。ネットワークを使わない検証すべて |
 | `run:runner` | GitHub ホストランナー（`workflow_dispatch` → `dify-ops.yml`） | KB 投入（`kb_upload.py`）・テスト実行（`run_tests.py`）・疎通確認（`probe`）・下書きの読み取り（`inspect`）・DSL の上書きインポートと公開（`deploy`。KB を持たないアプリに限る。2026-09-10、run #16 で確認）・リフレッシュトークンの自己診断／更新／失効（`token_selftest`／`token_refresh`／`token_revoke`）。Environment `dify-cloud-master` を宣言するが、Required reviewers は外してあるため承認は発生しない（PR #199） |
 | `run:mac` | PM の Mac（**PM の手元でしか動かせないもの**：ブラウザのログイン済みセッション／ローカル docker） | KB 付きアプリの KB 紐づけと公開（`dataset_ids` の CI 側解決＝#209 が未実装のため `op: deploy` の歯止めで止まる）・DSL の新規作成（未実証。run #16 の 8 本もすべて既存アプリへの上書きだった）・API キー発行・DSL エクスポート・モデル設定の確認。**DSL の上書きインポートと、KB を持たないアプリの公開は `run:runner` に移った**（2026-09-10、run #16、成功 8／失敗 0） |
+| （ラベル無し。文書上は `run:cowork`） | PM の Mac の Cowork（ローカル clone をアタッチ） | ネット調査（クラウドの Claude Code は外部サイトに出られないため、調査はここだけ）・画面案（`docs/artifacts/`）・既存サービスの台本・`docs/**`・`data/world/**`。成果は手渡しメモ＋`cowork/` ブランチで `run:cloud` へ渡す。git 操作・実装・実機操作はしない |
 
 - 判定基準は `docs/handoff/2026-09-08-execution-split-and-runner.md` §1-1 の操作表（O1〜O10）
 - **`run:*` は 1 つだけ。2 つ付くのは Issue を分割する合図**

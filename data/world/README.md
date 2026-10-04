@@ -23,20 +23,23 @@ IT（在中日系 SIer）の第 3 世界は `docs/handoff/2026-09-11-it-industry
 |---|---|
 | `company.md` | 社名（ja/zh/en）・現地法人・拠点・事業内容 |
 | `org.csv` | 部署（`SCENARIOS[].persona.role` から抽出） |
-| `people.csv` | 人物 20 名（`SCENARIOS[].persona` ＋ `FEED.persona`）。主務 `title_*` に加え兼務 `alt_title_ja/zh/en`（`;` 区切り、3 列とも同じ順序）を持つ（Issue #153 PR-3 で追加） |
+| `people.csv` | 人物 21 名（`SCENARIOS[].persona` ＋ `FEED.persona`）。主務 `title_*` に加え兼務 `alt_title_ja/zh/en`（`;` 区切り、3 列とも同じ順序）を持つ（Issue #153 PR-3 で追加） |
 | `products.csv` | 品番（台本の `SK-…`／`ASSY-…` など） |
 | `equipment.csv` | 設備・金型・治具（`PX-200`・`D-118` など） |
-| `partners.csv` | 取引先記号（`K 社` など。**社名は付けない**）とパートナー連携 6 サービスの役割名、および GN-07（幹部来訪・出張アテンド）が使う旅行会社記号 `R 社` |
+| `partners.csv` | 取引先記号（`K 社` など。**社名は付けない**）とパートナー連携 6 サービスの役割名、および GN-07（幹部来訪・出張アテンド）が使う旅行会社記号 `R 社`。PT-09 の応募者の職歴に出る `P 社`・`Q 社`・`Y 社`（`kind: other`。取引関係なし） |
 | `kpi.csv` | 不良率・稼働率・生産数など（基準値。改善事例など別文脈の値は note で区別） |
 | `calendar.md` | 会計年度・文書番号の体系・世界の「今日」 |
-| `documents.csv` | 規程・マニュアル・社内システムのレコード ID の台帳（`kind`＝`rule`/`record_id`。発番されない ID。Issue #153 PR-2 で新設） |
-| `records.csv` | 品質・受注出荷の案件台帳 19 件（不具合・クレーム・変更要求・技術報告・引合・受注・出荷/通関。`docs/handoff/2026-09-12-portal-industry-rev4.md` §6-2 で新設） |
+| `documents.csv` | 規程・マニュアル・社内システムのレコード ID の台帳（`kind`＝`rule`/`record_id`。発番されない ID。Issue #153 PR-2 で新設）（KN-11 で作業標準書 1 件を追加）（PT-09 で採用書類規程 `RULE-11` を追加） |
+| `records.csv` | 品質・受注出荷の案件台帳 39 件（不具合・クレーム・変更要求・技術報告・引合・受注・出荷/通関・ヒヤリハット・巡回・修理・棚卸・購買申請。`docs/handoff/2026-09-12-portal-industry-rev4.md` §6-2 で新設。2026-09-24 に深穴ドリルの 3 件と初品の寸法ばらつき 1 件を追加し、`TR-2024-007`・`NC-2025-0912`・`8D-25-0912` の件名を訂正＝`docs/handoff/2026-09-24-script-kb-consistency.md` §2） |
+| `record_terms.csv` | 記録番号ごとの「件名の固定語」（ja/zh。`;` 区切り）。`tools/check-world.mjs` W10 が、台本・ポータル・KB・テストで番号の近くに別の番号の語だけが出ていないかを見るのに使う（`docs/handoff/2026-09-24-script-kb-consistency.md` §2-7）。全件ではなく取り違えやすい番号だけを載せる |
 | `partner_contacts.csv` | 取引先（顧客・仕入先・物流事業者）側の担当者 6 名（青嶺精工の社員ではない。同設計書 §6-3 で新設） |
 | `hotels.csv` | 会社契約ホテル（GN-07。3 言語の名称・住所） |
 | `vehicles.csv` | 社用車・旅行会社手配のハイヤー（GN-07） |
 | `airports.csv` | 空港（GN-07。IATA コードは実在。§4-5） |
 | `routes.csv` | 区間所要時間（GN-07。空港・ホテル・拠点を横断で参照） |
 | `contacts.csv` | 緊急連絡先（GN-07。電話番号はすべて架空） |
+| `postings.csv` | オープンポスト（社内の採用枠）3 件。番号 `JP-YY-NNN`。必須・歓迎条件（ja/zh）・給与レンジ・役職の段階（`tier`）・面接官（`people.csv` の id）。PT-09（`docs/handoff/2026-09-23-resume-review.md` §4-1）で新設 |
+| `candidates.csv` | 架空の応募者 2 名。**氏名・連絡先・生年月日・性別・写真の列を持たない**（匿名 ID `C-YY-NNN` だけ）。職歴は記号会社（`P 社`・`Q 社`・`Y 社`）。PT-09（同 §4-2）で新設 |
 
 ## 何がここにあるか（金融／`data/world/fin/`）
 
@@ -44,7 +47,7 @@ IT（在中日系 SIer）の第 3 世界は `docs/handoff/2026-09-11-it-industry
 |---|---|
 | `company.md` | 銀行名（ja/zh/en）・現地法人・拠点（上海本部・大連支店・日本本店）・事業内容 |
 | `org.csv` | 部署 10（営業第一部・営業第二部・審査部・リスク統括部・コンプライアンス部・経営企画部・事務統括部・市場業務部・財務部・システム部） |
-| `people.csv` | 人物 17 名（`native` が ja 7・zh 10）。製造業マスタ 20 名と姓名の重複なし。`alt_title_ja/zh/en` 列は製造業マスタと列構成を揃えるために追加（全行空。Issue #153 PR-3） |
+| `people.csv` | 人物 17 名（`native` が ja 7・zh 10）。製造業マスタ 21 名と姓名の重複なし。`alt_title_ja/zh/en` 列は製造業マスタと列構成を揃えるために追加（全行空。Issue #153 PR-3） |
 | `clients.csv` | 顧客企業の記号 5（甲社〜戊社。**社名は付けない**。製造業の `partners.csv` とは別体系） |
 | `client_contacts.csv` | 顧客企業側の担当者 5 名（碧洋銀行の行員ではない。`docs/handoff/2026-09-12-portal-industry-rev4.md` §6-6 で新設） |
 | `vendors.csv` | 仕入先系の記号（GN-07 が使う旅行会社記号 `己社`・システム保守ベンダ `庚社`・事務代行 `辛社`。`clients.csv`〔顧客専用〕とは別体系。同設計書 §6-7 で 2 行追記） |
@@ -77,8 +80,9 @@ IT（在中日系 SIer）の第 3 世界は `docs/handoff/2026-09-11-it-industry
 |---|---|
 | `company.md` | 社名（ja/zh/en）・現地法人・拠点（上海拠点・日本本社）・事業内容・**顧客と世界の跨ぎ規則** |
 | `org.csv` | 部署 8（ソリューション本部・第一/第二デリバリ部・営業部・PMO室・技術推進部・管理部・日本本社ソリューション事業部） |
-| `people.csv` | 人物 5 名（篠崎悠真・黄思涵・蔡文博・村井拓也・岸本奈津）。ポータルモック（Issue #242）由来の役割に対する **PM 確定値**（design rev3 #256 §14-8'b）。既存 37 名（mfg 20・fin 17）と姓名の重複なし |
+| `people.csv` | 人物 5 名（篠崎悠真・黄思涵・蔡文博・村井拓也・岸本奈津）。ポータルモック（Issue #242）由来の役割に対する **PM 確定値**（design rev3 #256 §14-8'b）。既存 38 名（mfg 21・fin 17）と姓名の重複なし |
 | `clients.csv` | 顧客企業 4（うち青嶺精工・碧洋銀行は `ref_world` 列で他世界を参照。社名の 3 言語表記は二重に持たない。残る α 社・β 社は IT 固有の仮置き） |
+| `client_contacts.csv` | 顧客企業側の担当者 6 名（翠雲システムズの社員ではない。所属先は `clients.csv` の青嶺精工・碧洋銀行だが、**社名と拠点名だけを跨いで参照し、人物は IT 世界の固有名**。`docs/handoff/2026-09-21-rev4-residuals-r1-r4.md` §2-1 で新設） |
 | `vendors.csv` | 協力会社 4（オフショア開発 γ 社・技術者派遣 δ 社・クラウド/ライセンス再販 ε 社・AI 製品ベンダ ζ 社）。**記号はギリシャ文字**（`mfg` のラテン大文字・`fin` の十干のどちらとも別体系。設計書 §3-4-2） |
 | `kpi.csv` | 要員稼働率・受注率・引合金額・案件粗利率・平均残業時間・年休取得率・納品後不具合密度・AI削減時間（基準値／目標／前月） |
 | `calendar.md` | 会計年度（4/1〜3/31）・月次クローズ・案件マイルストン・世界の「今日」（2026-09-11）・文書番号体系 |
@@ -167,6 +171,12 @@ W1〜W3・W5〜W8 はいずれも「対象データが無く該当なし」で w
 出てこない 4 名：篠崎悠真・黄思涵・蔡文博・村井拓也）も、台本 10 本に 5 名全員をペルソナとして
 登場させたことで解消した（`[it] W9` が warn 0 に）。
 
+**解消済み（R-1・`docs/handoff/2026-09-21-rev4-residuals-r1-r4.md`）**：ポータルモックの `PCONTACT.it` / `PHIST.it`
+が `data/world/{mfg,fin}/people.csv` の人物 6 名（王 磊・佐藤 美咲・劉 洋・森下 隆一・高梨 直人・陳 慧）を
+流用していた跨ぎ違反は、`data/world/it/client_contacts.csv` の 6 名（万 沁・瀬戸 陽平・岑 睿・卞 昊・柴田 律・龐 雯）
+に差し替えて解消した。`check-world.mjs` はポータルのデータ層を走査対象にしていないため、この違反は
+**warn には出ていなかった**（`tools/check-world.mjs` の適用範囲外。`docs/handoff/2026-09-12-portal-industry-rev4.md` §17 R-1）。
+
 ## `tools/check-world.mjs` の読み方
 
 ```
@@ -176,7 +186,7 @@ node tools/check-world.mjs --all      # W6/W7 のような件数が多い検査�
 npm run world                          # = node tools/check-world.mjs
 ```
 
-出力は業種（`mfg`／`fin`／`it`）ごとに W1〜W9 の検査を行い、件数と代表例を出す（詳細は `tools/check-world.mjs`
+出力は業種（`mfg`／`fin`／`it`）ごとに W1〜W10 の検査を行い、件数と代表例を出す（詳細は `tools/check-world.mjs`
 の冒頭コメント）。**CI には入れない**（`npm test` に足さない）。現時点（IT 業の台本 10 本を投入した
 本 PR 後）で製造業側は上の「未統一」表に対応する warn（10 件）、金融側は 1 件、IT 側は 1 件が必ず出る
 （合計 12 件）。
