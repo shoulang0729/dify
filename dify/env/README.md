@@ -57,11 +57,11 @@ set -a; source ~/.config/dify/$DIFY_ENV.env; set +a
 
 ## 環境台帳（この表と `env.yml` は同じ PR で必ず一緒に更新する）
 
-| env | edition | 接続先の種類 | モデルプロバイダ | chat | reasoning | embedding | rerank | 外部到達 | 確認状態 | 確認日 | 根拠 |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| `cloud-master` | cloud | Dify Cloud（PM のワークスペース） | `langgenius/openrouter/openrouter` | `qwen/qwen3.8-max` | `moonshotai/kimi-k3` | （空＝ワークスペース既定） | `langgenius/openrouter/openrouter` / `cohere/rerank-4-pro` | OpenRouter に出られる | **未確認** | — | Issue #82 のコメント／`docs/handoff/2026-09-07-china-models-and-syncback.md` §1-1／`completion_params` は 2026-09-08 追加（`docs/handoff/2026-09-08-thinking-budget-and-streaming.md` §2）。**パラメータの実機確認は未了**。**rerank は 2026-09-09 に案 D で明示（#195 PR-2）。値は E1（`op: inspect` の実測、GitHub Actions run #11）。ルール 4 によりモデル入れ替えで確認状態を未確認に戻す。E2/E3 完了後 PR-3 で確認済＋日付＋根拠に戻す** |
-| `inhouse` | selfhost | 社内セルフホスト（Community 1.15.x 想定） | `langgenius/ollama/ollama` | `${INHOUSE_CHAT_MODEL}` | `${INHOUSE_REASON_MODEL}` | `${INHOUSE_EMBED_MODEL}` | （空＝無効） | 外部 API に出られるか**未確認** | **未確認** | — | PM 談（2026-09-07）「Ollama とかだと思う」 |
-| `customer-a` | selfhost | 顧客 A（中国拠点） | `langgenius/siliconflow/siliconflow` | `Qwen/Qwen3.5-397B-A17B` | `Pro/moonshotai/Kimi-K2.6` | `BAAI/bge-m3` | `BAAI/bge-reranker-v2-m3` | 越境 `deny`（`flags.cross_border`）。国外 API へは出さない前提 | **未確認** | — | DP-01 (a)／`decisions-pending.md` |
+| env | edition | 接続先の種類 | モデルプロバイダ | chat | reasoning | embedding | rerank | vision | 外部到達 | 確認状態 | 確認日 | 根拠 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `cloud-master` | cloud | Dify Cloud（PM のワークスペース） | `langgenius/openrouter/openrouter` | `qwen/qwen3.8-max` | `moonshotai/kimi-k3` | （空＝ワークスペース既定） | `langgenius/openrouter/openrouter` / `cohere/rerank-4-pro` | `langgenius/openrouter/openrouter` / `qwen/qwen3.8-max-vl` | OpenRouter に出られる | **未確認** | — | Issue #82 のコメント／`docs/handoff/2026-09-07-china-models-and-syncback.md` §1-1／`completion_params` は 2026-09-08 追加（`docs/handoff/2026-09-08-thinking-budget-and-streaming.md` §2）。**パラメータの実機確認は未了**。**rerank は 2026-09-09 に案 D で明示（#195 PR-2）。値は E1（`op: inspect` の実測、GitHub Actions run #11）。ルール 4 によりモデル入れ替えで確認状態を未確認に戻す。E2/E3 完了後 PR-3 で確認済＋日付＋根拠に戻す**。`vision` は #330（GN-02 の画像入力経路）で追加。**モデル名は仮置き（PM の OpenRouter 契約での実在は未確認、C-1）** |
+| `inhouse` | selfhost | 社内セルフホスト（Community 1.15.x 想定） | `langgenius/ollama/ollama` | `${INHOUSE_CHAT_MODEL}` | `${INHOUSE_REASON_MODEL}` | `${INHOUSE_EMBED_MODEL}` | （空＝無効） | `${INHOUSE_VISION_MODEL}` | 外部 API に出られるか**未確認** | **未確認** | — | PM 談（2026-09-07）「Ollama とかだと思う」。`vision` は #330 で追加 |
+| `customer-a` | selfhost | 顧客 A（中国拠点） | `langgenius/siliconflow/siliconflow` | `Qwen/Qwen3.5-397B-A17B` | `Pro/moonshotai/Kimi-K2.6` | `BAAI/bge-m3` | `BAAI/bge-reranker-v2-m3` | `${CUSTOMER_A_VISION_MODEL}`（siliconflow） | 越境 `deny`（`flags.cross_border`）。国外 API へは出さない前提 | **未確認** | — | DP-01 (a)／`decisions-pending.md`。`vision` は #330 で追加 |
 
 **台帳の書き方・更新ルール**
 
@@ -80,6 +80,7 @@ set -a; source ~/.config/dify/$DIFY_ENV.env; set +a
 | `reasoning` | 分類・抽出・判定（question-classifier / parameter-extractor / single_retrieval_config の判定モデル） |
 | `embedding` | KB の索引作成（`kb_upload.py` が dataset 作成時に使う） |
 | `rerank` | 検索結果の再ランク（空なら `reranking_enable: false`。＝ マスタで有効にしていても env が空なら無効化される） |
+| `vision` | 画像の書き起こし（`vision.enabled: true` の `llm` ノード。#330 で GN-02 の `invoice_image` 用に追加） |
 
 **既定プロバイダは cloud-master が OpenRouter**（`langgenius/openrouter/openrouter`）。`chat` = `qwen/qwen3.8-max`、`reasoning` = `moonshotai/kimi-k3`。アプリ単位で振り替えるための追加 role **`kimi`**（kimi-k3）と **`qwen_small`**（`qwen/qwen3.6-35b-a3b`）を全 env に定義してある（**`overrides` の role がその env に無いと、警告も出ずにマスタの既定モデルのまま動く**ので、role は必ず全 env に置く）。`overrides` が効くのは `llm` ノードだけ。
 
@@ -100,6 +101,7 @@ OpenRouter プラグインは **customizable-model 対応**なので、一覧に
 | `reasoning` | 0.2 | 4096 | `minimal` | `true` | **未確認** |
 | `kimi` | 0.2 | 8192 | `low` | `true` | **未確認** |
 | `qwen_small` | 0.2 | 4096 | `minimal` | `true` | **未確認** |
+| `vision` | 0.2 | 4096 | `minimal` | `true` | **未確認**（#330） |
 
 **なぜ入れたか**：`qwen/qwen3.8-max` が思考込みで 200〜340 秒かかり Service API が 504 になった
 （DI-010）、回答本文に `<think>…</think>` が混入した（DI-011）。`reasoning_effort` で思考量を、

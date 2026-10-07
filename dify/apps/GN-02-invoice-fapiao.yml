@@ -41,7 +41,7 @@ workflow:
       allowed_file_upload_methods:
       - local_file
       - remote_url
-      enabled: false
+      enabled: true
       fileUploadConfig:
         audio_file_size_limit: 50
         batch_count_limit: 5
@@ -50,7 +50,7 @@ workflow:
         video_file_size_limit: 100
         workflow_file_upload_limit: 10
       image:
-        enabled: false
+        enabled: true
         number_limits: 3
         transfer_methods:
         - local_file
@@ -89,8 +89,20 @@ workflow:
         isInLoop: false
         sourceType: document-extractor
         targetType: llm
-      id: 1757280000002-source-1757280000003-target
+      id: 1757280000002-source-1757280000006-target
       source: '1757280000002'
+      sourceHandle: source
+      target: '1757280000006'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: llm
+      id: 1757280000006-source-1757280000003-target
+      source: '1757280000006'
       sourceHandle: source
       target: '1757280000003'
       targetHandle: target
@@ -150,6 +162,20 @@ workflow:
           required: false
           type: file
           variable: invoice_file
+        - allowed_file_extensions: []
+          allowed_file_types:
+          - image
+          allowed_file_upload_methods:
+          - local_file
+          - remote_url
+          default: ''
+          hint: ''
+          label: 発票の写真・スキャン画像（撮影・スキャンしたものを 1 枚）
+          options: []
+          placeholder: ''
+          required: false
+          type: file
+          variable: invoice_image
       height: 114
       id: '1757280000001'
       position:
@@ -179,6 +205,60 @@ workflow:
       positionAbsolute:
         x: 382
         y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: '発票の写真・スキャン画像を、書いてある文字のまま書き起こす。項目の解釈・計算はしない（それは次の LLM の仕事）。画像が無いときは（画像なし）とだけ返す'
+        model:
+          completion_params:
+            exclude_reasoning_tokens: true
+            max_tokens: 4096
+            reasoning_effort: minimal
+            temperature: 0.2
+          mode: chat
+          name: qwen/qwen3.8-max-vl
+          provider: langgenius/openrouter/openrouter
+        prompt_template:
+        - id: 3c4d5e6f-9fa5-4041-ad3b-4e5f6a7b8c03
+          role: system
+          text: |-
+            あなたは画像に書かれている文字を、書いてあるとおりに書き起こす担当です。増値税発票（fapiao）の写真・スキャン画像を受け取ります。
+            守ること：
+            1. 画像に**書かれている文字だけ**を書き起こす。読めない文字は ？ に置き換え、その行の末尾に （判読不能） と書く。
+            2. 自分で計算・換算・検算・補完をしない。書かれていない項目を推測して足さない。
+            3. 項目の解釈（どれが税額か等）をしない。並んでいる順にそのまま書く。
+            4. 画像が渡されていない場合は、（画像なし） とだけ出力してほかに何も書かない。
+            5. 説明文・前置きの挨拶・Markdown の装飾を書かない。書き起こしたテキストだけを出力する。
+            回答言語＝画像に書かれている言語（発票は中国語で書かれているので中国語のまま書き起こす）。翻訳しない。
+        - id: 3c4d5e6f-9fa5-4041-ad3b-4e5f6a7b8c04
+          role: user
+          text: |-
+            この画像に書かれている内容を、書いてあるとおりに書き起こしてください。
+        selected: false
+        title: LLM（発票画像の読み取り）
+        type: llm
+        variables: []
+        vision:
+          configs:
+            detail: high
+            variable_selector:
+            - '1757280000001'
+            - invoice_image
+          enabled: true
+      height: 98
+      id: '1757280000006'
+      position:
+        x: 533
+        y: 430
+      positionAbsolute:
+        x: 533
+        y: 430
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -226,6 +306,8 @@ workflow:
             {{#1757280000001.invoice_text#}}
             アップロードされたファイルからの抽出内容（あれば）：
             {{#1757280000002.text#}}
+            アップロードされた画像からの書き起こし（あれば。（画像なし）のときは無視する）：
+            {{#1757280000006.text#}}
 
             上記から JSON を作成してください。
         selected: false
