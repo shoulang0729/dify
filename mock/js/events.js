@@ -16,6 +16,7 @@ document.addEventListener('click', (e) => {
     state.selCat = null; state.selSub = null; state.selSvc = null;
     state.lastCat = firstCat;
     state.view = 'list'; state.query = ''; state.log = []; state.favOnly = false;
+    qaResetConversation();
     renderAll();
   }
   else if (act === 'pattern') { state.pattern = arg; renderAll(); }
@@ -38,7 +39,7 @@ document.addEventListener('click', (e) => {
     state.favOnly = false;
     renderAll();
   }
-  else if (act === 'svc') { state.selSvc = arg; state.view = 'detail'; state.log = []; upClear(); renderMain(); }
+  else if (act === 'svc') { state.selSvc = arg; state.view = 'detail'; state.log = []; qaResetConversation(); renderMain(); }
   else if (act === 'fav') {
     toggleFav(arg);
     savePrefs();
@@ -72,35 +73,118 @@ document.addEventListener('click', (e) => {
   else if (act === 'back') { state.view = 'list'; renderAll(); }
   else if (act === 'backdetail') { state.view = 'detail'; renderMain(); }
   else if (act === 'start') {
-    if (scnOf(state.selSvc)) { state.log = []; state.view = 'demo'; }
+    state.log = []; qaResetConversation();
+    if (scnOf(state.selSvc)) { state.view = 'demo'; }
     else { state.view = 'chat'; }
     renderMain();
   }
   else if (act === 'run') {
-    if (demoPending) return; // 返答待ちの間は二重消費を無視（Issue #39）
-    if (state.log.length === 0 && consume(scriptLang(state.lang))) { demoPending = true; renderMain(); }
+    if (demoPending || upReading) return;
+    if (isQaChat()) return;
+    if (isGn2Chat()) {
+      const lang = scriptLang(state.lang);
+      if (!gn2RouteStage('ap') && gn2SubmitRequest(scnOf('gn2').script[lang][0].q, lang)) {
+        chatAcceptAttachments(`log:${state.log.length - 1}`); renderMain();
+      }
+      return;
+    }
+    if (state.log.length === 0 && consume(scriptLang(state.lang))) {
+      chatAcceptAttachments(`log:${state.log.length - 1}`);
+      demoPending = true; demoPendingFreeform = false; renderMain();
+    }
   }
   else if (act === 'chip') {
     if (demoPending) return; // 返答待ちの間は二重消費を無視（Issue #39）
-    if (consume(arg)) { demoPending = true; renderMain(); }
+    if (isGn2Chat()) {
+      const scn = scnOf('gn2'), lang = scriptLang(arg), step = Number(btn.dataset.gn2Step);
+      const turns = btn.dataset.gn2Route === 'ar' ? scn.collectionSchedule.script[lang] : scn.script[lang];
+      if (turns[step - 1]) { chatSetDraft(turns[step - 1].q); gn2RefreshAttachments(); }
+      return;
+    }
+    if (isQaChat()) {
+      const scn = scnOf('qa1'), lang = scriptLang(arg);
+      const step = Number(btn.dataset.qaRecordStep);
+      const q = step === 2 || step === 3 ? scn.script[lang][step - 1].q : (scn.qaPrompts[lang][btn.dataset.qaPrompt] || '');
+      if (q) chatSetDraft(q);
+      return;
+    }
+    const scn = scnOf(state.selSvc), turn = scn && nextTurn(scn, scriptLang(arg));
+    if (turn) chatSetDraft(turn.q);
   }
-  else if (act === 'restart') { state.log = []; demoPending = false; demoPendingFreeform = false; renderMain(); }
+  else if (act === 'restart') { state.log = []; qaResetConversation(); renderMain(); }
   else if (act === 'send') { sendChat(); }
 });
 
 /* ---------- アップロード部品（data-act とは別属性。§10-3。設計書 2026-09-16-showcase-demo.md） ---------- */
 document.addEventListener('click', (e) => {
   const upEl = e.target.closest('[data-up]');
-  if (!upEl) return;
+  if (!upEl || upEl.disabled) return;
   const kindU = upEl.dataset.up;
+  if (demoPending && ['qa-attach', 'attach', 'pick', 'sample', 'clear'].includes(kindU)) return;
   const panel = upEl.closest('.panel');
   const fileInput = panel && panel.querySelector('.upinput');
-  if (kindU === 'pick') { if (fileInput) fileInput.click(); }
+  if (kindU === 'qa-attach' || kindU === 'attach') { chatSetAttachmentVisible(true); renderMain(); }
+  else if (kindU === 'pick') { if (fileInput) fileInput.click(); }
   else if (kindU === 'sample') {
     const scn = scnOf(state.selSvc); if (!scn) return;
     upUseSample(scn, scriptLang(state.lang));
     renderMain();
   } else if (kindU === 'clear') { upClear(); renderMain(); }
+  else if (kindU === 'preview') { upPreviewOpen(Number(upEl.dataset.upIndex), upEl, upEl.dataset.upSource, upEl.dataset.upKey || null); }
+  else if (kindU === 'preview-close') { upPreviewClose(); }
+  else if (kindU === 'preview-prev') { upPreviewMove(-1); }
+  else if (kindU === 'preview-next') { upPreviewMove(1); }
+  else if (kindU === 'preview-zoom-in') { upPreviewZoom(1); }
+  else if (kindU === 'preview-zoom-out') { upPreviewZoom(-1); }
+  else if (kindU === 'preview-fit') { upPreviewFit(); }
+});
+
+/* dialog は body に一度作るため、非バブリングイベントは capture で受ける。 */
+document.addEventListener('cancel', (e) => {
+  if (e.target.id !== 'up-preview' && e.target.id !== 'nm-summary') return;
+  e.preventDefault();
+  if (e.target.id === 'up-preview') upPreviewClose();
+  else nmSummaryClose();
+}, true);
+document.addEventListener('close', (e) => {
+  if (e.target.id === 'up-preview' && !e.target.open) upPreviewFinish();
+  if (e.target.id === 'nm-summary' && !e.target.open) nmSummaryFinish();
+}, true);
+document.addEventListener('load', (e) => {
+  if (!upPreview.open || !e.target.classList || !e.target.classList.contains('up-preview-image')) return;
+  upPreview.status = 'ready';
+  upPreviewRenderSize(true);
+  upPreviewRenderLabels();
+}, true);
+document.addEventListener('error', (e) => {
+  if (!upPreview.open || !e.target.classList || !e.target.classList.contains('up-preview-image')) return;
+  upPreview.status = 'error';
+  e.target.hidden = true;
+  document.querySelector('#up-preview .up-preview-error').hidden = false;
+  upPreviewRenderLabels();
+}, true);
+document.addEventListener('keydown', (e) => {
+  if ((!upPreview.open && !nmSummary.open) || e.key !== 'Tab') return;
+  const dialog = document.getElementById(upPreview.open ? 'up-preview' : 'nm-summary');
+  const controls = Array.from(dialog.querySelectorAll('button:not(:disabled), [tabindex="0"]'))
+    .filter(el => !el.closest('[hidden]'));
+  const first = controls[0], last = controls[controls.length - 1];
+  if ((e.shiftKey && document.activeElement === first) || (!e.shiftKey && document.activeElement === last) || !dialog.contains(document.activeElement)) {
+    e.preventDefault();
+    (e.shiftKey ? last : first).focus({ preventScroll: true });
+  }
+});
+document.addEventListener('click', (e) => {
+  const button = e.target.closest('[data-nm-summary]');
+  if (!button || button.disabled) return;
+  if (button.dataset.nmSummary === 'open') nmSummaryOpen(button);
+  else if (button.dataset.nmSummary === 'close') nmSummaryClose();
+});
+let upPreviewResizeFrame = 0;
+window.addEventListener('resize', () => {
+  if (!upPreview.open) return;
+  cancelAnimationFrame(upPreviewResizeFrame);
+  upPreviewResizeFrame = requestAnimationFrame(() => upPreviewFit());
 });
 
 /** ドロップゾーンを Enter / Space でも開けるようにする（role="button" tabindex="0"） */
@@ -109,6 +193,7 @@ document.addEventListener('keydown', (e) => {
   const zone = e.target.closest && e.target.closest('.upzone');
   if (!zone) return;
   e.preventDefault();
+  if (demoPending) return;
   const panel = zone.closest('.panel');
   const fileInput = panel && panel.querySelector('.upinput');
   if (fileInput) fileInput.click();
@@ -116,15 +201,17 @@ document.addEventListener('keydown', (e) => {
 
 document.addEventListener('change', (e) => {
   const upInput = e.target.closest('[data-up="input"]');
-  if (!upInput) return;
+  if (!upInput || demoPending) return;
   upAddFiles(upInput.files, () => renderMain());
   upInput.value = '';
+  renderMain();
 });
 
 document.addEventListener('dragover', (e) => {
   const zone = e.target.closest && e.target.closest('.upzone');
   if (!zone) return;
   e.preventDefault();
+  if (demoPending) return;
   zone.classList.add('dragover');
 });
 document.addEventListener('dragleave', (e) => {
@@ -137,8 +224,25 @@ document.addEventListener('drop', (e) => {
   if (!zone) return;
   e.preventDefault();
   zone.classList.remove('dragover');
+  if (demoPending) return;
   const files = e.dataTransfer && e.dataTransfer.files;
-  if (files && files.length) upAddFiles(files, () => renderMain());
+  if (files && files.length) { upAddFiles(files, () => renderMain()); renderMain(); }
+});
+
+document.addEventListener('input', (e) => {
+  if (e.target.id !== 'chat-input') return;
+  chatCaptureDraft(); chatAutosize(e.target);
+  if (isGn2Chat()) gn2RefreshAttachments();
+});
+for (const event of ['select', 'keyup', 'click']) document.addEventListener(event, (e) => {
+  if (e.target.id === 'chat-input') chatCaptureDraft();
+});
+document.addEventListener('selectionchange', () => {
+  if (document.activeElement && document.activeElement.id === 'chat-input') chatCaptureDraft();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.target.id !== 'chat-input' || e.key !== 'Enter' || e.shiftKey || e.isComposing || e.keyCode === 229) return;
+  e.preventDefault(); sendChat();
 });
 
 document.getElementById('lang-select').addEventListener('change', (e) => {
@@ -154,4 +258,10 @@ document.getElementById('theme-btn').addEventListener('click', () => {
 /* ================= 起動 ================= */
 loadPrefs();
 applyPrefs();
+if (new URLSearchParams(window.location.search).get('demo') === 'gn2-collection') {
+  state.industry = 'mfg'; state.selSvc = 'gn2'; state.view = 'demo'; state.log = [];
+  qaResetConversation();
+  const q = scnOf('gn2').collectionSchedule.script[scriptLang(state.lang)][0].q;
+  chatCompose.text = q; chatCompose.selectionStart = q.length; chatCompose.selectionEnd = q.length;
+}
 renderAll();

@@ -1,0 +1,81 @@
+{
+  "scope": "GN-02 fictional scripted demo sources and collection outputs",
+  "date": "2026-10-13",
+  "files": [
+    {
+      "path": "mock/assets/demo/gn2-collection-draft.xlsx",
+      "bytes": 4852,
+      "sha256": "1b78756d5020a0bc987c46deb3bb34388a03f7206d8e13b50b9772ea091d87e0"
+    },
+    {
+      "path": "mock/assets/demo/gn2-collection-invoices.xlsx",
+      "bytes": 4867,
+      "sha256": "5180e0763ed3005805b6cc7b1bc7be448547553e2944bbab9367d1a1ac8d7571"
+    },
+    {
+      "path": "mock/assets/demo/gn2-collection-reviewed.xlsx",
+      "bytes": 4736,
+      "sha256": "e60ddad3e1828181cd5b8f44dbd12888221b996e75f209a8948f9626db5d3dab"
+    },
+    {
+      "path": "mock/assets/demo/gn2-collection-template.xlsx",
+      "bytes": 4601,
+      "sha256": "efc3577566aa1ad301df78fabdc220f943a24ad8daea9c38a93df9ba2c5e0679"
+    },
+    {
+      "path": "mock/assets/demo/gn2-ap-invoice-preview.png",
+      "bytes": 118581,
+      "sha256": "b3586f26ca05562d37576b6a5d56e80bf5c5b109db581fb36071e67f1ccfa824"
+    },
+    {
+      "path": "mock/assets/demo/gn2-ap-invoices.pdf",
+      "bytes": 87492,
+      "sha256": "0ee41ddd3e1190aa23f4410113db2939470428eeda3e1d2a764345f3a699910f"
+    },
+    {
+      "path": "mock/assets/demo/gn2-ap-orders.xlsx",
+      "bytes": 5757,
+      "sha256": "3a6bb367c2409331d4cb0cf1dd2193a7b2347e869243960d4bee21737e6f0d89"
+    },
+    {
+      "path": "mock/assets/demo/gn2-ap-receipts.xlsx",
+      "bytes": 5905,
+      "sha256": "48bd9f00dde510f25acce8c87b80c05a1731a649e6a58fb29e22ede2f5746cd6"
+    },
+    {
+      "path": "mock/gn2-collection-slide.html",
+      "bytes": 18377,
+      "sha256": "da5b4a01fbcc4c01f4ed2dce9ac0c69ff191faf568949dd56a53c2a1c36a6907"
+    }
+  ],
+  "ap": {
+    "excerptItems": 8,
+    "excerptRmbTotal": 383100,
+    "excerptMatched": 4,
+    "excerptMismatched": 4,
+    "scriptedFullInvoices": 40,
+    "scriptedFullMatched": 36,
+    "scriptedFullMismatched": 4,
+    "source": "mock/js/data/scenarios/mfg/gn.js",
+    "pdfPages": 8,
+    "previewFromPdfPage": 3
+  },
+  "collection": {
+    "rawRows": 8,
+    "duplicateExcluded": 1,
+    "cancelledExcluded": 1,
+    "validInvoices": 6,
+    "draftRows": 6,
+    "reviewedRows": 4,
+    "rmbTotal": 355000
+  },
+  "verification": {
+    "independentAssetAndApplicationReview": "pass",
+    "xlsxZipCellsFormulasCaches": "pass",
+    "pdfAllPagesAndPreviewPixels": "pass",
+    "browserSamplesSendDownloadAndPreviousVersions": "pass",
+    "npmCi": "pass",
+    "indexCheck": "pass",
+    "nativeOfficeApplicationsTested": false
+  }
+}

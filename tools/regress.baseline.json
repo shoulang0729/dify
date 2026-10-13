@@ -371,7 +371,7 @@
       "id": "kn1",
       "cat": "kn",
       "sub": "tech",
-      "st": 1,
+      "st": 2,
       "industries": [
         "mfg"
       ],
@@ -384,7 +384,7 @@
       "id": "kn2",
       "cat": "kn",
       "sub": "tech",
-      "st": 1,
+      "st": 2,
       "industries": [
         "mfg"
       ],
@@ -398,7 +398,7 @@
       "id": "kn3",
       "cat": "kn",
       "sub": "rule",
-      "st": 1,
+      "st": 2,
       "industries": [
         "mfg"
       ],
@@ -476,7 +476,7 @@
       "id": "qa1",
       "cat": "qa",
       "sub": "defect",
-      "st": 2,
+      "st": 1,
       "industries": [
         "mfg"
       ],
@@ -545,7 +545,7 @@
       "id": "dc1",
       "cat": "dc",
       "sub": "report",
-      "st": 1,
+      "st": 2,
       "industries": [
         "mfg"
       ],
@@ -558,7 +558,7 @@
       "id": "dc2",
       "cat": "dc",
       "sub": "report",
-      "st": 1,
+      "st": 2,
       "industries": [
         "mfg",
         "fin",
@@ -588,7 +588,7 @@
       "id": "dc4",
       "cat": "dc",
       "sub": "site",
-      "st": 1,
+      "st": 2,
       "industries": [
         "mfg"
       ],
@@ -676,7 +676,7 @@
       "id": "lg1",
       "cat": "lg",
       "sub": "trans",
-      "st": 1,
+      "st": 2,
       "industries": [
         "mfg"
       ],
@@ -717,7 +717,7 @@
       "id": "lg4",
       "cat": "lg",
       "sub": "align",
-      "st": 1,
+      "st": 2,
       "industries": [
         "mfg"
       ],
@@ -757,7 +757,7 @@
       "id": "nm3",
       "cat": "nm",
       "sub": "actual",
-      "st": 1,
+      "st": 2,
       "industries": [
         "mfg"
       ],
@@ -785,7 +785,7 @@
       "id": "nm5",
       "cat": "nm",
       "sub": "actual",
-      "st": 2,
+      "st": 1,
       "industries": [
         "mfg"
       ],
@@ -854,7 +854,7 @@
       "id": "gn1",
       "cat": "gn",
       "sub": "office",
-      "st": 1,
+      "st": 2,
       "industries": [
         "mfg"
       ],
@@ -867,7 +867,7 @@
       "id": "gn2",
       "cat": "gn",
       "sub": "office",
-      "st": 1,
+      "st": 2,
       "industries": [
         "mfg"
       ],
@@ -907,7 +907,7 @@
       "id": "gn5",
       "cat": "gn",
       "sub": "daily",
-      "st": 1,
+      "st": 2,
       "industries": [
         "mfg",
         "fin",
@@ -1761,6 +1761,8 @@
     "feedRecent",
     "feedRoutine",
     "feedTitle",
+    "gn2CollectionSteps",
+    "gn2DownloadExcel",
     "home",
     "indLabel",
     "inputPanel",
@@ -1778,9 +1780,39 @@
     "nativeLabel",
     "nativeZh",
     "newBadge",
+    "nmSummaryChecks",
+    "nmSummaryCorrelation",
+    "nmSummaryCorrelationNote",
+    "nmSummaryDay",
+    "nmSummaryDefectRate",
+    "nmSummaryDefects",
+    "nmSummaryDents",
+    "nmSummaryLine",
+    "nmSummaryLines",
+    "nmSummaryNight",
+    "nmSummaryNumbers",
+    "nmSummaryOpen",
+    "nmSummaryOptions",
+    "nmSummaryOther",
+    "nmSummaryOvertime",
+    "nmSummaryParticles",
+    "nmSummaryPeriod",
+    "nmSummarySampleNote",
+    "nmSummaryShifts",
+    "nmSummaryThinCoat",
+    "nmSummaryTitle",
     "noResults",
     "overview",
     "personaLabel",
+    "qaDemoNote",
+    "qaDraftAfter",
+    "qaDraftBefore",
+    "qaDraftBilingual",
+    "qaDraftChanges",
+    "qaDraftConfirmed",
+    "qaDraftInitial",
+    "qaDraftUnconfirmed",
+    "qaPhotoAdd",
     "recoWhy",
     "restart",
     "resultPanel",
@@ -1804,10 +1836,23 @@
     "todoEyebrow",
     "todoTitle",
     "tplBadge",
+    "upAttachOpen",
     "upClear",
     "upDrop",
     "upNote",
+    "upPreviewClose",
+    "upPreviewError",
+    "upPreviewFit",
+    "upPreviewNext",
+    "upPreviewOpen",
+    "upPreviewPosition",
+    "upPreviewPrev",
+    "upPreviewTitle",
+    "upPreviewZoom",
+    "upPreviewZoomIn",
+    "upPreviewZoomOut",
     "upSample",
+    "upSentFiles",
     "usesUnit"
   ],
   "counts": {
@@ -1815,7 +1860,7 @@
     "subs": 36,
     "svcs": 88,
     "tags": 67,
-    "ui": 94,
+    "ui": 139,
     "byIndustry": {
       "mfg": {
         "svcs": 56,
