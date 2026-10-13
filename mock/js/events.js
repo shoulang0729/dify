@@ -76,6 +76,7 @@ document.addEventListener('click', (e) => {
     state.log = []; qaResetConversation();
     if (scnOf(state.selSvc)) { state.view = 'demo'; }
     else { state.view = 'chat'; }
+    if (isGn2Chat()) gn2PrepareCollectionDemo();
     renderMain();
   }
   else if (act === 'run') {
