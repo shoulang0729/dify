@@ -653,8 +653,8 @@ function upItemHTML(f, index, source = 'pending', messageKey = '') {
   if (f.kind === 'audio') {
     return `<div class="upitem"><span class="file">🔊 ${esc(f.name)}</span><audio class="upaudio" controls src="${esc(f.src)}"></audio></div>`;
   }
-  const gn2 = SCENARIOS.mfg.gn2 || {};
-  const downloadable = [gn2.collectionSchedule, gn2.apSamples].filter(Boolean).some(samples => samples.input.ja.assets.some(asset => asset.file === f.src && asset.download === f.download && asset.sampleId === f.sampleId)) && /\.xlsx$/i.test(f.src);
+  const collection = (SCENARIOS.mfg.gn2 || {}).collectionSchedule;
+  const downloadable = collection && collection.input.ja.assets.some(asset => asset.file === f.src && asset.download === f.download && asset.sampleId === f.sampleId);
   if (downloadable) return `<div class="upitem"><a class="file" href="${esc(f.src)}" download="${esc(f.download)}">📄 ${esc(f.name)}</a></div>`;
   return f.src
     ? `<div class="upitem"><a class="file" href="${esc(f.src)}" target="_blank" rel="noopener">📄 ${esc(f.name)} ${esc(t('feedOpen'))}</a></div>`
@@ -809,34 +809,12 @@ function qaAttachmentsHTML(scn) {
   return `<div class="qa-attachments panel" id="qa-attachments"${chatCompose.attachmentVisible ? '' : ' hidden'}><div class="panel-h">${esc(t('qaPhotoAdd'))}</div>${uploadPanelHTML(scn, scn.input[scriptLang(state.lang)])}</div>`;
 }
 function gn2InputPreviewHTML(scn) {
-  const lang = scriptLang(state.lang);
-  if (gn2CollectionSampleMatches(upFiles)) return scn.collectionSchedule.input[lang].previewTables.map(table => `<details class="gn2-input-preview"><summary>${esc(table.title)}</summary><div class="gn2-table-scroll">${resultHTML(table)}</div></details>`).join('');
-  if (!gn2APSampleMatches(upFiles)) return '';
-  const input = scn.apSamples.input[lang], invoice = input.invoicePreview;
-  const paper = `<details class="gn2-input-preview"><summary>${esc(invoice.title)}</summary><img class="gn2-invoice-preview" src="${esc(invoice.file)}" alt="${esc(invoice.caption)}"><p>${esc(invoice.caption)}</p><a href="${esc(invoice.pdfFile)}" target="_blank" rel="noopener">${esc(t('feedOpen'))} · ${esc(input.files[0])}</a></details>`;
-  return paper + input.previewTables.map(table => `<details class="gn2-input-preview"><summary>${esc(table.title)}</summary><div class="gn2-table-scroll">${resultHTML(table)}</div></details>`).join('');
-}
-function gn2AttachmentsBodyHTML(scn) {
-  const lang = scriptLang(state.lang), inp = gn2InputForDraft(scn, lang), samples = scn.apSamples;
-  const isAP = samples && inp === samples.input[lang];
-  const listing = isAP && !upFiles.length ? `<div class="kv"><div class="k">${esc(L(samples.labels))}</div><ul>${inp.files.map(name => `<li>${esc(name)}</li>`).join('')}</ul></div>` : '';
-  const note = samples && (isAP || gn2APSampleMatches(upFiles)) ? `<div class="upnote">${esc(L(samples.note))}</div>` : '';
-  return `<div class="panel-h">${esc(t('upAttachOpen'))}</div>${listing}${uploadPanelHTML(scn, inp)}${gn2InputPreviewHTML(scn)}${note}`;
+  if (!gn2CollectionSampleMatches(upFiles)) return '';
+  return scn.collectionSchedule.input[scriptLang(state.lang)].previewTables.map(table => `<details class="gn2-input-preview"><summary>${esc(table.title)}</summary><div class="gn2-table-scroll">${resultHTML(table)}</div></details>`).join('');
 }
 function gn2AttachmentsHTML(scn) {
   const inp = gn2InputForDraft(scn, scriptLang(state.lang));
-  const key = `${inp === scn.collectionSchedule.input[scriptLang(state.lang)] ? 'ar' : 'ap'}:${scriptLang(state.lang)}`;
-  return `<div class="chat-attachments panel" id="gn2-attachments" data-gn2-input="${key}"${chatCompose.attachmentVisible ? '' : ' hidden'}>${gn2AttachmentsBodyHTML(scn)}</div>`;
-}
-function gn2RefreshAttachments() {
-  if (!isGn2Chat() || !chatCompose.attachmentVisible) return;
-  const panel = document.getElementById('gn2-attachments');
-  if (!panel) return;
-  const scn = scnOf('gn2'), lang = scriptLang(state.lang), inp = gn2InputForDraft(scn, lang);
-  const key = `${inp === scn.collectionSchedule.input[lang] ? 'ar' : 'ap'}:${lang}`;
-  if (panel.dataset.gn2Input === key) return;
-  panel.dataset.gn2Input = key; panel.innerHTML = gn2AttachmentsBodyHTML(scn);
-  chatRefreshControls();
+  return `<div class="chat-attachments panel"${chatCompose.attachmentVisible ? '' : ' hidden'}><div class="panel-h">${esc(t('upAttachOpen'))}</div>${uploadPanelHTML(scn, inp)}${gn2InputPreviewHTML(scn)}</div>`;
 }
 function gn2ResultEntries() {
   const latest = new Map();
@@ -861,8 +839,7 @@ function gn2ResultsHTML(scn) {
   if (!entries.length) return '';
   const artifacts = entries.map(entry => {
     const ar = entry.meta.route === 'ar', result = ar ? scn.collectionSchedule.results[entry.turn.lang][entry.meta.step - 1] : scn.result[entry.turn.lang];
-    const note = !ar && scn.apSamples ? `<p class="qa-history-note">${esc(L(scn.apSamples.note))}</p>` : '';
-    return { title: result.title, body: ar ? gn2CollectionResultHTML(scn, entry) : resultHTML(result) + note };
+    return { title: result.title, body: ar ? gn2CollectionResultHTML(scn, entry) : resultHTML(result) };
   });
   return `<div class="panel result"><div class="panel-h">${esc(t('resultPanel'))}</div>${demoPending ? pendingHTML() : ''}${artifacts[0].body}${artifacts.slice(1).map(artifact => `<details class="gn2-previous-result"><summary>${esc(artifact.title)}</summary>${artifact.body}</details>`).join('')}</div>`;
 }
