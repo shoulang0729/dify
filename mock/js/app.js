@@ -231,7 +231,7 @@ let qaAttachmentVisible = false;
 const QA_CURRENT_NC = 'NC-2025-0912';
 const QA_KNOWN_NCS = [QA_CURRENT_NC, 'NC-2024-0331', 'NC-2023-0207'];
 const isQaChat = () => state.industry === 'mfg' && state.selSvc === 'qa1' && state.view === 'demo';
-function qaResetConversation() { qaTurnMeta = []; gn2TurnMeta = []; gn2EntryRoute = null; chatResetSession(); }
+function qaResetConversation() { qaTurnMeta = []; gn2TurnMeta = []; chatResetSession(); }
 function qaCompletedEntries() {
   const count = completedScriptTurns();
   return qaTurnMeta.slice(0, count).map((meta, index) => ({ meta, index, turn: state.log[index] }));
@@ -370,18 +370,7 @@ function qaSubmitRequest(q, lang) {
 
 /* GN-02の受領発票と集金予定表は、同じlogの外でそれぞれの工程を追う。 */
 let gn2TurnMeta = [];
-let gn2EntryRoute = null;
 const isGn2Chat = () => state.industry === 'mfg' && state.selSvc === 'gn2' && state.view === 'demo';
-/** 集金予定表の入口は、送信前の依頼と既知のサンプル2件をまとめて用意する。 */
-function gn2PrepareCollectionDemo() {
-  if (!isGn2Chat()) return;
-  const scn = scnOf('gn2'), lang = scriptLang(state.lang);
-  gn2EntryRoute = 'ar';
-  const q = scn.collectionSchedule.script[lang][0].q;
-  chatCompose.text = q; chatCompose.selectionStart = q.length; chatCompose.selectionEnd = q.length;
-  upUseSample(scn, lang);
-  chatSetAttachmentVisible(true);
-}
 function gn2CompletedEntries() {
   return gn2TurnMeta.slice(0, completedScriptTurns()).map((meta, index) => ({ meta, index, turn: state.log[index] }));
 }
