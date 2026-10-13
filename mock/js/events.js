@@ -269,9 +269,12 @@ document.getElementById('theme-btn').addEventListener('click', () => {
 /* ================= 起動 ================= */
 loadPrefs();
 applyPrefs();
-if (new URLSearchParams(window.location.search).get('demo') === 'gn2-collection') {
-  state.industry = 'mfg'; state.selSvc = 'gn2'; state.view = 'demo'; state.log = [];
+const initialDemoService = new Map([
+  ['gn2-collection', 'gn2'], ['qa01', 'qa1'], ['nm05', 'nm5']
+]).get(new URLSearchParams(window.location.search).get('demo'));
+if (initialDemoService) {
+  state.industry = 'mfg'; state.selSvc = initialDemoService; state.view = 'demo'; state.log = [];
   qaResetConversation();
-  gn2PrepareCollectionDemo();
+  if (initialDemoService === 'gn2') gn2PrepareCollectionDemo();
 }
 renderAll();
