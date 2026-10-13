@@ -2181,16 +2181,16 @@ section('20. ダミー資産（mock/assets/demo/**）の契約');
       const demoFiles = readdirSync(DEMO_DIR, { withFileTypes: true }).filter(e => e.isFile()).map(e => e.name);
       const ALLOWED_EXT = new Set(['jpg', 'png', 'wav', 'pdf', 'txt', 'md']);
       const SIZE_LIMIT = { jpg: 300 * 1024, png: 300 * 1024, wav: 2 * 1024 * 1024, pdf: 200 * 1024 };
-      // GN-02の指定6冊だけを許可（集金予定表 §4.7／2026-10-13-gn02-ap-samples §6.4）。
-      const GN2_DEMO_WORKBOOKS = new Set(['gn2-collection-invoices.xlsx', 'gn2-collection-template.xlsx', 'gn2-collection-draft.xlsx', 'gn2-collection-reviewed.xlsx', 'gn2-ap-orders.xlsx', 'gn2-ap-receipts.xlsx']);
+      // 集金予定表の検証済みサンプル4冊だけを許可する（設計 2026-10-12-gn02-collection-schedule §4.7）。
+      const GN2_COLLECTION_WORKBOOKS = new Set(['gn2-collection-invoices.xlsx', 'gn2-collection-template.xlsx', 'gn2-collection-draft.xlsx', 'gn2-collection-reviewed.xlsx']);
 
       // 20-b / 20-c
       let extBad = 0, sizeBad = 0;
       for (const f of demoFiles) {
         const ext = f.includes('.') ? f.slice(f.lastIndexOf('.') + 1).toLowerCase() : '';
-        const gn2Workbook = ext === 'xlsx' && GN2_DEMO_WORKBOOKS.has(f);
-        if (!ALLOWED_EXT.has(ext) && !gn2Workbook) { fail(`20-b mock/assets/demo/${f}: 拡張子 "${ext}" が許可外`); extBad++; continue; }
-        const limit = gn2Workbook ? 200 * 1024 : SIZE_LIMIT[ext];
+        const collectionWorkbook = ext === 'xlsx' && GN2_COLLECTION_WORKBOOKS.has(f);
+        if (!ALLOWED_EXT.has(ext) && !collectionWorkbook) { fail(`20-b mock/assets/demo/${f}: 拡張子 "${ext}" が許可外`); extBad++; continue; }
+        const limit = collectionWorkbook ? 200 * 1024 : SIZE_LIMIT[ext];
         if (limit) {
           const size = readFileSync(resolve(DEMO_DIR, f)).length;
           if (size > limit) { fail(`20-c mock/assets/demo/${f}: サイズ ${size} bytes が上限 ${limit} bytes を超える`); sizeBad++; }

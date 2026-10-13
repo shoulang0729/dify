@@ -387,13 +387,7 @@ function gn2RouteIntent(text) {
 }
 function gn2InputForDraft(scn, lang) {
   const intent = gn2RouteIntent(chatCompose.text), previous = gn2LatestCompleted();
-  return intent === 'ap' || (!intent && previous && previous.meta.route === 'ap') ? (scn.apSamples && scn.apSamples.input[lang] || scn.input[lang]) : scn.collectionSchedule.input[lang];
-}
-function gn2APSampleMatches(files) {
-  const samples = scnOf('gn2').apSamples;
-  if (!samples || !samples.input.ja || !Array.isArray(samples.input.ja.assets)) return false;
-  const assets = samples.input.ja.assets;
-  return assets.length === 3 && files.length === 3 && assets.every(asset => files.some(file => file.kind === 'doc' && file.src === asset.file && file.sampleId === samples.sampleId));
+  return intent === 'ap' || (!intent && previous && previous.meta.route === 'ap') ? scn.input[lang] : scn.collectionSchedule.input[lang];
 }
 function gn2CollectionSampleMatches(files) {
   const collection = scnOf('gn2').collectionSchedule;
@@ -436,14 +430,10 @@ function gn2SubmitRequest(q, lang) {
   const clarify = (key, target = route) => gn2AppendRequest(q, lang, 'clarify', null, `clarify:${target || 'unknown'}-${key}`, null, collection.clarify[lang][key]);
   if (!route || route === 'ambiguous') return clarify('purpose');
   if (route === 'ap') {
-    if (upFiles.length && !gn2APSampleMatches(upFiles)) {
-      const samples = scn.apSamples;
-      const message = samples && samples.clarify && samples.clarify[lang] || samples && samples.note[lang] || T.upNote[lang];
-      return gn2AppendRequest(q, lang, 'clarify', null, 'clarify:ap-sample', null, message);
-    }
+    if (gn2CollectionSampleMatches(upFiles)) return clarify('purpose');
     const step = gn2RouteStage('ap') + 1, turn = scn.script[lang][step - 1];
     if (!turn) return clarify('done');
-    return gn2AppendRequest(q, lang, 'ap', step, `ap:${step}`, gn2APSampleMatches(upFiles) ? scn.apSamples.sampleId : null, turn.a);
+    return gn2AppendRequest(q, lang, 'ap', step, `ap:${step}`, null, turn.a);
   }
   const stage = gn2RouteStage('ar');
   if (upFiles.length && !gn2CollectionSampleMatches(upFiles)) return clarify('sample');

@@ -98,7 +98,7 @@ document.addEventListener('click', (e) => {
     if (isGn2Chat()) {
       const scn = scnOf('gn2'), lang = scriptLang(arg), step = Number(btn.dataset.gn2Step);
       const turns = btn.dataset.gn2Route === 'ar' ? scn.collectionSchedule.script[lang] : scn.script[lang];
-      if (turns[step - 1]) { chatSetDraft(turns[step - 1].q); gn2RefreshAttachments(); }
+      if (turns[step - 1]) chatSetDraft(turns[step - 1].q);
       return;
     }
     if (isQaChat()) {
@@ -232,7 +232,6 @@ document.addEventListener('drop', (e) => {
 document.addEventListener('input', (e) => {
   if (e.target.id !== 'chat-input') return;
   chatCaptureDraft(); chatAutosize(e.target);
-  if (isGn2Chat()) gn2RefreshAttachments();
 });
 for (const event of ['select', 'keyup', 'click']) document.addEventListener(event, (e) => {
   if (e.target.id === 'chat-input') chatCaptureDraft();

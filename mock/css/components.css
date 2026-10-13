@@ -529,7 +529,6 @@
   .qa-previous-result summary { color: var(--text-link); font-size: 13px; font-weight: var(--weight-medium); cursor: pointer; }
   .qa-history-note { color: var(--text-body); font-size: 13px; line-height: var(--leading-relaxed); }
   .gn2-chat-demo .gn2-table-scroll { overflow-x: auto; }
-  .gn2-chat-demo .gn2-invoice-preview { display: block; width: 100%; max-height: 480px; object-fit: contain; }
   .gn2-chat-demo .gn2-table-scroll .tbl { min-width: 660px; }
   .gn2-chat-demo .gn2-collection-result .tbl { min-width: 0; width: 100%; table-layout: fixed; }
   .gn2-chat-demo .gn2-collection-result .tbl :is(th, td) { padding: var(--space-2) var(--space-1); }
