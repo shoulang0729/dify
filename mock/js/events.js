@@ -98,7 +98,14 @@ document.addEventListener('click', (e) => {
     if (isGn2Chat()) {
       const scn = scnOf('gn2'), lang = scriptLang(arg), step = Number(btn.dataset.gn2Step);
       const turns = btn.dataset.gn2Route === 'ar' ? scn.collectionSchedule.script[lang] : scn.script[lang];
-      if (turns[step - 1]) chatSetDraft(turns[step - 1].q);
+      if (turns[step - 1]) {
+        chatSetDraft(turns[step - 1].q);
+        if (btn.dataset.gn2Route === 'ar' && step === 1) {
+          gn2EntryRoute = 'ar';
+          if (!upFiles.length) upUseSample(scn, lang);
+          chatSetAttachmentVisible(true); renderMain();
+        }
+      }
       return;
     }
     if (isQaChat()) {
@@ -111,7 +118,12 @@ document.addEventListener('click', (e) => {
     const scn = scnOf(state.selSvc), turn = scn && nextTurn(scn, scriptLang(arg));
     if (turn) chatSetDraft(turn.q);
   }
-  else if (act === 'restart') { state.log = []; qaResetConversation(); renderMain(); }
+  else if (act === 'restart') {
+    const collectionEntry = isGn2Chat() && gn2EntryRoute === 'ar';
+    state.log = []; qaResetConversation();
+    if (collectionEntry) gn2PrepareCollectionDemo();
+    renderMain();
+  }
   else if (act === 'send') { sendChat(); }
 });
 
@@ -260,7 +272,6 @@ applyPrefs();
 if (new URLSearchParams(window.location.search).get('demo') === 'gn2-collection') {
   state.industry = 'mfg'; state.selSvc = 'gn2'; state.view = 'demo'; state.log = [];
   qaResetConversation();
-  const q = scnOf('gn2').collectionSchedule.script[scriptLang(state.lang)][0].q;
-  chatCompose.text = q; chatCompose.selectionStart = q.length; chatCompose.selectionEnd = q.length;
+  gn2PrepareCollectionDemo();
 }
 renderAll();
