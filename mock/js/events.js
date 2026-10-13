@@ -76,7 +76,6 @@ document.addEventListener('click', (e) => {
     state.log = []; qaResetConversation();
     if (scnOf(state.selSvc)) { state.view = 'demo'; }
     else { state.view = 'chat'; }
-    if (isGn2Chat()) gn2PrepareCollectionDemo();
     renderMain();
   }
   else if (act === 'run') {
@@ -99,14 +98,7 @@ document.addEventListener('click', (e) => {
     if (isGn2Chat()) {
       const scn = scnOf('gn2'), lang = scriptLang(arg), step = Number(btn.dataset.gn2Step);
       const turns = btn.dataset.gn2Route === 'ar' ? scn.collectionSchedule.script[lang] : scn.script[lang];
-      if (turns[step - 1]) {
-        chatSetDraft(turns[step - 1].q);
-        if (btn.dataset.gn2Route === 'ar' && step === 1) {
-          gn2EntryRoute = 'ar';
-          if (!upFiles.length) upUseSample(scn, lang);
-          chatSetAttachmentVisible(true); renderMain();
-        }
-      }
+      if (turns[step - 1]) chatSetDraft(turns[step - 1].q);
       return;
     }
     if (isQaChat()) {
@@ -119,12 +111,7 @@ document.addEventListener('click', (e) => {
     const scn = scnOf(state.selSvc), turn = scn && nextTurn(scn, scriptLang(arg));
     if (turn) chatSetDraft(turn.q);
   }
-  else if (act === 'restart') {
-    const collectionEntry = isGn2Chat() && gn2EntryRoute === 'ar';
-    state.log = []; qaResetConversation();
-    if (collectionEntry) gn2PrepareCollectionDemo();
-    renderMain();
-  }
+  else if (act === 'restart') { state.log = []; qaResetConversation(); renderMain(); }
   else if (act === 'send') { sendChat(); }
 });
 
@@ -276,6 +263,9 @@ const initialDemoService = new Map([
 if (initialDemoService) {
   state.industry = 'mfg'; state.selSvc = initialDemoService; state.view = 'demo'; state.log = [];
   qaResetConversation();
-  if (initialDemoService === 'gn2') gn2PrepareCollectionDemo();
+  if (initialDemoService === 'gn2') {
+    const q = scnOf('gn2').collectionSchedule.script[scriptLang(state.lang)][0].q;
+    chatCompose.text = q; chatCompose.selectionStart = q.length; chatCompose.selectionEnd = q.length;
+  }
 }
 renderAll();
