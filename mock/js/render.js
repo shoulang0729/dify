@@ -547,42 +547,374 @@ function resultHTML(r) {
   return titleHTML + r.items.map(it => `<div class="kv"><div class="k">${esc(it.k)}</div><div class="v">${esc(it.v)}</div></div>`).join('');
 }
 
+/** 指定セルや短い引用だけを安全なDOMで強調する。一般サービスの描画は変更しない。 */
+function markedResultHTML(result, phrases = [], cellRules = []) {
+  const container = document.createElement('div');
+  const title = document.createElement('div'); title.className = 'kv';
+  const heading = document.createElement('div'); heading.className = 'k'; heading.textContent = result.title;
+  title.appendChild(heading); container.appendChild(title);
+  if (result.columns) {
+    const table = document.createElement('table'); table.className = 'tbl';
+    const head = document.createElement('thead'), headRow = document.createElement('tr');
+    result.columns.forEach(column => { const th = document.createElement('th'); th.textContent = column; headRow.appendChild(th); });
+    head.appendChild(headRow); table.appendChild(head);
+    const body = document.createElement('tbody');
+    result.rows.forEach((values, rowIndex) => {
+      const row = document.createElement('tr');
+      values.forEach((text, columnIndex) => {
+        const cell = document.createElement('td');
+        const rule = cellRules.find(entry => entry.row === rowIndex && entry.column === columnIndex);
+        appendMarkedText(cell, text, rule ? rule.phrases : phrases); row.appendChild(cell);
+      });
+      body.appendChild(row);
+    });
+    table.appendChild(body); container.appendChild(table);
+  } else {
+    result.items.forEach(item => {
+      const row = document.createElement('div'); row.className = 'kv';
+      const key = document.createElement('div'); key.className = 'k'; appendMarkedText(key, item.k, phrases);
+      const value = document.createElement('div'); value.className = 'v'; appendMarkedText(value, item.v, phrases);
+      row.appendChild(key); row.appendChild(value); container.appendChild(row);
+    });
+  }
+  if (result.note) {
+    const note = document.createElement('p'); note.className = 'qa-history-note';
+    appendMarkedText(note, result.note, phrases); container.appendChild(note);
+  }
+  return container.innerHTML;
+}
+
+/** QA-01草案は原resultを複製し、完了段階までの表示用差分だけ適用する。 */
+function qaDraftResultHTML(scn, completed, lang) {
+  const stages = scn.draftStages[lang];
+  const count = Math.min(3, stages.length, completed);
+  if (!count) return '';
+  const result = scn.result[lang], items = result.items.map(item => ({ ...item }));
+  const highlights = new Map();
+  for (const stage of stages.slice(0, count)) {
+    for (const replacement of stage.replaceItems) {
+      if (Number.isInteger(replacement.itemIndex) && items[replacement.itemIndex]) items[replacement.itemIndex].v = replacement.v;
+    }
+    for (const item of stage.appendItems) items.push({ ...item });
+    for (const entry of stage.highlights) highlights.set(entry.itemIndex, entry.phrases);
+  }
+  const current = stages[count - 1], container = document.createElement('div');
+  container.className = 'qa-draft';
+  const header = document.createElement('div'); header.className = 'qa-draft-header';
+  const label = document.createElement('strong');
+  label.textContent = [t('qaDraftInitial'), t('qaDraftConfirmed'), t('qaDraftBilingual')][count - 1];
+  const caution = document.createElement('span'); caution.textContent = t('qaDraftUnconfirmed');
+  header.appendChild(label); header.appendChild(caution); container.appendChild(header);
+  if (current.changes.length) {
+    const changes = document.createElement('div'); changes.className = 'qa-draft-changes';
+    const heading = document.createElement('div'); heading.className = 'qa-draft-changes-title';
+    heading.textContent = t('qaDraftChanges'); changes.appendChild(heading);
+    for (const change of current.changes) {
+      const row = document.createElement('div'); row.className = 'qa-draft-change';
+      const before = document.createElement('div'); before.className = 'qa-draft-before';
+      before.textContent = `${t('qaDraftBefore')}: ${change.before}`;
+      const arrow = document.createElement('span'); arrow.className = 'qa-draft-arrow';
+      arrow.textContent = '→'; arrow.setAttribute('aria-hidden', 'true');
+      const after = document.createElement('div'); after.className = 'qa-draft-after';
+      after.appendChild(document.createTextNode(`${t('qaDraftAfter')}: `));
+      appendMarkedText(after, change.after, [change.after]);
+      row.appendChild(before); row.appendChild(arrow); row.appendChild(after); changes.appendChild(row);
+    }
+    container.appendChild(changes);
+  }
+  const title = document.createElement('div'); title.className = 'kv';
+  const titleText = document.createElement('div'); titleText.className = 'k';
+  titleText.textContent = result.title; title.appendChild(titleText); container.appendChild(title);
+  items.forEach((item, index) => {
+    const row = document.createElement('div'); row.className = 'kv';
+    const key = document.createElement('div'); key.className = 'k'; key.textContent = item.k;
+    const value = document.createElement('div'); value.className = 'v';
+    appendMarkedText(value, item.v, highlights.get(index) || []);
+    row.appendChild(key); row.appendChild(value); container.appendChild(row);
+  });
+  return container.outerHTML;
+}
+
 /** 載せた 1 ファイルぶんの表示。種類ごとにプレビューを出し分ける（設計書 §10-1）。
     ユーザーが選んだ doc（src が空）はチップのみ、サンプルの doc（src が実パス）は開けるリンクにする */
-function upItemHTML(f) {
+function upItemHTML(f, index, source = 'pending', messageKey = '') {
   if (f.kind === 'image') {
-    return `<div class="upitem"><span class="file">🖼 ${esc(f.name)}</span><img class="upthumb" src="${esc(f.src)}" alt=""></div>`;
+    let nameHTML = `<span class="file">🖼 ${esc(f.name)}</span>`;
+    if (isQaChat()) {
+      const scn = scnOf('qa1');
+      const quotes = [...scn.inputHighlights.ja, ...scn.inputHighlights.zh].filter(phrase => /\.jpe?g$/i.test(phrase) && phrase === f.name);
+      const name = document.createElement('span'); name.className = 'file';
+      name.appendChild(document.createTextNode('🖼 '));
+      appendMarkedText(name, f.name, quotes, false);
+      nameHTML = name.outerHTML;
+    }
+    return `<div class="upitem"><button type="button" class="upimage" data-up="preview" data-up-source="${source}" data-up-key="${esc(messageKey)}" data-up-index="${index}" aria-label="${esc(t('upPreviewOpen').replace('{name}', () => f.name))}">${nameHTML}<img class="upthumb" src="${esc(f.src)}" alt=""></button></div>`;
   }
   if (f.kind === 'audio') {
     return `<div class="upitem"><span class="file">🔊 ${esc(f.name)}</span><audio class="upaudio" controls src="${esc(f.src)}"></audio></div>`;
   }
+  const gn2 = SCENARIOS.mfg.gn2 || {};
+  const downloadable = [gn2.collectionSchedule, gn2.apSamples].filter(Boolean).some(samples => samples.input.ja.assets.some(asset => asset.file === f.src && asset.download === f.download && asset.sampleId === f.sampleId)) && /\.xlsx$/i.test(f.src);
+  if (downloadable) return `<div class="upitem"><a class="file" href="${esc(f.src)}" download="${esc(f.download)}">📄 ${esc(f.name)}</a></div>`;
   return f.src
     ? `<div class="upitem"><a class="file" href="${esc(f.src)}" target="_blank" rel="noopener">📄 ${esc(f.name)} ${esc(t('feedOpen'))}</a></div>`
     : `<div class="upitem"><span class="file">📄 ${esc(f.name)}</span></div>`;
 }
 
-/** upload テンプレートの入力パネル（ドロップゾーン／ファイル選択／サンプル／プレビュー。設計書 §10）。
-    upFiles が空のときは従来どおり台本の files をチップで出す（assets を持たない台本の後方互換＝§10-5）。
-    「サンプルを使う」は inp.assets が files と同じ長さのときだけ出す */
+/** body 上に一度だけ作る。再描画・画像切替・ズームでコントロールの DOM を置き換えない。 */
+function upPreviewEnsureDialog() {
+  let dialog = document.getElementById('up-preview');
+  if (dialog) return dialog;
+  dialog = document.createElement('dialog');
+  dialog.id = 'up-preview'; dialog.className = 'up-preview';
+  dialog.setAttribute('aria-labelledby', 'up-preview-title');
+  dialog.setAttribute('aria-describedby', 'up-preview-note');
+  dialog.innerHTML = `
+    <div class="up-preview-header"><h2 id="up-preview-title"></h2><button type="button" class="upbtn" data-up="preview-close"></button></div>
+    <div class="up-preview-meta"><div id="up-preview-name"></div><output id="up-preview-position" aria-live="polite"></output></div>
+    <div class="up-preview-toolbar">
+      <div class="up-preview-nav"><button type="button" class="upbtn" data-up="preview-prev"></button><button type="button" class="upbtn" data-up="preview-next"></button></div>
+      <div class="up-preview-zoom"><button type="button" class="upbtn" data-up="preview-zoom-out">−</button><button type="button" class="upbtn" data-up="preview-fit"></button><button type="button" class="upbtn" data-up="preview-zoom-in">＋</button><output id="up-preview-zoom" aria-live="polite"></output></div>
+    </div>
+    <div class="up-preview-stage" tabindex="0" role="region" aria-labelledby="up-preview-name"><div class="up-preview-canvas"><img class="up-preview-image" alt=""><p class="up-preview-error" role="status" hidden></p></div></div>
+    <div class="up-preview-note" id="up-preview-note"></div>`;
+  document.body.appendChild(dialog);
+  return dialog;
+}
+function upPreviewRenderLabels() {
+  if (!upPreview.open) return;
+  const dialog = document.getElementById('up-preview');
+  const indices = upPreviewImageIndices(), position = indices.indexOf(upPreview.index);
+  dialog.querySelector('#up-preview-title').textContent = t('upPreviewTitle');
+  dialog.querySelector('#up-preview-name').textContent = upPreviewFiles()[upPreview.index].name;
+  dialog.querySelector('#up-preview-position').textContent = t('upPreviewPosition')
+    .replace('{current}', position + 1).replace('{total}', indices.length);
+  dialog.querySelector('#up-preview-note').textContent = t('upNote');
+  dialog.querySelector('.up-preview-error').textContent = t('upPreviewError');
+  const labels = { 'preview-close': t('upPreviewClose'), 'preview-prev': t('upPreviewPrev'),
+    'preview-next': t('upPreviewNext'), 'preview-fit': t('upPreviewFit'),
+    'preview-zoom-in': t('upPreviewZoomIn'), 'preview-zoom-out': t('upPreviewZoomOut') };
+  for (const [action, label] of Object.entries(labels)) {
+    const button = dialog.querySelector(`[data-up="${action}"]`);
+    button.setAttribute('aria-label', label);
+    if (!action.startsWith('preview-zoom-')) button.textContent = label;
+  }
+  dialog.querySelector('.up-preview-nav').hidden = indices.length < 2;
+  dialog.querySelector('[data-up="preview-prev"]').disabled = position <= 0;
+  dialog.querySelector('[data-up="preview-next"]').disabled = position >= indices.length - 1;
+  dialog.querySelector('[data-up="preview-zoom-out"]').disabled = upPreview.status !== 'ready' || upPreview.zoom === UP_PREVIEW_ZOOMS[0];
+  dialog.querySelector('[data-up="preview-zoom-in"]').disabled = upPreview.status !== 'ready' || upPreview.zoom === UP_PREVIEW_ZOOMS[UP_PREVIEW_ZOOMS.length - 1];
+  dialog.querySelector('[data-up="preview-fit"]').disabled = upPreview.status !== 'ready';
+  const zoom = dialog.querySelector('#up-preview-zoom');
+  zoom.textContent = `${upPreview.zoom}%`;
+  zoom.setAttribute('aria-label', t('upPreviewZoom').replace('{percent}', upPreview.zoom));
+  zoom.title = t('upPreviewZoom').replace('{percent}', upPreview.zoom);
+}
+function upPreviewRenderImage() {
+  if (!upPreview.open || !upPreviewValidIndex(upPreview.index)) return;
+  const dialog = document.getElementById('up-preview');
+  const image = dialog.querySelector('.up-preview-image');
+  image.hidden = true; image.style.width = ''; image.style.height = '';
+  image.alt = upPreviewFiles()[upPreview.index].name;
+  image.src = upPreviewFiles()[upPreview.index].src;
+  dialog.querySelector('.up-preview-error').hidden = true;
+  const stage = dialog.querySelector('.up-preview-stage');
+  stage.scrollLeft = 0; stage.scrollTop = 0;
+  upPreviewRenderLabels();
+}
+/** 実際の幅・高さを増やし、拡大した画像の全ての端をスクロール可能にする。 */
+function upPreviewRenderSize(resetScroll = false) {
+  if (!upPreview.open || upPreview.status !== 'ready') return;
+  const dialog = document.getElementById('up-preview');
+  const image = dialog.querySelector('.up-preview-image');
+  const stage = dialog.querySelector('.up-preview-stage');
+  const canvas = dialog.querySelector('.up-preview-canvas');
+  const style = getComputedStyle(canvas);
+  const horizontalPadding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+  const verticalPadding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+  const stageStyle = getComputedStyle(stage);
+  const horizontalBorder = parseFloat(stageStyle.borderLeftWidth) + parseFloat(stageStyle.borderRightWidth);
+  const verticalBorder = parseFloat(stageStyle.borderTopWidth) + parseFloat(stageStyle.borderBottomWidth);
+  // 拡大時のスクロールバーに左右されない、全体表示時の表示領域を基準にする。
+  const fit = Math.min((stage.offsetWidth - horizontalBorder - horizontalPadding) / image.naturalWidth,
+    (stage.offsetHeight - verticalBorder - verticalPadding) / image.naturalHeight);
+  if (!(fit > 0)) return;
+  image.style.width = `${image.naturalWidth * fit * upPreview.zoom / 100}px`;
+  image.style.height = `${image.naturalHeight * fit * upPreview.zoom / 100}px`;
+  image.hidden = false;
+  if (resetScroll) { stage.scrollLeft = 0; stage.scrollTop = 0; }
+}
+
+function nmSummaryEnsureDialog() {
+  let dialog = document.getElementById('nm-summary');
+  if (dialog) return dialog;
+  dialog = document.createElement('dialog');
+  dialog.id = 'nm-summary'; dialog.className = 'nm-summary-dialog';
+  dialog.setAttribute('aria-labelledby', 'nm-summary-title');
+  dialog.setAttribute('aria-describedby', 'nm-summary-source');
+  dialog.innerHTML = `<div class="nm-summary-header"><div><h2 id="nm-summary-title"></h2><div id="nm-summary-period"></div></div><button type="button" class="upbtn" data-nm-summary="close"></button></div><div class="nm-summary-body" tabindex="0" role="region" aria-labelledby="nm-summary-title"></div>`;
+  document.body.appendChild(dialog);
+  return dialog;
+}
+function nmSummaryRenderContent() {
+  if (!nmSummary.open) return;
+  const dialog = document.getElementById('nm-summary'), summary = scnOf('nm5').summary;
+  dialog.querySelector('#nm-summary-title').textContent = t('nmSummaryTitle');
+  dialog.querySelector('#nm-summary-period').textContent = t('nmSummaryPeriod');
+  dialog.querySelector('[data-nm-summary="close"]').textContent = t('upPreviewClose');
+  const shiftLabels = { day: t('nmSummaryDay'), night: t('nmSummaryNight') };
+  const defectLabels = { particles: t('nmSummaryParticles'), thinCoat: t('nmSummaryThinCoat'),
+    dents: t('nmSummaryDents'), other: t('nmSummaryOther') };
+  const maxRate = Math.max(...summary.shifts.map(shift => shift.defectRate));
+  const punctuation = state.lang === 'en' ? '. ' : '。';
+  const footnote = [t('nmSummaryPeriod'), t('nmSummarySampleNote'), t('nmSummaryCorrelationNote')].join(punctuation) + punctuation.trim();
+  dialog.querySelector('.nm-summary-body').innerHTML = `
+    <div class="nm-summary-sheet">
+      <div class="nm-summary-kicker">${esc(t('nmSummaryNumbers'))}</div>
+      <div class="nm-summary-figures">
+        <section class="nm-summary-lines"><h3>${esc(t('nmSummaryLines'))}</h3>
+          <div class="nm-summary-table-wrap"><table class="nm-summary-table"><thead><tr><th scope="col">${esc(t('nmSummaryLine'))}</th><th scope="col">${esc(t('nmSummaryOvertime'))}</th><th scope="col">${esc(t('nmSummaryDefectRate'))}</th><th scope="col">${esc(t('nmSummaryCorrelation'))}</th></tr></thead><tbody>
+          ${summary.lines.map(line => `<tr${line.line === 'L2' ? ' class="nm-summary-focus-line"' : ''}><th scope="row">${esc(line.line)}</th><td>${esc(line.overtime.toFixed(1))}</td><td>${esc(line.defectRate.toFixed(2))}</td><td>${esc((line.correlation >= 0 ? '+' : '') + line.correlation.toFixed(2))}</td></tr>`).join('')}
+          </tbody></table></div>
+        </section>
+        <div class="nm-summary-charts"><section><h3>${esc(t('nmSummaryShifts'))}</h3>
+          <div class="nm-summary-shifts">${summary.shifts.map(shift => `<div class="nm-summary-shift"><span>${esc(shiftLabels[shift.key])}</span><div class="nm-summary-bar-track" aria-hidden="true"><div class="nm-summary-bar nm-summary-bar-${esc(shift.key)}" style="width:${shift.defectRate / maxRate * 100}%"></div></div><strong>${esc(shift.defectRate.toFixed(2))}%</strong></div>`).join('')}</div>
+        </section><section class="nm-summary-defects"><h3>${esc(t('nmSummaryDefects'))}</h3>
+          <div class="nm-summary-stack" aria-hidden="true">${summary.defects.map(defect => `<span class="nm-summary-segment nm-summary-segment-${esc(defect.key)}" style="width:${defect.share}%"></span>`).join('')}</div>
+          <ul class="nm-summary-legend">${summary.defects.map(defect => `<li><span class="nm-summary-legend-dot nm-summary-segment-${esc(defect.key)}" aria-hidden="true"></span><span>${esc(defectLabels[defect.key])}</span><strong>${esc(defect.share)}%</strong></li>`).join('')}</ul>
+        </section></div>
+      </div>
+      <div class="nm-summary-actions"><section><h3>${esc(t('nmSummaryChecks'))}</h3><ul>${L(summary.checks).map(item => `<li>${esc(item)}</li>`).join('')}</ul></section><section><h3>${esc(t('nmSummaryOptions'))}</h3><ul>${L(summary.options).map(item => `<li>${esc(item)}</li>`).join('')}</ul></section></div>
+      <footer class="nm-summary-footnote" id="nm-summary-source"><p>${esc(footnote)}</p></footer>
+    </div>`;
+}
+
+/** 未送信に実際に選択されたファイルだけを表示する。
+    「サンプルを使う」は inp.assets が files と同じ長さのときだけ出す。 */
 function uploadPanelHTML(scn, inp) {
   const hasSample = Array.isArray(inp.assets) && inp.assets.length === inp.files.length;
-  const filesHTML = upFiles.length
-    ? upFiles.map(upItemHTML).join('')
-    : inp.files.map(f => `<span class="file">📄 ${esc(f)}</span>`).join('');
-  const actions = (hasSample ? `<button type="button" class="upbtn" data-up="sample">${esc(t('upSample'))}</button>` : '') +
-    (upFiles.length ? `<button type="button" class="upbtn" data-up="clear">${esc(t('upClear'))}</button>` : '');
+  const disabled = demoPending ? ' disabled' : '';
+  const filesHTML = upFiles.map((file, index) => upItemHTML(file, index)).join('');
+  const actions = (hasSample ? `<button type="button" class="upbtn" data-up="sample"${disabled}>${esc(t('upSample'))}</button>` : '') +
+    (upFiles.length ? `<button type="button" class="upbtn" data-up="clear"${disabled}>${esc(t('upClear'))}</button>` : '');
   return `
-    <div class="drop upzone" data-up="pick" tabindex="0" role="button" aria-label="${esc(t('upDrop'))}">${esc(t('upDrop'))}</div>
-    <input type="file" class="upinput" data-up="input" multiple hidden>
+    <div class="drop upzone" data-up="pick" tabindex="${demoPending ? '-1' : '0'}" role="button" aria-disabled="${demoPending}" aria-label="${esc(t('upDrop'))}">${esc(t('upDrop'))}</div>
+    <input type="file" class="upinput" data-up="input" multiple hidden${disabled}>
     ${actions ? `<div class="upactions">${actions}</div>` : ''}
     <div class="upfiles">${filesHTML}</div>
     <div class="upnote">${esc(t('upNote'))}</div>`;
+}
+
+function qaAttachmentsHTML(scn) {
+  return `<div class="qa-attachments panel" id="qa-attachments"${chatCompose.attachmentVisible ? '' : ' hidden'}><div class="panel-h">${esc(t('qaPhotoAdd'))}</div>${uploadPanelHTML(scn, scn.input[scriptLang(state.lang)])}</div>`;
+}
+function gn2InputPreviewHTML(scn) {
+  const lang = scriptLang(state.lang);
+  if (gn2CollectionSampleMatches(upFiles)) return scn.collectionSchedule.input[lang].previewTables.map(table => `<details class="gn2-input-preview"><summary>${esc(table.title)}</summary><div class="gn2-table-scroll">${resultHTML(table)}</div></details>`).join('');
+  if (!gn2APSampleMatches(upFiles)) return '';
+  const input = scn.apSamples.input[lang], invoice = input.invoicePreview;
+  const paper = `<details class="gn2-input-preview"><summary>${esc(invoice.title)}</summary><img class="gn2-invoice-preview" src="${esc(invoice.file)}" alt="${esc(invoice.caption)}"><p>${esc(invoice.caption)}</p><a href="${esc(invoice.pdfFile)}" target="_blank" rel="noopener">${esc(t('feedOpen'))} · ${esc(input.files[0])}</a></details>`;
+  return paper + input.previewTables.map(table => `<details class="gn2-input-preview"><summary>${esc(table.title)}</summary><div class="gn2-table-scroll">${resultHTML(table)}</div></details>`).join('');
+}
+function gn2AttachmentsBodyHTML(scn) {
+  const lang = scriptLang(state.lang), inp = gn2InputForDraft(scn, lang), samples = scn.apSamples;
+  const isAP = samples && inp === samples.input[lang];
+  const listing = isAP && !upFiles.length ? `<div class="kv"><div class="k">${esc(L(samples.labels))}</div><ul>${inp.files.map(name => `<li>${esc(name)}</li>`).join('')}</ul></div>` : '';
+  const note = samples && (isAP || gn2APSampleMatches(upFiles)) ? `<div class="upnote">${esc(L(samples.note))}</div>` : '';
+  return `<div class="panel-h">${esc(t('upAttachOpen'))}</div>${listing}${uploadPanelHTML(scn, inp)}${gn2InputPreviewHTML(scn)}${note}`;
+}
+function gn2AttachmentsHTML(scn) {
+  const inp = gn2InputForDraft(scn, scriptLang(state.lang));
+  const key = `${inp === scn.collectionSchedule.input[scriptLang(state.lang)] ? 'ar' : 'ap'}:${scriptLang(state.lang)}`;
+  return `<div class="chat-attachments panel" id="gn2-attachments" data-gn2-input="${key}"${chatCompose.attachmentVisible ? '' : ' hidden'}>${gn2AttachmentsBodyHTML(scn)}</div>`;
+}
+function gn2RefreshAttachments() {
+  if (!isGn2Chat() || !chatCompose.attachmentVisible) return;
+  const panel = document.getElementById('gn2-attachments');
+  if (!panel) return;
+  const scn = scnOf('gn2'), lang = scriptLang(state.lang), inp = gn2InputForDraft(scn, lang);
+  const key = `${inp === scn.collectionSchedule.input[lang] ? 'ar' : 'ap'}:${lang}`;
+  if (panel.dataset.gn2Input === key) return;
+  panel.dataset.gn2Input = key; panel.innerHTML = gn2AttachmentsBodyHTML(scn);
+  chatRefreshControls();
+}
+function gn2ResultEntries() {
+  const latest = new Map();
+  for (const entry of gn2CompletedEntries()) {
+    if (entry.meta.route === 'ap') latest.set('ap', entry);
+    else if (entry.meta.route === 'ar') latest.set(`ar:${entry.meta.step}`, entry);
+  }
+  return Array.from(latest.values()).sort((a, b) => b.index - a.index);
+}
+function gn2CollectionResultHTML(scn, entry) {
+  const collection = scn.collectionSchedule, stage = entry.meta.step;
+  const rules = stage === 1 ? [{ row: 3, column: 4, phrases: [entry.turn.lang === 'zh' ? '待确认' : '未確認'] }] : [
+    { row: 0, column: 3, phrases: ['150,000'] }, { row: 1, column: 0, phrases: ['2025-09-30'] }, { row: 2, column: 3, phrases: ['100,000'] }
+  ];
+  const artifact = collection.artifacts.find(item => item.stage === stage);
+  const expected = stage === 1 ? 'assets/demo/gn2-collection-draft.xlsx' : 'assets/demo/gn2-collection-reviewed.xlsx';
+  const link = artifact && artifact.file === expected ? `<a class="upbtn gn2-download" href="${esc(artifact.file)}" download="${esc(artifact.name)}">${esc(t('gn2DownloadExcel'))} · ${esc(artifact.name)}</a>` : '';
+  return `<div class="gn2-collection-result"><div class="gn2-table-scroll">${markedResultHTML(collection.results[entry.turn.lang][stage - 1], [], rules)}</div>${link}</div>`;
+}
+function gn2ResultsHTML(scn) {
+  const entries = gn2ResultEntries();
+  if (!entries.length) return '';
+  const artifacts = entries.map(entry => {
+    const ar = entry.meta.route === 'ar', result = ar ? scn.collectionSchedule.results[entry.turn.lang][entry.meta.step - 1] : scn.result[entry.turn.lang];
+    const note = !ar && scn.apSamples ? `<p class="qa-history-note">${esc(L(scn.apSamples.note))}</p>` : '';
+    return { title: result.title, body: ar ? gn2CollectionResultHTML(scn, entry) : resultHTML(result) + note };
+  });
+  return `<div class="panel result"><div class="panel-h">${esc(t('resultPanel'))}</div>${demoPending ? pendingHTML() : ''}${artifacts[0].body}${artifacts.slice(1).map(artifact => `<details class="gn2-previous-result"><summary>${esc(artifact.title)}</summary>${artifact.body}</details>`).join('')}</div>`;
+}
+function gn2ChipsHTML(scn) {
+  if (demoPending) return '';
+  const lang = scriptLang(state.lang), previous = gn2LatestCompleted();
+  const routes = previous ? [previous.meta.route] : ['ap', 'ar'];
+  const options = routes.map(route => {
+    const stage = gn2RouteStage(route), turns = route === 'ar' ? scn.collectionSchedule.script[lang] : scn.script[lang];
+    return turns[stage] ? { route, step: stage + 1, q: turns[stage].q } : null;
+  }).filter(Boolean);
+  return options.length ? `<span>${esc(t('chipsLabel'))}</span>${options.map(option => `<button class="chip" data-act="chip" data-arg="${lang}" data-gn2-route="${option.route}" data-gn2-step="${option.step}"><span class="cl">${esc(lang === 'zh' ? t('chipZh') : t('chipJa'))}</span>${esc(option.q)}</button>`).join('')}` : '';
+}
+function qaResultsHTML(scn) {
+  const entries = qaResultEntries();
+  if (!entries.length) return '';
+  const artifacts = entries.map(entry => {
+    if (entry.meta.route === 'record') {
+      const firstRecord = qaTurnMeta.findIndex(meta => meta.route === 'record');
+      const lang = entry.meta.step === 3 ? scriptLang(state.lang) : state.log[firstRecord].lang;
+      return { title: scn.result[lang].title, body: qaDraftResultHTML(scn, entry.meta.step, lang) };
+    }
+    const result = qaHistoryResult(scn, entry.meta, entry.turn.lang);
+    return { title: result.title, body: `<div class="qa-history-result">${markedResultHTML(result, scn.outputHighlights[entry.turn.lang])}</div>` };
+  });
+  return `<div class="panel result"><div class="panel-h">${esc(t('resultPanel'))}</div>${demoPending && !demoPendingFreeform ? pendingHTML() : ''}${artifacts[0].body}${artifacts.slice(1).map(artifact => `<details class="qa-previous-result"><summary>${esc(artifact.title)}</summary>${artifact.body}</details>`).join('')}</div>`;
+}
+function qaChipsHTML(scn) {
+  if (demoPending) return '';
+  const lang = scriptLang(state.lang), latest = qaLatestCompleted();
+  const progress = qaCompletedEntries().filter(entry => entry.meta.route !== 'clarify').at(-1);
+  let options = [];
+  if (latest && latest.meta.route === 'clarify' && latest.meta.outputRef === 'clarify:photos') options = [{ action: 'record', q: scn.qaPrompts[lang].record }];
+  else if (!progress) options = ['record', 'search'].map(action => ({ action, q: scn.qaPrompts[lang][action] }));
+  else if (progress && progress.meta.route === 'record' && progress.meta.step < 3) options = [{ step: progress.meta.step + 1, q: scn.script[lang][progress.meta.step].q }];
+  else if (progress && progress.meta.route === 'history' && progress.meta.step < 3) {
+    const action = progress.meta.step === 1 ? 'compare' : 'next';
+    options = [{ action, q: scn.qaPrompts[lang][action] }];
+  }
+  return options.length ? `<span>${esc(t('chipsLabel'))}</span>${options.map(option => `<button class="chip" data-act="chip" data-arg="${lang}"${option.step ? ` data-qa-record-step="${option.step}"` : ` data-qa-prompt="${option.action}"`}><span class="cl">${esc(lang === 'zh' ? t('chipZh') : t('chipJa'))}</span>${esc(option.q)}</button>`).join('')}` : '';
 }
 
 /** work-pane の中身（入力パネル＋結果パネル）。テンプレートごとに入力 UI だけ分岐する */
 function panelHTML(scn) {
   const done = state.log.length > 0;
   const lang0 = done ? state.log[0].lang : scriptLang(state.lang);
+  const completed = completedScriptTurns();
+  if (scn.qaPrompts && isQaChat()) return qaResultsHTML(scn);
+  if (scn.collectionSchedule && isGn2Chat()) return gn2ResultsHTML(scn);
+  if (scn.startMode === 'chat') {
+    return completed ? `<div class="panel result"><div class="panel-h">${esc(t('resultPanel'))}</div>${demoPending && !demoPendingFreeform ? pendingHTML() : ''}${scn.resultHighlights ? markedResultHTML(scn.result[lang0], [], scn.resultHighlights[lang0]) : resultHTML(scn.result[lang0])}</div>` : '';
+  }
   const inp = scn.input[lang0];
   let inputInner = '';
   if (scn.template === 'upload') {
@@ -601,32 +933,120 @@ function panelHTML(scn) {
     inputInner = `<div class="field"><div class="val">🔍 ${esc(inp.query)}</div></div>`;
   }
   return `
-    <div class="panel${done ? ' done' : ''}">
+    <div class="panel${done ? ' done' : ''}${scn.template === 'upload' ? ' pending-attachments' : ''}"${scn.template === 'upload' && done && !chatCompose.attachmentVisible ? ' hidden' : ''}>
       <div class="panel-h">${esc(t('inputPanel'))}</div>
       ${inputInner}
-      <div class="run-row"><button class="btn-primary" data-act="run"${done ? ' disabled' : ''}>${esc(done ? t('runDone') : t('run'))}</button></div>
+      <div class="run-row"><button class="btn-primary" data-act="run"${done || demoPending || upReading ? ' disabled' : ''}>${esc(done ? t('runDone') : t('run'))}</button></div>
     </div>
-    ${done ? `<div class="panel result"><div class="panel-h">${esc(t('resultPanel'))}</div>${demoPending ? pendingHTML() : resultHTML(scn.result[lang0])}</div>` : ''}`;
+    ${done ? `<div class="panel result"><div class="panel-h">${esc(t('resultPanel'))}</div>${scn.draftStages ?
+      (demoPending && !demoPendingFreeform ? pendingHTML() : '') + qaDraftResultHTML(scn, completed, completed >= 3 ? scriptLang(state.lang) : lang0) :
+      (demoPending ? pendingHTML() : resultHTML(scn.result[lang0]))}</div>` : ''}`;
+}
+
+/** 遅延回答完了時は結果パネルと列構成だけを更新し、チャット入力・会話は保つ。 */
+function updateDemoPanels(scn) {
+  const pane = document.querySelector('.work-pane');
+  if (pane) pane.innerHTML = panelHTML(scn);
+  if (pane && scn.startMode === 'chat') {
+    pane.hidden = scn.qaPrompts ? qaResultEntries().length === 0 : scn.collectionSchedule ? gn2ResultEntries().length === 0 : completedScriptTurns() === 0;
+    const body = document.querySelector('.demo-body');
+    if (body) body.classList.toggle('demo-chat-only', pane.hidden);
+  }
+  const chips = document.getElementById('chips');
+  if (chips) chips.innerHTML = chipsHTML(scn);
+  chatRefreshControls();
 }
 
 /** チップ行（質問例）。qa 型 または 実行後は台本の次ターン、それ以外（実行前）は誘導文 */
 function chipsHTML(scn) {
-  const tJa = nextTurn(scn, 'ja'), tZh = nextTurn(scn, 'zh');
-  if (scn.template !== 'qa' && state.log.length === 0) return `<span>${esc(t('runHint'))}</span>`;
-  if (!tJa && !tZh) return `<span>${esc(t('demoDone'))}</span>`;
-  return `<span>${esc(t('chipsLabel'))}</span>` +
-    (tJa ? `<button class="chip" data-act="chip" data-arg="ja"><span class="cl">${esc(t('chipJa'))}</span>${esc(tJa.q)}</button>` : '') +
-    (tZh ? `<button class="chip" data-act="chip" data-arg="zh"><span class="cl">${esc(t('chipZh'))}</span>${esc(tZh.q)}</button>` : '');
+  if (scn.qaPrompts && isQaChat()) return qaChipsHTML(scn);
+  if (scn.collectionSchedule && isGn2Chat()) return gn2ChipsHTML(scn);
+  if (demoPending) return '';
+  const lang = scriptLang(state.lang), turn = nextTurn(scn, lang);
+  if (!turn) return `<span>${esc(t('demoDone'))}</span>`;
+  return `<span>${esc(t('chipsLabel'))}</span><button class="chip" data-act="chip" data-arg="${lang}"><span class="cl">${esc(lang === 'zh' ? t('chipZh') : t('chipJa'))}</span>${esc(turn.q)}</button>`;
+}
+
+function chatAutosize(input) {
+  if (!input) return;
+  input.style.height = '64px';
+  const height = Math.max(64, Math.min(160, input.scrollHeight));
+  input.style.height = `${height}px`;
+  input.style.overflowY = input.scrollHeight > 160 ? 'auto' : 'hidden';
+}
+function chatRestoreDraft(focus = true) {
+  const input = document.getElementById('chat-input');
+  if (!input) return;
+  chatComposeOwner = chatContextKey();
+  input.value = chatCompose.text;
+  input.setSelectionRange(Math.min(chatCompose.selectionStart, input.value.length), Math.min(chatCompose.selectionEnd, input.value.length));
+  chatAutosize(input);
+  if (focus && !upPreview.open && !nmSummary.open) input.focus({ preventScroll: true });
+}
+function chatSetDraft(text) {
+  if (demoPending) return;
+  chatCompose.text = text; chatCompose.selectionStart = text.length; chatCompose.selectionEnd = text.length;
+  chatRestoreDraft();
+}
+function chatRefreshControls() {
+  const send = document.querySelector('[data-act="send"]');
+  if (send) send.disabled = demoPending || upReading > 0;
+  for (const button of document.querySelectorAll('[data-up="qa-attach"], [data-up="attach"], [data-up="sample"], [data-up="clear"], [data-up="input"]')) button.disabled = demoPending;
+  for (const zone of document.querySelectorAll('.upzone')) {
+    zone.setAttribute('aria-disabled', String(demoPending));
+    zone.setAttribute('tabindex', demoPending ? '-1' : '0');
+  }
+}
+function chatComposerHTML(scn) {
+  const canAttach = !scn || scn.template === 'upload';
+  const attach = canAttach ? `<button type="button" class="upbtn${scn && scn.qaPrompts ? ' qa-photo-add' : ''}" data-up="${scn && scn.qaPrompts ? 'qa-attach' : 'attach'}"${demoPending ? ' disabled' : ''}>${esc(t(scn && scn.qaPrompts ? 'qaPhotoAdd' : 'upAttachOpen'))}</button>` : '';
+  return `<div class="chat-input-row">${attach}<textarea class="chat-input" id="chat-input" rows="2" placeholder="${esc(t('chatPh'))}"></textarea><button class="btn-send" data-act="send"${demoPending || upReading ? ' disabled' : ''}>${esc(t('send'))}</button></div>`;
+}
+function chatScheduleReply(turn, meta, extra = null) {
+  showTyping();
+  const epoch = chatSessionEpoch, context = chatContextKey();
+  demoReplyTimer = setTimeout(() => {
+    if (epoch !== chatSessionEpoch || context !== chatContextKey() || !['demo', 'chat'].includes(state.view)) return;
+    hideTyping();
+    addMsg('agent', turn.a, turn.lang, meta);
+    if (extra) extra.pending = false;
+    demoPending = false; demoPendingFreeform = false; demoReplyTimer = null;
+    const scn = state.view === 'demo' ? scnOf(state.selSvc) : null;
+    if (scn) updateDemoPanels(scn);
+    else chatRefreshControls();
+  }, demoDelay(turn.a));
+}
+function chatRenderHistory(scn) {
+  state.log.forEach((turn, index) => {
+    const meta = scn && scn.qaPrompts ? qaTurnMeta[index] : scn && scn.collectionSchedule ? gn2TurnMeta[index] : null;
+    addMsg('user', turn.q, turn.lang, meta, `log:${index}`);
+    if (index === state.log.length - 1 && demoPending && !demoPendingFreeform) chatScheduleReply(turn, meta);
+    else addMsg('agent', turn.a, turn.lang, meta);
+  });
+  extraChatHistory.forEach(turn => {
+    addMsg('user', turn.q, turn.lang, null, turn.key);
+    if (turn.pending) {
+      demoPending = true; demoPendingFreeform = true;
+      chatScheduleReply(turn, null, turn);
+    } else addMsg('agent', turn.a, turn.lang);
+  });
 }
 
 function renderMain() {
+  chatCaptureDraft();
+  if (nmSummary.open) {
+    if (state.industry !== 'mfg' || state.selSvc !== 'nm5' || state.view !== 'demo' || !state.log.length) nmSummaryClose(false);
+    else nmSummaryRenderContent();
+  }
+  if (upPreview.open) {
+    if (!['demo', 'chat'].includes(state.view) || state.selSvc !== upPreview.service) upPreviewClose(false);
+    else { upPreviewRenderLabels(); upPreviewRenderSize(); }
+  }
   const el = document.getElementById('main');
 
-  /* 保留中の返答タイマーはいったん止める。demo view の scripted pending（state.log の最終ターン）
-     だけは下の復元処理で同じ遅延を再スケジュールする。それ以外（freeform の pending や demo 以外の
-     view）は #msgs 自体が作り直されるため諦めて pending を解除する（§2-3：表示は state を読むだけ） */
+  /* 台本／汎用の回答待ちは下の発話履歴から再スケジュールする。 */
   if (demoReplyTimer) { clearTimeout(demoReplyTimer); demoReplyTimer = null; }
-  if (state.view !== 'demo' || demoPendingFreeform) { demoPending = false; demoPendingFreeform = false; }
+  if (!['demo', 'chat'].includes(state.view)) { demoPending = false; demoPendingFreeform = false; }
 
   const pat = PATTERNS.find(p => p.id === state.pattern);
   if (pat && !pat.ready) { el.innerHTML = todoHTML(pat); return; }
@@ -714,7 +1134,7 @@ function renderMain() {
         <div class="sec-label">${esc(t('scenarioLabel'))}</div>
         <ol class="steps" aria-label="${esc(t('stepPrefix'))}">
           ${scn.steps[state.lang].map(s => `<li>${esc(s)}</li>`).join('')}
-        </ol>` : ''}
+        </ol>${scn.collectionSchedule ? `<div class="sec-label">${esc(t('gn2CollectionSteps'))}</div><ol class="steps" aria-label="${esc(t('stepPrefix'))}">${scn.collectionSchedule.steps[state.lang].map(step => `<li>${esc(step)}</li>`).join('')}</ol>` : ''}` : ''}
         <div class="cta-row">
           <button class="btn-primary" data-act="start">${esc(scn ? t('startDemo') : t('startUse'))}</button>
           ${liveBtnHTML(x)}
@@ -728,57 +1148,35 @@ function renderMain() {
   } else if (state.view === 'demo') {
     const x = svcOf(state.selSvc);
     const scn = scnOf(state.selSvc);
+    const chatOnly = scn.startMode === 'chat' && (scn.qaPrompts ? qaResultEntries().length === 0 : scn.collectionSchedule ? gn2ResultEntries().length === 0 : completedScriptTurns() === 0);
     el.innerHTML = `
-    <div class="demo-wrap" data-screen-label="業務デモ">
+    <div class="demo-wrap${scn.qaPrompts ? ' qa-chat-demo' : ''}${scn.collectionSchedule ? ' gn2-chat-demo' : ''}" data-screen-label="業務デモ">
       <div class="chat-hdr">
         <button class="backlink" data-act="backdetail"><span class="arrow"></span>${esc(t('backToDetail'))}</button>
         <div class="vline"></div>
         <span class="code">${esc(svcCode(x.id))}</span>
         <div class="ct1">${esc(L(x.name))}</div>
-        <span class="tpl-badge" title="${esc(t('tplBadge'))}">${esc(L(TEMPLATES[scn.template].name))}</span>
+        ${scn.qaPrompts ? '' : `<span class="tpl-badge" title="${esc(t('tplBadge'))}">${esc(L(TEMPLATES[scn.template].name))}</span>`}
         <span class="who">${esc(L(scn.persona.name))}・${esc(L(scn.persona.site))}</span>
         <span class="status"><span class="dot ${statusClass(x.st)}"></span>${esc(statusText(x.st))}</span>
         <button class="backlink restart" data-act="restart">${esc(t('restart'))}</button>
       </div>
-      <div class="demo-body">
-        ${scn.template !== 'qa' ? `<div class="work-pane">${panelHTML(scn)}</div>` : ''}
+      <div class="demo-body${chatOnly ? ' demo-chat-only' : ''}">
+        ${scn.template !== 'qa' ? `<div class="work-pane"${chatOnly ? ' hidden' : ''}>${panelHTML(scn)}</div>` : ''}
         <div class="chat-pane">
           <div class="msgs" id="msgs"></div>
           <div class="chips" id="chips">${chipsHTML(scn)}</div>
-          <div class="chat-input-row">
-            <input class="chat-input" id="chat-input" placeholder="${esc(t('chatPh'))}">
-            <button class="btn-send" data-act="send">${esc(t('send'))}</button>
-          </div>
+          ${scn.qaPrompts ? qaAttachmentsHTML(scn) : ''}
+          ${scn.collectionSchedule ? gn2AttachmentsHTML(scn) : ''}
+          ${chatComposerHTML(scn)}
         </div>
       </div>
+      ${scn.qaPrompts ? `<div class="qa-demo-note">${esc(t('qaDemoNote'))}</div>` : ''}
     </div>`;
     const sl = scriptLang(state.lang);
     addMsg('agent', T.chatHello[sl].replace('{name}', x.name[sl]));
-    /* log の復元。最後の 1 ターンだけ agent 返答を遅らせ（考え中インジケータを出す）、
-       それ以前は即時描画する。demoPending が立っている（=最終ターンの返答がまだ未表示）間は
-       renderMain() が再実行されても pending のまま同じ遅延で再スケジュールする（言語/テーマ切替対応） */
-    state.log.forEach((turn, i) => {
-      addMsg('user', turn.q);
-      const isLast = i === state.log.length - 1;
-      if (isLast && demoPending) {
-        showTyping();
-        demoReplyTimer = setTimeout(() => {
-          hideTyping();
-          addMsg('agent', turn.a);
-          demoPending = false;
-          demoReplyTimer = null;
-          if (scn.template !== 'qa') {
-            const wp = document.querySelector('.work-pane');
-            if (wp) wp.innerHTML = panelHTML(scn);
-          }
-        }, demoDelay(turn.a));
-      } else {
-        addMsg('agent', turn.a);
-      }
-    });
-    const input = document.getElementById('chat-input');
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
-    input.focus();
+    chatRenderHistory(scn);
+    chatRestoreDraft();
 
   } else {
     const x = svcOf(state.selSvc);
@@ -792,27 +1190,85 @@ function renderMain() {
         <span class="status"><span class="dot ${statusClass(x.st)}"></span>${esc(statusText(x.st))}</span>
       </div>
       <div class="msgs" id="msgs"></div>
-      <div class="chat-input-row">
-        <input class="chat-input" id="chat-input" placeholder="${esc(t('chatPh'))}">
-        <button class="btn-send" data-act="send">${esc(t('send'))}</button>
-      </div>
+      <div class="chat-attachments panel"${chatCompose.attachmentVisible ? '' : ' hidden'}><div class="panel-h">${esc(t('upAttachOpen'))}</div>${uploadPanelHTML(null, { files: [] })}</div>
+      ${chatComposerHTML(null)}
     </div>`;
     addMsg('agent', t('chatHello').replace('{name}', L(x.name)));
-    const input = document.getElementById('chat-input');
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
-    input.focus();
+    chatRenderHistory(null);
+    chatRestoreDraft();
   }
   el.scrollTop = 0;
 }
 
-function addMsg(who, text) {
+/** QA-01 / NM-05の既存回答だけを、HTML解釈せず短い引用の完全一致で強調する。 */
+function appendQaHighlights(target, text, lang, meta) {
+  if (state.industry !== 'mfg' || !['qa1', 'nm5'].includes(state.selSvc) || state.view !== 'demo') return false;
+  const scn = scnOf(state.selSvc);
+  if (state.selSvc === 'qa1' && meta && meta.route === 'history' && qaHistoryAnswer(scn, meta.step, meta.variant, lang) === text) {
+    appendMarkedText(target, text, scn.outputHighlights[lang]); return true;
+  }
+  const phrases = scn.highlights && scn.highlights[lang];
+  const turns = scn.script && scn.script[lang];
+  if (!Array.isArray(phrases) || !Array.isArray(turns) || !turns.some(turn => turn.a === text)) return false;
+  appendMarkedText(target, text, phrases);
+  return true;
+}
+function appendMarkedText(target, text, phrases, stripEmphasis = true) {
+  const displayText = stripEmphasis ? text.replace(/\*\*/g, '') : text;
+  let cursor = 0;
+  while (cursor < displayText.length) {
+    let found = null;
+    for (const phrase of phrases) {
+      if (typeof phrase !== 'string' || !phrase.length) continue;
+      const index = displayText.indexOf(phrase, cursor);
+      if (index >= 0 && (!found || index < found.index || (index === found.index && phrase.length > found.phrase.length))) {
+        found = { index, phrase };
+      }
+    }
+    if (!found) { target.appendChild(document.createTextNode(displayText.slice(cursor))); break; }
+    if (found.index > cursor) target.appendChild(document.createTextNode(displayText.slice(cursor, found.index)));
+    const mark = document.createElement('mark');
+    mark.className = 'qa-highlight'; mark.textContent = found.phrase;
+    target.appendChild(mark);
+    cursor = found.index + found.phrase.length;
+  }
+}
+
+function nmSummaryIsFinalReply(text, lang) {
+  if (state.industry !== 'mfg' || state.selSvc !== 'nm5' || state.view !== 'demo') return false;
+  const scn = scnOf(state.selSvc), turns = scn.script[lang];
+  return !!(scn.summary && turns && turns.length && turns[turns.length - 1].a === text);
+}
+
+function addMsg(who, text, replyLang, meta, messageKey) {
   const box = document.getElementById('msgs');
   if (!box) return;
   const row = document.createElement('div');
   row.className = 'msg-row ' + who;
   const b = document.createElement('div');
   b.className = 'bubble';
-  b.textContent = text;
+  const scn = state.view === 'demo' && state.industry === 'mfg' ? scnOf(state.selSvc) : null;
+  const collection = isGn2Chat() && scn && scn.collectionSchedule;
+  const ar = meta && (meta.route === 'ar' || meta.outputRef.startsWith('clarify:ar-'));
+  if (collection && ar && replyLang && (who === 'user' || meta.route === 'ar')) {
+    appendMarkedText(b, text, who === 'user' ? collection.inputHighlights[replyLang] : collection.outputHighlights[replyLang], who !== 'user');
+  } else if (who === 'user' && scn && scn.inputHighlights && replyLang) {
+    appendMarkedText(b, text, meta ? meta.inputPhrases : scn.inputHighlights[replyLang], false);
+  } else if (who !== 'agent' || !appendQaHighlights(b, text, replyLang, meta)) b.textContent = text;
+  if (who === 'agent' && nmSummaryIsFinalReply(text, replyLang)) {
+    const action = document.createElement('div'); action.className = 'nm-summary-action';
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'upbtn'; button.dataset.nmSummary = 'open';
+    button.textContent = t('nmSummaryOpen'); action.appendChild(button); b.appendChild(action);
+  }
+  const files = who === 'user' && messageKey ? sentAttachments.get(messageKey) : null;
+  if (files && files.length) {
+    const gallery = document.createElement('div'); gallery.className = 'sent-attachments';
+    const label = document.createElement('div'); label.className = 'sent-attachments-label'; label.textContent = t('upSentFiles');
+    const items = document.createElement('div'); items.className = 'sent-attachments-items';
+    items.innerHTML = files.map((file, index) => upItemHTML(file, index, 'sent', messageKey)).join('');
+    gallery.appendChild(label); gallery.appendChild(items); b.appendChild(gallery);
+  }
   row.appendChild(b);
   box.appendChild(row);
   box.scrollTop = box.scrollHeight;
@@ -838,38 +1294,45 @@ function hideTyping() {
 }
 
 /** 台本が尽きた後の汎用返答（T.chatReply）。demo / chat どちらの view でも同じ遅延・インジケータにする */
-function scheduleFreeReply(text) {
+function scheduleFreeReply(text, lang, q) {
+  const turn = { key: `extra:${++extraChatSequence}`, lang: scriptLang(lang), q, a: text, pending: true };
+  extraChatHistory.push(turn);
+  chatAcceptAttachments(turn.key);
   demoPending = true;
   demoPendingFreeform = true;
-  showTyping();
-  demoReplyTimer = setTimeout(() => {
-    hideTyping();
-    addMsg('agent', text);
-    demoPending = false;
-    demoPendingFreeform = false;
-    demoReplyTimer = null;
-  }, demoDelay(text));
+  renderMain();
 }
 
 function sendChat() {
-  if (demoPending) return; // 返答待ちの間は二重送信を無視（Issue #39）
+  if (demoPending || upReading) return;
   const input = document.getElementById('chat-input');
-  const v = input.value.trim();
-  if (!v) return;
+  if (!input) return;
+  const raw = input.value;
+  const v = raw.trim();
+  if (!v && !upFiles.length) return;
   const x = svcOf(state.selSvc);
-  /* 返答は「入力された言語」に合わせる（メニュー表示言語とは独立） */
-  const lang = detectLang(v);
-  if (state.view === 'demo') {
-    const sl = scriptLang(lang);
-    input.value = '';
-    if (consume(sl, v)) { demoPending = true; renderMain(); return; }  // 台本があれば台本の a を返す（q は入力文で置換）
-    addMsg('user', v);                                                  // 台本が尽きたら従来の汎用返答
-    scheduleFreeReply(T.chatReply[sl].replace('{name}', x.name[sl]));
+  const lang = v ? scriptLang(detectLang(v)) : scriptLang(state.lang);
+  const scn = state.view === 'demo' ? scnOf(state.selSvc) : null;
+  const turn = scn && !isQaChat() && !isGn2Chat() ? nextTurn(scn, lang) : null;
+  const gn2Default = isGn2Chat() ? gn2CollectionSampleMatches(upFiles) ? scn.collectionSchedule.script[lang][0].q : (scn.script[lang][gn2RouteStage('ap')] || {}).q : null;
+  const q = v ? raw : isQaChat() ? scn.qaPrompts[lang].record : gn2Default || (turn ? turn.q : t('upSentFiles'));
+  if (isQaChat()) {
+    if (qaSubmitRequest(q, lang)) { chatAcceptAttachments(`log:${state.log.length - 1}`); renderMain(); }
     return;
   }
-  /* --- 以下は既存のまま（chat view） --- */
-  addMsg('user', v); input.value = '';
-  scheduleFreeReply(T.chatReply[lang].replace('{name}', x.name[lang]));
+  if (isGn2Chat()) {
+    if (gn2SubmitRequest(q, lang)) { chatAcceptAttachments(`log:${state.log.length - 1}`); renderMain(); }
+    return;
+  }
+  if (state.view === 'demo') {
+    if (consume(lang, q)) {
+      chatAcceptAttachments(`log:${state.log.length - 1}`);
+      demoPending = true; demoPendingFreeform = false; renderMain(); return;
+    }
+    scheduleFreeReply(T.chatReply[lang].replace('{name}', x.name[lang]), lang, q);
+    return;
+  }
+  scheduleFreeReply(T.chatReply[lang].replace('{name}', x.name[lang]), lang, q);
 }
 
 /* ============================================================
