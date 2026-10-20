@@ -847,7 +847,7 @@ function gn2ResultsHTML(scn) {
 function gn2ChipsHTML(scn) {
   if (demoPending) return '';
   const lang = scriptLang(state.lang), previous = gn2LatestCompleted();
-  const routes = previous ? [previous.meta.route] : ['ap', 'ar'];
+  const routes = previous ? [previous.meta.route] : ['ar', 'ap'];
   const options = routes.map(route => {
     const stage = gn2RouteStage(route), turns = route === 'ar' ? scn.collectionSchedule.script[lang] : scn.script[lang];
     return turns[stage] ? { route, step: stage + 1, q: turns[stage].q } : null;
