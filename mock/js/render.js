@@ -1238,6 +1238,8 @@ function addMsg(who, text, replyLang, meta, messageKey) {
     appendMarkedText(b, text, who === 'user' ? collection.inputHighlights[replyLang] : collection.outputHighlights[replyLang], who !== 'user');
   } else if (collection && who === 'user' && replyLang && scn.apQuestionHighlights?.[replyLang]) {
     appendMarkedText(b, text, scn.apQuestionHighlights[replyLang], false);
+  } else if (collection && who === 'agent' && replyLang && scn.apOutputHighlights?.[replyLang] && scn.script[replyLang].some(turn => turn.a === text)) {
+    appendMarkedText(b, text, scn.apOutputHighlights[replyLang], false);
   } else if (who === 'user' && scn && scn.inputHighlights && replyLang) {
     appendMarkedText(b, text, meta ? meta.inputPhrases : scn.inputHighlights[replyLang], false);
   } else if (who !== 'agent' || !appendQaHighlights(b, text, replyLang, meta)) b.textContent = text;

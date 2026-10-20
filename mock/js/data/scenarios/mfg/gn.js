@@ -62,6 +62,12 @@ Object.assign(window.SCENARIOS.mfg, {
         '会計システムに登録する CSV を出して。不一致 4 枚は除いて'
       ]
     },
+    apOutputHighlights: {
+      ja: [
+        '「S公司 财务部：您好。贵司发票 0250820…41（RMB 48,600、24,000件）中，包含8/22已退回的不良品600件（退货单 RT-2508-04，贵司已签收）。请按实际入库数 23,400件 开具红字发票冲减600件（RMB 1,215），或重新开具发票。在收到更正发票前，本张发票暂不安排付款。谢谢。青岭精工 财务科 钱芳」',
+        '会計システム登録用 CSV（36 枚・RMB 512,840 税込）を出力しました：AP_import_2025-08.csv。'
+      ]
+    },
     collectionSchedule: {
       "sampleId": "gn2-collection",
       "input": {
