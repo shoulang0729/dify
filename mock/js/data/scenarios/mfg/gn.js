@@ -50,6 +50,18 @@ Object.assign(window.SCENARIOS.mfg, {
       ] } },
 
   gn2: { template: 'upload', startMode: 'chat',
+    resultHighlights: {
+      ja: [
+        { row: 2, column: 3, phrases: ['24,000 個 ／ 入庫 23,400 個'] },
+        { row: 2, column: 6, phrases: ['入庫 600 個少（不良返却分 600 が控除されていない）'] }
+      ]
+    },
+    apQuestionHighlights: {
+      ja: [
+        '塗装 S 社の 600 個の件、S 社に何て言えばいい？返品の記録はある？',
+        '会計システムに登録する CSV を出して。不一致 4 枚は除いて'
+      ]
+    },
     collectionSchedule: {
       "sampleId": "gn2-collection",
       "input": {
