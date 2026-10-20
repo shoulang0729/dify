@@ -839,7 +839,8 @@ function gn2ResultsHTML(scn) {
   if (!entries.length) return '';
   const artifacts = entries.map(entry => {
     const ar = entry.meta.route === 'ar', result = ar ? scn.collectionSchedule.results[entry.turn.lang][entry.meta.step - 1] : scn.result[entry.turn.lang];
-    return { title: result.title, body: ar ? gn2CollectionResultHTML(scn, entry) : resultHTML(result) };
+    const rules = scn.resultHighlights && scn.resultHighlights[entry.turn.lang];
+    return { title: result.title, body: ar ? gn2CollectionResultHTML(scn, entry) : rules ? markedResultHTML(result, [], rules) : resultHTML(result) };
   });
   return `<div class="panel result"><div class="panel-h">${esc(t('resultPanel'))}</div>${demoPending ? pendingHTML() : ''}${artifacts[0].body}${artifacts.slice(1).map(artifact => `<details class="gn2-previous-result"><summary>${esc(artifact.title)}</summary>${artifact.body}</details>`).join('')}</div>`;
 }
@@ -851,7 +852,7 @@ function gn2ChipsHTML(scn) {
     const stage = gn2RouteStage(route), turns = route === 'ar' ? scn.collectionSchedule.script[lang] : scn.script[lang];
     return turns[stage] ? { route, step: stage + 1, q: turns[stage].q } : null;
   }).filter(Boolean);
-  return options.length ? `<span>${esc(t('chipsLabel'))}</span>${options.map(option => `<button class="chip" data-act="chip" data-arg="${lang}" data-gn2-route="${option.route}" data-gn2-step="${option.step}"><span class="cl">${esc(lang === 'zh' ? t('chipZh') : t('chipJa'))}</span>${esc(option.q)}</button>`).join('')}` : '';
+  return options.length ? `<span>${esc(t('chipsLabel'))}</span>${options.map(option => `<button class="chip" data-act="chip" data-arg="${lang}" data-gn2-route="${option.route}" data-gn2-step="${option.step}"><span class="cl">${esc(lang === 'zh' ? t('chipZh') : t('chipJa'))}</span>${markedTextHTML(option.q, scn.apQuestionHighlights?.[lang] || [])}</button>`).join('')}` : '';
 }
 function qaResultsHTML(scn) {
   const entries = qaResultEntries();
@@ -1211,6 +1212,12 @@ function appendMarkedText(target, text, phrases, stripEmphasis = true) {
   }
 }
 
+function markedTextHTML(text, phrases) {
+  const container = document.createElement('span');
+  appendMarkedText(container, text, phrases, false);
+  return container.innerHTML;
+}
+
 function nmSummaryIsFinalReply(text, lang) {
   if (state.industry !== 'mfg' || state.selSvc !== 'nm5' || state.view !== 'demo') return false;
   const scn = scnOf(state.selSvc), turns = scn.script[lang];
@@ -1229,6 +1236,10 @@ function addMsg(who, text, replyLang, meta, messageKey) {
   const ar = meta && (meta.route === 'ar' || meta.outputRef.startsWith('clarify:ar-'));
   if (collection && ar && replyLang && (who === 'user' || meta.route === 'ar')) {
     appendMarkedText(b, text, who === 'user' ? collection.inputHighlights[replyLang] : collection.outputHighlights[replyLang], who !== 'user');
+  } else if (collection && who === 'user' && replyLang && scn.apQuestionHighlights?.[replyLang]) {
+    appendMarkedText(b, text, scn.apQuestionHighlights[replyLang], false);
+  } else if (collection && who === 'agent' && replyLang && scn.apOutputHighlights?.[replyLang] && scn.script[replyLang].some(turn => turn.a === text)) {
+    appendMarkedText(b, text, scn.apOutputHighlights[replyLang], false);
   } else if (who === 'user' && scn && scn.inputHighlights && replyLang) {
     appendMarkedText(b, text, meta ? meta.inputPhrases : scn.inputHighlights[replyLang], false);
   } else if (who !== 'agent' || !appendQaHighlights(b, text, replyLang, meta)) b.textContent = text;
