@@ -667,7 +667,7 @@ function loadPrefs() {
   try {
     const raw = localStorage.getItem('mock.fav');
     if (raw === null) {
-      state.fav.mfg = ['qa1', 'nm5'];
+      state.fav.mfg = ['qa1', 'nm5', 'gn2'];
       localStorage.setItem('mock.fav', JSON.stringify(state.fav));
     } else if (raw) {
       const parsed = JSON.parse(raw);
